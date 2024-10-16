@@ -55,6 +55,15 @@
 				"command": "node tools/scripts/publish.mjs playground {args.ver} {args.tag}",
 				"parallel": false
 			},
+			"dependsOn": ["build", "build:README-npm"]
+		},
+		"build:README-npm": {
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": [
+					"cp packages/playground/remote/README-npm.md dist/packages/playground/remote/README.md"
+				]
+			},
 			"dependsOn": ["build"]
 		},
 		"lint": {
