@@ -17,5 +17,10 @@
 	],
 	"license": "GPL-2.0-or-later",
 	"type": "module",
-	"private": true
+	"private": true,
+	"files": [
+		"/lib",
+		"/index.d.ts",
+		"/README.md"
+	]
 }
