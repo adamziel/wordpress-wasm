@@ -42,7 +42,6 @@
 				"outputPath": "dist/packages/playground/client",
 				"main": "packages/playground/client/index.html",
 				"tsConfig": "packages/playground/client/tsconfig.lib.json",
-				"assets": ["packages/playground/client/*.md"],
 				"minify": true
 			},
 			"defaultConfiguration": "production",
@@ -60,8 +59,7 @@
 			"defaultConfiguration": "development",
 			"options": {
 				"buildTarget": "playground-client:build",
-				"tsConfig": "packages/playground/client/tsconfig.lib.json",
-				"assets": ["packages/playground/client/*.md"]
+				"tsConfig": "packages/playground/client/tsconfig.lib.json"
 			}
 		},
 		"publish": {
