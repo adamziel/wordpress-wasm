@@ -22,9 +22,8 @@ export {
 	SupportedPHPVersionsList,
 	LatestSupportedPHPVersion,
 } from '@php-wasm/universal';
-export type { PlaygroundClient, MountDescriptor } from '@wp-playground/remote';
-
 export { phpVar, phpVars } from '@php-wasm/util';
+export type { PlaygroundClient, MountDescriptor };
 
 import {
 	Blueprint,
