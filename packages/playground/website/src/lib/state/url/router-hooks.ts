@@ -38,6 +38,10 @@ export function updateUrl(
 				([key, value]) => {
 					if (value === undefined) {
 						currentUrl.searchParams.delete(key);
+					} else if (Array.isArray(value)) {
+						value.forEach((v) => {
+							currentUrl.searchParams.append(key, v);
+						});
 					} else {
 						currentUrl.searchParams.set(key, value);
 					}
