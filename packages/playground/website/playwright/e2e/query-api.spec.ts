@@ -124,8 +124,6 @@ test('should retain encoded control characters in the URL', async ({
 		`./?url=${encodeURIComponent(path)}&plugin=html-api-debugger`
 	);
 	expect(
-		await wordpress
-			.locator('body')
-			.evaluate((body) => body.ownerDocument.location.href)
+		await wordpress.locator('body').evaluate((body) => body.baseURI)
 	).toContain(path);
 });
