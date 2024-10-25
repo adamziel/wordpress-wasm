@@ -19,7 +19,6 @@
 	"type": "module",
 	"files": [
 		"/lib",
-		"/index.d.ts",
-		"/README.md"
+		"/index.d.ts"
 	]
 }
