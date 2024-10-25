@@ -92,11 +92,20 @@ test('should not login the user in if the login query parameter is set to no', a
 	);
 });
 
-['/wp-admin/', '/wp-admin/post.php?post=1&action=edit'].forEach((path) => {
-	test(`should correctly redirect encoded wp-admin url to ${path}`, async ({
-		website,
-		wordpress,
-	}) => {
+[
+	['/wp-admin/', 'should redirect to wp-admin'],
+	['/wp-admin/post.php?post=1&action=edit', 'should redirect to post editor'],
+	/**
+	 * There is no reason to remove encoded control characters from the URL.
+	 * For example, the html-api-debugger accepts markup with newlines encoded
+	 * as %0A via the query string.
+	 */
+	[
+		'/wp-admin/?control-characters=%0A%0D',
+		'should retain encoded control characters in the URL',
+	],
+].forEach(([path, description]) => {
+	test(description, async ({ website, wordpress }) => {
 		await website.goto(`./?url=${encodeURIComponent(path)}`);
 		expect(
 			await wordpress.locator('body').evaluate((body) => body.baseURI)

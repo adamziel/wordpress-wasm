@@ -171,10 +171,16 @@ export async function setupPlatformLevelMuPlugins(php: UniversalPHP) {
 				$parts = explode('/', $redirect_url);
 				$redirect_url = '/' . implode('/', array_slice($parts, 2));
 			}
-			wp_redirect(
-				home_url($redirect_url),
-				302
-			);
+			$redirect_url = home_url($redirect_url);
+
+			/**
+			 * Intentionally do not use wp_redirect() here. It removes
+			 * %0A and %0D sequences from the URL, which we don't want.
+			 * There are valid use-cases for encoded newlines in the query string,
+			 * for example html-api-debugger accepts markup with newlines
+			 * encoded as %0A via the query string.
+			 */
+			header( "Location: $redirect_url", true, 302 );
 			exit;
 		}
 		/**
