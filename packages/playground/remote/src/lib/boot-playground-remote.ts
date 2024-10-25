@@ -152,6 +152,8 @@ export async function bootPlaygroundRemote() {
 					 *
 					 * [1] https://html.spec.whatwg.org/multipage/document-sequences.html#nav-active-history-entry
 					 */
+					// Get the content window while e.currentTarget is available.
+					// It will be undefined on the next event loop tick.
 					const contentWindow = e.currentTarget!.contentWindow;
 					await new Promise((resolve) => setTimeout(resolve, 0));
 					const path = await playground.internalUrlToPath(
