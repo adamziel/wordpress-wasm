@@ -64,6 +64,30 @@ class WPRewriteUrlsTests extends TestCase {
 				'https://legacy-blog.com/~jappleseed/1997.10.1/',
 				'https://modern-webstore.org/blog/'
 			],
+			/**
+			 * The urlencoded data needs to stay urlencoded. If it's decoded, the
+			 * resulting path will be wrongly rewritten as
+			 * 
+			 * "/blog/%65-reasons-to-migrate-data/"
+			 * 
+			 * Which decodes to:
+			 * 
+			 * "/blog/a-reasons-to-migrate-data/"
+			 * 
+			 * But if the path is not decoded, it correctly becomes
+			 * 
+			 * "/blog/%2565-reasons-to-migrate-data/"
+			 * 
+			 * Which decodes to:
+			 * 
+			 * "/blog/%65-reasons-to-migrate-data/"
+			 */
+			'Path in an HTML attribute with URLencoded data' => [ 
+				'<a href="/~jappleseed/1997.10.1/%2561-reasons-to-migrate-data/">61 reasons to migrate data</a>',
+				'<a href="/blog/%2561-reasons-to-migrate-data/">61 reasons to migrate data</a>',
+				'https://legacy-blog.com/~jappleseed/1997.10.1/',
+				'https://modern-webstore.org/blog/'
+			],
 			'Domain in an HTML attribute – encoded using HTML entities' => [ 
 				'<a href="&#104;&#116;tps://&#108;&#101;g&#97;&#99;&#121;&#45;&#98;&#108;&#111;&#103;.&#99;&#111;&#109;/pages/contact-us">Contact us</a>',
 				'<a href="https://modern-webstore.org/pages/contact-us">Contact us</a>',

@@ -7,6 +7,7 @@
       <file>tests/WPBlockMarkupProcessorTests.php</file>
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
       <file>tests/URLParserWHATWGComplianceTests.php</file>
+      <file>tests/UrldecodeNTests.php</file> 
     </testsuite>
   </testsuites>
 </phpunit>
