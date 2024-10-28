@@ -4,7 +4,8 @@
     <testsuite name="Application Test Suite">
       <file>tests/WPRewriteUrlsTests.php</file>
       <file>tests/WPURLInTextProcessorTests.php</file>
-      <!-- <file>tests/WPBlockMarkupProcessorTests.php</file>
+      <file>tests/WPBlockMarkupProcessorTests.php</file>
+      <!-- 
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
       <file>tests/WPMigrationURLInTextProcessorTests.php</file> -->
     </testsuite>

@@ -2459,7 +2459,7 @@ class WP_HTML_Tag_Processor {
 			}
 
 			// Accumulate shift of the given pointer within this function call.
-			if ( $diff->start <= $shift_this_point ) {
+			if ( $diff->start < $shift_this_point ) {
 				$accumulated_shift_for_given_point += $shift;
 			}
 
@@ -4169,9 +4169,7 @@ class WP_HTML_Tag_Processor {
 		 *                 ↑  │ back up by the length of the tag name plus the opening <
 		 *                 └←─┘ back up by strlen("em") + 1 ==> 3
 		 */
-		if ( $this->get_token_type() === '#tag' ) {
-			$this->bytes_already_parsed = $before_current_tag;
-		}
+		$this->bytes_already_parsed = $before_current_tag;
 		$this->base_class_next_token();
 
 		return $this->html;
