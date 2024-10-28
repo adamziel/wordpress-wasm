@@ -41,6 +41,14 @@ function wp_rewrite_urls( $options ) {
 		}
 		$raw_url     = $p->get_raw_url();
 		$is_relative = (
+			// Ensure protocol-less URLs coming from text nodes
+			// are not treated as relative.
+			//
+			// We're only capturing absolute URLs from text nodes,
+			// but some of them may look like relative URLs to the
+			// URL parser. For example, "mysite.com/path" would
+			// be parsed as a relative URL.
+			$p->get_token_type() !== '#text' &&
 			! str_starts_with( $raw_url, 'http://' ) &&
 			! str_starts_with( $raw_url, 'https://' )
 		);

@@ -97,7 +97,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 		}
 
 		while ( $this->url_in_text_processor->next_url() ) {
-			$this->raw_url    = WP_URL::ensure_protocol( $this->url_in_text_processor->get_raw_url() );
+			$this->raw_url    = $this->url_in_text_processor->get_raw_url();
 			$this->parsed_url = $this->url_in_text_processor->get_parsed_url();
 
 			return true;
