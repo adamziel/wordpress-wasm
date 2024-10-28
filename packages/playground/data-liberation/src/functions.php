@@ -40,18 +40,6 @@ function wp_rewrite_urls( $options ) {
 			continue;
 		}
 		$raw_url     = $p->get_raw_url();
-		$is_relative = (
-			// Ensure protocol-less URLs coming from text nodes
-			// are not treated as relative.
-			//
-			// We're only capturing absolute URLs from text nodes,
-			// but some of them may look like relative URLs to the
-			// URL parser. For example, "mysite.com/path" would
-			// be parsed as a relative URL.
-			$p->get_token_type() !== '#text' &&
-			! str_starts_with( $raw_url, 'http://' ) &&
-			! str_starts_with( $raw_url, 'https://' )
-		);
 
 		$parsed_matched_url           = $p->get_parsed_url();
 		$parsed_matched_url->protocol = $new_site_url->protocol;
@@ -86,6 +74,18 @@ function wp_rewrite_urls( $options ) {
 			$new_raw_url = rtrim( $new_raw_url, '/' );
 		}
 		if ( $new_raw_url ) {
+			$is_relative = (
+				// Ensure protocol-less URLs coming from text nodes
+				// are not treated as relative.
+				//
+				// We're only capturing absolute URLs from text nodes,
+				// but some of them may look like relative URLs to the
+				// URL parser. For example, "mysite.com/path" would
+				// be parsed as a relative URL.
+				$p->get_token_type() !== '#text' &&
+				! str_starts_with( $raw_url, 'http://' ) &&
+				! str_starts_with( $raw_url, 'https://' )
+			);
 			if ( $is_relative ) {
 				$new_relative_url = $parsed_matched_url->pathname;
 				if ( $parsed_matched_url->search !== '' ) {
