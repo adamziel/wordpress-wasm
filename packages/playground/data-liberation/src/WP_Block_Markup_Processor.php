@@ -23,26 +23,6 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 	 */
 	private $block_attributes_iterator;
 
-
-	private $accessible_text_starts_at;
-	private $accessible_text_length;
-	private $accessible_lexical_updates;
-
-	public function __construct( $html ) {
-		parent::__construct( $html );
-		$reflection = new ReflectionClass( 'WP_HTML_Tag_Processor' );
-
-		$this->accessible_text_starts_at = $reflection->getProperty( 'text_starts_at' );
-		$this->accessible_text_starts_at->setAccessible( true );
-
-		$this->accessible_text_length = $reflection->getProperty( 'text_length' );
-		$this->accessible_text_length->setAccessible( true );
-
-		$this->accessible_lexical_updates = $reflection->getProperty( 'lexical_updates' );
-		$this->accessible_lexical_updates->setAccessible( true );
-	}
-
-
 	public function get_token_type(): ?string {
 		switch ( $this->parser_state ) {
 			case self::STATE_COMMENT:
