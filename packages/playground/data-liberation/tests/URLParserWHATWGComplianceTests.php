@@ -119,7 +119,10 @@ class URLParserWHATWGComplianceTests extends TestCase
 	 * @return array[].
 	 */
 	static public function data_invalid_urls() {
-        static $test_examples = load_test_examples();
+        static $test_examples = null;
+        if(null === $test_examples) {
+            $test_examples = load_test_examples();
+        }
 
         $urls = array();
         foreach($test_examples as $example) {
