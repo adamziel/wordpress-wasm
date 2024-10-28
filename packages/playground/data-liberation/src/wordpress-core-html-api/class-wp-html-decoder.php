@@ -440,6 +440,7 @@ class WP_HTML_Decoder {
 		if ( $code_point <= 0x7FF ) {
 			$byte1 = chr( ( $code_point >> 6 ) | 0xC0 );
 			$byte2 = chr( $code_point & 0x3F | 0x80 );
+            var_Dump($code_point);
 
 			return "{$byte1}{$byte2}";
 		}

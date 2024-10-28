@@ -233,7 +233,7 @@ class WP_URL_In_Text_Processor {
 				}
 
 				$tld = strtolower( substr( $parsed_url->hostname, $last_dot_position + 1 ) );
-				if ( empty( self::$public_suffix_list[ $tld ] ) ) {
+				if ( empty( self::$public_suffix_list[ $tld ] ) && $tld !== 'internal' ) {
 					// This TLD is not in the public suffix list. It's not a valid domain name.
 					continue;
 				}
