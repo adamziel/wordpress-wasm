@@ -132,6 +132,7 @@ class WPURLInTextProcessorTests extends TestCase {
             'Malformed URL without Scheme' => ['Invalid link: example..com'],
             'Not a URL - Math Expression' => ['Calculate x/y where y ≠ 0'],
             'Text with Version Number' => ['Version 1.2.3 is released'],
+            'Text with a filename' => ['Edit the plugins.php file'],
             'Random Text with Symbols' => ['Check this out: !@#$%^&*()'],
 			'Magnet URI' => ['magnet:?xt=urn:btih:123456789abcdef'],
             'Single Word' => ['example'],

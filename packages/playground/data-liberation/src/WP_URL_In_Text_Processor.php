@@ -213,7 +213,7 @@ class WP_URL_In_Text_Processor {
 			}
 
 			// Additional rigor for URLs that are not explicitly preceded by a double slash.
-			if ( false && ! $had_double_slash ) {
+			if ( ! $had_double_slash ) {
 				/*
 				 * Skip TLDs that are not in the public suffix.
 				 * This reduces false positives like `index.html` or `plugins.php`.
