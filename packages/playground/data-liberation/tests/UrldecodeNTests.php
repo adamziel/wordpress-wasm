@@ -44,6 +44,11 @@ class UrldecodeNTests extends TestCase {
 				'decode_length' => 2,
 				'expected_string' => '/%%73cience.png',
 			],
+			'UTF-8 encoded path segment' => [
+				'original_string' => '/%e4%b8%ad%e6%96%87',
+				'decode_length' => 10,
+				'expected_string' => '/中文',
+			],
 		];
 	}
 }
