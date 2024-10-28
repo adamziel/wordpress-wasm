@@ -114,6 +114,60 @@ class WPRewriteUrlsTests extends TestCase {
 				'https://legacy-blog.com',
 				'https://modern-webstore.org'
 			],
+			"A single, longer, tricky input" => [
+				<<<MARKUP
+				<!-- wp:paragraph -->
+				<p>
+					<!-- Inline URLs are migrated -->
+					🚀-science.com/science has the best scientific articles on the internet! We're also
+					available via the punycode URL:
+					
+					<!-- No problem handling HTML-encoded punycode URLs with urlencoded characters in the path -->
+					&#104;ttps://xn---&#115;&#99;ience-7f85g.com/%73%63ience/.
+					
+					<!-- Correctly ignores similar–but–different URLs -->
+					This isn't migrated: https://🚀-science.comcast/science <br>
+					Or this: super-🚀-science.com/science
+				</p>
+				<!-- /wp:paragraph -->
+
+				<!-- Block attributes are migrated without any issue -->
+				<!-- wp:image {"src": "https:\/\/\ud83d\ude80-\u0073\u0063ience.com/%73%63ience/wp-content/image.png"} -->
+				<!-- As are URI HTML attributes -->
+				<img src="&#104;ttps://xn---&#115;&#99;ience-7f85g.com/science/wp-content/image.png">
+				<!-- /wp:image -->
+
+				<!-- Classes are not migrated. -->
+				<span class="https://🚀-science.com/science"></span>
+				MARKUP,
+				<<<MARKUP
+				<!-- wp:paragraph -->
+				<p>
+					<!-- Inline URLs are migrated -->
+					science.wordpress.org has the best scientific articles on the internet! We&apos;re also
+					available via the punycode URL:
+					
+					<!-- No problem handling HTML-encoded punycode URLs with urlencoded characters in the path -->
+					https://science.wordpress.org/.
+					
+					<!-- Correctly ignores similar–but–different URLs -->
+					This isn't migrated: https://🚀-science.comcast/science <br>
+					Or this: super-🚀-science.com/science
+				</p>
+				<!-- /wp:paragraph -->
+
+				<!-- Block attributes are migrated without any issue -->
+				<!-- wp:image {"src":"https:\/\/science.wordpress.org\/wp-content\/image.png"} -->
+				<!-- As are URI HTML attributes -->
+				<img src="https://science.wordpress.org/wp-content/image.png">
+				<!-- /wp:image -->
+
+				<!-- Classes are not migrated. -->
+				<span class="https://🚀-science.com/science"></span>
+				MARKUP,
+				'https://🚀-science.com/science',
+				'https://science.wordpress.org'
+			]
 		];
 	}
 

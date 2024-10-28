@@ -27,19 +27,22 @@ function wp_rewrite_urls( $options ) {
 	if ( $current_site_url->pathname[ strlen( $current_site_url->pathname ) - 1 ] === '/' ) {
 		$current_site_url->pathname = substr( $current_site_url->pathname, 0, strlen( $current_site_url->pathname ) - 1 );
 	}
-	$current_site_url_string = $current_site_url->toString();
+	$current_site_pathname_with_trailing_slash = $current_site_url->pathname === '/' ? $current_site_url->pathname : $current_site_url->pathname . '/';
+	$current_site_url_string                   = $current_site_url->toString();
 
 	$new_site_url = WP_URL::parse( $options['new-site-url'] );
 	if ( $new_site_url->pathname[ strlen( $new_site_url->pathname ) - 1 ] === '/' ) {
 		$new_site_url->pathname = substr( $new_site_url->pathname, 0, strlen( $new_site_url->pathname ) - 1 );
 	}
+	$new_site_pathname_with_trailing_slash =
+		$new_site_url->pathname === '/' ? $new_site_url->pathname : $new_site_url->pathname . '/';
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
 		if ( ! url_matches( $p->get_parsed_url(), $current_site_url_string ) ) {
 			continue;
 		}
-		$raw_url     = $p->get_raw_url();
+		$raw_url = $p->get_raw_url();
 
 		$parsed_matched_url           = $p->get_parsed_url();
 		$parsed_matched_url->protocol = $new_site_url->protocol;
@@ -50,10 +53,10 @@ function wp_rewrite_urls( $options ) {
 		if ( '/' !== $current_site_url->pathname ) {
 			// The matched URL starts with $current_site_name->pathname.
 			$parsed_matched_url->pathname =
-				$new_site_url->pathname .
+				$new_site_pathname_with_trailing_slash .
 				substr(
 					$decoded_matched_pathname,
-					strlen( urldecode( $current_site_url->pathname ) )
+					strlen( urldecode( $current_site_pathname_with_trailing_slash ) )
 				);
 		}
 
