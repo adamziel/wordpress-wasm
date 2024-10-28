@@ -54,6 +54,8 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
     {
         $xml_processor = new WP_XML_Processor('', [], WP_XML_Processor::IN_PROLOG_CONTEXT);
         return new ProcessorByteStream($xml_processor, function($state) use($xml_processor, $node_visitor_callback) {
+            $buffer = $xml_processor->flush_processed_xml();
+            
             $new_bytes = $state->consume_input_bytes();
             if (null !== $new_bytes) {
                 $xml_processor->append_bytes($new_bytes);
@@ -64,9 +66,8 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
                 $node_visitor_callback($xml_processor);
             }
 
-            $buffer = '';
             if ($tokens_found > 0) {
-                $buffer .= $xml_processor->get_processed_xml();
+                $buffer .= $xml_processor->flush_processed_xml();
             } else if (
                 $tokens_found === 0 &&
                 !$xml_processor->is_paused_at_incomplete_input() &&
@@ -86,6 +87,7 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
             return true;
         });
     }
+
 
 	public function pause() {
 		return array(
@@ -114,19 +116,27 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
 	 */
 	public function append_bytes( string $next_chunk )
 	{
+		$this->xml .= $next_chunk;
+	}
+
+    public function flush_processed_xml() {
 		$this->get_updated_xml();
 
-		$new_xml = $this->get_unprocessed_xml() . $next_chunk;
-		$breadcrumbs = $this->get_breadcrumbs();
+        $processed_xml = $this->get_processed_xml();
+        $unprocessed_xml = $this->get_unprocessed_xml();
+
+        $breadcrumbs = $this->get_breadcrumbs();
 		$parser_context = $this->get_parser_context();
 
 		$this->reset_state();
 
-		$this->xml = $new_xml;
+		$this->xml = $unprocessed_xml;
 		$this->stack_of_open_elements = $breadcrumbs;
 		$this->parser_context         = $parser_context;
 		$this->had_previous_chunks    = true;
-	}
+
+        return $processed_xml;
+    }
 
 	/**
 	 * Constructor.

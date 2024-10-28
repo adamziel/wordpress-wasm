@@ -1898,7 +1898,6 @@ class WP_XML_Tag_Processor {
 		return array_key_exists( $bookmark_name, $this->bookmarks );
 	}
 
-    protected $first_time = false;
 	public function get_processed_xml() {
 		// Flush updates
 		$this->get_updated_xml();
