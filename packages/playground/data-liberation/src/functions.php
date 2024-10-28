@@ -52,25 +52,25 @@ function wp_rewrite_urls( $options ) {
 		if ( '/' !== $current_site_url->pathname ) {
 			/**
 			 * The matched URL starts with $current_site_name->pathname.
-			 * 
+			 *
 			 * We want to retain the portion of the pathname that comes
 			 * after $current_site_name->pathname. This is not a simple
 			 * substring operation because the matched URL may have
 			 * urlencoded bytes at the beginning. We need to decode
 			 * them before taking the substring.
-			 * 
+			 *
 			 * However, we can't just decode the entire pathname because
 			 * the part after $current_site_name->pathname may itself
 			 * contain urlencoded bytes. If we decode them here, it
 			 * may change a path such as `/%2561/foo`, which decodes
 			 * as `/61/foo`, to `/a/foo`.
-			 * 
+			 *
 			 * Therefore, we're going to decode a part of the string. We'll
 			 * start at the beginning and keep going until we've found
 			 * enough decoded bytes to skip over $current_site_name->pathname.
 			 * Then we'll take the remaining, still encoded bytes as the new pathname.
 			 */
-			$decoded_matched_pathname = urldecode_n(
+			$decoded_matched_pathname     = urldecode_n(
 				$parsed_matched_url->pathname,
 				strlen( $current_site_pathname_with_trailing_slash )
 			);
@@ -162,40 +162,40 @@ function url_matches( URL $subject, string $current_site_url_no_trailing_slash )
  * @param int $target_length The maximum length of the resulting string.
  * @return string The decoded string.
  */
-function urldecode_n( $string, $target_length ) {
+function urldecode_n( $input, $target_length ) {
 	$result = '';
-	$at = 0;
-	while(true) {
-		if($at + 3 > strlen($string)) {
+	$at     = 0;
+	while ( true ) {
+		if ( $at + 3 > strlen( $input ) ) {
 			break;
 		}
 
 		$last_at = $at;
-		$at += strcspn( $string, '%', $at );
+		$at     += strcspn( $input, '%', $at );
 		// Consume bytes except for the percent sign.
-		$result .= substr( $string, $last_at, $at - $last_at );
+		$result .= substr( $input, $last_at, $at - $last_at );
 
 		// If we've already decoded the requested number of bytes, stop.
-		if(strlen($result) >= $target_length) {
+		if ( strlen( $result ) >= $target_length ) {
 			break;
 		}
 
 		++$at;
 		$decodable_length = strspn(
-			$string,
+			$input,
 			'0123456789ABCDEFabcdef',
 			$at,
 			2
 		);
-		if($decodable_length === 2) {
+		if ( $decodable_length === 2 ) {
 			// Decode the hex sequence.
-			$result .= chr(hexdec($string[$at] . $string[$at + 1]));
-			$at += 2;
+			$result .= chr( hexdec( $input[ $at ] . $input[ $at + 1 ] ) );
+			$at     += 2;
 		} else {
 			// Consume the percent sign and move on.
 			$result .= '%';
 		}
 	}
-	$result .= substr($string, $at);
+	$result .= substr( $input, $at );
 	return $result;
 }
