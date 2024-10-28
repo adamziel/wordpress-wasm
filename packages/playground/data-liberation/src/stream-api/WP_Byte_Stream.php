@@ -2,86 +2,79 @@
 
 abstract class WP_Byte_Stream {
 
-    protected $state;
-    
-    public function __construct() {
-        $this->state = new WP_Byte_Stream_State();
-    }
+	protected $state;
 
-    public function is_eof(): bool {
-        return !$this->state->output_bytes && $this->state->state === WP_Byte_Stream_State::STATE_FINISHED;
-    }
+	public function __construct() {
+		$this->state = new WP_Byte_Stream_State();
+	}
 
-    public function get_file_id()
-    {
-        return $this->state->file_id;
-    }
+	public function is_eof(): bool {
+		return ! $this->state->output_bytes && $this->state->state === WP_Byte_Stream_State::STATE_FINISHED;
+	}
 
-    public function skip_file(): void {
-        $this->state->last_skipped_file = $this->state->file_id;
-    }
-    
-    public function is_skipped_file()
-    {
-        return $this->state->file_id === $this->state->last_skipped_file;
-    }
+	public function get_file_id() {
+		return $this->state->file_id;
+	}
 
-    public function get_chunk_type()
-    {
-        if($this->get_last_error()) {
-            return '#error';
-        }
+	public function skip_file(): void {
+		$this->state->last_skipped_file = $this->state->file_id;
+	}
 
-        if ($this->is_eof()) {
-            return '#eof';
-        }
+	public function is_skipped_file() {
+		return $this->state->file_id === $this->state->last_skipped_file;
+	}
 
-        return '#bytes';        
-    }
+	public function get_chunk_type() {
+		if ( $this->get_last_error() ) {
+			return '#error';
+		}
 
-    public function append_eof() {
-        $this->state->input_eof = true;
-    }
+		if ( $this->is_eof() ) {
+			return '#eof';
+		}
 
-    public function append_bytes(string $bytes, $context = null) {
-        $this->state->input_bytes .= $bytes;
-        $this->state->input_context = $context;
-    }
+		return '#bytes';
+	}
 
-    public function get_bytes()
-    {
-        return $this->state->output_bytes;
-    }
+	public function append_eof() {
+		$this->state->input_eof = true;
+	}
 
-    public function next_bytes()
-    {
-        $this->state->reset_output();
-        if($this->is_eof()) {
-            return false;
-        }
+	public function append_bytes( string $bytes, $context = null ) {
+		$this->state->input_bytes  .= $bytes;
+		$this->state->input_context = $context;
+	}
 
-        // Process any remaining buffered input:
-        if($this->generate_next_chunk()) {
-            return ! $this->is_skipped_file();
-        }
+	public function get_bytes() {
+		return $this->state->output_bytes;
+	}
 
-        if (!$this->state->input_bytes) {
-            if ($this->state->input_eof) {
-                $this->state->finish();
-            }
-            return false;
-        }
+	public function next_bytes() {
+		$this->state->reset_output();
+		if ( $this->is_eof() ) {
+			return false;
+		}
 
-        $produced_bytes = $this->generate_next_chunk();
+		// Process any remaining buffered input:
+		if ( $this->generate_next_chunk() ) {
+			return ! $this->is_skipped_file();
+		}
 
-        return $produced_bytes && ! $this->is_skipped_file();
-    }
+		if ( ! $this->state->input_bytes ) {
+			if ( $this->state->input_eof ) {
+				$this->state->finish();
+			}
+			return false;
+		}
 
-    abstract protected function generate_next_chunk(): bool;
+		$produced_bytes = $this->generate_next_chunk();
 
-    public function get_last_error(): string|null
-    {
-        return $this->state->last_error;
-    }
+		return $produced_bytes && ! $this->is_skipped_file();
+	}
 
+	abstract protected function generate_next_chunk(): bool;
+
+	public function get_last_error(): string|null {
+		return $this->state->last_error;
+	}
 }

@@ -50,43 +50,45 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
 	 */
 	public $stack_of_open_elements = array();
 
-    static public function stream($node_visitor_callback)
-    {
-        $xml_processor = new WP_XML_Processor('', [], WP_XML_Processor::IN_PROLOG_CONTEXT);
-        return new ProcessorByteStream($xml_processor, function($state) use($xml_processor, $node_visitor_callback) {
-            $buffer = $xml_processor->flush_processed_xml();
-            
-            $new_bytes = $state->consume_input_bytes();
-            if (null !== $new_bytes) {
-                $xml_processor->append_bytes($new_bytes);
-            }
-            $tokens_found = 0;
-            while ($xml_processor->next_token()) {
-                ++$tokens_found;
-                $node_visitor_callback($xml_processor);
-            }
+	public static function stream( $node_visitor_callback ) {
+		$xml_processor = new WP_XML_Processor( '', array(), WP_XML_Processor::IN_PROLOG_CONTEXT );
+		return new ProcessorByteStream(
+			$xml_processor,
+			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
+				$buffer = $xml_processor->flush_processed_xml();
 
-            if ($tokens_found > 0) {
-                $buffer .= $xml_processor->flush_processed_xml();
-            } else if (
-                $tokens_found === 0 &&
-                !$xml_processor->is_paused_at_incomplete_input() &&
-                $xml_processor->get_current_depth() === 0
-            ) {
-                // We've reached the end of the document, let's finish up.
-                // @TODO: Fix this so it doesn't return the entire XML
-                $buffer .= $xml_processor->get_unprocessed_xml();
-                $state->finish();
-            }
+				$new_bytes = $state->consume_input_bytes();
+				if ( null !== $new_bytes ) {
+					$xml_processor->append_bytes( $new_bytes );
+				}
+				$tokens_found = 0;
+				while ( $xml_processor->next_token() ) {
+					++$tokens_found;
+					$node_visitor_callback( $xml_processor );
+				}
 
-            if (!strlen($buffer)) {
-                return false;
-            }
+				if ( $tokens_found > 0 ) {
+					$buffer .= $xml_processor->flush_processed_xml();
+				} elseif (
+				$tokens_found === 0 &&
+				! $xml_processor->is_paused_at_incomplete_input() &&
+				$xml_processor->get_current_depth() === 0
+				) {
+					// We've reached the end of the document, let's finish up.
+					// @TODO: Fix this so it doesn't return the entire XML
+					$buffer .= $xml_processor->get_unprocessed_xml();
+					$state->finish();
+				}
 
-            $state->output_bytes = $buffer;
-            return true;
-        });
-    }
+				if ( ! strlen( $buffer ) ) {
+					return false;
+				}
+
+				$state->output_bytes = $buffer;
+				return true;
+			}
+		);
+	}
 
 
 	public function pause() {
@@ -100,43 +102,42 @@ class WP_XML_Processor extends WP_XML_Tag_Processor implements WP_Stream_Process
 		);
 	}
 
-	public function resume($paused) {
-		$this->xml = $paused['xml'];
+	public function resume( $paused ) {
+		$this->xml                    = $paused['xml'];
 		$this->stack_of_open_elements = $paused['stack_of_open_elements'];
-		$this->parser_context = $paused['parser_context'];
-		$this->bytes_already_parsed = $paused['bytes_already_parsed'];
+		$this->parser_context         = $paused['parser_context'];
+		$this->bytes_already_parsed   = $paused['bytes_already_parsed'];
 		$this->base_class_next_token();
 	}
 
 	/**
 	 * Wipes out the processed XML and appends the next chunk of XML to
 	 * any remaining unprocessed XML.
-	 * 
+	 *
 	 * @param string $next_chunk XML to append.
 	 */
-	public function append_bytes( string $next_chunk )
-	{
+	public function append_bytes( string $next_chunk ) {
 		$this->xml .= $next_chunk;
 	}
 
-    public function flush_processed_xml() {
+	public function flush_processed_xml() {
 		$this->get_updated_xml();
 
-        $processed_xml = $this->get_processed_xml();
-        $unprocessed_xml = $this->get_unprocessed_xml();
+		$processed_xml   = $this->get_processed_xml();
+		$unprocessed_xml = $this->get_unprocessed_xml();
 
-        $breadcrumbs = $this->get_breadcrumbs();
+		$breadcrumbs    = $this->get_breadcrumbs();
 		$parser_context = $this->get_parser_context();
 
 		$this->reset_state();
 
-		$this->xml = $unprocessed_xml;
+		$this->xml                    = $unprocessed_xml;
 		$this->stack_of_open_elements = $breadcrumbs;
 		$this->parser_context         = $parser_context;
 		$this->had_previous_chunks    = true;
 
-        return $processed_xml;
-    }
+		return $processed_xml;
+	}
 
 	/**
 	 * Constructor.
