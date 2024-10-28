@@ -67,7 +67,7 @@ export interface CompileBlueprintOptions {
 	 *
 	 * For example, if corsProxy is set to "https://cors.wordpress.net/proxy.php",
 	 * then the CORS requests to https://github.com/WordPress/gutenberg.git would actually
-	 * be made to https://cors.wordpress.net/proxy.php/https://github.com/WordPress/gutenberg.git.
+	 * be made to https://cors.wordpress.net/proxy.php?https://github.com/WordPress/gutenberg.git.
 	 */
 	corsProxy?: string;
 }

@@ -32,7 +32,7 @@
 		"recompile:php:web:jspi:7.2": "nx recompile-php:jspi php-wasm-web -- --PHP_VERSION=7.2 ",
 		"recompile:php:web:jspi:7.1": "nx recompile-php:jspi php-wasm-web -- --PHP_VERSION=7.1 ",
 		"recompile:php:web:jspi:7.0": "nx recompile-php:jspi php-wasm-web -- --PHP_VERSION=7.0 ",
-		"recompile:php:web:asyncify:all": "nx recompile-php:asyncify php-wasm-web",
+		"recompile:php:web:asyncify:all": "nx recompile-php:asyncify:all php-wasm-web",
 		"recompile:php:web:asyncify:8.3": "nx recompile-php:asyncify php-wasm-web -- --PHP_VERSION=8.3 ",
 		"recompile:php:web:asyncify:8.2": "nx recompile-php:asyncify php-wasm-web -- --PHP_VERSION=8.2 ",
 		"recompile:php:web:asyncify:8.1": "nx recompile-php:asyncify php-wasm-web -- --PHP_VERSION=8.1 ",

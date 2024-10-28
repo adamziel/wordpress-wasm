@@ -459,7 +459,7 @@ export class GitDirectoryResource extends Resource<Directory> {
 
 	async resolve() {
 		const repoUrl = this.options?.corsProxy
-			? `${this.options.corsProxy}/${this.reference.url}`
+			? `${this.options.corsProxy}?${this.reference.url}`
 			: this.reference.url;
 		const ref = ['', 'HEAD'].includes(this.reference.ref)
 			? 'HEAD'

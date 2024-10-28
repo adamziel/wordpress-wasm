@@ -7,7 +7,11 @@
  * Playground CLI, Studio, WP-ENV, hosted environment etc.
  */
 
-import { Blueprint, compileBlueprint } from '@wp-playground/blueprints';
+import {
+	Blueprint,
+	PHPConstants,
+	compileBlueprint,
+} from '@wp-playground/blueprints';
 import { resolveBlueprintFromURL } from './state/url/resolve-blueprint-from-url';
 
 /**
@@ -51,7 +55,9 @@ export interface SiteMetadata {
 	runtimeConfiguration: Pick<
 		Required<Blueprint>,
 		'features' | 'extraLibraries' | 'preferredVersions'
-	>;
+	> & {
+		constants?: PHPConstants;
+	};
 	originalBlueprint: Blueprint;
 }
 
@@ -87,6 +93,16 @@ export async function createSiteMetadata(
 			},
 			features: compiledBlueprint.features,
 			extraLibraries: compiledBlueprint.extraLibraries,
+			/*
+			 * Constants don't matter so much for temporary sites so let's
+			 * use an empty object here. We can't easily figure out which
+			 * additional constants were applied via playground.defineConstant()
+			 * at this stage anyway.
+			 *
+			 * This property is only relevant for stored sites to ensure they're
+			 * consistently applied across page reloads.
+			 */
+			constants: {},
 		},
 	};
 }

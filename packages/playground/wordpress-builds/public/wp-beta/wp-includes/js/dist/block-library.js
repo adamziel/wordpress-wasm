@@ -35679,6 +35679,27 @@ function AccessibleMenuDescription({
 
 
 
+function useResponsiveMenu(navRef) {
+  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = (0,external_wp_element_namespaceObject.useState)(false);
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (!navRef.current) {
+      return;
+    }
+    const htmlElement = navRef.current.ownerDocument.documentElement;
+
+    // Add a `has-modal-open` class to the <html> when the responsive
+    // menu is open. This reproduces the same behavior of the frontend.
+    if (isResponsiveMenuOpen) {
+      htmlElement.classList.add('has-modal-open');
+    } else {
+      htmlElement.classList.remove('has-modal-open');
+    }
+    return () => {
+      htmlElement?.classList.remove('has-modal-open');
+    };
+  }, [navRef, isResponsiveMenuOpen]);
+  return [isResponsiveMenuOpen, setResponsiveMenuVisibility];
+}
 function ColorTools({
   textColor,
   setTextColor,
@@ -35838,7 +35859,8 @@ function Navigation({
     selectBlock,
     __unstableMarkNextChangeAsNotPersistent
   } = (0,external_wp_data_namespaceObject.useDispatch)(external_wp_blockEditor_namespaceObject.store);
-  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = (0,external_wp_element_namespaceObject.useState)(false);
+  const navRef = (0,external_wp_element_namespaceObject.useRef)();
+  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = useResponsiveMenu(navRef);
   const [overlayMenuPreview, setOverlayMenuPreview] = (0,external_wp_element_namespaceObject.useState)(false);
   const {
     hasResolvedNavigationMenus,
@@ -35901,7 +35923,6 @@ function Navigation({
     __unstableMarkNextChangeAsNotPersistent();
     setRef(navigationFallbackId);
   }, [ref, setRef, hasUnsavedBlocks, navigationFallbackId, __unstableMarkNextChangeAsNotPersistent]);
-  const navRef = (0,external_wp_element_namespaceObject.useRef)();
 
   // The standard HTML5 tag for the block wrapper.
   const TagName = 'nav';
@@ -42043,6 +42064,9 @@ const postContent = /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx
 
 
 
+
+
+
 /**
  * Internal dependencies
  */
@@ -42050,6 +42074,7 @@ const postContent = /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx
 
 
 function ReadOnlyContent({
+  parentLayout,
   layoutClassNames,
   userCanEdit,
   postType,
@@ -42059,7 +42084,28 @@ function ReadOnlyContent({
   const blockProps = (0,external_wp_blockEditor_namespaceObject.useBlockProps)({
     className: layoutClassNames
   });
-  return content?.protected && !userCanEdit ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+  const blocks = (0,external_wp_element_namespaceObject.useMemo)(() => {
+    return content?.raw ? (0,external_wp_blocks_namespaceObject.parse)(content.raw) : [];
+  }, [content?.raw]);
+  const blockPreviewProps = (0,external_wp_blockEditor_namespaceObject.__experimentalUseBlockPreview)({
+    blocks,
+    props: blockProps,
+    layout: parentLayout
+  });
+  if (userCanEdit) {
+    /*
+     * Rendering the block preview using the raw content blocks allows for
+     * block support styles to be generated and applied by the editor.
+     *
+     * The preview using the raw blocks can only be presented to users with
+     * edit permissions for the post to prevent potential exposure of private
+     * block content.
+     */
+    return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+      ...blockPreviewProps
+    });
+  }
+  return content?.protected ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
     ...blockProps,
     children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.Warning, {
       children: (0,external_wp_i18n_namespaceObject.__)('This content is password protected.')
@@ -42116,6 +42162,7 @@ function Content(props) {
   return isEditable ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(EditableContent, {
     ...props
   }) : /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(ReadOnlyContent, {
+    parentLayout: props.parentLayout,
     layoutClassNames: layoutClassNames,
     userCanEdit: userCanEdit,
     postType: postType,
@@ -42150,7 +42197,8 @@ function RecursionError() {
 }
 function PostContentEdit({
   context,
-  __unstableLayoutClassNames: layoutClassNames
+  __unstableLayoutClassNames: layoutClassNames,
+  __unstableParentLayout: parentLayout
 }) {
   const {
     postId: contextPostId,
@@ -42164,6 +42212,7 @@ function PostContentEdit({
     uniqueId: contextPostId,
     children: contextPostId && contextPostType ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(Content, {
       context: context,
+      parentLayout: parentLayout,
       layoutClassNames: layoutClassNames
     }) : /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(edit_Placeholder, {
       layoutClassNames: layoutClassNames
@@ -47775,12 +47824,12 @@ function QueryInspectorControls(props) {
     return onChangeDebounced.cancel;
   }, [querySearch, onChangeDebounced]);
   const showInheritControl = isTemplate && isControlAllowed(allowedControls, 'inherit');
-  const showPostTypeControl = !inherit && isControlAllowed(allowedControls, 'postType') || !isTemplate;
+  const showPostTypeControl = !inherit && isControlAllowed(allowedControls, 'postType');
   const postTypeControlLabel = (0,external_wp_i18n_namespaceObject.__)('Post type');
   const postTypeControlHelp = (0,external_wp_i18n_namespaceObject.__)('Select the type of content to display: posts, pages, or custom post types.');
   const showColumnsControl = false;
-  const showOrderControl = !inherit && isControlAllowed(allowedControls, 'order') || !isTemplate;
-  const showStickyControl = !inherit && showSticky && isControlAllowed(allowedControls, 'sticky') || showSticky && !isTemplate;
+  const showOrderControl = !inherit && isControlAllowed(allowedControls, 'order');
+  const showStickyControl = !inherit && showSticky && isControlAllowed(allowedControls, 'sticky');
   const showSettingsPanel = showInheritControl || showPostTypeControl || showColumnsControl || showOrderControl || showStickyControl;
   const showTaxControl = !!taxonomies?.length && isControlAllowed(allowedControls, 'taxQuery');
   const showAuthorControl = isControlAllowed(allowedControls, 'author');
@@ -60206,7 +60255,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
 
 var extendStatics = function(d, b) {
   extendStatics = Object.setPrototypeOf ||
@@ -60317,8 +60366,8 @@ function __awaiter(thisArg, _arguments, P, generator) {
 }
 
 function __generator(thisArg, body) {
-  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-  return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+  return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
   function verb(n) { return function (v) { return step([n, v]); }; }
   function step(op) {
       if (f) throw new TypeError("Generator is already executing.");
@@ -60422,8 +60471,9 @@ function __await(v) {
 function __asyncGenerator(thisArg, _arguments, generator) {
   if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
   var g = generator.apply(thisArg, _arguments || []), i, q = [];
-  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
-  function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+  return i = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i[Symbol.asyncIterator] = function () { return this; }, i;
+  function awaitReturn(f) { return function (v) { return Promise.resolve(v).then(f, reject); }; }
+  function verb(n, f) { if (g[n]) { i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; if (f) i[n] = f(i[n]); } }
   function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
   function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
   function fulfill(value) { resume("next", value); }
@@ -60489,16 +60539,18 @@ function __classPrivateFieldIn(state, receiver) {
 function __addDisposableResource(env, value, async) {
   if (value !== null && value !== void 0) {
     if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
-    var dispose;
+    var dispose, inner;
     if (async) {
-        if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
-        dispose = value[Symbol.asyncDispose];
+      if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+      dispose = value[Symbol.asyncDispose];
     }
     if (dispose === void 0) {
-        if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
-        dispose = value[Symbol.dispose];
+      if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+      dispose = value[Symbol.dispose];
+      if (async) inner = dispose;
     }
     if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
     env.stack.push({ value: value, dispose: dispose, async: async });
   }
   else if (async) {
@@ -60517,17 +60569,22 @@ function __disposeResources(env) {
     env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
     env.hasError = true;
   }
+  var r, s = 0;
   function next() {
-    while (env.stack.length) {
-      var rec = env.stack.pop();
+    while (r = env.stack.pop()) {
       try {
-        var result = rec.dispose && rec.dispose.call(rec.value);
-        if (rec.async) return Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+        if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+        if (r.dispose) {
+          var result = r.dispose.call(r.value);
+          if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+        }
+        else s |= 1;
       }
       catch (e) {
-          fail(e);
+        fail(e);
       }
     }
+    if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
     if (env.hasError) throw env.error;
   }
   return next();

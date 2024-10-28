@@ -11,7 +11,7 @@ import {
 import { removeClientInfo } from '../../lib/state/redux/slice-clients';
 import { bootSiteClient } from '../../lib/state/redux/boot-site-client';
 import { SiteError } from '../../lib/state/redux/slice-ui';
-import { Button } from '@wordpress/components';
+import { Button, Spinner } from '@wordpress/components';
 import {
 	removeSite,
 	selectAllSites,
@@ -119,6 +119,24 @@ export const KeepAliveTemporarySitesViewport = () => {
 			...siteSlugsToRender.filter((slug) => !prev.includes(slug)),
 		]);
 	}, [siteSlugsToRender]);
+
+	const sitesFinishedLoading = useAppSelector((state) =>
+		['error', 'loaded'].includes(state.sites.loadingState)
+	);
+	if (!sitesFinishedLoading) {
+		return (
+			<div
+				className={css.fullSize}
+				style={{
+					display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'center',
+				}}
+			>
+				<Spinner style={{ width: '60px', height: '60px' }} />
+			</div>
+		);
+	}
 
 	if (!allSites.length) {
 		// @TODO: Use the dedicated design for this

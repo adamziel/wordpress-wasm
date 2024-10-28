@@ -104,6 +104,10 @@
   width:100%;
   z-index:1;
 }
+.has-modal-open .wp-block-cover .wp-block-cover__inner-container,.has-modal-open .wp-block-cover-image .wp-block-cover__inner-container{
+  z-index:auto;
+}
+
 .wp-block-cover-image.is-position-top-left,.wp-block-cover.is-position-top-left{
   align-items:flex-start;
   justify-content:flex-start;

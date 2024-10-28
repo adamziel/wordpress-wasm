@@ -86,12 +86,13 @@ class PlaygroundCorsProxyTokenBucket {
 			return false;
 		}
 
-		// @TODO: Handle IPv6 addresses in a way that cannot lead to storage exhaustion.
-		$ipv6_remote_ip = $remote_ip;
-		if (filter_var($remote_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-			// Convert IPv4 to IPv6 mapped address for storage
-			$ipv6_remote_ip = '::ffff:' . $remote_ip;
-		}
+		/**
+		 * Aggregate addresses into /64 subnets.
+		 * This prevents a person with an entire /64 subnet from
+		 * exhausting the storage or getting more than their fair
+		 * share of the tokens.
+		 */
+		$remote_subnet = playground_ip_to_a_64_subnet($remote_ip);
 
 		$token_query = <<<'SQL'
 			INSERT INTO cors_proxy_rate_limiting (
@@ -108,7 +109,7 @@ class PlaygroundCorsProxyTokenBucket {
 						? AS fill_rate_per_minute
 				),
 				bucket AS (
-					SELECT 
+					SELECT
 						remote_addr,
 						tokens AS previous_tokens,
 						updated_at AS previous_updated_at,
@@ -127,7 +128,7 @@ class PlaygroundCorsProxyTokenBucket {
 				config.remote_addr,
 				config.capacity,
 				config.fill_rate_per_minute,
-				-- Make sure we stay within bounds. 
+				-- Make sure we stay within bounds.
 				GREATEST(
 					0,
 					COALESCE(bucket.available_tokens, config.capacity) - 1
@@ -146,12 +147,12 @@ class PlaygroundCorsProxyTokenBucket {
 					NOW()
 				)
 			SQL;
-		
+
 		$token_statement = mysqli_prepare($this->dbh, $token_query);
 		mysqli_stmt_bind_param(
 			$token_statement,
 			'sii',
-			$ipv6_remote_ip,
+			$remote_subnet,
 			$bucket_config->capacity,
 			$bucket_config->fill_rate_per_minute
 		);
@@ -162,9 +163,10 @@ class PlaygroundCorsProxyTokenBucket {
 		) {
 			return true;
 		}
-		
+
 		return false;
 	}
+
 }
 
 function playground_cors_proxy_maybe_rate_limit() {
@@ -183,7 +185,7 @@ function playground_cors_proxy_maybe_rate_limit() {
 		error_log('Invalid IP address: ' . var_export($remote_ip, true));
 		return false;
 	}
-	
+
 	$token_bucket = new PlaygroundCorsProxyTokenBucket();
 	try {
 		if (!$token_bucket->obtain_token($remote_ip, $bucket_config)) {
@@ -194,4 +196,90 @@ function playground_cors_proxy_maybe_rate_limit() {
 	} finally {
 		$token_bucket->dispose();
 	}
+}
+
+/**
+ * Converts the IP address to a key used for rate limiting.
+ * It groups addresses into buckets of size /64.
+ *
+ * @return string The encoded IPv6 address or null if the input is not a valid IP address.
+ */
+function playground_ip_to_a_64_subnet(string $ip_v4_or_v6): string {
+	$ipv6_remote_ip = $ip_v4_or_v6;
+	if (filter_var($ip_v4_or_v6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+		/**
+		 * Convert IPv4 to IPv6 mapped address for storage.
+		 * Do not group these addresses into buckets since
+		 * the number of IPv4 addresses is less than the number
+		 * of IPv6 addresses.
+		 */
+		$ipv6_remote_ip = '::ffff:' . $ip_v4_or_v6;
+	} else {
+		/**
+		 * Zero out the last 64 bits of the IPv6 address for storage.
+		 * This means we're only considering the first 64 bits of the
+		 * address for rate limiting. This way, a person with an entire
+		 * /64 subnet cannot get more than their fair share of the
+		 * tokens.
+		 *
+		 * NOTE: This measure may be a bit heavy-handed to start with,
+		 * but we will not know until we are actually seeing requests
+		 * from IPv6 requests in the wild. If individual users are
+		 * experiencing too much rate-limiting, we can consider
+		 * limiting individual addresses first and only addressing
+		 * entire blocks once an IPv6 block has a number of IPs
+		 * that are hitting rate limits.
+		 */
+		$ipv6_block = playground_get_ipv6_block($ipv6_remote_ip, 64);
+		if ($ipv6_block === null) {
+			error_log('Failed to get IPv6 block for ' . $ip_v4_or_v6);
+			// Use the original IP address as a fallback when the block
+			// cannot be determined.
+			return $ip_v4_or_v6;
+		}
+		$ipv6_remote_ip = playground_encode_ipv6($ipv6_block);
+	}
+	return $ipv6_remote_ip;
+}
+
+/**
+ * Returns the /64 subnet of the given IPv6 address.
+ */
+function playground_get_ipv6_block(string $ipv6_remote_ip, int $block_size=64): ?string {
+	$ip = inet_pton($ipv6_remote_ip);
+	// $ip is a binary string of length 16, each bit represents a bit
+	// of the ipv6 address.
+	if ($ip === false) {
+		return null;
+	}
+
+	if ($block_size % 8 !== 0) {
+		// We're using a naive substr-based approach that reasons about
+		// groups of 8 bits (characters) and not separately about each bit.
+		// This approach can only support block sizes that are multiples
+		// of 8.
+		throw new Exception('Block size must be a multiple of 8.');
+	}
+
+	$max_block_size = 128;
+	if ($block_size > $max_block_size) {
+		throw new Exception('Block size must be less than or equal to 128.');
+	}
+
+	$subnet_length = $block_size / 8;
+	$requested_block = substr($ip, 0, $subnet_length);
+	$backfill_zeros = str_repeat(chr(0), 16 - $subnet_length);
+	return $requested_block . $backfill_zeros;
+}
+
+function playground_encode_ipv6(string $ipv6): string {
+	$hex_string = bin2hex($ipv6);
+	$hex_string_length = strlen($hex_string);
+
+	// Split the hex string into 4 groups of 4 characters.
+	$groups = [];
+	for ($i = 0; $i < $hex_string_length; $i += 4) {
+		$groups[] = substr($hex_string, $i, 4);
+	}
+	return strtoupper(implode(':', $groups));
 }

@@ -68,6 +68,63 @@ test('should switch between sites', async ({ website, browserName }) => {
 	);
 });
 
+test('should preserve PHP constants when saving a temporary site to OPFS', async ({
+	website,
+	browserName,
+	wordpress,
+}) => {
+	test.skip(
+		browserName === 'webkit',
+		`This test relies on OPFS which isn't available in Playwright's flavor of Safari.`
+	);
+
+	// Start a site with a specific PHP constant.
+	const blueprint: Blueprint = {
+		landingPage: '/index.php',
+		constants: { E2E_TEST_CONSTANT: 'E2E_TEST_VALUE' },
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/index.php',
+				data: '<?php echo E2E_TEST_CONSTANT;',
+			},
+		],
+	};
+	await website.goto(`./#${JSON.stringify(blueprint)}`);
+
+	await website.ensureSiteManagerIsOpen();
+
+	await expect(website.page.getByText('Save')).toBeEnabled();
+	await website.page.getByText('Save').click();
+	// We shouldn't need to explicitly call .waitFor(), but the test fails without it.
+	// Playwright logs that something "intercepts pointer events", that's probably related.
+	await website.page.getByText('Save in this browser').waitFor();
+	await website.page.getByText('Save in this browser').click({ force: true });
+	await expect(
+		website.page.locator('[aria-current="page"]')
+	).not.toContainText('Temporary Playground', {
+		// Saving the site takes a while on CI
+		timeout: 90000,
+	});
+	await expect(website.page.getByLabel('Playground title')).not.toContainText(
+		'Temporary Playground'
+	);
+
+	await website.page
+		.locator('button')
+		.filter({ hasText: 'Temporary Playground' })
+		.click();
+
+	// Switch back to the stored site and confirm the PHP constant is still present.
+	await website.page
+		.getByLabel('Saved Playgrounds')
+		.locator('button')
+		.last()
+		.click();
+
+	await expect(wordpress.locator('body')).toContainText('E2E_TEST_VALUE');
+});
+
 SupportedPHPVersions.forEach(async (version) => {
 	/**
 	 * WordPress 6.6 dropped support for PHP 7.0 and 7.1 and won't load on these versions.
@@ -92,7 +149,6 @@ SupportedPHPVersions.forEach(async (version) => {
 			version
 		);
 	});
-
 });
 
 Object.keys(MinifiedWordPressVersions)
@@ -179,4 +235,28 @@ test('should display PHP output even when a fatal error is hit', async ({
 	await expect(wordpress.locator('body')).toContainText(
 		'This is a fatal error'
 	);
+});
+
+test('should keep query arguments when updating settings', async ({
+	website,
+	wordpress,
+}) => {
+	await website.goto('./?url=/wp-admin/&php=8.0&wp=6.6');
+
+	expect(website.page.url()).toContain('?url=%2Fwp-admin%2F&php=8.0&wp=6.6');
+	expect(
+		await wordpress.locator('body').evaluate((body) => body.baseURI)
+	).toMatch('/wp-admin/');
+
+	await website.ensureSiteManagerIsOpen();
+	await website.page.getByLabel('Network access').check();
+	await website.page.getByText('Apply Settings & Reset Playground').click();
+	await website.waitForNestedIframes();
+
+	expect(website.page.url()).toMatch(
+		'?url=%2Fwp-admin%2F&php=8.0&wp=6.6&networking=yes'
+	);
+	expect(
+		await wordpress.locator('body').evaluate((body) => body.baseURI)
+	).toMatch('/wp-admin/');
 });

@@ -110,5 +110,13 @@ class ProxyFunctionsTests extends TestCase
         $this->expectException(CorsProxyException::class);
         url_validate_and_resolve('ftp://example.com');
     }
-    
+
+    public function testUrlValidateAndResolveWithTargetSelf()
+    {
+        $this->expectException(CorsProxyException::class);
+        $_SERVER['HTTP_HOST'] = 'cors.playground.wordpress.net';
+        url_validate_and_resolve(
+            'http://cors.playground.wordpress.net/cors-proxy.php?http://cors.playground.wordpress.net'
+        );
+    }
 }

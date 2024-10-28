@@ -11,29 +11,34 @@ const promisedOfflineModeCache = caches.open(LATEST_CACHE_NAME);
 
 export async function cacheFirstFetch(request: Request): Promise<Response> {
 	const offlineModeCache = await promisedOfflineModeCache;
-	let response = await offlineModeCache.match(request, {
+	const cachedResponse = await offlineModeCache.match(request, {
 		ignoreSearch: true,
 	});
-	if (!response) {
+	if (cachedResponse) {
+		return cachedResponse;
+	}
+
+	/**
+	 * Ensure the response is not coming from HTTP cache.
+	 *
+	 * We never want to put a stale asset in CacheStorage as
+	 * that would break Playground.
+	 *
+	 * See service-worker.ts for more details.
+	 */
+	const response = await fetchFresh(request);
+	if (response.ok) {
 		/**
-		 * Ensure the response is not coming from HTTP cache.
-		 *
-		 * We never want to put a stale asset in CacheStorage as
-		 * that would break Playground.
-		 *
-		 * See service-worker.ts for more details.
+		 * Confirm the current service worker is still active
+		 * when the asset is fetched. Caching a stale request
+		 * from a stale worker has no benefits. It only takes
+		 * up space.
 		 */
-		response = await fetchFresh(request);
-		if (response.ok) {
-			/**
-			 * Confirm the current service worker is still active
-			 * when the asset is fetched. Caching a stale request
-			 * from a stale worker has no benefits. It only takes
-			 * up space.
-			 */
-			if (isCurrentServiceWorkerActive()) {
-				await offlineModeCache.put(request, response.clone());
-			}
+		if (isCurrentServiceWorkerActive()) {
+			// Intentionally do not await writing to the cache so the response
+			// promise can be returned immediately and observed for progress events.
+			// NOTE: This is a race condition for simultaneous requests for the same asset.
+			offlineModeCache.put(request, response.clone());
 		}
 	}
 
@@ -59,7 +64,10 @@ export async function networkFirstFetch(request: Request): Promise<Response> {
 	}
 
 	if (response.ok) {
-		await offlineModeCache.put(request, response.clone());
+		// Intentionally do not await writing to the cache so the response
+		// promise can be returned immediately and observed for progress events.
+		// NOTE: This is a race condition for simultaneous requests for the same asset.
+		offlineModeCache.put(request, response.clone());
 		return response;
 	}
 

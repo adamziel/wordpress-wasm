@@ -19,7 +19,8 @@
 					"cp -r ./client ./wasm-wordpress-net/",
 					"cp -r ./remote/* ./wasm-wordpress-net/",
 					"cp -r ./website/* ./wasm-wordpress-net/",
-					"cp -r ../../../packages/playground/php-cors-proxy/* ./wasm-wordpress-net/",
+					"cp ../../../packages/playground/php-cors-proxy/cors-proxy.php ./wasm-wordpress-net/",
+					"cp ../../../packages/playground/php-cors-proxy/cors-proxy-functions.php ./wasm-wordpress-net/",
 					"cat ./remote/.htaccess ./website/.htaccess > ./wasm-wordpress-net/.htaccess",
 					"curl https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar > wasm-wordpress-net/wp-cli.phar",
 					"cat wasm-wordpress-net/wp-cli.phar | gzip -c -9 > wasm-wordpress-net/wp-cli.phar.gz"

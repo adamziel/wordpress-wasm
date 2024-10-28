@@ -548,6 +548,7 @@ export class PHPRequestHandler {
  */
 function inferMimeType(path: string): string {
 	const extension = path.split('.').pop() as keyof typeof mimeTypes;
+	// @TODO: Consider not sending a default mime type to let the browser guess
 	return mimeTypes[extension] || mimeTypes['_default'];
 }
 

@@ -6,6 +6,8 @@ export type ExtraLibrary =
 	// Install WP-CLI during boot.
 	'wp-cli';
 
+export type PHPConstants = Record<string, string | boolean | number>;
+
 export interface Blueprint {
 	/**
 	 * The URL to navigate to after the blueprint has been run.
@@ -69,7 +71,7 @@ export interface Blueprint {
 	/**
 	 * PHP Constants to define on every request
 	 */
-	constants?: Record<string, string>;
+	constants?: PHPConstants;
 
 	/**
 	 * WordPress plugins to install and activate

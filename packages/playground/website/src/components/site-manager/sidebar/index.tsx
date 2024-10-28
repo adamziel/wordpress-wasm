@@ -169,7 +169,10 @@ export function Sidebar({
 						>
 							Saved Playgrounds
 						</Heading>
-						<MenuGroup className={css.sidebarList}>
+						<MenuGroup
+							className={css.sidebarList}
+							label="Saved Playgrounds"
+						>
 							{storedSites.map((site) => {
 								/**
 								 * The `wordpress` site is selected when no site slug is provided.

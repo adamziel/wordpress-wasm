@@ -58,6 +58,6 @@ export const enableMultisite: StepHandler<EnableMultisiteStep> = async (
 	});
 
 	await wpCLI(playground, {
-		command: `wp core multisite-convert --base="${sitePath}"`,
+		command: 'wp core multisite-convert',
 	});
 };

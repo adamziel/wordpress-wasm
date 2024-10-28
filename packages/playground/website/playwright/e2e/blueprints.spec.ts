@@ -133,6 +133,225 @@ test('wp-cli step should create a post', async ({ website, wordpress }) => {
 	).toBeVisible();
 });
 
+test('HTTPS requests via curl_exec() should work', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/curl-test.php',
+		features: { networking: true },
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/curl-test.php',
+				/**
+				 * Dump the length of a known README.md file from the WordPress Playground repository.
+				 *
+				 * The URL:
+				 *
+				 * * Is served over HTTPS.
+				 * * References a specific commit to avoid the file changing underfoot.
+				 * * The server provides the CORS headers required for fetch() to work.
+				 */
+				data: `<?php
+					$ch = curl_init();
+					curl_setopt($ch, CURLOPT_URL, "https://raw.githubusercontent.com/WordPress/wordpress-playground/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md");
+					curl_setopt($ch, CURLOPT_TCP_NODELAY, 0);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					$result = curl_exec($ch);
+					curl_close($ch);
+					var_dump(
+						strlen(
+							$result
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	// The length must be 13061 bytes, otherwise something is wrong.
+	await expect(wordpress.locator('body')).toContainText('int(13061)');
+});
+
+test('HTTPS requests via curl_exec() should fail when networking is disabled', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/curl-test.php',
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/curl-test.php',
+				/**
+				 * Dump the length of a known README.md file from the WordPress Playground repository.
+				 *
+				 * The URL:
+				 *
+				 * * Is served over HTTPS.
+				 * * References a specific commit to avoid the file changing underfoot.
+				 * * The server provides the CORS headers required for fetch() to work.
+				 */
+				data: `<?php
+					$ch = curl_init();
+					curl_setopt($ch, CURLOPT_URL, "https://raw.githubusercontent.com/WordPress/wordpress-playground/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md");
+					curl_setopt($ch, CURLOPT_TCP_NODELAY, 0);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					$result = curl_exec($ch);
+					curl_close($ch);
+					var_dump(
+						strlen(
+							$result
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	await expect(wordpress.locator('body')).toContainText(
+		'Call to undefined function curl_exec()'
+	);
+});
+
+test('HTTPS requests via file_get_contents() should work', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/https-test.php',
+		features: { networking: true },
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/https-test.php',
+				/**
+				 * Dump the length of a known README.md file from the WordPress Playground repository.
+				 *
+				 * The URL:
+				 *
+				 * * Is served over HTTPS.
+				 * * References a specific commit to avoid the file changing underfoot.
+				 * * The server provides the CORS headers required for fetch() to work.
+				 */
+				data: `<?php
+					var_dump(
+						strlen(
+							file_get_contents(
+								'https://raw.githubusercontent.com/WordPress/wordpress-playground/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md'
+							)
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	await expect(wordpress.locator('body')).toContainText('int(13061)');
+});
+
+test('HTTPS requests via file_get_contents() should fail when networking is disabled', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/https-test.php',
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/https-test.php',
+				/**
+				 * Dump the length of a known README.md file from the WordPress Playground repository.
+				 *
+				 * The URL:
+				 *
+				 * * Is served over HTTPS.
+				 * * References a specific commit to avoid the file changing underfoot.
+				 * * The server provides the CORS headers required for fetch() to work.
+				 */
+				data: `<?php
+					var_dump(
+						strlen(
+							file_get_contents(
+								'https://raw.githubusercontent.com/WordPress/wordpress-playground/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md'
+							)
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	await expect(wordpress.locator('body')).toContainText(
+		'https:// wrapper is disabled in the server configuration'
+	);
+});
+
+test('HTTPS requests via file_get_contents() to invalid URLs should fail', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/https-test.php',
+		features: { networking: true },
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/https-test.php',
+				/**
+				 * The URL is invalid, so file_get_contents() should fail.
+				 */
+				data: `<?php
+					var_dump(
+						strlen(
+							file_get_contents(
+								'https://playground.internal/'
+							)
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	await expect(wordpress.locator('body')).toContainText(
+		'file_get_contents(https://playground.internal/): Failed to open stream: HTTP request failed'
+	);
+});
+
+test('HTTPS requests via file_get_contents() to CORS-disabled URLs should fail', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/https-test.php',
+		features: { networking: true },
+		steps: [
+			{
+				step: 'writeFile',
+				path: '/wordpress/https-test.php',
+				/**
+				 * The URL is valid, but the server does not provide the CORS headers required for fetch() to work.
+				 */
+				data: `<?php
+					var_dump(
+						strlen(
+							file_get_contents(
+								'https://github.com/WordPress/wordpress-playground/blob/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md'
+							)
+						)
+					);
+				`,
+			},
+		],
+	};
+	await website.goto(`/#${JSON.stringify(blueprint)}`);
+	await expect(wordpress.locator('body')).toContainText(
+		'file_get_contents(https://github.com/WordPress/wordpress-playground/blob/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md): Failed to open stream: HTTP request failed'
+	);
+});
+
 test('PHP Shutdown should work', async ({ website, wordpress }) => {
 	const blueprint: Blueprint = {
 		landingPage: '/wp-admin/',
@@ -191,4 +410,26 @@ test('should login the user in if a login step is provided', async ({
 			await wordpress.locator('body').evaluate((body) => body.baseURI)
 		).toContain(path);
 	});
+});
+
+test('should correctly redirect to a multisite wp-admin url', async ({
+	website,
+	wordpress,
+}) => {
+	const blueprint: Blueprint = {
+		landingPage: '/example/wp-admin/options-general.php',
+		steps: [
+			{
+				step: 'enableMultisite',
+			},
+			{
+				step: 'wp-cli',
+				command: 'wp site create --slug=example',
+			},
+		],
+	};
+
+	const encodedBlueprint = JSON.stringify(blueprint);
+	await website.goto(`./#${encodedBlueprint}`);
+	await expect(wordpress.locator('body')).toContainText('General Settings');
 });

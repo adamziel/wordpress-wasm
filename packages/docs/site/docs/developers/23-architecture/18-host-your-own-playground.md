@@ -113,7 +113,6 @@ The combined Apache `.htaccess` file looks like this.
 
 ```htaccess
 AddType application/wasm .wasm
-AddType	application/octet-stream .data
 ```
 
 An equivalent in NGINX.
@@ -124,19 +123,11 @@ location ~* .wasm$ {
     application/wasm wasm;
   }
 }
-
-location ~* .data$ {
-  types {
-    application/octet-stream data;
-  }
-}
-
-location /scope:.* {
-  rewrite ^scope:.*?/(.*)$ $1 last;
-}
 ```
 
 You may need to adjust the above according to server specifics, particularly how to invoke PHP for the path `/plugin-proxy`.
+
+[Caddy web server](https://caddyserver.com) doesn't require any special config to work.
 
 ## Customize bundled data
 

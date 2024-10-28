@@ -83,10 +83,7 @@
 					"description": "Extra libraries to preload into the Playground instance."
 				},
 				"constants": {
-					"type": "object",
-					"additionalProperties": {
-						"type": "string"
-					},
+					"$ref": "#/definitions/PHPConstants",
 					"description": "PHP Constants to define on every request"
 				},
 				"plugins": {
@@ -187,6 +184,12 @@
 		"ExtraLibrary": {
 			"type": "string",
 			"const": "wp-cli"
+		},
+		"PHPConstants": {
+			"type": "object",
+			"additionalProperties": {
+				"type": ["string", "boolean", "number"]
+			}
 		},
 		"FileReference": {
 			"anyOf": [
@@ -699,18 +702,7 @@
 							"deprecated": ". Use `themeData` instead."
 						},
 						"options": {
-							"type": "object",
-							"properties": {
-								"activate": {
-									"type": "boolean",
-									"description": "Whether to activate the theme after installing it."
-								},
-								"importStarterContent": {
-									"type": "boolean",
-									"description": "Whether to import the theme's starter content after installing it."
-								}
-							},
-							"additionalProperties": false,
+							"$ref": "#/definitions/InstallThemeOptions",
 							"description": "Optional installation options."
 						}
 					},
@@ -1364,6 +1356,28 @@
 				"activate": {
 					"type": "boolean",
 					"description": "Whether to activate the plugin after installing it."
+				},
+				"targetFolderName": {
+					"type": "string",
+					"description": "The name of the folder to install the plugin to. Defaults to guessing from pluginData"
+				}
+			},
+			"additionalProperties": false
+		},
+		"InstallThemeOptions": {
+			"type": "object",
+			"properties": {
+				"activate": {
+					"type": "boolean",
+					"description": "Whether to activate the theme after installing it."
+				},
+				"importStarterContent": {
+					"type": "boolean",
+					"description": "Whether to import the theme's starter content after installing it."
+				},
+				"targetFolderName": {
+					"type": "string",
+					"description": "The name of the folder to install the theme to. Defaults to guessing from themeData"
 				}
 			},
 			"additionalProperties": false

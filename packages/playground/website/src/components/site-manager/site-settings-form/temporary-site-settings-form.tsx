@@ -24,6 +24,7 @@ export function TemporarySiteSettingsForm({
 			PlaygroundRoute.newTemporarySite({
 				...(siteInfo.originalUrlParams || {}),
 				query: {
+					...(siteInfo.originalUrlParams?.searchParams || {}),
 					php: data.phpVersion,
 					wp: data.wpVersion,
 					networking: data.withNetworking ? 'yes' : 'no',

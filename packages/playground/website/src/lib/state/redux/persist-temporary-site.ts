@@ -1,5 +1,6 @@
 import { logger } from '@php-wasm/logger';
-import { MountDescriptor } from '@wp-playground/remote';
+import { MountDescriptor, PlaygroundClient } from '@wp-playground/remote';
+import { PHPConstants } from '@wp-playground/blueprints';
 import { saveDirectoryHandle } from '../opfs/opfs-directory-handle-storage';
 import {
 	opfsSiteStorage,
@@ -158,6 +159,7 @@ export function persistTemporarySite(
 				},
 			})
 		);
+
 		await dispatch(
 			updateSiteMetadata({
 				slug: siteSlug,
@@ -166,6 +168,14 @@ export function persistTemporarySite(
 					// Reset the created date. Mental model: From the perspective of
 					// the storage backend, the site was just created.
 					whenCreated: Date.now(),
+					// Make sure to store the constants we'll want to re-apply
+					// on the next page load.
+					runtimeConfiguration: {
+						...siteInfo.metadata.runtimeConfiguration,
+						constants: await getPlaygroundDefinedPHPConstants(
+							playground
+						),
+					},
 				},
 			})
 		);
@@ -182,4 +192,16 @@ export function persistTemporarySite(
 		const persistentSiteUrl = PlaygroundRoute.site(updatedSite!);
 		redirectTo(persistentSiteUrl);
 	};
+}
+
+async function getPlaygroundDefinedPHPConstants(playground: PlaygroundClient) {
+	let constants: PHPConstants = {};
+	try {
+		constants = JSON.parse(
+			await playground.readFileAsText('/internal/shared/consts.json')
+		);
+	} catch (error) {
+		// Do nothing
+	}
+	return constants;
 }

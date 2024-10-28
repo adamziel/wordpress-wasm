@@ -1883,7 +1883,7 @@ __webpack_require__.d(build_module_namespaceObject, {
   ComplementaryAreaMoreMenuItem: () => (ComplementaryAreaMoreMenuItem),
   FullscreenMode: () => (fullscreen_mode),
   InterfaceSkeleton: () => (interface_skeleton),
-  NavigableRegion: () => (NavigableRegion),
+  NavigableRegion: () => (navigable_region),
   PinnedItems: () => (pinned_items),
   store: () => (store)
 });
@@ -4449,7 +4449,9 @@ const savePost = (options = {}) => async ({
   }
   if (!error) {
     try {
-      await (0,external_wp_hooks_namespaceObject.doActionAsync)('editor.savePost', options);
+      await (0,external_wp_hooks_namespaceObject.doActionAsync)('editor.savePost', {
+        id: previousRecord.id
+      }, options);
     } catch (err) {
       error = err;
     }
@@ -9290,6 +9292,17 @@ const external_wp_plugins_namespaceObject = window["wp"]["plugins"];
 
 
 
+/**
+ * Whether the role supports checked state.
+ *
+ * @param {import('react').AriaRole} role Role.
+ * @return {boolean} Whether the role supports checked state.
+ * @see https://www.w3.org/TR/wai-aria-1.1/#aria-checked
+ */
+
+function roleSupportsCheckedState(role) {
+  return ['checkbox', 'option', 'radio', 'switch', 'menuitemcheckbox', 'menuitemradio', 'treeitem'].includes(role);
+}
 function ComplementaryAreaToggle({
   as = external_wp_components_namespaceObject.Button,
   scope,
@@ -9308,7 +9321,10 @@ function ComplementaryAreaToggle({
   } = (0,external_wp_data_namespaceObject.useDispatch)(store);
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(ComponentToUse, {
     icon: selectedIcon && isSelected ? selectedIcon : icon,
-    "aria-controls": identifier.replace('/', ':'),
+    "aria-controls": identifier.replace('/', ':')
+    // Make sure aria-checked matches spec https://www.w3.org/TR/wai-aria-1.1/#aria-checked
+    ,
+    "aria-checked": roleSupportsCheckedState(props.role) ? isSelected : undefined,
     onClick: () => {
       if (isSelected) {
         disableComplementaryArea(scope);
@@ -9839,18 +9855,24 @@ const FullscreenMode = ({
 
 ;// CONCATENATED MODULE: ./node_modules/@wordpress/interface/build-module/components/navigable-region/index.js
 /**
+ * WordPress dependencies
+ */
+
+
+/**
  * External dependencies
  */
 
 
-function NavigableRegion({
+const NavigableRegion = (0,external_wp_element_namespaceObject.forwardRef)(({
   children,
   className,
   ariaLabel,
   as: Tag = 'div',
   ...props
-}) {
+}, ref) => {
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(Tag, {
+    ref: ref,
     className: dist_clsx('interface-navigable-region', className),
     "aria-label": ariaLabel,
     role: "region",
@@ -9858,7 +9880,9 @@ function NavigableRegion({
     ...props,
     children: children
   });
-}
+});
+NavigableRegion.displayName = 'NavigableRegion';
+/* harmony default export */ const navigable_region = (NavigableRegion);
 
 ;// CONCATENATED MODULE: ./node_modules/@wordpress/interface/build-module/components/interface-skeleton/index.js
 /**
@@ -9940,11 +9964,7 @@ function InterfaceSkeleton({
   content,
   actions,
   labels,
-  className,
-  enableRegionNavigation = true,
-  // Todo: does this need to be a prop.
-  // Can we use a dependency to keyboard-shortcuts directly?
-  shortcuts
+  className
 }, ref) {
   const [secondarySidebarResizeListener, secondarySidebarSize] = (0,external_wp_compose_namespaceObject.useResizeObserver)();
   const isMobileViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium', '<');
@@ -9954,7 +9974,6 @@ function InterfaceSkeleton({
     duration: disableMotion ? 0 : interface_skeleton_ANIMATION_DURATION,
     ease: [0.6, 0, 0.4, 1]
   };
-  const navigateRegionsProps = (0,external_wp_components_namespaceObject.__unstableUseNavigateRegions)(shortcuts);
   useHTMLClass('interface-interface-skeleton__html-container');
   const defaultLabels = {
     /* translators: accessibility text for the top bar landmark region. */
@@ -9975,14 +9994,13 @@ function InterfaceSkeleton({
     ...labels
   };
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
-    ...(enableRegionNavigation ? navigateRegionsProps : {}),
-    ref: (0,external_wp_compose_namespaceObject.useMergeRefs)([ref, enableRegionNavigation ? navigateRegionsProps.ref : undefined]),
-    className: dist_clsx(className, 'interface-interface-skeleton', navigateRegionsProps.className, !!footer && 'has-footer'),
+    ref: ref,
+    className: dist_clsx(className, 'interface-interface-skeleton', !!footer && 'has-footer'),
     children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
       className: "interface-interface-skeleton__editor",
       children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__unstableAnimatePresence, {
         initial: false,
-        children: !!header && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+        children: !!header && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
           as: external_wp_components_namespaceObject.__unstableMotion.div,
           className: "interface-interface-skeleton__header",
           "aria-label": mergedLabels.header,
@@ -10001,7 +10019,7 @@ function InterfaceSkeleton({
         className: "interface-interface-skeleton__body",
         children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__unstableAnimatePresence, {
           initial: false,
-          children: !!secondarySidebar && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+          children: !!secondarySidebar && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
             className: "interface-interface-skeleton__secondary-sidebar",
             ariaLabel: mergedLabels.secondarySidebar,
             as: external_wp_components_namespaceObject.__unstableMotion.div,
@@ -10036,21 +10054,21 @@ function InterfaceSkeleton({
               children: [secondarySidebarResizeListener, secondarySidebar]
             })
           })
-        }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+        }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
           className: "interface-interface-skeleton__content",
           ariaLabel: mergedLabels.body,
           children: content
-        }), !!sidebar && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+        }), !!sidebar && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
           className: "interface-interface-skeleton__sidebar",
           ariaLabel: mergedLabels.sidebar,
           children: sidebar
-        }), !!actions && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+        }), !!actions && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
           className: "interface-interface-skeleton__actions",
           ariaLabel: mergedLabels.actions,
           children: actions
         })]
       })]
-    }), !!footer && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(NavigableRegion, {
+    }), !!footer && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(navigable_region, {
       className: "interface-interface-skeleton__footer",
       ariaLabel: mergedLabels.footer,
       children: footer
@@ -24553,7 +24571,7 @@ const ExperimentalEditorProvider = with_registry_provider(({
     selection,
     isReady,
     mode,
-    postTypes
+    postTypeEntities
   } = (0,external_wp_data_namespaceObject.useSelect)(select => {
     const {
       getEditorSettings,
@@ -24562,32 +24580,30 @@ const ExperimentalEditorProvider = with_registry_provider(({
       __unstableIsEditorReady
     } = select(store_store);
     const {
-      getPostTypes
+      getEntitiesConfig
     } = select(external_wp_coreData_namespaceObject.store);
     return {
       editorSettings: getEditorSettings(),
       isReady: __unstableIsEditorReady(),
       mode: getRenderingMode(),
       selection: getEditorSelection(),
-      postTypes: getPostTypes({
-        per_page: -1
-      })
+      postTypeEntities: post.type === 'wp_template' ? getEntitiesConfig('postType') : null
     };
-  }, []);
+  }, [post.type]);
   const shouldRenderTemplate = !!template && mode !== 'post-only';
   const rootLevelPost = shouldRenderTemplate ? template : post;
   const defaultBlockContext = (0,external_wp_element_namespaceObject.useMemo)(() => {
     const postContext = {};
-    // If it is a template, try to inherit the post type from the slug.
+    // If it is a template, try to inherit the post type from the name.
     if (post.type === 'wp_template') {
       if (post.slug === 'page') {
         postContext.postType = 'page';
       } else if (post.slug === 'single') {
         postContext.postType = 'post';
       } else if (post.slug.split('-')[0] === 'single') {
-        // If the slug is single-{postType}, infer the post type from the slug.
-        const postTypesSlugs = postTypes?.map(entity => entity.slug) || [];
-        const match = post.slug.match(`^single-(${postTypesSlugs.join('|')})(?:-.+)?$`);
+        // If the slug is single-{postType}, infer the post type from the name.
+        const postTypeNames = postTypeEntities?.map(entity => entity.name) || [];
+        const match = post.slug.match(`^single-(${postTypeNames.join('|')})(?:-.+)?$`);
         if (match) {
           postContext.postType = match[1];
         }
@@ -24600,7 +24616,7 @@ const ExperimentalEditorProvider = with_registry_provider(({
       ...postContext,
       templateSlug: rootLevelPost.type === 'wp_template' ? rootLevelPost.slug : undefined
     };
-  }, [shouldRenderTemplate, post.id, post.type, rootLevelPost.type, rootLevelPost.slug, postTypes]);
+  }, [shouldRenderTemplate, post.id, post.type, post.slug, rootLevelPost.type, rootLevelPost.slug, postTypeEntities]);
   const {
     id,
     type
@@ -26181,7 +26197,9 @@ const square = /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(ext
  */
 
 
-const ZoomOutToggle = () => {
+const ZoomOutToggle = ({
+  disabled
+}) => {
   const {
     isZoomOut,
     showIconLabels
@@ -26203,9 +26221,11 @@ const ZoomOutToggle = () => {
     __unstableSetEditorMode(isZoomOut ? 'edit' : 'zoom-out');
   };
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Button, {
+    accessibleWhenDisabled: true,
+    disabled: disabled,
     onClick: handleZoomOut,
     icon: library_square,
-    label: (0,external_wp_i18n_namespaceObject.__)('Toggle Zoom Out'),
+    label: (0,external_wp_i18n_namespaceObject.__)('Zoom Out'),
     isPressed: isZoomOut,
     size: "compact",
     showTooltip: !showIconLabels
@@ -26373,7 +26393,9 @@ function Header({
       }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(PostPreviewButton, {
         className: "editor-header__post-preview-button",
         forceIsAutosaveable: forceIsDirty
-      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(PostViewLink, {}), isEditorIframed && isWideViewport && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(zoom_out_toggle, {}), (isWideViewport || !showIconLabels) && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(pinned_items.Slot, {
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(PostViewLink, {}), isEditorIframed && isWideViewport && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(zoom_out_toggle, {
+        disabled: forceDisableBlockTools
+      }), (isWideViewport || !showIconLabels) && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(pinned_items.Slot, {
         scope: "core"
       }), !customSaveButton && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(post_publish_button_or_toggle, {
         forceIsDirty: forceIsDirty,
@@ -26784,9 +26806,11 @@ function SavePublishPanels({
 
 
 
+
 /**
  * Internal dependencies
  */
+
 
 
 
@@ -26813,13 +26837,19 @@ function TextEditor({
       isRichEditingEnabled: getEditorSettings().richEditingEnabled
     };
   }, []);
+  const {
+    resetZoomLevel,
+    __unstableSetEditorMode
+  } = unlock((0,external_wp_data_namespaceObject.useDispatch)(external_wp_blockEditor_namespaceObject.store));
   const titleRef = (0,external_wp_element_namespaceObject.useRef)();
   (0,external_wp_element_namespaceObject.useEffect)(() => {
+    resetZoomLevel();
+    __unstableSetEditorMode('edit');
     if (autoFocus) {
       return;
     }
     titleRef?.current?.focus();
-  }, [autoFocus]);
+  }, [autoFocus, resetZoomLevel, __unstableSetEditorMode]);
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
     className: "editor-text-editor",
     children: [isRichEditingEnabled && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
@@ -26901,7 +26931,10 @@ function EditTemplateBlocksNotification({
       if (!event.target.classList.contains('is-root-container') || event.target.dataset?.type === 'core/template-part') {
         return;
       }
-      setIsDialogOpen(true);
+      if (!event.defaultPrevented) {
+        event.preventDefault();
+        setIsDialogOpen(true);
+      }
     };
     const canvas = contentRef.current;
     canvas?.addEventListener('dblclick', handleDblClick);
@@ -27188,7 +27221,8 @@ const {
   useLayoutClasses,
   useLayoutStyles,
   ExperimentalBlockCanvas: BlockCanvas,
-  useFlashEditableBlocks
+  useFlashEditableBlocks,
+  useZoomOutModeExit
 } = unlock(external_wp_blockEditor_namespaceObject.privateApis);
 
 /**
@@ -27409,10 +27443,10 @@ function VisualEditor({
     isEnabled: renderingMode === 'template-locked'
   }), useSelectNearestEditableBlock({
     isEnabled: renderingMode === 'template-locked'
-  })]);
+  }), useZoomOutModeExit()]);
   const zoomOutProps = isZoomedOut && !isTabletViewport ? {
     scale: 'default',
-    frameSize: '48px'
+    frameSize: '40px'
   } : {};
   const forceFullHeight = postType === NAVIGATION_POST_TYPE;
   const enableResizing = [NAVIGATION_POST_TYPE, TEMPLATE_PART_POST_TYPE, PATTERN_POST_TYPE].includes(postType) &&
@@ -27530,7 +27564,6 @@ function VisualEditor({
 
 
 
-
 /**
  * Internal dependencies
  */
@@ -27561,7 +27594,6 @@ const interfaceLabels = {
 };
 function EditorInterface({
   className,
-  enableRegionNavigation,
   styles,
   children,
   forceIsDirty,
@@ -27581,8 +27613,6 @@ function EditorInterface({
     isListViewOpened,
     isDistractionFree,
     isPreviewMode,
-    previousShortcut,
-    nextShortcut,
     showBlockBreadcrumbs,
     documentLabel,
     isZoomOut
@@ -27606,8 +27636,6 @@ function EditorInterface({
       isListViewOpened: select(store_store).isListViewOpened(),
       isDistractionFree: get('core', 'distractionFree'),
       isPreviewMode: editorSettings.__unstableIsPreviewMode,
-      previousShortcut: select(external_wp_keyboardShortcuts_namespaceObject.store).getAllShortcutKeyCombinations('core/editor/previous-region'),
-      nextShortcut: select(external_wp_keyboardShortcuts_namespaceObject.store).getAllShortcutKeyCombinations('core/editor/next-region'),
       showBlockBreadcrumbs: get('core', 'showBlockBreadcrumbs'),
       // translators: Default label for the Document in the Block Breadcrumb.
       documentLabel: postTypeLabel || (0,external_wp_i18n_namespaceObject._x)('Document', 'noun'),
@@ -27627,7 +27655,6 @@ function EditorInterface({
     setEntitiesSavedStatesCallback(false);
   }, [entitiesSavedStatesCallback]);
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(interface_skeleton, {
-    enableRegionNavigation: enableRegionNavigation,
     isDistractionFree: isDistractionFree,
     className: dist_clsx('editor-editor-interface', className, {
       'is-entity-save-view-open': !!entitiesSavedStatesCallback,
@@ -27681,11 +27708,7 @@ function EditorInterface({
       isEntitiesSavedStatesOpen: entitiesSavedStatesCallback,
       setEntitiesSavedStatesCallback: setEntitiesSavedStatesCallback,
       forceIsDirtyPublishPanel: forceIsDirty
-    }) : undefined,
-    shortcuts: {
-      previous: previousShortcut,
-      next: nextShortcut
-    }
+    }) : undefined
   });
 }
 
@@ -30010,7 +30033,8 @@ function getPostMetaFields(select, context) {
         value: // When using the entity value, an empty string IS a valid value.
         (_entityMetaValues$key = entityMetaValues?.[key]) !== null && _entityMetaValues$key !== void 0 ? _entityMetaValues$key :
         // When using the default, an empty string IS NOT a valid value.
-        props.default || undefined
+        props.default || undefined,
+        type: props.type
       };
     }
   });
@@ -30107,11 +30131,9 @@ function getPostMetaFields(select, context) {
  */
 
 
-
 /**
  * Internal dependencies
  */
-
 
 
 
@@ -30128,32 +30150,6 @@ function getPostMetaFields(select, context) {
 function registerCoreBlockBindingsSources() {
   (0,external_wp_blocks_namespaceObject.registerBlockBindingsSource)(pattern_overrides);
   (0,external_wp_blocks_namespaceObject.registerBlockBindingsSource)(post_meta);
-}
-
-/**
- * Function to bootstrap core block bindings sources defined in the server.
- *
- * @param {Object} sources Object containing the sources to bootstrap.
- *
- * @example
- * ```js
- * import { bootstrapBlockBindingsSourcesFromServer } from '@wordpress/editor';
- *
- * bootstrapBlockBindingsSourcesFromServer( sources );
- * ```
- */
-function bootstrapBlockBindingsSourcesFromServer(sources) {
-  if (sources) {
-    const {
-      addBootstrappedBlockBindingsSource
-    } = unlock((0,external_wp_data_namespaceObject.dispatch)(external_wp_blocks_namespaceObject.store));
-    for (const [name, args] of Object.entries(sources)) {
-      addBootstrappedBlockBindingsSource({
-        name,
-        ...args
-      });
-    }
-  }
 }
 
 ;// CONCATENATED MODULE: ./node_modules/@wordpress/editor/build-module/private-apis.js
@@ -30201,7 +30197,6 @@ lock(privateApis, {
   ViewMoreMenuGroup: view_more_menu_group,
   ResizableEditor: resizable_editor,
   registerCoreBlockBindingsSources: registerCoreBlockBindingsSources,
-  bootstrapBlockBindingsSourcesFromServer: bootstrapBlockBindingsSourcesFromServer,
   // This is a temporary private API while we're updating the site editor to use EditorProvider.
   interfaceStore,
   ...remainingInterfaceApis
