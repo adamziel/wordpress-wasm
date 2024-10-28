@@ -6,6 +6,7 @@
       <file>tests/WPURLInTextProcessorTests.php</file>
       <file>tests/WPBlockMarkupProcessorTests.php</file>
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
+      <file>tests/URLParserWHATWGComplianceTests.php</file>
     </testsuite>
   </testsuites>
 </phpunit>
