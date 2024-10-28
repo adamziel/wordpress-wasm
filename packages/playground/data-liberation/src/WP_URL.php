@@ -41,20 +41,20 @@ class WP_URL {
 				'/' === $raw_url[1]
 			) || (
 				strlen( $raw_url ) > 7 &&
-				'h' === $raw_url[0] &&
-				't' === $raw_url[1] &&
-				't' === $raw_url[2] &&
-				'p' === $raw_url[3] &&
+				( 'h' === $raw_url[0] || 'H' === $raw_url[0] ) &&
+				( 't' === $raw_url[1] || 'T' === $raw_url[1] ) &&
+				( 't' === $raw_url[2] || 'T' === $raw_url[2] ) &&
+				( 'p' === $raw_url[3] || 'P' === $raw_url[3] ) &&
 				':' === $raw_url[4] &&
 				'/' === $raw_url[5] &&
 				'/' === $raw_url[6]
 			) || (
 				strlen( $raw_url ) > 8 &&
-				'h' === $raw_url[0] &&
-				't' === $raw_url[1] &&
-				't' === $raw_url[2] &&
-				'p' === $raw_url[3] &&
-				's' === $raw_url[4] &&
+				( 'h' === $raw_url[0] || 'H' === $raw_url[0] ) &&
+				( 't' === $raw_url[1] || 'T' === $raw_url[1] ) &&
+				( 't' === $raw_url[2] || 'T' === $raw_url[2] ) &&
+				( 'p' === $raw_url[3] || 'P' === $raw_url[3] ) &&
+				( 's' === $raw_url[4] || 'S' === $raw_url[4] ) &&
 				':' === $raw_url[5] &&
 				'/' === $raw_url[6] &&
 				'/' === $raw_url[7]

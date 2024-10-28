@@ -161,7 +161,7 @@ class WP_URL_In_Text_Processor {
             )
             (?:\:(?<port>\d+))?                                        # port
             (?<path>                                                   # path, query, fragment
-                [\/?]                                                  # prefixed with \/ or ?
+                [\/?#]                                                 # prefixed with \/ or ? or #
                 [^\s<>]*                                               # any chars except whitespace and <>
                 (?<=[^\s<>({\[`!;:\'".,?«»“”‘’])                       # end with not a space or some punctuation chars
             )?
@@ -213,7 +213,7 @@ class WP_URL_In_Text_Processor {
 			}
 
 			// Additional rigor for URLs that are not explicitly preceded by a double slash.
-			if ( ! $had_double_slash ) {
+			if ( false && ! $had_double_slash ) {
 				/*
 				 * Skip TLDs that are not in the public suffix.
 				 * This reduces false positives like `index.html` or `plugins.php`.
@@ -232,7 +232,7 @@ class WP_URL_In_Text_Processor {
 					continue;
 				}
 
-				$tld = substr( $parsed_url->hostname, $last_dot_position + 1 );
+				$tld = strtolower( substr( $parsed_url->hostname, $last_dot_position + 1 ) );
 				if ( empty( self::$public_suffix_list[ $tld ] ) ) {
 					// This TLD is not in the public suffix list. It's not a valid domain name.
 					continue;
