@@ -661,7 +661,6 @@ class WP_XML_Processor {
 		return new ProcessorByteStream(
 			$xml_processor,
 			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
-
 				$new_bytes = $state->consume_input_bytes();
 				if ( null !== $new_bytes ) {
 					$xml_processor->append_bytes( $new_bytes );
