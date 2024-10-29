@@ -21,7 +21,7 @@
  * initial processing instruction (<?xml version="1.0" ?>). We're
  * starting with 1.0, however, because most that's what most WXR
  * files declare.
- * 
+ *
  * @TODO: Track specific error states, expose informative messages, line
  *        numbers, indexes, and other debugging info.
  *
@@ -339,7 +339,7 @@ class WP_XML_Processor {
 	 * @var string
 	 */
 	public $xml;
-	
+
 	/**
 	 * Specifies mode of operation of the parser at any given time.
 	 *
@@ -619,7 +619,7 @@ class WP_XML_Processor {
 	public $had_previous_chunks = false;
 
 	/**
-	 * 
+	 *
 	 */
 	public static function from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
@@ -733,9 +733,9 @@ class WP_XML_Processor {
 			);
 			return false;
 		}
-		$this->xml .= $next_chunk;
+		$this->xml                .= $next_chunk;
 		$this->had_previous_chunks = true;
-		if($this->parser_state === self::STATE_INCOMPLETE_INPUT) {
+		if ( $this->parser_state === self::STATE_INCOMPLETE_INPUT ) {
 			$this->parser_state = self::STATE_READY;
 		}
 		return true;
@@ -743,7 +743,7 @@ class WP_XML_Processor {
 
 	/**
 	 * Indicates that all the XML document bytes have been provided.
-	 * 
+	 *
 	 * After calling this method, the processor will emit errors where
 	 * previously it would have entered the STATE_INCOMPLETE_INPUT state.
 	 */
@@ -770,7 +770,7 @@ class WP_XML_Processor {
 
 		return $processed_xml;
 	}
- 
+
 	/**
 	 * Internal method which finds the next token in the XML document.
 	 *
@@ -1719,10 +1719,10 @@ class WP_XML_Processor {
 		 * can be nothing left in the document other than a #text node.
 		 */
 		$this->set_incomplete_input_or_parse_error();
-		$this->token_starts_at         = $was_at;
-		$this->token_length            = $doc_length - $was_at;
-		$this->text_starts_at          = $was_at;
-		$this->text_length             = $doc_length - $was_at;
+		$this->token_starts_at = $was_at;
+		$this->token_length    = $doc_length - $was_at;
+		$this->text_starts_at  = $was_at;
+		$this->text_length     = $doc_length - $was_at;
 		return false;
 	}
 
@@ -1923,33 +1923,33 @@ class WP_XML_Processor {
 			unset( $this->lexical_updates[ $name ] );
 		}
 
-		$this->token_starts_at         = null;
-		$this->token_length            = null;
-		$this->tag_name_starts_at      = null;
-		$this->tag_name_length         = null;
-		$this->text_starts_at          = null;
-		$this->text_length             = null;
-		$this->is_closing_tag          = null;
-		$this->attributes              = array();
+		$this->token_starts_at    = null;
+		$this->token_length       = null;
+		$this->tag_name_starts_at = null;
+		$this->tag_name_length    = null;
+		$this->text_starts_at     = null;
+		$this->text_length        = null;
+		$this->is_closing_tag     = null;
+		$this->attributes         = array();
 	}
 
 	protected function reset_state() {
-		$this->xml                     = '';
-		$this->parser_state            = self::STATE_READY;
-		$this->bytes_already_parsed    = 0;
-		$this->token_starts_at         = null;
-		$this->token_length            = null;
-		$this->tag_name_starts_at      = null;
-		$this->tag_name_length         = null;
-		$this->text_starts_at          = null;
-		$this->text_length             = null;
-		$this->is_closing_tag          = null;
-		$this->last_error              = null;
-		$this->attributes              = array();
-		$this->bookmarks               = array();
-		$this->lexical_updates         = array();
-		$this->seek_count              = 0;
-		$this->had_previous_chunks     = false;
+		$this->xml                  = '';
+		$this->parser_state         = self::STATE_READY;
+		$this->bytes_already_parsed = 0;
+		$this->token_starts_at      = null;
+		$this->token_length         = null;
+		$this->tag_name_starts_at   = null;
+		$this->tag_name_length      = null;
+		$this->text_starts_at       = null;
+		$this->text_length          = null;
+		$this->is_closing_tag       = null;
+		$this->last_error           = null;
+		$this->attributes           = array();
+		$this->bookmarks            = array();
+		$this->lexical_updates      = array();
+		$this->seek_count           = 0;
+		$this->had_previous_chunks  = false;
 	}
 
 	/**
@@ -2778,7 +2778,7 @@ class WP_XML_Processor {
 	/**
 	 * Moves the internal cursor to the next token in the XML document
 	 * according to the XML specification.
-	 * 
+	 *
 	 * It considers the current XML context (prolog, element, or misc)
 	 * and only expects the nodes that are allowed in that context.
 	 *
@@ -2786,7 +2786,7 @@ class WP_XML_Processor {
 	 *
 	 * @access private
 	 *
-	 * @param int $node_to_process Whether to process the next node or 
+	 * @param int $node_to_process Whether to process the next node or
 	 *            reprocess the current node, e.g. using another parser context.
 	 * @return bool Whether a token was parsed.
 	 */
@@ -3112,11 +3112,11 @@ class WP_XML_Processor {
 	}
 
 	private function set_incomplete_input_or_parse_error() {
-		if($this->expecting_more_input) {
+		if ( $this->expecting_more_input ) {
 			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
 		} else {
 			$this->parser_state = self::STATE_INVALID_DOCUMENT;
-			$this->last_error = self::ERROR_SYNTAX;
+			$this->last_error   = self::ERROR_SYNTAX;
 			// @TODO: Add a more specific error message.
 			_doing_it_wrong( __METHOD__, 'Unexpected syntax encountered.', 'WP_VERSION' );
 		}
@@ -3318,5 +3318,3 @@ class WP_XML_Processor {
 	 */
 	const PROCESS_CURRENT_NODE = 'process-current-node';
 }
-
-
