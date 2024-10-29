@@ -1080,7 +1080,7 @@ class WPXMLProcessorTests extends TestCase {
 	 * @param string $xml_ending_before_comment_close XML with opened comments that aren't closed.
 	 */
 	public function test_documents_may_end_with_unclosed_comment( $xml_ending_before_comment_close ) {
-		$processor = WP_XML_Processor::from_string( $xml_ending_before_comment_close );
+		$processor = WP_XML_Processor::from_stream( $xml_ending_before_comment_close );
 
 		$this->assertFalse(
 			$processor->next_tag(),
@@ -1106,6 +1106,50 @@ class WPXMLProcessorTests extends TestCase {
 	}
 
 	/**
+	 * Ensures that partial syntax triggers warnings or errors.
+	 *
+	 * @ticket 61365
+	 *
+	 * @covers WP_XML_Processor::next_tag
+	 * @covers WP_XML_Processor::paused_at_incomplete_token
+	 *
+	 * @dataProvider data_partial_syntax
+	 *
+	 * @param string $xml_ending_before_comment_close XML with partial syntax.
+	 */
+	public function test_partial_syntax_triggers_parse_error_when_streaming_is_not_used( $xml_ending_before_comment_close ) {
+		$processor = WP_XML_Processor::from_string( $xml_ending_before_comment_close );
+
+		$this->assertFalse(
+			$processor->next_tag(),
+			"Should not have found any tag, but found {$processor->get_tag()}."
+		);
+
+		$this->assertFalse(
+			$processor->is_paused_at_incomplete_input(),
+			"Should not have indicated that the parser found an incomplete token but it did."
+		);
+
+		$this->assertNotEmpty(
+			$processor->get_last_error(),
+			"Should have errors but didn't."
+		);
+	}
+
+	/**
+	 * Data provider.
+	 *
+	 * @return array[]
+	 */
+	public static function data_partial_syntax() {
+		return array(
+			'Incomplete tag name' => array( '<swit' ),
+			'Shortest open valid comment' => array( '<!--' ),
+			'Basic truncated comment'     => array( '<!-- this ends --' ),
+		);
+	}
+
+	/**
 	 * Ensures that the processor doesn't attempt to match an incomplete token.
 	 *
 	 * @ticket 61365
@@ -1118,7 +1162,7 @@ class WPXMLProcessorTests extends TestCase {
 	 * @param string $incomplete_xml XML text containing some kind of incomplete syntax.
 	 */
 	public function test_next_tag_returns_false_for_incomplete_syntax_elements( $incomplete_xml ) {
-		$processor = WP_XML_Processor::from_string( $incomplete_xml );
+		$processor = WP_XML_Processor::from_stream( $incomplete_xml );
 
 		$processor->next_tag();
 		$this->assertFalse(

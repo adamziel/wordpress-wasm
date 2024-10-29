@@ -21,11 +21,9 @@
  * initial processing instruction (<?xml version="1.0" ?>). We're
  * starting with 1.0, however, because most that's what most WXR
  * files declare.
- *
- * @TODO: Add input_finished() or similar method to tell the processor there 
- *        will not be any more input. This will enable distinguishing
- *        between incomplete tokens and syntax errors and will make
- *        the step() logic more reliable.
+ * 
+ * @TODO: Track specific error states, expose informative messages, line
+ *        numbers, indexes, and other debugging info.
  *
  * @TODO: Skip over the following syntax elements:
  *        * <!DOCTYPE, see https://www.w3.org/TR/xml/#sec-prolog-dtd
@@ -872,7 +870,7 @@ class WP_XML_Processor {
 			$this->bytes_already_parsed >= strlen( $this->xml )
 		) {
 			// Does this appropriately clear state (parsed attributes)?
-			$this->parser_state         = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			$this->bytes_already_parsed = $was_at;
 
 			return false;
@@ -880,7 +878,7 @@ class WP_XML_Processor {
 
 		$tag_ends_at = strpos( $this->xml, '>', $this->bytes_already_parsed );
 		if ( false === $tag_ends_at ) {
-			$this->parser_state         = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			$this->bytes_already_parsed = $was_at;
 
 			return false;
@@ -923,7 +921,7 @@ class WP_XML_Processor {
 
 		// Closer not found, the document is incomplete.
 		if ( false === $found_closer ) {
-			$this->parser_state         = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			$this->bytes_already_parsed = $was_at;
 			return false;
 		}
@@ -1392,7 +1390,7 @@ class WP_XML_Processor {
 			}
 
 			if ( $at + 1 >= $doc_length ) {
-				$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+				$this->set_incomplete_input_or_parse_error();
 				return false;
 			}
 
@@ -1421,7 +1419,7 @@ class WP_XML_Processor {
 			 * the document. There is nothing left to parse.
 			 */
 			if ( $at + 1 >= $doc_length ) {
-				$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+				$this->set_incomplete_input_or_parse_error();
 
 				return false;
 			}
@@ -1442,7 +1440,7 @@ class WP_XML_Processor {
 					$closer_at = $at + 4;
 					// If it's not possible to close the comment then there is nothing more to scan.
 					if ( $doc_length <= $closer_at ) {
-						$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+						$this->set_incomplete_input_or_parse_error();
 
 						return false;
 					}
@@ -1454,7 +1452,7 @@ class WP_XML_Processor {
 					while ( ++$closer_at < $doc_length ) {
 						$closer_at = strpos( $xml, '--', $closer_at );
 						if ( false === $closer_at || $closer_at + 2 === $doc_length ) {
-							$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+							$this->set_incomplete_input_or_parse_error();
 							return false;
 						}
 
@@ -1504,7 +1502,7 @@ class WP_XML_Processor {
 				) {
 					$closer_at = strpos( $xml, ']]>', $at + 1 );
 					if ( false === $closer_at ) {
-						$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+						$this->set_incomplete_input_or_parse_error();
 
 						return false;
 					}
@@ -1521,7 +1519,7 @@ class WP_XML_Processor {
 				 * Anything else here is either unsupported at this point or invalid
 				 * syntax. See the class-level @TODO annotations for more information.
 				 */
-				$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+				$this->set_incomplete_input_or_parse_error();
 
 				return false;
 			}
@@ -1660,7 +1658,7 @@ class WP_XML_Processor {
 				'?' === $xml[ $at + 1 ]
 			) {
 				if ( $at + 4 >= $doc_length ) {
-					$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+					$this->set_incomplete_input_or_parse_error();
 
 					return false;
 				}
@@ -1697,7 +1695,7 @@ class WP_XML_Processor {
 				 */
 				$closer_at = strpos( $xml, '?>', $at );
 				if ( false === $closer_at ) {
-					$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+					$this->set_incomplete_input_or_parse_error();
 
 					return false;
 				}
@@ -1730,7 +1728,7 @@ class WP_XML_Processor {
 		 * This does not imply an incomplete parse; it indicates that there
 		 * can be nothing left in the document other than a #text node.
 		 */
-		$this->parser_state            = self::STATE_INCOMPLETE_INPUT;
+		$this->set_incomplete_input_or_parse_error();
 		$this->is_incomplete_text_node = true;
 		$this->text_starts_at          = $was_at;
 		$this->text_length             = $doc_length - $was_at;
@@ -1748,7 +1746,7 @@ class WP_XML_Processor {
 		// Skip whitespace and slashes.
 		$this->bytes_already_parsed += strspn( $this->xml, " \t\f\r\n/", $this->bytes_already_parsed );
 		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
-			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			return false;
 		}
 
@@ -1775,7 +1773,7 @@ class WP_XML_Processor {
 		++$this->bytes_already_parsed;
 		$this->skip_whitespace();
 		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
-			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			return false;
 		}
 		switch ( $this->xml[ $this->bytes_already_parsed ] ) {
@@ -1799,7 +1797,7 @@ class WP_XML_Processor {
 				$attribute_end = $value_start + $value_length + 1;
 
 				if ( $attribute_end - 1 >= strlen( $this->xml ) ) {
-					$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+					$this->set_incomplete_input_or_parse_error();
 
 					return false;
 				}
@@ -1826,7 +1824,7 @@ class WP_XML_Processor {
 		}
 
 		if ( $attribute_end >= strlen( $this->xml ) ) {
-			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			return false;
 		}
 
@@ -2862,7 +2860,7 @@ class WP_XML_Processor {
 		// XML requires a root element. If we've reached the end of data in the prolog stage,
 		// before finding a root element, then the document is incomplete.
 		if ( WP_XML_Processor::STATE_COMPLETE === $this->parser_state ) {
-			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+			$this->set_incomplete_input_or_parse_error();
 			return false;
 		}
 		// Do not step if we paused due to an incomplete input.
@@ -3136,6 +3134,17 @@ class WP_XML_Processor {
 			$this->stack_of_open_elements,
 			$tag_name
 		);
+	}
+
+	private function set_incomplete_input_or_parse_error() {
+		if($this->expecting_more_input) {
+			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+		} else {
+			$this->parser_state = self::STATE_INVALID_DOCUMENT;
+			$this->last_error = self::ERROR_SYNTAX;
+			// @TODO: Add a more specific error message.
+			_doing_it_wrong( __METHOD__, 'Unexpected syntax encountered.', 'WP_VERSION' );
+		}
 	}
 
 	/**
