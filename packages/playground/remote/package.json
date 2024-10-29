@@ -22,6 +22,7 @@
 		"/index.d.ts"
 	],
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"directory": "../../../dist/packages/playground/remote"
 	}
 }
