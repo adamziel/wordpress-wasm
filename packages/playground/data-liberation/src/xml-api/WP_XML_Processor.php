@@ -22,7 +22,10 @@
  * starting with 1.0, however, because most that's what most WXR
  * files declare.
  *
- * ## Future work
+ * @TODO: Add input_finished() or similar method to tell the processor there 
+ *        will not be any more input. This will enable distinguishing
+ *        between incomplete tokens and syntax errors and will make
+ *        the step() logic more reliable.
  *
  * @TODO: Skip over the following syntax elements:
  *        * <!DOCTYPE, see https://www.w3.org/TR/xml/#sec-prolog-dtd
@@ -387,6 +390,13 @@ class WP_XML_Processor {
 	protected $is_incomplete_text_node = false;
 
 	/**
+	 * Whether the input has been finished.
+	 *
+	 * @var bool
+	 */
+	protected $expecting_more_input = true;
+
+	/**
 	 * How many bytes from the original XML document have been read and parsed.
 	 *
 	 * This value points to the latest byte offset in the input document which
@@ -627,16 +637,41 @@ class WP_XML_Processor {
 	public $had_previous_chunks = false;
 
 	/**
+	 * 
+	 */
+	public static function from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
+		if ( 'UTF-8' !== $known_definite_encoding ) {
+			return null;
+		}
+
+		$processor = new WP_XML_Processor( $xml );
+		$processor->input_finished();
+		return $processor;
+	}
+
+	public static function from_stream( $xml, $known_definite_encoding = 'UTF-8' ) {
+		if ( 'UTF-8' !== $known_definite_encoding ) {
+			return null;
+		}
+		return new WP_XML_Processor( $xml );
+	}
+
+	/**
 	 * Constructor.
 	 *
-	 * @since WP_VERSION
+	 * Do not use this method. Use the static creator methods instead.
 	 *
-	 * @param string $xml XML to process.
+	 * @access private
+	 *
+	 * @since 6.4.0
+	 *
+	 * @see WP_XML_Processor::create_fragment()
+	 * @see WP_XML_Processor::create_stream()
+	 *
+	 * @param string      $xml            XML to process.
 	 */
-	public function __construct( $xml, $breadcrumbs = array(), $parser_context = self::IN_PROLOG_CONTEXT ) {
+	protected function __construct( $xml ) {
 		$this->xml = $xml;
-		$this->stack_of_open_elements = $breadcrumbs;
-		$this->parser_context         = $parser_context;
 	}
 
 	public static function stream( $node_visitor_callback ) {
@@ -659,13 +694,14 @@ class WP_XML_Processor {
 				if ( $tokens_found > 0 ) {
 					$buffer .= $xml_processor->flush_processed_xml();
 				} elseif (
-				$tokens_found === 0 &&
-				! $xml_processor->is_paused_at_incomplete_input() &&
-				$xml_processor->get_current_depth() === 0
+					$tokens_found === 0 &&
+					! $xml_processor->is_paused_at_incomplete_input() &&
+					$xml_processor->get_current_depth() === 0
 				) {
 					// We've reached the end of the document, let's finish up.
 					// @TODO: Fix this so it doesn't return the entire XML
-					$buffer .= $xml_processor->get_unprocessed_xml();
+					$buffer .= $xml_processor->flush_processed_xml();
+					$buffer .= $xml_processor->get_updated_xml();
 					$state->finish();
 				}
 
@@ -706,13 +742,33 @@ class WP_XML_Processor {
 	 */
 	public function append_bytes( string $next_chunk ) {
 		$this->xml .= $next_chunk;
+		if ( $this->expecting_more_input ) {
+			_doing_it_wrong(
+				__METHOD__,
+				__( 'Cannot append bytes after the last input chunk was provided and input_finished() was called.' ),
+				'WP_VERSION'
+			);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Indicates that all the XML document bytes have been provided.
+	 * 
+	 * After calling this method, the processor will emit errors where
+	 * previously it would have entered the STATE_INCOMPLETE_INPUT state.
+	 */
+	public function input_finished() {
+		$this->expecting_more_input = false;
 	}
 
 	public function flush_processed_xml() {
+		// Flush updates
 		$this->get_updated_xml();
 
-		$processed_xml   = $this->get_processed_xml();
-		$unprocessed_xml = $this->get_unprocessed_xml();
+		$processed_xml   = substr( $this->xml, 0, $this->bytes_already_parsed );
+		$unprocessed_xml = substr( $this->xml, $this->bytes_already_parsed );
 
 		$breadcrumbs    = $this->get_breadcrumbs();
 		$parser_context = $this->parser_context;
@@ -762,7 +818,11 @@ class WP_XML_Processor {
 		$this->parser_state = self::STATE_READY;
 
 		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
-			$this->parser_state = self::STATE_COMPLETE;
+			if ( $this->expecting_more_input ) {
+				$this->parser_state = self::STATE_INCOMPLETE_INPUT;
+			} else {
+				$this->parser_state = self::STATE_COMPLETE;
+			}
 			return false;
 		}
 
@@ -1307,20 +1367,8 @@ class WP_XML_Processor {
 
 		while ( false !== $at && $at < $doc_length ) {
 			$at = strpos( $xml, '<', $at );
-
-			/*
-			 * There may be no text nodes outside of elements.
-			 * If this character sequence was encountered outside of
-			 * the root element, it is a syntax error. WP_XML_Processor
-			 * does not have that context – it is up to the API consumer,
-			 * such as WP_Tag_Processor, to handle this scenario.
-			 */
 			if ( false === $at ) {
-				$this->parser_state            = self::STATE_INCOMPLETE_INPUT;
-				$this->is_incomplete_text_node = true;
-				$this->text_starts_at          = $was_at;
-				$this->text_length             = $doc_length - $was_at;
-				return false;
+				break;
 			}
 
 			if ( $at > $was_at ) {
@@ -1666,6 +1714,26 @@ class WP_XML_Processor {
 			++$at;
 		}
 
+		// There's no more tag openers and we're not expecting more data –
+		// this mist be a trailing text node.
+		if ( ! $this->expecting_more_input ) {
+			$this->parser_state         = self::STATE_TEXT_NODE;
+			$this->token_starts_at      = $was_at;
+			$this->token_length         = $doc_length - $was_at;
+			$this->text_starts_at       = $was_at;
+			$this->text_length          = $doc_length - $was_at;
+			$this->bytes_already_parsed = $doc_length;
+			return true;
+		}
+
+		/*
+		 * This does not imply an incomplete parse; it indicates that there
+		 * can be nothing left in the document other than a #text node.
+		 */
+		$this->parser_state            = self::STATE_INCOMPLETE_INPUT;
+		$this->is_incomplete_text_node = true;
+		$this->text_starts_at          = $was_at;
+		$this->text_length             = $doc_length - $was_at;
 		return false;
 	}
 
@@ -2450,7 +2518,6 @@ class WP_XML_Processor {
 			 */
 
 			$this->last_error = self::ERROR_SYNTAX;
-			var_dump( $text );
 			_doing_it_wrong(
 				__METHOD__,
 				__( 'Invalid text content encountered.' ),
@@ -2694,34 +2761,21 @@ class WP_XML_Processor {
 	}
 
 	/**
-	 * Finds the next token in the XML document.
-	 *
-	 * An XML document can be viewed as a stream of tokens,
-	 * where tokens are things like XML tags, XML comments,
-	 * text nodes, etc. This method finds the next token in
-	 * the XML document and returns whether it found one.
-	 *
-	 * If it starts parsing a token and reaches the end of the
-	 * document then it will seek to the start of the last
-	 * token and pause, returning `false` to indicate that it
-	 * failed to find a complete token.
-	 *
-	 * Possible token types, based on the XML specification:
-	 *
-	 *  - an XML tag, whether opening, closing, or void.
-	 *  - a text node - the plaintext inside tags.
-	 *  - an XML comment.
-	 *  - a processing instruction, e.g. `<?xml version="1.0" ?>`.
-	 *
-	 * The Tag Processor currently only supports the tag token.
+	 * Moves the internal cursor to the next token in the XML document
+	 * according to the XML specification.
+	 * 
+	 * It considers the current XML context (prolog, element, or misc)
+	 * and only expects the nodes that are allowed in that context.
 	 *
 	 * @since WP_VERSION
 	 *
 	 * @access private
 	 *
+	 * @param int $node_to_process Whether to process the next node or 
+	 *            reprocess the current node, e.g. using another parser context.
 	 * @return bool Whether a token was parsed.
 	 */
-	public function step( $node_to_process = self::PROCESS_NEXT_NODE ) {
+	private function step( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		// Refuse to proceed if there was a previous error.
 		if ( null !== $this->last_error ) {
 			return false;
@@ -2754,6 +2808,30 @@ class WP_XML_Processor {
 		}
 	}
 
+	/**
+	 * Finds the next token in the XML document.
+	 *
+	 * An XML document can be viewed as a stream of tokens,
+	 * where tokens are things like XML tags, XML comments,
+	 * text nodes, etc. This method finds the next token in
+	 * the XML document and returns whether it found one.
+	 *
+	 * If it starts parsing a token and reaches the end of the
+	 * document then it will seek to the start of the last
+	 * token and pause, returning `false` to indicate that it
+	 * failed to find a complete token.
+	 *
+	 * Possible token types, based on the XML specification:
+	 *
+	 *  - an XML tag
+	 *  - a text node - the plaintext inside tags.
+	 *  - a CData section
+	 *  - an XML comment.
+	 *  - a DOCTYPE declaration.
+	 *  - a processing instruction, e.g. `<?xml mode="WordPress" ?>`.
+	 *
+	 * @return bool Whether a token was parsed.
+	 */
 	public function next_token( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		return $this->step( $node_to_process );
 	}
@@ -2770,10 +2848,17 @@ class WP_XML_Processor {
 	 */
 	private function step_in_prolog( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			if ( false === $this->base_class_next_token() ) {
+			$has_next_node = $this->base_class_next_token();
+			if (
+				false === $has_next_node &&
+				! $this->expecting_more_input
+			) {
+				$this->last_error = self::ERROR_SYNTAX;
+				_doing_it_wrong( __METHOD__, 'The root element was not found.', 'WP_VERSION' );
 				return false;
 			}
 		}
+
 		// XML requires a root element. If we've reached the end of data in the prolog stage,
 		// before finding a root element, then the document is incomplete.
 		if ( WP_XML_Processor::STATE_COMPLETE === $this->parser_state ) {
@@ -2820,17 +2905,17 @@ class WP_XML_Processor {
 	 */
 	private function step_in_element( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			if ( false === $this->base_class_next_token() ) {
+			$has_next_node = $this->base_class_next_token();
+			if (
+				false === $has_next_node &&
+				! $this->expecting_more_input
+			) {
+				$this->last_error = self::ERROR_SYNTAX;
+				_doing_it_wrong( __METHOD__, 'A tag was not closed.', 'WP_VERSION' );
 				return false;
 			}
 		}
-		// An XML document isn't complete until the root element is closed.
-		if ( self::STATE_COMPLETE === $this->parser_state &&
-			count( $this->stack_of_open_elements ) > 0
-		) {
-			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
-			return false;
-		}
+
 		// Do not step if we paused due to an incomplete input.
 		if ( WP_XML_Processor::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
 			return false;
@@ -2882,13 +2967,17 @@ class WP_XML_Processor {
 	 */
 	private function step_in_misc( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			/**
-			 * Don't short-circuit on failure yet! In misc stage,
-			 * we're still expecting text nodes and comments – even
-			 * if there are no more tags left in the document.
-			 */
-			$this->base_class_next_token();
+			$has_next_node = $this->base_class_next_token();
+			if (
+				false === $has_next_node &&
+				! $this->expecting_more_input
+			) {
+				// Parsing is complete.
+				$this->parser_state = self::STATE_COMPLETE;
+				return true;
+			}
 		}
+
 		if ( self::STATE_COMPLETE === $this->parser_state ) {
 			return true;
 		}
@@ -2901,7 +2990,7 @@ class WP_XML_Processor {
 				$whitespaces = strspn( $text, " \t\n\r" );
 				if ( strlen( $text ) !== $whitespaces ) {
 					$this->last_error = self::ERROR_SYNTAX;
-					_doing_it_wrong( __METHOD__, 'Unexpected token type in prolog stage.', 'WP_VERSION' );
+					_doing_it_wrong( __METHOD__, 'Unexpected token type "' . $this->get_token_type() . '" in misc stage.', 'WP_VERSION' );
 					return false;
 				}
 				return $this->step();
@@ -2927,7 +3016,7 @@ class WP_XML_Processor {
 				}
 
 				$this->last_error = self::ERROR_SYNTAX;
-				_doing_it_wrong( __METHOD__, 'Unexpected token type in misc stage.', 'WP_VERSION' );
+				_doing_it_wrong( __METHOD__, 'Unexpected token type "' . $this->get_token_type() . '" in misc stage.', 'WP_VERSION' );
 				return false;
 		}
 	}
@@ -3048,29 +3137,6 @@ class WP_XML_Processor {
 			$tag_name
 		);
 	}
-
-	private function last_open_element() {
-		return end( $this->stack_of_open_elements );
-	}
-
-	/**
-	 * @TODO Decide whether this method should even exist.
-	 */
-	protected function get_processed_xml() {
-		// Flush updates
-		$this->get_updated_xml();
-		return substr( $this->xml, 0, $this->bytes_already_parsed );
-	}
-
-	/**
-	 * @TODO Decide whether this method should even exist.
-	 */
-	protected function get_unprocessed_xml() {
-		// Flush updates
-		$this->get_updated_xml();
-		return substr( $this->xml, $this->bytes_already_parsed );
-	}
-
 
 	/**
 	 * Parser Ready State.
