@@ -3,8 +3,8 @@
 class WP_WXR_URL_Rewrite_Processor {
 
 
-	public static function stream( $current_site_url, $new_site_url ) {
-		return WP_XML_Processor::stream(
+	public static function create_stream_processor( $current_site_url, $new_site_url ) {
+		return WP_XML_Processor::create_stream_processor(
 			function ( $processor ) use ( $current_site_url, $new_site_url ) {
 				if ( static::is_wxr_content_node( $processor ) ) {
 					$text         = $processor->get_modifiable_text();

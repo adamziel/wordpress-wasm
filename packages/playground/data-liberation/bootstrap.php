@@ -38,7 +38,6 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 // Polyfill WordPress core functions
 function _doing_it_wrong($method, $message, $version) {
-	// var_dump($method, $message, $version);
 }
 
 function __($input) {

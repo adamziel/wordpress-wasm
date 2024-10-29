@@ -372,22 +372,6 @@ class WP_XML_Processor {
 	protected $parser_state = self::STATE_READY;
 
 	/**
-	 * Whether we stopped at an incomplete text node.
-	 *
-	 * If we are before the last tag in the document, every text
-	 * node is incomplete until we find the next tag. However,
-	 * if we are after the last tag, an incomplete all-whitespace
-	 * node may either mean we're the end of the document or
-	 * that we're still waiting for more data/
-	 *
-	 * This flag allows us to differentiate between these two
-	 * cases in context-aware APIs such as WP_XML_Processor.
-	 *
-	 * @var bool
-	 */
-	protected $is_incomplete_text_node = false;
-
-	/**
 	 * Whether the input has been finished.
 	 *
 	 * @var bool
@@ -672,12 +656,11 @@ class WP_XML_Processor {
 		$this->xml = $xml;
 	}
 
-	public static function stream( $node_visitor_callback ) {
-		$xml_processor = new WP_XML_Processor( '', array(), WP_XML_Processor::IN_PROLOG_CONTEXT );
+	public static function create_stream_processor( $node_visitor_callback ) {
+		$xml_processor = WP_XML_Processor::from_stream( '' );
 		return new ProcessorByteStream(
 			$xml_processor,
 			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
-				$buffer = $xml_processor->flush_processed_xml();
 
 				$new_bytes = $state->consume_input_bytes();
 				if ( null !== $new_bytes ) {
@@ -689,6 +672,7 @@ class WP_XML_Processor {
 					$node_visitor_callback( $xml_processor );
 				}
 
+				$buffer = '';
 				if ( $tokens_found > 0 ) {
 					$buffer .= $xml_processor->flush_processed_xml();
 				} elseif (
@@ -696,8 +680,6 @@ class WP_XML_Processor {
 					! $xml_processor->is_paused_at_incomplete_input() &&
 					$xml_processor->get_current_depth() === 0
 				) {
-					// We've reached the end of the document, let's finish up.
-					// @TODO: Fix this so it doesn't return the entire XML
 					$buffer .= $xml_processor->flush_processed_xml();
 					$buffer .= $xml_processor->get_updated_xml();
 					$state->finish();
@@ -712,6 +694,9 @@ class WP_XML_Processor {
 			}
 		);
 	}
+
+	/*
+	@TODO: implement these methods for re-entrancy
 
 	public function pause() {
 		return array(
@@ -729,8 +714,9 @@ class WP_XML_Processor {
 		$this->stack_of_open_elements = $paused['stack_of_open_elements'];
 		$this->parser_context         = $paused['parser_context'];
 		$this->bytes_already_parsed   = $paused['bytes_already_parsed'];
-		$this->base_class_next_token();
+		$this->parse_next_token();
 	}
+	*/
 
 	/**
 	 * Wipes out the processed XML and appends the next chunk of XML to
@@ -739,14 +725,18 @@ class WP_XML_Processor {
 	 * @param string $next_chunk XML to append.
 	 */
 	public function append_bytes( string $next_chunk ) {
-		$this->xml .= $next_chunk;
-		if ( $this->expecting_more_input ) {
+		if ( ! $this->expecting_more_input ) {
 			_doing_it_wrong(
 				__METHOD__,
 				__( 'Cannot append bytes after the last input chunk was provided and input_finished() was called.' ),
 				'WP_VERSION'
 			);
 			return false;
+		}
+		$this->xml .= $next_chunk;
+		$this->had_previous_chunks = true;
+		if($this->parser_state === self::STATE_INCOMPLETE_INPUT) {
+			$this->parser_state = self::STATE_READY;
 		}
 		return true;
 	}
@@ -796,7 +786,7 @@ class WP_XML_Processor {
 	 *
 	 * @return bool Whether a token was parsed.
 	 */
-	protected function base_class_next_token() {
+	protected function parse_next_token() {
 		$was_at = $this->bytes_already_parsed;
 		$this->after_tag();
 
@@ -1729,7 +1719,8 @@ class WP_XML_Processor {
 		 * can be nothing left in the document other than a #text node.
 		 */
 		$this->set_incomplete_input_or_parse_error();
-		$this->is_incomplete_text_node = true;
+		$this->token_starts_at         = $was_at;
+		$this->token_length            = $doc_length - $was_at;
 		$this->text_starts_at          = $was_at;
 		$this->text_length             = $doc_length - $was_at;
 		return false;
@@ -1932,13 +1923,12 @@ class WP_XML_Processor {
 			unset( $this->lexical_updates[ $name ] );
 		}
 
-		$this->is_incomplete_text_node = false;
 		$this->token_starts_at         = null;
 		$this->token_length            = null;
 		$this->tag_name_starts_at      = null;
 		$this->tag_name_length         = null;
-		$this->text_starts_at          = 0;
-		$this->text_length             = 0;
+		$this->text_starts_at          = null;
+		$this->text_length             = null;
 		$this->is_closing_tag          = null;
 		$this->attributes              = array();
 	}
@@ -1946,14 +1936,13 @@ class WP_XML_Processor {
 	protected function reset_state() {
 		$this->xml                     = '';
 		$this->parser_state            = self::STATE_READY;
-		$this->is_incomplete_text_node = false;
 		$this->bytes_already_parsed    = 0;
 		$this->token_starts_at         = null;
 		$this->token_length            = null;
 		$this->tag_name_starts_at      = null;
 		$this->tag_name_length         = null;
-		$this->text_starts_at          = 0;
-		$this->text_length             = 0;
+		$this->text_starts_at          = null;
+		$this->text_length             = null;
 		$this->is_closing_tag          = null;
 		$this->last_error              = null;
 		$this->attributes              = array();
@@ -1964,14 +1953,14 @@ class WP_XML_Processor {
 	}
 
 	/**
-	 * Applies attribute updates to XML document.
+	 * Applies lexical updates to XML document.
 	 *
 	 * @since WP_VERSION
 	 *
 	 * @param int $shift_this_point Accumulate and return shift for this position.
 	 * @return int How many bytes the given pointer moved in response to the updates.
 	 */
-	private function apply_attributes_updates( $shift_this_point = 0 ) {
+	private function apply_lexical_updates( $shift_this_point = 0 ) {
 		if ( ! count( $this->lexical_updates ) ) {
 			return 0;
 		}
@@ -2112,7 +2101,7 @@ class WP_XML_Processor {
 		// Point this tag processor before the sought tag opener and consume it.
 		$this->bytes_already_parsed = $this->bookmarks[ $bookmark_name ]->start;
 		$this->parser_state         = self::STATE_READY;
-		return $this->base_class_next_token();
+		return $this->parse_next_token();
 	}
 
 	/**
@@ -2722,15 +2711,15 @@ class WP_XML_Processor {
 		}
 
 		/*
-		 * Keep track of the position right before the current tag. This will
-		 * be necessary for reparsing the current tag after updating the XML.
+		 * Keep track of the position right before the current token. This will
+		 * be necessary for reparsing the current token after updating the XML.
 		 */
-		$before_current_tag = $this->token_starts_at;
+		$before_current_token = $this->token_starts_at ?? 0;
 
 		/*
 		 * 1. Apply the enqueued edits and update all the pointers to reflect those changes.
 		 */
-		$before_current_tag += $this->apply_attributes_updates( $before_current_tag );
+		$before_current_token += $this->apply_lexical_updates( $before_current_token );
 
 		/*
 		 * 2. Rewind to before the current tag and reparse to get updated attributes.
@@ -2752,10 +2741,38 @@ class WP_XML_Processor {
 		 *                 ↑  │ back up by the length of the tag name plus the opening <
 		 *                 └←─┘ back up by strlen("em") + 1 ==> 3
 		 */
-		$this->bytes_already_parsed = $before_current_tag;
-		$this->base_class_next_token();
+		$this->bytes_already_parsed = $before_current_token;
+		$this->parse_next_token();
 
 		return $this->xml;
+	}
+
+	/**
+	 * Finds the next token in the XML document.
+	 *
+	 * An XML document can be viewed as a stream of tokens,
+	 * where tokens are things like XML tags, XML comments,
+	 * text nodes, etc. This method finds the next token in
+	 * the XML document and returns whether it found one.
+	 *
+	 * If it starts parsing a token and reaches the end of the
+	 * document then it will seek to the start of the last
+	 * token and pause, returning `false` to indicate that it
+	 * failed to find a complete token.
+	 *
+	 * Possible token types, based on the XML specification:
+	 *
+	 *  - an XML tag
+	 *  - a text node - the plaintext inside tags.
+	 *  - a CData section
+	 *  - an XML comment.
+	 *  - a DOCTYPE declaration.
+	 *  - a processing instruction, e.g. `<?xml mode="WordPress" ?>`.
+	 *
+	 * @return bool Whether a token was parsed.
+	 */
+	public function next_token() {
+		return $this->step();
 	}
 
 	/**
@@ -2807,34 +2824,6 @@ class WP_XML_Processor {
 	}
 
 	/**
-	 * Finds the next token in the XML document.
-	 *
-	 * An XML document can be viewed as a stream of tokens,
-	 * where tokens are things like XML tags, XML comments,
-	 * text nodes, etc. This method finds the next token in
-	 * the XML document and returns whether it found one.
-	 *
-	 * If it starts parsing a token and reaches the end of the
-	 * document then it will seek to the start of the last
-	 * token and pause, returning `false` to indicate that it
-	 * failed to find a complete token.
-	 *
-	 * Possible token types, based on the XML specification:
-	 *
-	 *  - an XML tag
-	 *  - a text node - the plaintext inside tags.
-	 *  - a CData section
-	 *  - an XML comment.
-	 *  - a DOCTYPE declaration.
-	 *  - a processing instruction, e.g. `<?xml mode="WordPress" ?>`.
-	 *
-	 * @return bool Whether a token was parsed.
-	 */
-	public function next_token( $node_to_process = self::PROCESS_NEXT_NODE ) {
-		return $this->step( $node_to_process );
-	}
-
-	/**
 	 * Parses the next node in the 'prolog' part of the XML document.
 	 *
 	 * @since WP_VERSION
@@ -2846,7 +2835,7 @@ class WP_XML_Processor {
 	 */
 	private function step_in_prolog( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			$has_next_node = $this->base_class_next_token();
+			$has_next_node = $this->parse_next_token();
 			if (
 				false === $has_next_node &&
 				! $this->expecting_more_input
@@ -2903,7 +2892,7 @@ class WP_XML_Processor {
 	 */
 	private function step_in_element( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			$has_next_node = $this->base_class_next_token();
+			$has_next_node = $this->parse_next_token();
 			if (
 				false === $has_next_node &&
 				! $this->expecting_more_input
@@ -2965,7 +2954,7 @@ class WP_XML_Processor {
 	 */
 	private function step_in_misc( $node_to_process = self::PROCESS_NEXT_NODE ) {
 		if ( self::PROCESS_NEXT_NODE === $node_to_process ) {
-			$has_next_node = $this->base_class_next_token();
+			$has_next_node = $this->parse_next_token();
 			if (
 				false === $has_next_node &&
 				! $this->expecting_more_input
@@ -2976,9 +2965,15 @@ class WP_XML_Processor {
 			}
 		}
 
+		// Do not step if we paused due to an incomplete input.
+		if ( WP_XML_Processor::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
+			return false;
+		}
+
 		if ( self::STATE_COMPLETE === $this->parser_state ) {
 			return true;
 		}
+
 		switch ( $this->get_token_type() ) {
 			case '#comment':
 			case '#processing-instructions':
@@ -2993,26 +2988,6 @@ class WP_XML_Processor {
 				}
 				return $this->step();
 			default:
-				/*
-				 * If we're at the end of the document, we can never be sure
-				 * whether it's complete or are we still waiting for a comment
-				 * or a processing directive. Let's mark the parse as complete
-				 * and let the API consumer decide whether they want to re-parse
-				 * once more data becomes available in.
-				 */
-				if (
-					WP_XML_Processor::STATE_INCOMPLETE_INPUT === $this->parser_state &&
-					$this->is_incomplete_text_node
-				) {
-					$text = $this->get_modifiable_text();
-					// Non-whitespace characters are not allowed after the root element was closed.
-					$contains_only_whitespace = strlen( $text ) === strspn( $text, " \t\n\r" );
-					if ( $contains_only_whitespace ) {
-						$this->parser_state = self::STATE_COMPLETE;
-						return false;
-					}
-				}
-
 				$this->last_error = self::ERROR_SYNTAX;
 				_doing_it_wrong( __METHOD__, 'Unexpected token type "' . $this->get_token_type() . '" in misc stage.', 'WP_VERSION' );
 				return false;
@@ -3343,3 +3318,5 @@ class WP_XML_Processor {
 	 */
 	const PROCESS_CURRENT_NODE = 'process-current-node';
 }
+
+

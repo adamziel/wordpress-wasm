@@ -11,7 +11,7 @@ class WPWXRURLRewriterTests extends TestCase {
         $chain = new WP_Stream_Chain(
             [
                 'file' => new WP_File_Byte_Stream($fixture_path, 100),
-                'wxr' => WP_WXR_URL_Rewrite_Processor::stream(
+                'wxr' => WP_WXR_URL_Rewrite_Processor::create_stream_processor(
                     'https://playground.internal/path',
                     'https://playground.wordpress.net/new-path'
                 ),
