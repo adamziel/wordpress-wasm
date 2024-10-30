@@ -62,6 +62,21 @@ define(
 
 $ch = curl_init($targetUrl);
 
+$relay_http_code_and_initial_headers_if_not_already_sent = function () use ($ch) {
+    static $http_code_sent = false;
+
+    if (!$http_code_sent) {
+        // Set the response code from the target server
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        http_response_code($http_code);
+
+        // For now, let's clearly avoid the possibility of stale, cached responses.
+        header('Cache-Control: no-cache');
+
+        $http_code_sent = true;
+    }
+};
+
 // Pin the hostname resolution to an IP we've resolved earlier
 curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:80:$resolvedIp",
@@ -86,7 +101,7 @@ curl_setopt(
             "Host: $host",
             // @TODO: Consider relaying client IP with the following reasoning:
             // Let's not take full credit for the proxied request.
-            // This is a CORS proxy, not an IP anonymizer. 
+            // This is a CORS proxy, not an IP anonymizer.
             // NOTE: We cannot do this reliably based on X-Forwarded-For unless
             // we trust the reverse proxy, so it cannot be done unconditionally
             // in this script because we do not control where others deploy it.
@@ -98,43 +113,51 @@ curl_setopt(
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
 $httpcode_sent = false;
-curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use($targetUrl, &$httpcode_sent, $ch) {
-    if(!$httpcode_sent) {
-        // Set the response code from the target server
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        http_response_code($httpCode);
-        $httpcode_sent = true;
-    }
-    $len = strlen($header);
-    $colonPos = strpos($header, ':');
-    $name = strtolower(substr($header, 0, $colonPos));
-    $value = trim(substr($header, $colonPos + 1));
-
-    if($name === 'content-length') {
-        $content_length = intval($value);
-        if ($content_length >= MAX_RESPONSE_SIZE) {
-            http_response_code(413);
-            echo "Response Too Large";
-            exit;
-        }
-    }
-    if (stripos($header, 'Location:') === 0) {
-        // Adjust the redirection URL to go back to the proxy script
-        $locationUrl = trim(substr($header, 9));
-        $newLocation = rewrite_relative_redirect(
-            $targetUrl, 
-            $locationUrl, 
-            CURRENT_SCRIPT_URI
-        );
-        header('Location: ' . $newLocation, true);
-    } else if (
-        stripos($header, 'Set-Cookie:') !== 0 && 
-        stripos($header, 'Authorization:') !== 0
+curl_setopt(
+    $ch,
+    CURLOPT_HEADERFUNCTION,
+    function(
+        $curl,
+        $header
+    ) use (
+        $targetUrl,
+        $relay_http_code_and_initial_headers_if_not_already_sent
     ) {
-        header($header, false);
+        $relay_http_code_and_initial_headers_if_not_already_sent();
+
+        $len = strlen($header);
+        $colonPos = strpos($header, ':');
+        $name = strtolower(substr($header, 0, $colonPos));
+        $value = trim(substr($header, $colonPos + 1));
+
+        if($name === 'content-length') {
+            $content_length = intval($value);
+            if ($content_length >= MAX_RESPONSE_SIZE) {
+                http_response_code(413);
+                echo "Response Too Large";
+                exit;
+            }
+        }
+        if (stripos($header, 'Location:') === 0) {
+            // Adjust the redirection URL to go back to the proxy script
+            $locationUrl = trim(substr($header, 9));
+            $newLocation = rewrite_relative_redirect(
+                $targetUrl,
+                $locationUrl,
+                CURRENT_SCRIPT_URI
+            );
+            header('Location: ' . $newLocation, true);
+        } else if (
+            stripos($header, 'Set-Cookie:') !== 0 &&
+            stripos($header, 'Authorization:') !== 0 &&
+            stripos($header, 'Cache-Control:') !== 0
+        ) {
+            header($header, false);
+        }
+        return $len;
     }
-    return $len;
-});
+);
+
 curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) {
     echo $data;
     @ob_flush();
@@ -158,8 +181,7 @@ if (!curl_exec($ch)) {
     http_response_code(502);
     echo "Bad Gateway – curl_exec error: " . curl_error($ch);
 } else {
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    @http_response_code($httpCode);
+    @$relay_http_code_and_initial_headers_if_not_already_sent();
 }
 // Close cURL session
 curl_close($ch);

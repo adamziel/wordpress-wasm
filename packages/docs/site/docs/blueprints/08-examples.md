@@ -229,7 +229,7 @@ WordPress Playground can run `trunk` (the latest commit), the HEAD of a specific
 
 You can specify the reference in `"url": "https://playground.wordpress.net/plugin-proxy.php?build-ref=trunk"`.
 
-To specify the latest commit of a particular branch, you can change the reference to the brunch number, eg `6.6`. To run a specific commit, you can use the commit hash from [WordPress/WordPress](https://github.com/WordPress/WordPress), eg `7d7a52367dee9925337e7d901886c2e9b21f70b6`.
+To specify the latest commit of a particular branch, you can change the reference to the branch version number, eg `6.6`. To run a specific commit, you can use the commit hash from [WordPress/WordPress](https://github.com/WordPress/WordPress), eg `7d7a52367dee9925337e7d901886c2e9b21f70b6`.
 
 **Note:** the oldest supported WordPress version is `5.9.9`, following the SQLite integration plugin.
 

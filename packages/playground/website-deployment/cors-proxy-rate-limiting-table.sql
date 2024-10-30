@@ -6,5 +6,6 @@ CREATE TABLE cors_proxy_rate_limiting (
 	tokens SMALLINT UNSIGNED NOT NULL,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	-- @TODO: Make this per-domain
-	CHECK (capacity > 0 AND tokens < capacity)
+	CHECK (capacity > 0 AND tokens < capacity),
+	INDEX (updated_at)
 );

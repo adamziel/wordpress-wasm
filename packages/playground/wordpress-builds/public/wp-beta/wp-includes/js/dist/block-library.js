@@ -35679,6 +35679,27 @@ function AccessibleMenuDescription({
 
 
 
+function useResponsiveMenu(navRef) {
+  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = (0,external_wp_element_namespaceObject.useState)(false);
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (!navRef.current) {
+      return;
+    }
+    const htmlElement = navRef.current.ownerDocument.documentElement;
+
+    // Add a `has-modal-open` class to the <html> when the responsive
+    // menu is open. This reproduces the same behavior of the frontend.
+    if (isResponsiveMenuOpen) {
+      htmlElement.classList.add('has-modal-open');
+    } else {
+      htmlElement.classList.remove('has-modal-open');
+    }
+    return () => {
+      htmlElement?.classList.remove('has-modal-open');
+    };
+  }, [navRef, isResponsiveMenuOpen]);
+  return [isResponsiveMenuOpen, setResponsiveMenuVisibility];
+}
 function ColorTools({
   textColor,
   setTextColor,
@@ -35838,7 +35859,8 @@ function Navigation({
     selectBlock,
     __unstableMarkNextChangeAsNotPersistent
   } = (0,external_wp_data_namespaceObject.useDispatch)(external_wp_blockEditor_namespaceObject.store);
-  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = (0,external_wp_element_namespaceObject.useState)(false);
+  const navRef = (0,external_wp_element_namespaceObject.useRef)();
+  const [isResponsiveMenuOpen, setResponsiveMenuVisibility] = useResponsiveMenu(navRef);
   const [overlayMenuPreview, setOverlayMenuPreview] = (0,external_wp_element_namespaceObject.useState)(false);
   const {
     hasResolvedNavigationMenus,
@@ -35901,7 +35923,6 @@ function Navigation({
     __unstableMarkNextChangeAsNotPersistent();
     setRef(navigationFallbackId);
   }, [ref, setRef, hasUnsavedBlocks, navigationFallbackId, __unstableMarkNextChangeAsNotPersistent]);
-  const navRef = (0,external_wp_element_namespaceObject.useRef)();
 
   // The standard HTML5 tag for the block wrapper.
   const TagName = 'nav';
@@ -52299,6 +52320,7 @@ function utils_isPercentageUnit(unit) {
 
 
 const DEFAULT_INNER_PADDING = '4px';
+const PERCENTAGE_WIDTHS = [25, 50, 75, 100];
 function SearchEdit({
   className,
   attributes,
@@ -52593,19 +52615,23 @@ function SearchEdit({
             __unstableInputWidth: "80px",
             value: `${width}${widthUnit}`,
             units: units
-          }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.ButtonGroup, {
-            className: "wp-block-search__components-button-group" // unused, kept for backwards compatibility
-            ,
-            "aria-label": (0,external_wp_i18n_namespaceObject.__)('Percentage Width'),
-            children: [25, 50, 75, 100].map(widthValue => {
-              return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.Button, {
-                size: "small",
-                variant: widthValue === width && widthUnit === '%' ? 'primary' : undefined,
-                onClick: () => setAttributes({
-                  width: widthValue,
-                  widthUnit: '%'
-                }),
-                children: [widthValue, "%"]
+          }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalToggleGroupControl, {
+            label: (0,external_wp_i18n_namespaceObject.__)('Percentage Width'),
+            value: PERCENTAGE_WIDTHS.includes(width) && widthUnit === '%' ? width : undefined,
+            hideLabelFromVision: true,
+            onChange: newWidth => {
+              setAttributes({
+                width: newWidth,
+                widthUnit: '%'
+              });
+            },
+            isBlock: true,
+            __next40pxDefaultSize: true,
+            __nextHasNoMarginBottom: true,
+            children: PERCENTAGE_WIDTHS.map(widthValue => {
+              return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalToggleGroupControlOption, {
+                value: widthValue,
+                label: `${widthValue}%`
               }, widthValue);
             })
           })]

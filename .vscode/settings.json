@@ -33,5 +33,6 @@
 	"C_Cpp.errorSquiggles": "disabled",
 	"git.branchProtection": [
 		"trunk"
-	]
+	],
+	"php.version": "7.2"
 }

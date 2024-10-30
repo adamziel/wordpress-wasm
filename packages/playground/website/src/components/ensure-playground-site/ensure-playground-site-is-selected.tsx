@@ -99,9 +99,7 @@ export function EnsurePlaygroundSiteIsSelected({
 						originalBlueprint: blueprint,
 					},
 					originalUrlParams: {
-						searchParams: Object.fromEntries(
-							url.searchParams.entries()
-						),
+						searchParams: parseSearchParams(url.searchParams),
 						hash: url.hash,
 					},
 				})
@@ -114,4 +112,13 @@ export function EnsurePlaygroundSiteIsSelected({
 	}, [url.href, requestedSiteSlug, siteListingStatus]);
 
 	return children;
+}
+
+function parseSearchParams(searchParams: URLSearchParams) {
+	const params: Record<string, any> = {};
+	for (const key of searchParams.keys()) {
+		const value = searchParams.getAll(key);
+		params[key] = value.length > 1 ? value : value[0];
+	}
+	return params;
 }

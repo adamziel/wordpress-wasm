@@ -50,7 +50,14 @@ function url_validate_and_resolve($url, $resolve_function='gethostbynamel') {
 
     $host = $parsedUrl['host'];
 
-    // @TODO: Reject requests to this host.
+    if (
+        ( isset( $_SERVER['HTTP_HOST'] ) &&
+            strcasecmp($_SERVER['HTTP_HOST'], $host) === 0) ||
+        ( isset( $_SERVER['SERVER_ADDR'] ) &&
+            strcasecmp($_SERVER['SERVER_ADDR'], $host) === 0)
+    ) {
+        throw new CorsProxyException("URL cannot target the CORS proxy host.");
+    }
 
     // Ensure the hostname does not resolve to a private IP
     $resolved_ips = $resolve_function($host);

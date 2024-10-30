@@ -4,57 +4,108 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
-## [v1.0.4] (2024-10-21) 
+## [v1.0.7] (2024-10-28)
 
-### Enhancements
-
-- Support CORS proxy rate-limiting. ([#1879](https://github.com/WordPress/wordpress-playground/pull/1879))
-
-### Blueprints
-
-- Allow multisites to load wp-admin pages with the landingPage attribute. ([#1913](https://github.com/WordPress/wordpress-playground/pull/1913))
-
-### Tools
-
-
-#### GitHub integration
-
-- Blueprints: Use `?` instead of `/` to CORS Proxy URLs. ([#1899](https://github.com/WordPress/wordpress-playground/pull/1899))
-
-#### Import/Export
-
-- Kickoff Data Liberation: Let's Build WordPress-first Data Migration Tools. ([#1888](https://github.com/WordPress/wordpress-playground/pull/1888))
-
-### Experiments
-
-
-#### File Synchronization
-
-- [Remote] Preserve PHP constants when saving a temporary site. ([#1911](https://github.com/WordPress/wordpress-playground/pull/1911))
+## [v1.0.6] (2024-10-28)
 
 ### Website
 
-- Do not display "You have no Playgrounds" message before loading the site. ([#1912](https://github.com/WordPress/wordpress-playground/pull/1912))
-- Fix build error that only appeared during deployment. ([#1896](https://github.com/WordPress/wordpress-playground/pull/1896))
-- Fix use of secrets on WP Cloud site. ([#1909](https://github.com/WordPress/wordpress-playground/pull/1909))
-- Maintain Query API parameters on temporary Playground settings update. ([#1910](https://github.com/WordPress/wordpress-playground/pull/1910))
-- Stop adding all CORS proxy files to website build. ([#1895](https://github.com/WordPress/wordpress-playground/pull/1895))
-- Stop responding with default MIME type. ([#1897](https://github.com/WordPress/wordpress-playground/pull/1897))
-- Stop short-circuiting web host PHP execution. ([#1898](https://github.com/WordPress/wordpress-playground/pull/1898))
-- Fix progress reporting during Playground load. ([#1915](https://github.com/WordPress/wordpress-playground/pull/1915))
-- Include CORS proxy with website builds. ([#1880](https://github.com/WordPress/wordpress-playground/pull/1880))
-- [Blueprints] Stop escaping landingPage URLs when loading WP Admin. ([#1891](https://github.com/WordPress/wordpress-playground/pull/1891))
+-   Query API: Preserve multiple ?plugin= query params. ([#1947](https://github.com/WordPress/wordpress-playground/pull/1947))
+-   [Remote] Enable releasing @wp-playground/remote by making it public. ([#1948](https://github.com/WordPress/wordpress-playground/pull/1948))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak
+
+## [v1.0.5] (2024-10-25)
+
+### Enhancements
+
+-   [CORS Proxy] Rate-limits IPv6 requests based on /64 subnets, not specific addresses. ([#1923](https://github.com/WordPress/wordpress-playground/pull/1923))
+
+### Blueprints
+
+-   Reload after autologin to set login cookies during boot. ([#1914](https://github.com/WordPress/wordpress-playground/pull/1914))
+-   Skip empty lines in the runSql step. ([#1939](https://github.com/WordPress/wordpress-playground/pull/1939))
+
+### Documentation
+
+-   Clarified wp beta to also include rc version. ([#1936](https://github.com/WordPress/wordpress-playground/pull/1936))
+
+### PHP WebAssembly
+
+-   Enable CURL in Playground Web. ([#1935](https://github.com/WordPress/wordpress-playground/pull/1935))
+-   PHP: Implement TLS 1.2 to decrypt https:// and ssl:// traffic and translate it into fetch(). ([#1926](https://github.com/WordPress/wordpress-playground/pull/1926))
+
+### Website
+
+-   Hide Settings menu after clicking "Restore from .zip. ([#1904](https://github.com/WordPress/wordpress-playground/pull/1904))
+-   Publish @wp-playground/remote (types only). ([#1924](https://github.com/WordPress/wordpress-playground/pull/1924))
 
 ### Bug Fixes
 
+-   CORS Proxy: Index update_at column because it is used for lookup. ([#1931](https://github.com/WordPress/wordpress-playground/pull/1931))
+-   CORS Proxy: Reject targeting self. ([#1932](https://github.com/WordPress/wordpress-playground/pull/1932))
+-   Docs: Fix typo. ([#1934](https://github.com/WordPress/wordpress-playground/pull/1934))
+-   Explicitly request no-cache to discourage WP Cloud from edge caching CORS proxy results. ([#1930](https://github.com/WordPress/wordpress-playground/pull/1930))
+-   Remove test code added in #1914. ([#1928](https://github.com/WordPress/wordpress-playground/pull/1928))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @bgrgicak @bph @brandonpayton @ockham @psrpinto
+
+## [v1.0.4] (2024-10-21)
+
+### Enhancements
+
+-   Support CORS proxy rate-limiting. ([#1879](https://github.com/WordPress/wordpress-playground/pull/1879))
+
+### Blueprints
+
+-   Allow multisites to load wp-admin pages with the landingPage attribute. ([#1913](https://github.com/WordPress/wordpress-playground/pull/1913))
+
+### Tools
+
+#### GitHub integration
+
+-   Blueprints: Use `?` instead of `/` to CORS Proxy URLs. ([#1899](https://github.com/WordPress/wordpress-playground/pull/1899))
+
+#### Import/Export
+
+-   Kickoff Data Liberation: Let's Build WordPress-first Data Migration Tools. ([#1888](https://github.com/WordPress/wordpress-playground/pull/1888))
+
+### Experiments
+
+#### File Synchronization
+
+-   [Remote] Preserve PHP constants when saving a temporary site. ([#1911](https://github.com/WordPress/wordpress-playground/pull/1911))
+
+### Website
+
+-   Do not display "You have no Playgrounds" message before loading the site. ([#1912](https://github.com/WordPress/wordpress-playground/pull/1912))
+-   Fix build error that only appeared during deployment. ([#1896](https://github.com/WordPress/wordpress-playground/pull/1896))
+-   Fix use of secrets on WP Cloud site. ([#1909](https://github.com/WordPress/wordpress-playground/pull/1909))
+-   Maintain Query API parameters on temporary Playground settings update. ([#1910](https://github.com/WordPress/wordpress-playground/pull/1910))
+-   Stop adding all CORS proxy files to website build. ([#1895](https://github.com/WordPress/wordpress-playground/pull/1895))
+-   Stop responding with default MIME type. ([#1897](https://github.com/WordPress/wordpress-playground/pull/1897))
+-   Stop short-circuiting web host PHP execution. ([#1898](https://github.com/WordPress/wordpress-playground/pull/1898))
+-   Fix progress reporting during Playground load. ([#1915](https://github.com/WordPress/wordpress-playground/pull/1915))
+-   Include CORS proxy with website builds. ([#1880](https://github.com/WordPress/wordpress-playground/pull/1880))
+-   [Blueprints] Stop escaping landingPage URLs when loading WP Admin. ([#1891](https://github.com/WordPress/wordpress-playground/pull/1891))
+
+### Bug Fixes
 
 #### Boot Flow
 
-- Prefer pretty permalinks like WP install does. ([#1832](https://github.com/WordPress/wordpress-playground/pull/1832))
+-   Prefer pretty permalinks like WP install does. ([#1832](https://github.com/WordPress/wordpress-playground/pull/1832))
 
 ### Various
 
-- Improve self-host documentation. ([#1884](https://github.com/WordPress/wordpress-playground/pull/1884))
+-   Improve self-host documentation. ([#1884](https://github.com/WordPress/wordpress-playground/pull/1884))
 
 ### Contributors
 
@@ -62,24 +113,22 @@ The following contributors merged PRs in this release:
 
 @adamziel @ashfame @bgrgicak @brandonpayton
 
-
-## [v1.0.3] (2024-10-14) 
+## [v1.0.3] (2024-10-14)
 
 ### Enhancements
 
-- Website: Remove unused React components. ([#1887](https://github.com/WordPress/wordpress-playground/pull/1887))
+-   Website: Remove unused React components. ([#1887](https://github.com/WordPress/wordpress-playground/pull/1887))
 
 ### Tools
-
 
 #### Blueprints Builder
 
-- Blueprints sidebar section for single-click Playground presets. ([#1759](https://github.com/WordPress/wordpress-playground/pull/1759))
+-   Blueprints sidebar section for single-click Playground presets. ([#1759](https://github.com/WordPress/wordpress-playground/pull/1759))
 
 ### Website
 
-- Replace 100vh with 100dvh to fix an "unscrollable" state on mobile devices. ([#1883](https://github.com/WordPress/wordpress-playground/pull/1883))
-- Use modal for Site settings form on mobile – mobile Safari l…. ([#1885](https://github.com/WordPress/wordpress-playground/pull/1885))
+-   Replace 100vh with 100dvh to fix an "unscrollable" state on mobile devices. ([#1883](https://github.com/WordPress/wordpress-playground/pull/1883))
+-   Use modal for Site settings form on mobile – mobile Safari l…. ([#1885](https://github.com/WordPress/wordpress-playground/pull/1885))
 
 ### Contributors
 
@@ -87,12 +136,11 @@ The following contributors merged PRs in this release:
 
 @adamziel
 
-
-## [v1.0.2] (2024-10-09) 
+## [v1.0.2] (2024-10-09)
 
 ### PHP WebAssembly
 
-- PHP.wasm: Load correct php.wasm paths in the built Node.js packages. ([#1877](https://github.com/WordPress/wordpress-playground/pull/1877))
+-   PHP.wasm: Load correct php.wasm paths in the built Node.js packages. ([#1877](https://github.com/WordPress/wordpress-playground/pull/1877))
 
 ### Contributors
 
@@ -100,71 +148,65 @@ The following contributors merged PRs in this release:
 
 @adamziel
 
+## [v1.0.1] (2024-10-09)
 
-## [v1.0.1] (2024-10-09) 
-
-
-
-
-## [v1.0.0] (2024-10-09) 
+## [v1.0.0] (2024-10-09)
 
 ### Blueprints
 
-- Directory Resources. ([#1793](https://github.com/WordPress/wordpress-playground/pull/1793))
-- Login step – handle passwordless autologin via a PHP mu-plugin. ([#1856](https://github.com/WordPress/wordpress-playground/pull/1856))
+-   Directory Resources. ([#1793](https://github.com/WordPress/wordpress-playground/pull/1793))
+-   Login step – handle passwordless autologin via a PHP mu-plugin. ([#1856](https://github.com/WordPress/wordpress-playground/pull/1856))
 
 ### Tools
 
-
 #### Blueprints
 
-- GitDirectoryResource. ([#1858](https://github.com/WordPress/wordpress-playground/pull/1858))
-- GitDirectoryResource: Accept "/", "", "." as root paths. ([#1860](https://github.com/WordPress/wordpress-playground/pull/1860))
+-   GitDirectoryResource. ([#1858](https://github.com/WordPress/wordpress-playground/pull/1858))
+-   GitDirectoryResource: Accept "/", "", "." as root paths. ([#1860](https://github.com/WordPress/wordpress-playground/pull/1860))
 
 #### GitHub integration
 
-- Native git support: LsRefs(), sparseCheckout(), GitPathControl. ([#1764](https://github.com/WordPress/wordpress-playground/pull/1764))
+-   Native git support: LsRefs(), sparseCheckout(), GitPathControl. ([#1764](https://github.com/WordPress/wordpress-playground/pull/1764))
 
 #### Website
 
-- Add core-pr and gutenberg-pr Query API parameters. ([#1761](https://github.com/WordPress/wordpress-playground/pull/1761))
+-   Add core-pr and gutenberg-pr Query API parameters. ([#1761](https://github.com/WordPress/wordpress-playground/pull/1761))
 
 ### PHP WebAssembly
 
-- Refreshless website deployments – load remote.html using the network-first strategy. ([#1849](https://github.com/WordPress/wordpress-playground/pull/1849))
-- JSPI: Pass all unit tests, remove stale PHP builds. ([#1876](https://github.com/WordPress/wordpress-playground/pull/1876))
-- [Remote] Remove the "light" PHP.wasm bundle and only ship the "kitchen-sink" build. ([#1861](https://github.com/WordPress/wordpress-playground/pull/1861))
+-   Refreshless website deployments – load remote.html using the network-first strategy. ([#1849](https://github.com/WordPress/wordpress-playground/pull/1849))
+-   JSPI: Pass all unit tests, remove stale PHP builds. ([#1876](https://github.com/WordPress/wordpress-playground/pull/1876))
+-   [Remote] Remove the "light" PHP.wasm bundle and only ship the "kitchen-sink" build. ([#1861](https://github.com/WordPress/wordpress-playground/pull/1861))
 
 ### Website
 
-- Restore the single-click "Edit Settings" flow. ([#1854](https://github.com/WordPress/wordpress-playground/pull/1854))
-- Restrict CORS proxy to requests from Playground website origin. ([#1865](https://github.com/WordPress/wordpress-playground/pull/1865))
+-   Restore the single-click "Edit Settings" flow. ([#1854](https://github.com/WordPress/wordpress-playground/pull/1854))
+-   Restrict CORS proxy to requests from Playground website origin. ([#1865](https://github.com/WordPress/wordpress-playground/pull/1865))
 
 #### Documentation
 
-- Add /release redirect to WP beta/RC blueprint. ([#1866](https://github.com/WordPress/wordpress-playground/pull/1866))
+-   Add /release redirect to WP beta/RC blueprint. ([#1866](https://github.com/WordPress/wordpress-playground/pull/1866))
 
 ### Internal
 
-- Make isomorphic-git submodule use https, not ssh. ([#1863](https://github.com/WordPress/wordpress-playground/pull/1863))
+-   Make isomorphic-git submodule use https, not ssh. ([#1863](https://github.com/WordPress/wordpress-playground/pull/1863))
 
 ### Bug Fixes
 
-- [CLI] Fix `isWordPressInstalled()` in CLI by inlining the auto_login.php in index.ts instead of using import ?raw. ([#1869](https://github.com/WordPress/wordpress-playground/pull/1869))
+-   [CLI] Fix `isWordPressInstalled()` in CLI by inlining the auto_login.php in index.ts instead of using import ?raw. ([#1869](https://github.com/WordPress/wordpress-playground/pull/1869))
 
 ### Various
 
-- Add documentation around the GPL license and implications for contribution. ([#1776](https://github.com/WordPress/wordpress-playground/pull/1776))
-- Allow installing Plugins/Themes into an arbitrary folder. ([#1803](https://github.com/WordPress/wordpress-playground/pull/1803))
-- Improve documentation. ([#1862](https://github.com/WordPress/wordpress-playground/pull/1862))
-- [Website] Fix "undefined" as className. ([#1870](https://github.com/WordPress/wordpress-playground/pull/1870))
+-   Add documentation around the GPL license and implications for contribution. ([#1776](https://github.com/WordPress/wordpress-playground/pull/1776))
+-   Allow installing Plugins/Themes into an arbitrary folder. ([#1803](https://github.com/WordPress/wordpress-playground/pull/1803))
+-   Improve documentation. ([#1862](https://github.com/WordPress/wordpress-playground/pull/1862))
+-   [Website] Fix "undefined" as className. ([#1870](https://github.com/WordPress/wordpress-playground/pull/1870))
 
 ### Contributors
 
 The following contributors merged PRs in this release:
 
 @adamziel @ajotka @bgrgicak @brandonpayton @dd32 @n8finch
-
 
 ## [v0.9.46] (2024-10-07)
 

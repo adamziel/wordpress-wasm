@@ -12,7 +12,8 @@
 		"../web-service-worker/src/lib/messaging.ts",
 		"../common/src/test/php.spec.ts",
 		"../common/src/test/utils.ts",
-		"../universal/src/lib/php-worker.ts"
+		"../universal/src/lib/php-worker.ts",
+		"src/lib/tls/certificates.ts"
 	],
 	"exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

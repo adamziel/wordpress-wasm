@@ -9,10 +9,12 @@ import { loadNodeRuntime } from '@php-wasm/node';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { login } from './login';
+import { PHPRequest, PHPRequestHandler } from '@php-wasm/universal';
 
 describe('Blueprint step enableMultisite', () => {
+	let handler: PHPRequestHandler;
 	async function doBootWordPress(options: { absoluteUrl: string }) {
-		const requestHandler = await bootWordPress({
+		handler = await bootWordPress({
 			createPhpRuntime: async () =>
 				await loadNodeRuntime(RecommendedPHPVersion),
 			siteUrl: options.absoluteUrl,
@@ -26,10 +28,20 @@ describe('Blueprint step enableMultisite', () => {
 				),
 			},
 		});
-		const php = await requestHandler.getPrimaryPhp();
+		const php = await handler.getPrimaryPhp();
 
-		return { php, requestHandler };
+		return { php, handler };
 	}
+
+	const requestFollowRedirects = async (request: PHPRequest) => {
+		let response = await handler.request(request);
+		while (response.httpStatusCode === 302) {
+			response = await handler.request({
+				url: response.headers['location'][0],
+			});
+		}
+		return response;
+	};
 
 	[
 		{
@@ -44,7 +56,7 @@ describe('Blueprint step enableMultisite', () => {
 		it(`should set the WP_ALLOW_MULTISITE and SUBDOMAIN_INSTALL constants on a ${
 			scoped ? 'scoped' : 'scopeless'
 		} URL`, async () => {
-			const { php, requestHandler } = await doBootWordPress({
+			const { php } = await doBootWordPress({
 				absoluteUrl,
 			});
 			await enableMultisite(php, {});
@@ -69,7 +81,7 @@ describe('Blueprint step enableMultisite', () => {
 			 * the admin bar includes the multisite menu.
 			 */
 			await login(php, {});
-			const response = await requestHandler.request({
+			const response = await requestFollowRedirects({
 				url: '/',
 			});
 			expect(response.httpStatusCode).toEqual(200);

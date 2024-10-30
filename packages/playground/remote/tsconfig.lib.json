@@ -9,6 +9,11 @@
 			"@nx/react/typings/image.d.ts"
 		]
 	},
-	"include": ["src/**/*.ts", "service-worker.ts"],
+	"include": [
+		"src/**/*.ts",
+		"service-worker.ts",
+		"../../php-wasm/web/src/lib/tls/1_2/connection.ts",
+		"../../php-wasm/web/src/lib/tls/certificates.ts"
+	],
 	"exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

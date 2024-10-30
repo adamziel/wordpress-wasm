@@ -113,10 +113,26 @@ export async function setupPlatformLevelMuPlugins(php: UniversalPHP) {
 			}
 			return false;
 		}
+
 		/**
 		 * Logs the user in on their first visit if the Playground runtime told us to.
 		 */
 		function playground_auto_login() {
+			/**
+			 * The redirect should only run if the current PHP request is
+			 * a HTTP request. If it's a PHP CLI run, we can't login the user
+			 * because logins require cookies which aren't available in the CLI.
+			 *
+			 * Currently all Playground requests use the "cli" SAPI name
+			 * to ensure support for WP-CLI, so the best way to distinguish
+			 * between a CLI run and an HTTP request is by checking if the
+			 * $_SERVER['REQUEST_URI'] global is set.
+			 *
+			 * If $_SERVER['REQUEST_URI'] is not set, we assume it's a CLI run.
+			 */
+			if (empty($_SERVER['REQUEST_URI'])) {
+				return;
+			}
 			$user_name = playground_get_username_for_auto_login();
 			if ( false === $user_name ) {
 				return;
@@ -131,27 +147,42 @@ export async function setupPlatformLevelMuPlugins(php: UniversalPHP) {
 			if (!$user) {
 				return;
 			}
+			/**
+			 * This approach is described in a comment on
+			 * https://developer.wordpress.org/reference/functions/wp_set_current_user/
+			 */
 			wp_set_current_user( $user->ID, $user->user_login );
 			wp_set_auth_cookie( $user->ID );
 			do_action( 'wp_login', $user->user_login, $user );
 			setcookie('playground_auto_login_already_happened', '1');
-		}
 
+			/**
+			 * Reload page to ensure the user is logged in correctly.
+			 * WordPress uses cookies to determine if the user is logged in,
+			 * so we need to reload the page to ensure the cookies are set.
+			 *
+			 * Both WordPress home url and REQUEST_URI may include the site scope
+			 * subdirectory.
+			 * To prevent the redirect from including two scopes, we need to
+			 * remove the scope from the REQUEST_URI if it's present.
+			 */
+			$redirect_url = $_SERVER['REQUEST_URI'];
+			if (strpos($redirect_url, '/scope:') === 0) {
+				$parts = explode('/', $redirect_url);
+				$redirect_url = '/' . implode('/', array_slice($parts, 2));
+			}
+			wp_redirect(
+				home_url($redirect_url),
+				302
+			);
+			exit;
+		}
 		/**
 		 * Autologin users from the wp-login.php page.
 		 *
 		 * The wp hook isn't triggered on
 		 **/
-		add_action('init', function() {
-			playground_auto_login();
-			/**
-			 * Check if the request is for the login page.
-			 */
-			if (is_login() && is_user_logged_in() && !empty($_GET['redirect_to'])) {
-				wp_redirect($_GET['redirect_to']);
-				exit;
-			}
-		}, 1);
+		add_action('init', 'playground_auto_login', 1);
 
 		/**
 		 * Disable the Site Admin Email Verification Screen for any session started

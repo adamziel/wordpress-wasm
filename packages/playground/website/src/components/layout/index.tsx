@@ -32,6 +32,7 @@ import {
 	setActiveModal,
 	setSiteManagerOpen,
 } from '../../lib/state/redux/slice-ui';
+import { ImportFormModal } from '../import-form/modal';
 
 acquireOAuthTokenIfNeeded();
 
@@ -159,7 +160,7 @@ function Modals(blueprint: Blueprint) {
 		addCrashListener(logger, (e) => {
 			const error = e as CustomEvent;
 			if (error.detail?.source === 'php-wasm') {
-				dispatch(setActiveModal('error-report'));
+				dispatch(setActiveModal(modalSlugs.ERROR_REPORT));
 			}
 		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,12 +170,14 @@ function Modals(blueprint: Blueprint) {
 		(state: PlaygroundReduxState) => state.ui.activeModal
 	);
 
-	if (currentModal === 'log') {
+	if (currentModal === modalSlugs.LOG) {
 		return <LogModal />;
-	} else if (currentModal === 'error-report') {
+	} else if (currentModal === modalSlugs.ERROR_REPORT) {
 		return <ErrorReportModal blueprint={blueprint} />;
-	} else if (currentModal === 'start-error') {
+	} else if (currentModal === modalSlugs.START_ERROR) {
 		return <StartErrorModal />;
+	} else if (currentModal === modalSlugs.IMPORT_FORM) {
+		return <ImportFormModal />;
 	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
 		return <GithubImportModal
 			onImported={({
