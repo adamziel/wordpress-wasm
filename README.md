@@ -84,7 +84,7 @@ The vanilla `git clone` command will take ages. Here's a faster alternative that
 only pull the latest revision of the trunk branch:
 
 ```
-git clone -b trunk --single-branch --depth 1 --recurse-submodules git@github.com:WordPress/wordpress-playground.git
+git clone -b trunk --single-branch --depth 1 --recurse-submodules https://github.com/WordPress/wordpress-playground.git
 ```
 
 ## Running WordPress Playground locally
@@ -92,7 +92,7 @@ git clone -b trunk --single-branch --depth 1 --recurse-submodules git@github.com
 You also can run WordPress Playground locally as follows:
 
 ```bash
-git clone -b trunk --single-branch --depth 1 --recurse-submodules git@github.com:WordPress/wordpress-playground.git
+git clone -b trunk --single-branch --depth 1 --recurse-submodules https://github.com/WordPress/wordpress-playground.git
 cd wordpress-playground
 npm install
 npm run dev

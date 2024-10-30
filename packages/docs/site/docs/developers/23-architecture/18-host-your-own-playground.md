@@ -58,7 +58,7 @@ The most flexible and customizable method is to build the site locally.
 Create a shallow clone of the Playground repository, or your own fork.
 
 ```sh
-git clone -b trunk --single-branch --depth 1 --recurse-submodules git@github.com:WordPress/wordpress-playground.git
+git clone -b trunk --single-branch --depth 1 --recurse-submodules https://github.com/WordPress/wordpress-playground.git
 ```
 
 Enter the `wordpress-playground` directory.
