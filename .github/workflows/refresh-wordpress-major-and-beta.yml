@@ -39,21 +39,15 @@ jobs:
                   curl -fsSL https://bun.sh/install | bash
             - uses: ./.github/actions/prepare-playground
             - name: 'Recompile WordPress'
+              id: build
               shell: bash
               env:
                   FORCE_REBUILD: ${{ github.event.inputs.force_rebuild }}
               run: |
                   PATH="${PATH}:${HOME}/.bun/bin" npx nx bundle-wordpress:major-and-beta playground-wordpress-builds
-                  if [ $? -eq 0 ]; then
-                    echo "WordPress build succeeded"
-                    echo 'BUILD_FAILED=0' >> $GITHUB_OUTPUT
-                  else
-                    echo "WordPress build failed"
-                    echo 'BUILD_FAILED=1' >> $GITHUB_OUTPUT
-                  fi
             - name: Check for uncommitted changes
               # Prevent commit if the build failed to avoid polluting the commit history
-              if: steps.changes.outputs.BUILD_FAILED == '0'
+              if: steps.build.outcome == 'success'
               id: changes
               run: |
                   if [ -z "$(git status --porcelain)" ]; then
