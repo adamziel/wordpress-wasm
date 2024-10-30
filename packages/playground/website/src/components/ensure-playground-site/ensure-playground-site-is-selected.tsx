@@ -15,6 +15,7 @@ import {
 import { redirectTo } from '../../lib/state/url/router';
 import { logger } from '@php-wasm/logger';
 import { Blueprint } from '@wp-playground/blueprints';
+import { usePrevious } from '../../lib/hooks/use-previous';
 
 /**
  * Ensures the redux store always has an activeSite value.
@@ -38,6 +39,7 @@ export function EnsurePlaygroundSiteIsSelected({
 	const requestedSiteObject = useAppSelector((state) =>
 		selectSiteBySlug(state, requestedSiteSlug!)
 	);
+	const prevUrl = usePrevious(url);
 
 	useEffect(() => {
 		if (!opfsSiteStorage) {
@@ -82,13 +84,22 @@ export function EnsurePlaygroundSiteIsSelected({
 				return;
 			}
 
+			// If only the 'modal' parameter changes in searchParams, don't reload the page
+			const notRefreshingParam = 'modal';
+			const oldParams = new URLSearchParams(prevUrl?.search);
+			const newParams = new URLSearchParams(url?.search);
+
+			if ((!oldParams.has(notRefreshingParam) && newParams.has(notRefreshingParam)) || (oldParams.has(notRefreshingParam) && !newParams.has(notRefreshingParam))) {
+				return;
+			}
+
 			// If the site slug is missing, create a new temporary site.
 			// Lean on the Query API parameters and the Blueprint API to
 			// create the new site.
-			const url = new URL(window.location.href);
+			const newUrl = new URL(window.location.href);
 			let blueprint: Blueprint | undefined = undefined;
 			try {
-				blueprint = await resolveBlueprintFromURL(url);
+				blueprint = await resolveBlueprintFromURL(newUrl);
 			} catch (e) {
 				logger.error('Error resolving blueprint:', e);
 			}
@@ -99,8 +110,8 @@ export function EnsurePlaygroundSiteIsSelected({
 						originalBlueprint: blueprint,
 					},
 					originalUrlParams: {
-						searchParams: parseSearchParams(url.searchParams),
-						hash: url.hash,
+						searchParams: parseSearchParams(newUrl.searchParams),
+						hash: newUrl.hash,
 					},
 				})
 			);

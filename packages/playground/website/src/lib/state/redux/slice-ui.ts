@@ -64,6 +64,12 @@ const uiSlice = createSlice({
 			}
 		},
 		setActiveModal: (state, action: PayloadAction<string | null>) => {
+			if (action.payload === null) {
+				const url = new URL(window.location.href);
+				url.searchParams.delete('modal');
+				window.history.replaceState({}, '', url.href);
+			}
+
 			state.activeModal = action.payload;
 		},
 		setOffline: (state, action: PayloadAction<boolean>) => {
