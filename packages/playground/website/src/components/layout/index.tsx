@@ -41,8 +41,8 @@ export const modalSlugs = {
 	ERROR_REPORT: 'error-report',
 	START_ERROR: 'start-error',
 	IMPORT_FORM: 'import-form',
-	GITHUB_IMPORT: 'github-import-modal',
-	GITHUB_EXPORT: 'github-export-modal'
+	GITHUB_IMPORT: 'github-import',
+	GITHUB_EXPORT: 'github-export'
 }
 
 const displayMode = getDisplayModeFromQuery();
@@ -214,13 +214,9 @@ function Modals(blueprint: Blueprint) {
 		/>;
 	}
 
-	return (
-		<>
-			{query.get('gh-ensure-auth') === 'yes' ? (
-				<GitHubOAuthGuardModal />
-			) : (
-				''
-			)}
-		</>
-	);
+	if (query.get('gh-ensure-auth') === 'yes') {
+		return <GitHubOAuthGuardModal />;
+	}
+
+	return;
 }
