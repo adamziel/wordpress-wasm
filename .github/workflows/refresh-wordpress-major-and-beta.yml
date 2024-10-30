@@ -43,8 +43,7 @@ jobs:
               shell: bash
               env:
                   FORCE_REBUILD: ${{ github.event.inputs.force_rebuild }}
-              run: |
-                  PATH="${PATH}:${HOME}/.bun/bin" npx nx bundle-wordpress:major-and-beta playground-wordpress-builds
+              run: PATH="${PATH}:${HOME}/.bun/bin" npx nx bundle-wordpress:major-and-beta playground-wordpress-builds
             - name: Check for uncommitted changes
               # Prevent commit if the build failed to avoid polluting the commit history
               if: steps.build.outcome == 'success'
