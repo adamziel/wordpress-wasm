@@ -61,7 +61,11 @@ let versionInfo = {};
 if (args.wpVersion === 'nightly') {
 	versionInfo.url =
 		'https://wordpress.org/nightly-builds/wordpress-latest.zip';
-	versionInfo.version = 'nightly';
+	/**
+	 * Nightly versions don't have a version number, so we use the date instead.
+	 * This allows us to determine if the nightly version was already built.
+	 */
+	versionInfo.version = `nightly-${new Date().toISOString().split('T')[0]}`;
 	versionInfo.majorVersion = 'nightly';
 	versionInfo.slug = 'nightly';
 } else if (args.wpVersion === 'beta') {
