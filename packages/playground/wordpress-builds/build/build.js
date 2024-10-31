@@ -58,19 +58,18 @@ const latestVersions = wpVersions.reduce((versionAccumulator, wpVersion) => {
 	const [major, minor] = wpVersion.version.split('.');
 	const majorMinor = `${major}.${minor}`;
 
-	const existingVersion = versionAccumulator.find((v) =>
+	const currentVersionIndex = versionAccumulator.findIndex((v) =>
 		v.version.startsWith(majorMinor)
 	);
-	if (
-		!existingVersion ||
-		semver.gt(wpVersion.version, existingVersion.version)
+	if (-1 === currentVersionIndex) {
+		return [...versionAccumulator, wpVersion];
+	} else if (
+		semver.gt(
+			wpVersion.version,
+			versionAccumulator[currentVersionIndex].version
+		)
 	) {
-		return [
-			...versionAccumulator.filter(
-				(v) => !v.version.startsWith(majorMinor)
-			),
-			wpVersion,
-		];
+		return versionAccumulator.splice(currentVersionIndex, 1, wpVersion);
 	}
 	return versionAccumulator;
 }, []);
