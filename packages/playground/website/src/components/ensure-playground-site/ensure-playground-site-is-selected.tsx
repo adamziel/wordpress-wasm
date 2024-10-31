@@ -88,8 +88,9 @@ export function EnsurePlaygroundSiteIsSelected({
 			const notRefreshingParam = 'modal';
 			const oldParams = new URLSearchParams(prevUrl?.search);
 			const newParams = new URLSearchParams(url?.search);
-
-			if ((!oldParams.has(notRefreshingParam) && newParams.has(notRefreshingParam)) || (oldParams.has(notRefreshingParam) && !newParams.has(notRefreshingParam))) {
+			oldParams.delete(notRefreshingParam);
+			newParams.delete(notRefreshingParam);
+			if (oldParams.toString() === newParams.toString()) {
 				return;
 			}
 
