@@ -9,7 +9,6 @@
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
       <file>tests/URLParserWHATWGComplianceTests.php</file>
       <file>tests/WPXMLProcessorTests.php</file>
-      <file>tests/WPXMLTagProcessorTests.php</file>
       <file>tests/UrldecodeNTests.php</file>
     </testsuite>
   </testsuites>

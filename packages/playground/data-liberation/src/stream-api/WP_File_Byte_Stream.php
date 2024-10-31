@@ -11,6 +11,7 @@ class WP_File_Byte_Stream extends WP_Byte_Stream {
 		$this->file_path  = $file_path;
 		$this->chunk_size = $chunk_size;
 		parent::__construct();
+		$this->append_eof();
 	}
 
 	public function pause() {

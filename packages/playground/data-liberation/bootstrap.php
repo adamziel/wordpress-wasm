@@ -30,7 +30,6 @@ require_once __DIR__ . '/src/WP_URL_In_Text_Processor.php';
 require_once __DIR__ . '/src/WP_URL.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
-require_once __DIR__ . '/src/xml-api/WP_XML_Tag_Processor.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/WP_WXR_URL_Rewrite_Processor.php';
 
@@ -38,8 +37,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 
 // Polyfill WordPress core functions
-function _doing_it_wrong() {
-
+function _doing_it_wrong($method, $message, $version) {
 }
 
 function __($input) {

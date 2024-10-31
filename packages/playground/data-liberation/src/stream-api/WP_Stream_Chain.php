@@ -16,6 +16,11 @@
  * Consult it for reasoning and usage examples:
  *
  * https://github.com/adamziel/wxr-normalize/pull/1
+ *
+ * @TODO: Allow each stream to indicate its output reached EOF
+ *        and propagate that information downstream. Otherwise,
+ *        WP_XML_Processor will always end in an "incomplete input"
+ *        state.
  */
 class WP_Stream_Chain extends WP_Byte_Stream implements ArrayAccess, Iterator {
 	private $first_stream;
