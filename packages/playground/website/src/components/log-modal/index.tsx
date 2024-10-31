@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import Modal from '../modal';
 import { logEventType, logger } from '@php-wasm/logger';
 
 import classNames from 'classnames';
 import css from './style.module.css';
 
-import { TextControl } from '@wordpress/components';
+import { Modal, TextControl } from '@wordpress/components';
 import {
 	PlaygroundDispatch,
 	PlaygroundReduxState,
@@ -23,16 +22,11 @@ export function LogModal(props: { description?: JSX.Element; title?: string }) {
 		dispatch(setActiveModal(null));
 	}
 
-	const styles = {
-		content: { width: 800 },
-	};
-
 	return (
-		<Modal isOpen={true} onRequestClose={onClose} styles={styles}>
-			<header aria-label="Error logs list header">
-				<h2>{props.title || 'Error Logs'}</h2>
+		<Modal title={props.title || 'Error Logs'} onRequestClose={onClose}>
+			<div>
 				{props.description}
-			</header>
+			</div>
 			<SiteLogs key={activeModal} className={css.logsInsideModal} />
 		</Modal>
 	);
@@ -91,7 +85,7 @@ export function SiteLogs({ className }: { className?: string }) {
 						No matching logs found.
 					</div>
 				) : (
-					<div className={css.logEmptyPlaceholder}>
+					<div>
 						Error logs for Playground, WordPress, and PHP will show
 						up here when something goes wrong.
 						<br />

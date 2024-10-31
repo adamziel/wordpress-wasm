@@ -211,7 +211,7 @@ export function BlueprintsPanel({
 					</FlexItem>
 				) : isError ? (
 					<FlexItem
-						style={{ alignSelf: 'stretch', overflowY: 'scroll' }}
+						style={{ alignSelf: 'stretch', padding: '0 24px' }}
 					>
 						<p>
 							Could not load the Blueprints from the gallery. Try

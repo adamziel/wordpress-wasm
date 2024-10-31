@@ -43,7 +43,7 @@ export const modalSlugs = {
 	START_ERROR: 'start-error',
 	IMPORT_FORM: 'import-form',
 	GITHUB_IMPORT: 'github-import',
-	GITHUB_EXPORT: 'github-export'
+	GITHUB_EXPORT: 'github-export',
 	PREVIEW_PR_WP: 'preview-pr-wordpress',
 	PREVIEW_PR_GUTENBERG: 'preview-pr-gutenberg',
 }

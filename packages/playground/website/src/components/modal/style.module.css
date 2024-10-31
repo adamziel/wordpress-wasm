@@ -1,3 +1,16 @@
+.modal {
+	max-width: 600px;
+
+	textarea {
+		resize: vertical;
+		width: 100% !important;
+	}
+}
+
+.modal-small {
+	max-width: 350px;
+}
+
 .btn {
 	cursor: pointer;
 	background: none;

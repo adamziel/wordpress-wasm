@@ -6,6 +6,7 @@ import { logger } from '@php-wasm/logger';
 import { setActiveSiteError } from '../../lib/state/redux/slice-ui';
 import { useDispatch } from 'react-redux';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
+import ModalButtons from '../../components/modal/modal-buttons';
 
 interface PreviewPRFormProps {
 	onImported: () => void;
@@ -213,24 +214,12 @@ export default function PreviewPRForm({
 				/>
 				{errorMsg && <div>{errorMsg}</div>}
 			</div>
-			<Flex
-				justify={'end'}
-			>
-					<Button
-						disabled={submitting}
-						variant="link"
-						onClick={onClose}
-					>
-						Cancel
-					</Button>
-					<Button
-						disabled={submitting}
-						variant="primary"
-						onClick={handleSubmit}
-					>
-						Preview
-					</Button>
-			</Flex>
+			<ModalButtons
+				areDisabled={submitting}
+				onCancel={onClose}
+				onSubmit={handleSubmit}
+				submitText={'Preview'}
+			/>
 		</div>
 	);
 }

@@ -1,10 +1,11 @@
-import Modal, { defaultStyles } from '../../components/modal';
 import GitHubExportForm, { GitHubExportFormProps } from './form';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { useEffect } from 'react';
+import css from '../../components/modal/style.module.css';
+import { Modal } from '@wordpress/components';
 
 interface GithubExportModalProps {
 	allowZipExport: GitHubExportFormProps['allowZipExport'];
@@ -33,11 +34,8 @@ export function GithubExportModal({
 
 	return (
 		<Modal
-			style={{
-				...defaultStyles,
-				content: { ...defaultStyles.content, width: 600 },
-			}}
-			isOpen
+			title={'Export to GitHub'}
+			className={css.modal}
 			onRequestClose={closeModal}
 		>
 			<GitHubExportForm

@@ -1,4 +1,4 @@
-import Modal from '../../components/modal';
+import { Modal } from '@wordpress/components';
 import PreviewPRForm from './form';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
@@ -23,9 +23,8 @@ export function PreviewPRModal({ target }: PreviewPRModalProps) {
 	}
 	return (
 		<Modal
-			header={`Preview a ${targetName[target]} PR`}
+			title={`Preview a ${targetName[target]} PR`}
 			onRequestClose={closeModal}
-			isOpen
 		>
 			<PreviewPRForm
 				onClose={closeModal}

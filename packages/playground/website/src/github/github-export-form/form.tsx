@@ -430,10 +430,10 @@ export default function GitHubExportForm({
 	if (pushResult) {
 		return (
 			<form id="export-playground-form" onSubmit={handleSubmit}>
-				<h2 tabIndex={0} style={{ marginTop: 0, textAlign: 'center' }}>
+				<h3>
 					Pull Request{' '}
 					{formValues.prAction === 'create' ? 'created' : 'updated'}!
-				</h2>
+				</h3>
 				<p>
 					Your changes have been submitted to GitHub. You can view
 					them here:{' '}
@@ -453,9 +453,7 @@ export default function GitHubExportForm({
 						repository. Instead, they were submitted to your fork of
 						the repository.
 					</p>
-				) : (
-					false
-				)}
+				) : false}
 
 				<div className={forms.submitRow}>
 					<Button variant="primary" size="large" onClick={onClose}>
@@ -469,9 +467,6 @@ export default function GitHubExportForm({
 	return (
 		<GitHubOAuthGuard>
 			<form id="export-playground-form" onSubmit={handleSubmit}>
-				<h2 tabIndex={0} style={{ marginTop: 0, textAlign: 'center' }}>
-					Export to GitHub
-				</h2>
 				<p className={css.modalText}>
 					You may export WordPress plugins, themes, and entire
 					wp-content directories as pull requests to any public GitHub

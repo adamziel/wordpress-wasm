@@ -6,6 +6,7 @@ import css from './style.module.css';
 import forms from '../../forms.module.css';
 import Button from '../button';
 import { logger } from '@php-wasm/logger';
+import ModalButtons from '../modal/modal-buttons';
 
 interface ImportFormProps {
 	playground: PlaygroundClient;
@@ -18,7 +19,6 @@ export default function ImportForm({
 	onImported,
 	onClose,
 }: ImportFormProps) {
-	const form = useRef<any>();
 	const fileInputRef = useRef<any>();
 	const [file, setFile] = useState<File | null>(null);
 	const [error, setError] = useState<string>('');
@@ -46,10 +46,7 @@ export default function ImportForm({
 	}
 
 	return (
-		<form id="import-playground-form" ref={form} onSubmit={handleSubmit}>
-			<h2 tabIndex={0} style={{ marginTop: 0, textAlign: 'center' }}>
-				Import Playground
-			</h2>
+		<>
 			<p className={css.modalText}>
 				You may replace the current WordPress Playground site with a
 				previously exported one.
@@ -64,17 +61,13 @@ export default function ImportForm({
 					accept="application/zip"
 				/>
 			</div>
-			<div className={forms.submitRow}>
-				<Button
-					id="import-submit--btn"
-					className={forms.btn}
-					disabled={!file}
-					variant="primary"
-					size="large"
-				>
-					Import
-				</Button>
-			</div>
-		</form>
+
+			<ModalButtons
+				areDisabled={!file}
+				onCancel={onClose}
+				onSubmit={handleSubmit}
+				submitText={'Import'}
+			/>
+		</>
 	);
 }

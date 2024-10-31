@@ -176,9 +176,6 @@ export default function GitHubImportForm({
 	return (
 		<GitHubOAuthGuard>
 			<form id="import-playground-form" onSubmit={handleSubmit}>
-				<h2 tabIndex={0} style={{ marginTop: 0, textAlign: 'center' }}>
-					Import from GitHub
-				</h2>
 				<p className={css.modalText}>
 					You may import WordPress plugins, themes, and entire
 					wp-content directories from any public GitHub repository.

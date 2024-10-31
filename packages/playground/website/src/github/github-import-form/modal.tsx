@@ -1,10 +1,11 @@
-import Modal, { defaultStyles } from '../../components/modal';
 import GitHubImportForm, { GitHubImportFormProps } from './form';
+import css from '../../components/modal/style.module.css';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
 import { useEffect } from 'react';
+import { Modal } from '@wordpress/components';
 
 interface GithubImportModalProps {
 	defaultOpen?: boolean;
@@ -19,17 +20,14 @@ export function GithubImportModal({ defaultOpen, onImported }: GithubImportModal
 		url.searchParams.set('modal', 'github-import');
 		window.history.replaceState({}, '', url.href);
 	}, []);
-	
+
 	const closeModal = () => {
 		dispatch(setActiveModal(null));
 	}
 	return (
 		<Modal
-			style={{
-				...defaultStyles,
-				content: { ...defaultStyles.content, width: 600 },
-			}}
-			isOpen
+			title={'Import from GitHub'}
+			className={css.modal}
 			onRequestClose={closeModal}
 		>
 			<GitHubImportForm

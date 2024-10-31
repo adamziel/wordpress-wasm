@@ -1,9 +1,9 @@
-import { Icon, Spinner } from '@wordpress/components';
+import { Icon, Modal, Spinner } from '@wordpress/components';
 import { oAuthState } from '../state';
 import { GitHubIcon } from '../github';
 import css from './style.module.css';
+import cssModal from '../../components/modal/style.module.css';
 import { useState } from 'react';
-import Modal, { defaultStyles } from '../../components/modal';
 import classNames from 'classnames';
 import { useActiveSite } from '../../lib/state/redux/store';
 
@@ -19,20 +19,22 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 	}
 
 	return (
-		<Modal
-			style={{
-				...defaultStyles,
-				content: { ...defaultStyles.content, width: 600 },
-			}}
-			isOpen={isModalOpen}
-			onRequestClose={() => {
-				setIsModalOpen(false);
-			}}
-		>
-			<GitHubOAuthGuard mayLoseProgress={false}>
-				{children}
-			</GitHubOAuthGuard>
-		</Modal>
+		// eslint-disable-next-line react/jsx-no-useless-fragment
+		<>
+			{ (isModalOpen) &&
+				<Modal
+					title={'Connect to GitHub'}
+					className={cssModal.modal}
+					onRequestClose={() => {
+						setIsModalOpen(false);
+					}}
+				>
+					<GitHubOAuthGuard mayLoseProgress={false}>
+						{children}
+					</GitHubOAuthGuard>
+				</Modal>
+			}
+		</>
 	);
 }
 
@@ -88,9 +90,6 @@ function Authenticate({
 	});
 	return (
 		<div>
-			<h2 tabIndex={0} style={{ marginTop: 0, textAlign: 'center' }}>
-				Connect to GitHub
-			</h2>
 			<p>
 				Importing plugins, themes, and wp-content directories directly
 				from your public GitHub repositories.

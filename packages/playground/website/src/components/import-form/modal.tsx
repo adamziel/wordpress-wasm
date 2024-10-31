@@ -1,6 +1,6 @@
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import ImportForm from './index';
-import Modal from '../modal';
+import { Modal } from '@wordpress/components';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
@@ -23,18 +23,18 @@ export const ImportFormModal = () => {
 
 	return (
 		<Modal
-			isOpen={!!playground}
-			contentLabel='This is a dialog window which overlays the main content of the
+				title={'Import Playground'}
+				contentLabel='This is a dialog window which overlays the main content of the
 				page. The modal begins with a heading 2 called "Import
 				Playground". Pressing the Close Import Window will close
 				the modal and bring you back to where you were on the page.'
-			onRequestClose={closeModal}
-		>
-			<ImportForm
-				playground={playground!}
-				onClose={closeModal}
-				onImported={handleImported}
-			/>
+				onRequestClose={closeModal}
+			>
+				<ImportForm
+					playground={playground!}
+					onClose={closeModal}
+					onImported={handleImported}
+				/>
 		</Modal>
 	);
 };
