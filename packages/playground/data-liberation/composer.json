@@ -1,0 +1,44 @@
+{
+	"name": "wordpress/data-liberation",
+	"prefer-stable": true,
+	"require": {
+		"ext-json": "*",
+		"php": ">=7.2",
+		"rowbot/url": "^4.0"
+	},
+	"require-dev": {
+		"yoast/phpunit-polyfills": "2.0.0",
+		"squizlabs/php_codesniffer": "3.*",
+		"wp-coding-standards/wpcs": "3.1.0",
+		"phpcompatibility/php-compatibility": "*"
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"preferred-install": "dist",
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"autoload": {
+		"classmap": [
+			"src/"
+		],
+		"psr-4": {
+			"WordPress\\DataLiberation\\": "src/WordPress"
+		},
+		"files": [
+			"src/functions.php"
+		]
+	},
+	"autoload-dev": {
+		"classmap": [
+			"tests/"
+		]
+	},
+	"authors": [
+		{
+			"name": "WordPress Contributors",
+			"email": "contributors@wordpress.org"
+		}
+	]
+}

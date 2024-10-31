@@ -40,8 +40,8 @@ export const modalSlugs = {
 	LOG: 'log',
 	ERROR_REPORT: 'error-report',
 	START_ERROR: 'start-error',
-	IMPORT_FORM: 'import-form'
-}
+	IMPORT_FORM: 'import-form',
+};
 
 const displayMode = getDisplayModeFromQuery();
 function getDisplayModeFromQuery(): DisplayMode {

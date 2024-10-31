@@ -1,112 +1,81 @@
 {
-  "compileOnSave": false,
-  "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "resolveJsonModule": true,
-    "jsx": "react",
-    "target": "ES2021",
-    "module": "esnext",
-    "lib": [
-      "ES2022",
-      "esnext.disposable",
-      "dom"
-    ],
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@php-wasm/cli": [
-        "packages/php-wasm/cli/src/main.ts"
-      ],
-      "@php-wasm/fs-journal": [
-        "packages/php-wasm/fs-journal/src/index.ts"
-      ],
-      "@php-wasm/logger": [
-        "packages/php-wasm/logger/src/index.ts"
-      ],
-      "@php-wasm/node": [
-        "packages/php-wasm/node/src/index.ts"
-      ],
-      "@php-wasm/node-polyfills": [
-        "packages/php-wasm/node-polyfills/src/index.ts"
-      ],
-      "@php-wasm/private": [
-        "packages/php-wasm/private/src/index.ts"
-      ],
-      "@php-wasm/progress": [
-        "packages/php-wasm/progress/src/index.ts"
-      ],
-      "@php-wasm/scopes": [
-        "packages/php-wasm/scopes/src/index.ts"
-      ],
-      "@php-wasm/stream-compression": [
-        "packages/php-wasm/stream-compression/src/index.ts"
-      ],
-      "@php-wasm/universal": [
-        "packages/php-wasm/universal/src/index.ts"
-      ],
-      "@php-wasm/util": [
-        "packages/php-wasm/util/src/index.ts"
-      ],
-      "@php-wasm/web": [
-        "packages/php-wasm/web/src/index.ts"
-      ],
-      "@php-wasm/web-service-worker": [
-        "packages/php-wasm/web-service-worker/src/index.ts"
-      ],
-      "@wp-playground/blueprints": [
-        "packages/playground/blueprints/src/index.ts"
-      ],
-      "@wp-playground/cli": [
-        "packages/playground/cli/src/cli.ts"
-      ],
-      "@wp-playground/client": [
-        "packages/playground/client/src/index.ts"
-      ],
-      "@wp-playground/common": [
-        "packages/playground/common/src/index.ts"
-      ],
-      "@wp-playground/components": [
-        "packages/playground/components/src/index.ts"
-      ],
-      "@wp-playground/nx-extensions": [
-        "packages/nx-extensions/src/index.ts"
-      ],
-      "@wp-playground/remote": [
-        "packages/playground/remote/src/index.ts"
-      ],
-      "@wp-playground/storage": [
-        "packages/playground/storage/src/index.ts"
-      ],
-      "@wp-playground/sync": [
-        "packages/playground/sync/src/index.ts"
-      ],
-      "@wp-playground/unit-test-utils": [
-        "packages/playground/unit-test-utils/src/index.ts"
-      ],
-      "@wp-playground/website": [
-        "packages/playground/website/src/index.ts"
-      ],
-      "@wp-playground/wordpress": [
-        "packages/playground/wordpress/src/index.ts"
-      ],
-      "@wp-playground/wordpress-builds": [
-        "packages/playground/wordpress-builds/src/index.ts"
-      ],
-      "isomorphic-git": [
-        "./isomorphic-git/src"
-      ]
-    }
-  },
-  "exclude": [
-    "node_modules",
-    "tmp"
-  ]
+	"compileOnSave": false,
+	"compilerOptions": {
+		"rootDir": ".",
+		"sourceMap": true,
+		"declaration": false,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"importHelpers": true,
+		"resolveJsonModule": true,
+		"jsx": "react",
+		"target": "ES2021",
+		"module": "esnext",
+		"lib": ["ES2022", "esnext.disposable", "dom"],
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"baseUrl": ".",
+		"paths": {
+			"@php-wasm/cli": ["packages/php-wasm/cli/src/main.ts"],
+			"@php-wasm/fs-journal": [
+				"packages/php-wasm/fs-journal/src/index.ts"
+			],
+			"@php-wasm/logger": ["packages/php-wasm/logger/src/index.ts"],
+			"@php-wasm/node": ["packages/php-wasm/node/src/index.ts"],
+			"@php-wasm/node-polyfills": [
+				"packages/php-wasm/node-polyfills/src/index.ts"
+			],
+			"@php-wasm/private": ["packages/php-wasm/private/src/index.ts"],
+			"@php-wasm/progress": ["packages/php-wasm/progress/src/index.ts"],
+			"@php-wasm/scopes": ["packages/php-wasm/scopes/src/index.ts"],
+			"@php-wasm/stream-compression": [
+				"packages/php-wasm/stream-compression/src/index.ts"
+			],
+			"@php-wasm/universal": ["packages/php-wasm/universal/src/index.ts"],
+			"@php-wasm/util": ["packages/php-wasm/util/src/index.ts"],
+			"@php-wasm/web": ["packages/php-wasm/web/src/index.ts"],
+			"@php-wasm/web-service-worker": [
+				"packages/php-wasm/web-service-worker/src/index.ts"
+			],
+			"@wp-playground/blueprints": [
+				"packages/playground/blueprints/src/index.ts"
+			],
+			"@wp-playground/cli": ["packages/playground/cli/src/cli.ts"],
+			"@wp-playground/client": [
+				"packages/playground/client/src/index.ts"
+			],
+			"@wp-playground/common": [
+				"packages/playground/common/src/index.ts"
+			],
+			"@wp-playground/components": [
+				"packages/playground/components/src/index.ts"
+			],
+			"@wp-playground/nx-extensions": [
+				"packages/nx-extensions/src/index.ts"
+			],
+			"@wp-playground/remote": [
+				"packages/playground/remote/src/index.ts"
+			],
+			"@wp-playground/storage": [
+				"packages/playground/storage/src/index.ts"
+			],
+			"@wp-playground/sync": ["packages/playground/sync/src/index.ts"],
+			"@wp-playground/unit-test-utils": [
+				"packages/playground/unit-test-utils/src/index.ts"
+			],
+			"@wp-playground/website": [
+				"packages/playground/website/src/index.ts"
+			],
+			"@wp-playground/wordpress": [
+				"packages/playground/wordpress/src/index.ts"
+			],
+			"@wp-playground/wordpress-builds": [
+				"packages/playground/wordpress-builds/src/index.ts"
+			],
+			"isomorphic-git": ["./isomorphic-git/src"]
+		}
+	},
+	"exclude": ["node_modules", "tmp"]
 }

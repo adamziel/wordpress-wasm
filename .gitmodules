@@ -1,3 +1,7 @@
 [submodule "isomorphic-git"]
     path="isomorphic-git"
     url=https://github.com/adamziel/isomorphic-git.git
+[submodule "blueprints-library"]
+    path="packages/playground/data-liberation/blueprints-library"
+    url=https://github.com/WordPress/blueprints-library.git
+    
