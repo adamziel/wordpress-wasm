@@ -220,7 +220,7 @@ export function BlueprintsPanel({
 					</FlexItem>
 				) : (
 					<FlexItem
-						style={{ alignSelf: 'stretch', overflowY: 'scroll' }}
+						style={{ alignSelf: 'stretch' }}
 					>
 						<DataViews<BlueprintsIndexEntry>
 							data={indexEntries as BlueprintsIndexEntry[]}

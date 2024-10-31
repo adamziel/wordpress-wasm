@@ -10,7 +10,7 @@
 	flex-grow: 1;
 
 	&:not(.is-mobile) {
-		width: 500px;
+		width: var(--site-manager-site-info-min-width);
 	}
 
 	/* Hide the Blueprint thumbnail. It doesn't seem possible with the component props. */

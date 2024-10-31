@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.8] (2024-10-30) 
+
+### Enhancements
+
+- [Data liberation] wp_rewrite_urls(). ([#1893](https://github.com/WordPress/wordpress-playground/pull/1893))
+
+### PHP WebAssembly
+
+- [PHP.wasm for Node] Fix php.js import path in the published npm package. ([#1958](https://github.com/WordPress/wordpress-playground/pull/1958))
+
+### Website
+
+- Restore .d.ts files missing from the published @wp-playground/remote npm package. ([#1949](https://github.com/WordPress/wordpress-playground/pull/1949))
+
+### Various
+
+- [Data Liberation] Add XML API, Stream API, WXR URL Rewriter API. ([#1952](https://github.com/WordPress/wordpress-playground/pull/1952))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @psrpinto
+
+
 ## [v1.0.7] (2024-10-28)
 
 ## [v1.0.6] (2024-10-28)
