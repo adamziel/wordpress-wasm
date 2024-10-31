@@ -42,6 +42,8 @@ export const modalSlugs = {
 	ERROR_REPORT: 'error-report',
 	START_ERROR: 'start-error',
 	IMPORT_FORM: 'import-form',
+	GITHUB_IMPORT: 'github-import',
+	GITHUB_EXPORT: 'github-export'
 	PREVIEW_PR_WP: 'preview-pr-wordpress',
 	PREVIEW_PR_GUTENBERG: 'preview-pr-gutenberg',
 }
@@ -183,47 +185,45 @@ function Modals(blueprint: Blueprint) {
 		return <PreviewPRModal target={'wordpress'} />;
 	} else if (currentModal === modalSlugs.PREVIEW_PR_GUTENBERG) {
 		return <PreviewPRModal target={'gutenberg'} />;
+	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
+		return <GithubImportModal
+			onImported={({
+				 url,
+				 path,
+				 files,
+				 pluginOrThemeName,
+				 contentType,
+				 urlInformation: { owner, repo, type, pr },
+			 }) => {
+				setGithubExportValues({
+					repoUrl: url,
+					prNumber: pr?.toString(),
+					toPathInRepo: path,
+					prAction: pr ? 'update' : 'create',
+					contentType,
+					plugin: pluginOrThemeName,
+					theme: pluginOrThemeName,
+				});
+				setGithubExportFiles(files);
+			}}
+		/>;
+	} else if (currentModal === modalSlugs.GITHUB_EXPORT) {
+		return <GithubExportModal
+			allowZipExport={
+				(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
+			}
+			initialValues={githubExportValues}
+			initialFilesBeforeChanges={githubExportFiles}
+			onExported={(prUrl, formValues) => {
+				setGithubExportValues(formValues);
+				setGithubExportFiles(undefined);
+			}}
+		/>;
 	}
 
-	return (
-		<>
-			{query.get('gh-ensure-auth') === 'yes' ? (
-				<GitHubOAuthGuardModal />
-			) : (
-				''
-			)}
-			<GithubImportModal
-				onImported={({
-					url,
-					path,
-					files,
-					pluginOrThemeName,
-					contentType,
-					urlInformation: { owner, repo, type, pr },
-				}) => {
-					setGithubExportValues({
-						repoUrl: url,
-						prNumber: pr?.toString(),
-						toPathInRepo: path,
-						prAction: pr ? 'update' : 'create',
-						contentType,
-						plugin: pluginOrThemeName,
-						theme: pluginOrThemeName,
-					});
-					setGithubExportFiles(files);
-				}}
-			/>
-			<GithubExportModal
-				allowZipExport={
-					(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
-				}
-				initialValues={githubExportValues}
-				initialFilesBeforeChanges={githubExportFiles}
-				onExported={(prUrl, formValues) => {
-					setGithubExportValues(formValues);
-					setGithubExportFiles(undefined);
-				}}
-			/>
-		</>
-	);
+	if (query.get('gh-ensure-auth') === 'yes') {
+		return <GitHubOAuthGuardModal />;
+	}
+
+	return;
 }

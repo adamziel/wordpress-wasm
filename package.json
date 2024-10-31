@@ -21,6 +21,7 @@
 		"fix-asyncify": "node packages/php-wasm/node/bin/rebuild-while-asyncify-functions-missing.mjs",
 		"typecheck": "nx run-many --all --target=typecheck",
 		"prepare": "husky install",
+		"reset": "nx reset",
 		"recompile:php": "npm run recompile:php:web && npm run recompile:php:node",
 		"recompile:php:web:jspi:all": "nx recompile-php:jspi:all php-wasm-web",
 		"recompile:php:web:jspi:8.3": "nx recompile-php:jspi php-wasm-web -- --PHP_VERSION=8.3 ",
