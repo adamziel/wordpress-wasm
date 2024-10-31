@@ -13,6 +13,8 @@ packages/docs/site/src/model.json
 .docusaurus
 dist.zip
 rollup.d.ts
+.phpunit.cache
+packages/playground/data-liberation/vendor
 
 # dependencies
 node_modules

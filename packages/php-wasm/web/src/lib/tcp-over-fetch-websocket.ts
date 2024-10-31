@@ -432,12 +432,24 @@ class RawBytesFetch {
 					return;
 				}
 
+				const encoder = new TextEncoder();
 				while (true) {
 					const { done, value } = await reader.read();
 					if (value) {
+						/**
+						 * Pass the body stream assuming the response uses
+						 * chunked transfer encoding.
+						 *
+						 * See `headersAsBytes()` for the details.
+						 */
+						controller.enqueue(
+							encoder.encode(`${value.length.toString(16)}\r\n`)
+						);
 						controller.enqueue(value);
+						controller.enqueue(encoder.encode('\r\n'));
 					}
 					if (done) {
+						controller.enqueue(encoder.encode('0\r\n\r\n'));
 						controller.close();
 						return;
 					}
@@ -449,10 +461,48 @@ class RawBytesFetch {
 	private static headersAsBytes(response: Response) {
 		const status = `HTTP/1.1 ${response.status} ${response.statusText}`;
 
-		const headers: string[] = [];
+		const headersObject: Record<string, string> = {};
 		response.headers.forEach((value, name) => {
-			headers.push(`${name}: ${value}`);
+			headersObject[name.toLowerCase()] = value;
 		});
+
+		/**
+		 * Best-effort attempt to provide the correct content-length
+		 * to the PHP-side request handler.
+		 *
+		 * Web servers often respond with a combination of Content-Length
+		 * and Content-Encoding. For example, a 16kb text file may be compressed
+		 * to 4kb with gzip and served with a Content-Encoding of `gzip` and a
+		 * Content-Length of 4KB.
+		 *
+		 * The web browser, however, exposes neither the Content-Encoding header
+		 * nor the gzipped data stream. All we have access to is the original
+		 * Content-Length value of the gzipped file and a decompressed data stream.
+		 *
+		 * If we just pass that along to the PHP-side request handler, it would
+		 * see a 16KB body stream with a Content-Length of 4KB. It would then
+		 * truncate the body stream at 4KB and discard the rest of the data.
+		 *
+		 * This is not what we want.
+		 *
+		 * To correct that behavior, we're stripping the Content-Length entirely.
+		 * We do that for every single response because we don't have any way
+		 * of knowing whether any Content-Encoding was used. Furthermore, we can't
+		 * just calculate the correct Content-Length value without consuming the
+		 * entire content stream – and we want to pass each data chunk to PHP
+		 * as we receive it.
+		 *
+		 * Instead of a fixed Content-Length, we'll use Content-Encoding: Chunked,
+		 * and then provide a per-chunk Content-Length. See fetchRawResponseBytes()
+		 * for the details.
+		 */
+		delete headersObject['content-length'];
+		headersObject['transfer-encoding'] = 'chunked';
+
+		const headers: string[] = [];
+		for (const [name, value] of Object.entries(headersObject)) {
+			headers.push(`${name}: ${value}`);
+		}
 		const string = [status, ...headers].join('\r\n') + '\r\n\r\n';
 		return new TextEncoder().encode(string);
 	}

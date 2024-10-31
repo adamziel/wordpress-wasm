@@ -22356,12 +22356,22 @@ function useGlobalStylesUserConfig() {
     } = select(external_wp_coreData_namespaceObject.store);
     const _globalStylesId = select(external_wp_coreData_namespaceObject.store).__experimentalGetCurrentGlobalStylesId();
     let record;
-    const userCanEditGlobalStyles = canUser('update', {
+
+    // We want the global styles ID request to finish before triggering
+    // the OPTIONS request for user capabilities, otherwise it will
+    // fetch `/wp/v2/global-styles` instead of
+    // `/wp/v2/global-styles/{id}`!
+    // Please adjust the preloaded requests if this changes!
+    const userCanEditGlobalStyles = _globalStylesId ? canUser('update', {
       kind: 'root',
       name: 'globalStyles',
       id: _globalStylesId
-    });
-    if (_globalStylesId) {
+    }) : null;
+    if (_globalStylesId &&
+    // We want the OPTIONS request for user capabilities to finish
+    // before getting the records, otherwise we'll fetch both!
+    typeof userCanEditGlobalStyles === 'boolean') {
+      // Please adjust the preloaded requests if this changes!
       if (userCanEditGlobalStyles) {
         record = getEditedEntityRecord('root', 'globalStyles', _globalStylesId);
       } else {
@@ -23962,13 +23972,14 @@ function ContentOnlySettingsMenuItems({
       record = select(external_wp_coreData_namespaceObject.store).getEntityRecord('postType', 'wp_block', getBlockAttributes(patternParent).ref);
     } else {
       const {
-        getCurrentTemplateId
+        getCurrentTemplateId,
+        getRenderingMode
       } = select(store_store);
       const templateId = getCurrentTemplateId();
       const {
         getContentLockingParent
       } = unlock(select(external_wp_blockEditor_namespaceObject.store));
-      if (!getContentLockingParent(clientId) && templateId) {
+      if (getRenderingMode() === 'template-locked' && !getContentLockingParent(clientId) && templateId) {
         record = select(external_wp_coreData_namespaceObject.store).getEntityRecord('postType', 'wp_template', templateId);
       }
     }
@@ -27459,7 +27470,10 @@ function VisualEditor({
   const shouldIframe = !disableIframe || ['Tablet', 'Mobile'].includes(deviceType);
   const iframeStyles = (0,external_wp_element_namespaceObject.useMemo)(() => {
     return [...(styles !== null && styles !== void 0 ? styles : []), {
-      css: `.is-root-container{display:flow-root;${
+      // Ensures margins of children are contained so that the body background paints behind them.
+      // Otherwise, the background of html (when zoomed out) would show there and appear broken. It’s
+      // important mostly for post-only views yet conceivably an issue in templated views too.
+      css: `:where(.block-editor-iframe__body){display:flow-root;}.is-root-container{display:flow-root;${
       // Some themes will have `min-height: 100vh` for the root container,
       // which isn't a requirement in auto resize mode.
       enableResizing ? 'min-height:0!important;' : ''}}`

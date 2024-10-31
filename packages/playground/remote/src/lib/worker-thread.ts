@@ -237,6 +237,9 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 			// eslint-disable-next-line @typescript-eslint/no-this-alias
 			const endpoint = this;
 			const knownRemoteAssetPaths = new Set<string>();
+			const phpIniEntries: Record<string, string> = {
+				'openssl.cafile': '/internal/ca-bundle.crt',
+			};
 			let CAroot: false | GeneratedCertificate = false;
 			let tcpOverFetch: TCPOverFetchOptions | undefined = undefined;
 			if (withNetworking) {
@@ -260,6 +263,13 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 				tcpOverFetch = {
 					CAroot,
 				};
+			} else {
+				phpIniEntries['allow_url_fopen'] = '0';
+				// Calling curl_exec() with networking disabled causes PHP to
+				// enter an infinite loop. Let's disable it completely to
+				// throw a fatal error instead.
+				phpIniEntries['disable_functions'] =
+					'curl_exec,curl_multi_exec';
 			}
 			const requestHandler = await bootWordPress({
 				siteUrl: setURLScope(wordPressSiteUrl, scope).toString(),
@@ -330,10 +340,7 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 						}
 					},
 				},
-				phpIniEntries: {
-					allow_url_fopen: 'On',
-					'openssl.cafile': '/internal/ca-bundle.crt',
-				},
+				phpIniEntries,
 				createFiles: {
 					'/internal/ca-bundle.crt': CAroot
 						? certificateToPEM(CAroot.certificate)

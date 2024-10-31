@@ -126,18 +126,6 @@ const platformDefaults = {
 		WITH_LIBZIP: 'yes',
 		WITH_SQLITE: 'yes',
 		WITH_JSPI: 'no',
-	},
-	web: {
-		WITH_FILEINFO: 'yes',
-		WITH_ICONV: 'yes',
-		WITH_LIBXML: 'yes',
-		WITH_GD: 'yes',
-		WITH_MBSTRING: 'yes',
-		WITH_MBREGEX: 'yes',
-		WITH_OPENSSL: 'yes',
-		WITH_WS_NETWORKING_PROXY: 'yes',
-	},
-	node: {
 		WITH_CURL: 'yes',
 		WITH_FILEINFO: 'yes',
 		WITH_ICONV: 'yes',
@@ -145,11 +133,14 @@ const platformDefaults = {
 		WITH_GD: 'yes',
 		WITH_MBSTRING: 'yes',
 		WITH_MBREGEX: 'yes',
-		WITH_CLI_SAPI: 'yes',
 		WITH_OPENSSL: 'yes',
+		WITH_WS_NETWORKING_PROXY: 'yes',
+	},
+	web: {},
+	node: {
+		WITH_CLI_SAPI: 'yes',
 		WITH_NODEFS: 'yes',
 		WITH_MYSQL: 'yes',
-		WITH_WS_NETWORKING_PROXY: 'yes',
 	},
 };
 const platform = args.PLATFORM;
