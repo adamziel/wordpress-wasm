@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useState } from 'react';
 import { Spinner, TextControl } from '@wordpress/components';
 import css from './style.module.css';
@@ -38,6 +38,14 @@ export default function PreviewPRForm({
 	const [value, setValue] = useState<string>('');
 	const [submitting, setSubmitting] = useState<boolean>(false);
 	const [errorMsg, setError] = useState<string>('');
+
+	useEffect(() => {
+		const query = new URLSearchParams(window.location.search);
+		if (query.has('core-pr')) {
+			const prNumber = query.get('core-pr');
+			prNumber && setValue(prNumber);
+		}
+	}, []);
 
 	async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
 		e.preventDefault();
