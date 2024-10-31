@@ -4,7 +4,6 @@ import { PlaygroundClient, importWordPressFiles } from '@wp-playground/client';
 
 import css from './style.module.css';
 import forms from '../../forms.module.css';
-import Button from '../button';
 import { logger } from '@php-wasm/logger';
 import ModalButtons from '../modal/modal-buttons';
 

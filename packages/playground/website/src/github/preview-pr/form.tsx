@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { Button, Flex, Spinner, TextControl } from '@wordpress/components';
+import { Spinner, TextControl } from '@wordpress/components';
 import css from './style.module.css';
 import { logger } from '@php-wasm/logger';
 import { setActiveSiteError } from '../../lib/state/redux/slice-ui';
