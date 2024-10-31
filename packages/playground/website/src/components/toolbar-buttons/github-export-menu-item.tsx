@@ -19,7 +19,7 @@ export function GithubExportMenuItem({ onClose, disabled }: Props) {
 				onClose();
 			}}
 		>
-			Export PR to GitHub
+			Export to GitHub
 		</MenuItem>
 	);
 }

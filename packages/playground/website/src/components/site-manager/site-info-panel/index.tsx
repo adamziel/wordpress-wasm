@@ -18,7 +18,6 @@ import { usePlaygroundClientInfo } from '../../../lib/use-playground-client';
 import { OfflineNotice } from '../../offline-notice';
 import { DownloadAsZipMenuItem } from '../../toolbar-buttons/download-as-zip';
 import { GithubExportMenuItem } from '../../toolbar-buttons/github-export-menu-item';
-import { GithubImportMenuItem } from '../../toolbar-buttons/github-import-menu-item';
 import { ReportError } from '../../toolbar-buttons/report-error';
 import { RestoreFromZipMenuItem } from '../../toolbar-buttons/restore-from-zip';
 import { TemporarySiteNotice } from '../temporary-site-notice';
@@ -32,8 +31,6 @@ import { encodeStringAsBase64 } from '../../../lib/base64';
 import { ActiveSiteSettingsForm } from '../site-settings-form/active-site-settings-form';
 import { getRelativeDate } from '../../../lib/get-relative-date';
 import { removeSite } from '../../../lib/state/redux/slice-sites';
-import { WordPressPRMenuItem } from '../../toolbar-buttons/wordpress-pr-menu-item';
-import { GutenbergPRMenuItem } from '../../toolbar-buttons/gutenberg-pr-menu-item';
 
 export function SiteInfoPanel({
 	className,
@@ -240,6 +237,12 @@ export function SiteInfoPanel({
 											</MenuGroup>
 										)}
 										<MenuGroup>
+											<GithubExportMenuItem
+												onClose={onClose}
+												disabled={
+													offline || !playground
+												}
+											/>
 											<DownloadAsZipMenuItem
 												onClose={onClose}
 												disabled={!playground}
@@ -247,32 +250,6 @@ export function SiteInfoPanel({
 											<RestoreFromZipMenuItem
 												onClose={onClose}
 												disabled={!playground}
-											/>
-										</MenuGroup>
-										<MenuGroup>
-											<GithubImportMenuItem
-												onClose={onClose}
-												disabled={
-													offline || !playground
-												}
-											/>
-											<GithubExportMenuItem
-												onClose={onClose}
-												disabled={
-													offline || !playground
-												}
-											/>
-											<WordPressPRMenuItem
-												onClose={onClose}
-												disabled={
-													offline || !playground
-												}
-											/>
-											<GutenbergPRMenuItem
-												onClose={onClose}
-												disabled={
-													offline || !playground
-												}
 											/>
 										</MenuGroup>
 										<MenuGroup>
