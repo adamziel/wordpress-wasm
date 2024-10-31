@@ -11,7 +11,10 @@ interface GithubImportModalProps {
 	defaultOpen?: boolean;
 	onImported?: GitHubImportFormProps['onImported'];
 }
-export function GithubImportModal({ defaultOpen, onImported }: GithubImportModalProps) {
+export function GithubImportModal({
+	defaultOpen,
+	onImported,
+}: GithubImportModalProps) {
 	const dispatch: PlaygroundDispatch = useDispatch();
 	const playground = usePlaygroundClient();
 
@@ -20,10 +23,9 @@ export function GithubImportModal({ defaultOpen, onImported }: GithubImportModal
 		url.searchParams.set('modal', 'github-import');
 		window.history.replaceState({}, '', url.href);
 	}, []);
-
 	const closeModal = () => {
 		dispatch(setActiveModal(null));
-	}
+	};
 	return (
 		<Modal
 			title={'Import from GitHub'}

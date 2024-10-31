@@ -8,6 +8,7 @@ import {
 	setTemporarySiteSpec,
 } from '../../lib/state/redux/slice-sites';
 import {
+	selectActiveSite,
 	setActiveSite,
 	useAppDispatch,
 	useAppSelector,
@@ -33,6 +34,7 @@ export function EnsurePlaygroundSiteIsSelected({
 	const siteListingStatus = useAppSelector(
 		(state) => state.sites.loadingState
 	);
+	const activeSite = useAppSelector((state) => selectActiveSite(state));
 	const dispatch = useAppDispatch();
 	const url = useCurrentUrl();
 	const requestedSiteSlug = url.searchParams.get('site-slug');
@@ -90,7 +92,9 @@ export function EnsurePlaygroundSiteIsSelected({
 			const newParams = new URLSearchParams(url?.search);
 			oldParams.delete(notRefreshingParam);
 			newParams.delete(notRefreshingParam);
-			if (oldParams.toString() === newParams.toString()) {
+			const avoidUnnecessaryTempSiteReload =
+				activeSite && oldParams.toString() === newParams.toString();
+			if (avoidUnnecessaryTempSiteReload) {
 				return;
 			}
 
