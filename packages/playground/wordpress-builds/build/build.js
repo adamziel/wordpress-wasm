@@ -62,7 +62,7 @@ const latestVersions = wpVersions.reduce((versionAccumulator, wpVersion) => {
 		v.version.startsWith(majorMinor)
 	);
 	if (-1 === currentVersionIndex) {
-		return [...versionAccumulator, wpVersion];
+		versionAccumulator.push(wpVersion);
 	} else if (
 		semver.gt(
 			wpVersion.version,
@@ -70,7 +70,6 @@ const latestVersions = wpVersions.reduce((versionAccumulator, wpVersion) => {
 		)
 	) {
 		versionAccumulator[currentVersionIndex] = wpVersion;
-		return versionAccumulator;
 	}
 	return versionAccumulator;
 }, []);
