@@ -69,7 +69,8 @@ const latestVersions = wpVersions.reduce((versionAccumulator, wpVersion) => {
 			versionAccumulator[currentVersionIndex].version
 		)
 	) {
-		return versionAccumulator.splice(currentVersionIndex, 1, wpVersion);
+		versionAccumulator[currentVersionIndex] = wpVersion;
+		return versionAccumulator;
 	}
 	return versionAccumulator;
 }, []);
