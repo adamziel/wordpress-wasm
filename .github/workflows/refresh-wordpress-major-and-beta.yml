@@ -46,7 +46,6 @@ jobs:
               run: PATH="${PATH}:${HOME}/.bun/bin" npx nx bundle-wordpress:major-and-beta playground-wordpress-builds
             - name: Check for uncommitted changes
               # Prevent commit if the build failed to avoid polluting the commit history
-              if: steps.build.outcome == 'success'
               id: changes
               run: |
                   if [ -z "$(git status --porcelain)" ]; then
