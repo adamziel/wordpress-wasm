@@ -2,6 +2,9 @@
 
 abstract class WP_Byte_Stream {
 
+	/**
+	 * @var WP_Byte_Stream_State
+	 */
 	protected $state;
 
 	public function __construct() {

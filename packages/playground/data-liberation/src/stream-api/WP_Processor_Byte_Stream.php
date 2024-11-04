@@ -24,6 +24,6 @@ class ProcessorByteStream extends WP_Byte_Stream {
 	}
 
 	protected function generate_next_chunk(): bool {
-		return ( $this->generate_next_chunk_callback )( $this->state );
+		return ( $this->generate_next_chunk_callback )( $this->state, $this->processor );
 	}
 }

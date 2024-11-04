@@ -252,7 +252,7 @@ class WP_WXR_Reader {
 				'dc:creator' => 'post_author',
 				'content:encoded' => 'post_content',
 				'excerpt:encoded' => 'post_excerpt',
-				'wp:post_id' => 'ID',
+				'wp:post_id' => 'post_id',
 				'wp:status' => 'post_status',
 				'wp:post_date' => 'post_date',
 				'wp:post_date_gmt' => 'post_date_gmt',
@@ -711,9 +711,14 @@ class WP_WXR_Reader {
 	 */
 	private function emit_entity() {
 		if ( $this->entity_type === 'post' ) {
-			$this->last_post_id = $this->entity_data['ID'];
+			$this->last_post_id = $this->entity_data['post_id'];
+		} elseif ( $this->entity_type === 'post_meta' ) {
+			$this->entity_data['post_id'] = $this->last_post_id;
 		} elseif ( $this->entity_type === 'comment' ) {
 			$this->last_comment_id = $this->entity_data['comment_id'];
+			$this->entity_data['post_id'] = $this->last_post_id;
+		} elseif ( $this->entity_type === 'comment_meta' ) {
+			$this->entity_data['comment_id'] = $this->last_comment_id;
 		} elseif ( $this->entity_type === 'tag' ) {
 			$this->entity_data['taxonomy'] = 'post_tag';
 		} elseif ( $this->entity_type === 'category' ) {

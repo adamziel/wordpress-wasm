@@ -134,7 +134,7 @@ playground.internal/path/one was the best choice.
 https://playground.internal/path-not-taken was the second best choice.
 </p>
 <!-- /wp:paragraph -->',
-                'ID' => '10',
+                'post_id' => '10',
                 'post_date_gmt' => '2024-06-05 16:04:48',
                 'post_modified' => '2024-06-10 12:28:55',
                 'post_modified_gmt' => '2024-06-10 12:28:55',
@@ -159,6 +159,7 @@ https://playground.internal/path-not-taken was the second best choice.
             [
                 'meta_key' => '_pingme',
                 'meta_value' => '1',
+                'post_id' => '10',
             ],
             $importer->get_entity_data()
         );
@@ -168,6 +169,7 @@ https://playground.internal/path-not-taken was the second best choice.
             [
                 'meta_key' => '_encloseme',
                 'meta_value' => '1',
+                'post_id' => '10',
             ],
             $importer->get_entity_data()
         );
@@ -219,7 +221,7 @@ https://playground.internal/path-not-taken was the second best choice.
         $this->assertEquals(
             [
                 'post_title' => 'vneck-tee-2.jpg',
-                'ID' => '31',
+                'post_id' => '31',
                 'guid' => 'https://raw.githubusercontent.com/wordpress/blueprints/stylish-press/blueprints/stylish-press/woo-product-images/vneck-tee-2.jpg',
                 'link' => 'https://stylish-press.wordpress.org/?attachment_id=31',
                 'post_published_at' => 'Wed, 16 Jan 2019 13:01:56 +0000',
@@ -250,6 +252,7 @@ https://playground.internal/path-not-taken was the second best choice.
             [
                 'meta_key' => '_wc_attachment_source',
                 'meta_value' => 'https://raw.githubusercontent.com/wordpress/blueprints/stylish-press/blueprints/stylish-press/woo-product-images/vneck-tee-2.jpg',
+                'post_id' => '31',
             ],
             $importer->get_entity_data()
         );
@@ -457,6 +460,7 @@ https://playground.internal/path-not-taken was the second best choice.
                 'comment_date_gmt' => '2007-09-04 00:49:28',
                 'comment_content' => 'Anonymous comment.',
                 'comment_parent' => '0',
+                'post_id' => null
             ],
             $wxr->get_entity_data()
         );
@@ -470,6 +474,7 @@ https://playground.internal/path-not-taken was the second best choice.
             [
                 'meta_key' => '_wp_karma',
                 'meta_value' => '1',
+                'comment_id' => '167',
             ],
             $wxr->get_entity_data()
         );
