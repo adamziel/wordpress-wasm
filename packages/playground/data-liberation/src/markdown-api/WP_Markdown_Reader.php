@@ -29,7 +29,8 @@ class WP_Markdown_Reader {
 			return false;
 		}
 
-		$blocks            = WP_Markdown_To_Blocks::convert( $this->markdown_content );
+		$blocks = WP_Markdown_To_Blocks::convert( $this->markdown_content );
+
 		$this->entity_type = 'post';
 		$this->entity_data = array(
 			'post_type' => 'post',

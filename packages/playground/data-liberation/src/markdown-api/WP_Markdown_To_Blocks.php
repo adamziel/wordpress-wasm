@@ -207,16 +207,24 @@ class WP_Markdown_To_Blocks {
 					case ExtensionInline\Image::class:
 						$html = new WP_HTML_Tag_Processor( '<img>' );
 						$html->next_tag();
-						$html->set_attribute( 'src', $node->getUrl() );
-						$html->set_attribute( 'title', $node->getTitle() );
+						if($node->getUrl()) {
+							$html->set_attribute( 'src', $node->getUrl() );
+						}
+						if($node->getTitle()) {
+							$html->set_attribute( 'title', $node->getTitle() );
+						}
 						$this->append_content( $html->get_updated_html() );
 						break;
 
 					case ExtensionInline\Link::class:
 						$html = new WP_HTML_Tag_Processor( '<a>' );
 						$html->next_tag();
-						$html->set_attribute( 'href', $node->getUrl() );
-						$html->set_attribute( 'title', $node->getTitle() );
+						if($node->getUrl()) {
+							$html->set_attribute( 'href', $node->getUrl() );
+						}
+						if($node->getTitle()) {
+							$html->set_attribute( 'title', $node->getTitle() );
+						}
 						$this->append_content( $html->get_updated_html() );
 						break;
 
