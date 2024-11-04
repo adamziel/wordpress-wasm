@@ -215,7 +215,6 @@ async function run() {
 					php: args.php as SupportedPHPVersion,
 					wp: args.wp,
 				},
-				login: args.login,
 			};
 		}
 
@@ -296,6 +295,13 @@ async function run() {
 				? readAsFile(preinstalledWpContentPath)
 				: fetchWordPress(wpDetails.url, monitor);
 
+			const constants: Record<string, string | number | boolean | null> =
+				{
+					WP_DEBUG: args.debug,
+					WP_DEBUG_LOG: args.debug,
+					WP_DEBUG_DISPLAY: false,
+				};
+
 			requestHandler = await bootWordPress({
 				siteUrl: absoluteUrl,
 				createPhpRuntime: async () =>
@@ -307,6 +313,7 @@ async function run() {
 					'/internal/shared/ca-bundle.crt':
 						rootCertificates.join('\n'),
 				},
+				constants,
 				phpIniEntries: {
 					'openssl.cafile': '/internal/shared/ca-bundle.crt',
 					allow_url_fopen: '1',
