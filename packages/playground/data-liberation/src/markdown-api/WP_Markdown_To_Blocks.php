@@ -15,46 +15,42 @@ use League\CommonMark\Extension\Table\TableSection;
 
 
 class WP_Markdown_To_Blocks {
+	const STATE_READY = 'STATE_READY';
+	const STATE_COMPLETE = 'STATE_COMPLETE';
+
+	private $state = self::STATE_READY;
 	private $root_block;
 	private $block_stack   = array();
 	private $current_block = null;
 
-	public static function convert( $markdown ) {
-		$builder = new WP_Markdown_To_Blocks();
-		$blocks  = $builder->markdown_to_blocks( $markdown );
-		return $builder->convert_blocks_to_markup( $blocks );
+	private $frontmatter = array();
+	private $markdown;
+	private $parsed_blocks = [];
+	private $block_markup = '';
+	
+	public function __construct( $markdown )
+	{
+		$this->markdown = $markdown;
 	}
 
-	private function convert_blocks_to_markup( $blocks ) {
-		$markup = '';
-
-		foreach ( $blocks as $block ) {
-			// Start of block comment
-			$comment = '<!-- -->';
-			$p       = new WP_HTML_Tag_Processor( $comment );
-			$p->next_token();
-			$attrs   = $block->attrs;
-			$content = $block->attrs['content'] ?? '';
-			unset( $attrs['content'] );
-			$encoded_attrs = json_encode( $attrs );
-			if ( $encoded_attrs === '[]' ) {
-				$encoded_attrs = '';
-			}
-			$p->set_modifiable_text( " wp:{$block->blockName} " . $encoded_attrs . ' ' );
-			$open_comment = $p->get_updated_html();
-
-			$markup .= $open_comment . "\n";
-			$markup .= $content . "\n";
-			$markup .= $this->convert_blocks_to_markup( $block->innerBlocks );
-
-			// End of block comment
-			$markup .= "<!-- /wp:{$block->blockName} -->\n";
+	public function parse() {
+		if(self::STATE_READY !== $this->state) {
+			return false;
 		}
-
-		return $markup;
+		$this->convert_markdown_to_blocks();
+		$this->block_markup = self::convert_blocks_to_markup( $this->parsed_blocks );
+		return true;
 	}
 
-	private function markdown_to_blocks( $markdown_content ) {
+	public function get_frontmatter() {
+		return $this->frontmatter;
+	}
+
+	public function get_block_markup() {
+		return $this->block_markup;
+	}
+
+	private function convert_markdown_to_blocks() {
 		$this->root_block    = $this->create_block( 'post-content' );
 		$this->block_stack[] = $this->root_block;
 		$this->current_block = $this->root_block;
@@ -62,10 +58,16 @@ class WP_Markdown_To_Blocks {
 		$environment = new Environment( array() );
 		$environment->addExtension( new CommonMarkCoreExtension() );
 		$environment->addExtension( new GithubFlavoredMarkdownExtension() );
-
+		$environment->addExtension(
+			new \Webuni\FrontMatter\Markdown\FrontMatterLeagueCommonMarkExtension(
+				new \Webuni\FrontMatter\FrontMatter()
+			)
+		);
+		
 		$parser = new MarkdownParser( $environment );
 
-		$document = $parser->parse( $markdown_content );
+		$document = $parser->parse( $this->markdown );
+		$this->frontmatter = $document->data;
 
 		$walker = $document->walker();
 		while ( $event = $walker->next() ) {
@@ -266,7 +268,7 @@ class WP_Markdown_To_Blocks {
 							foreach ( $row->innerBlocks as $cell ) {
 								$parsed_row[] = array(
 									'tag' => $tag,
-									'content' => $cell->attrs['content'],
+									'content' => $cell->attrs['content'] ?? '',
 								);
 							}
 							$parsed_rows[] = $parsed_row;
@@ -323,7 +325,36 @@ class WP_Markdown_To_Blocks {
 				}
 			}
 		}
-		return $this->root_block->innerBlocks;
+		$this->parsed_blocks = $this->root_block->innerBlocks;
+	}
+
+	static private function convert_blocks_to_markup( $blocks ) {
+		$block_markup = '';
+
+		foreach ( $blocks as $block ) {
+			// Start of block comment
+			$comment = '<!-- -->';
+			$p       = new WP_HTML_Tag_Processor( $comment );
+			$p->next_token();
+			$attrs   = $block->attrs;
+			$content = $block->attrs['content'] ?? '';
+			unset( $attrs['content'] );
+			$encoded_attrs = json_encode( $attrs );
+			if ( $encoded_attrs === '[]' ) {
+				$encoded_attrs = '';
+			}
+			$p->set_modifiable_text( " wp:{$block->blockName} " . $encoded_attrs . ' ' );
+			$open_comment = $p->get_updated_html();
+
+			$block_markup .= $open_comment . "\n";
+			$block_markup .= $content . "\n";
+			$block_markup .= self::convert_blocks_to_markup( $block->innerBlocks );
+
+			// End of block comment
+			$block_markup .= "<!-- /wp:{$block->blockName} -->\n";
+		}
+
+		return $block_markup;
 	}
 
 	private function append_content( $content ) {

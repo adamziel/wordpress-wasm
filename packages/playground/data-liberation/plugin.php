@@ -10,6 +10,7 @@ require_once __DIR__ . '/bootstrap.php';
 // print_r(glob(__DIR__ . '/tests'));
 // die();
 add_action('init', function() {
+    return;
     $reader = new WP_Markdown_Reader(<<<MD
 # Global Settings & Styles (theme.json)
 
@@ -37,6 +38,7 @@ MD
 });
 
 add_action('init', function() {
+    // require __DIR__ . '/docs-importer-test.php';
     return;
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
