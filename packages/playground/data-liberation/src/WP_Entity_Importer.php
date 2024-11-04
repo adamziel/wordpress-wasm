@@ -17,7 +17,7 @@ class WP_Entity_Importer {
 	 *
 	 * Note: This is a quick, weak check just to exclude text-only posts. More
 	 * vigorous checking is done later to verify.
-	 * 
+	 *
 	 * @TODO: Move to WP_HTML_Processor
 	 */
 	const REGEX_HAS_ATTACHMENT_REFS = '!
@@ -76,7 +76,7 @@ class WP_Entity_Importer {
 		$this->mapping['term_id']   = array();
 		$this->requires_remapping   = $empty_types;
 		$this->exists               = $empty_types;
-		$this->logger = new Logger();
+		$this->logger               = new Logger();
 
 		$this->options = wp_parse_args(
 			$options,
@@ -121,7 +121,7 @@ class WP_Entity_Importer {
 				$data['option_name']
 			)
 		);
-		
+
 		update_option( $data['option_name'], $data['option_value'] );
 	}
 
@@ -1107,48 +1107,48 @@ class WP_Entity_Importer {
  *       and other non-web environments.
  */
 class Logger {
-    /**
-     * Log a debug message.
-     *
-     * @param string $message Message to log
-     */
-    public function debug($message) {
-        error_log('[DEBUG] ' . $message);
-    }
+	/**
+	 * Log a debug message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function debug( $message ) {
+		error_log( '[DEBUG] ' . $message );
+	}
 
-    /**
-     * Log an info message.
-     * 
-     * @param string $message Message to log
-     */
-    public function info($message) {
-        error_log('[INFO] ' . $message); 
-    }
+	/**
+	 * Log an info message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function info( $message ) {
+		error_log( '[INFO] ' . $message );
+	}
 
-    /**
-     * Log a warning message.
-     *
-     * @param string $message Message to log
-     */
-    public function warning($message) {
-        error_log('[WARNING] ' . $message);
-    }
+	/**
+	 * Log a warning message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function warning( $message ) {
+		error_log( '[WARNING] ' . $message );
+	}
 
-    /**
-     * Log an error message.
-     *
-     * @param string $message Message to log
-     */
-    public function error($message) {
-        error_log('[ERROR] ' . $message);
-    }
+	/**
+	 * Log an error message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function error( $message ) {
+		error_log( '[ERROR] ' . $message );
+	}
 
-    /**
-     * Log a notice message.
-     *
-     * @param string $message Message to log
-     */
-    public function notice($message) {
-        error_log('[NOTICE] ' . $message);
-    }
+	/**
+	 * Log a notice message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function notice( $message ) {
+		error_log( '[NOTICE] ' . $message );
+	}
 }

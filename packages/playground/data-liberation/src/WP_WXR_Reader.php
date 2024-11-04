@@ -715,7 +715,7 @@ class WP_WXR_Reader {
 		} elseif ( $this->entity_type === 'post_meta' ) {
 			$this->entity_data['post_id'] = $this->last_post_id;
 		} elseif ( $this->entity_type === 'comment' ) {
-			$this->last_comment_id = $this->entity_data['comment_id'];
+			$this->last_comment_id        = $this->entity_data['comment_id'];
 			$this->entity_data['post_id'] = $this->last_post_id;
 		} elseif ( $this->entity_type === 'comment_meta' ) {
 			$this->entity_data['comment_id'] = $this->last_comment_id;
