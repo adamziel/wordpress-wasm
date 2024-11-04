@@ -275,7 +275,7 @@ async function run() {
 						Math.min(100, (100 * e.detail.loaded) / e.detail.total)
 					);
 					if (!args.quiet) {
-						logger.log(
+						process.stdout.write(
 							`\rDownloading WordPress ${percentProgress}%...    `
 						);
 					}

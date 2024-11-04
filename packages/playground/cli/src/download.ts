@@ -58,7 +58,8 @@ async function downloadTo(
 ) {
 	const response = await monitor.monitorFetch(fetch(remoteUrl));
 	const reader = response.body!.getReader();
-	const writer = fs.createWriteStream(localPath);
+	const tmpPath = `${localPath}.partial`;
+	const writer = fs.createWriteStream(tmpPath);
 	while (true) {
 		const { done, value } = await reader.read();
 		if (value) {
@@ -73,8 +74,10 @@ async function downloadTo(
 		await new Promise((resolve, reject) => {
 			writer.on('finish', (err: any) => {
 				if (err) {
+					fs.removeSync(tmpPath);
 					reject(err);
 				} else {
+					fs.renameSync(tmpPath, localPath);
 					resolve(null);
 				}
 			});
