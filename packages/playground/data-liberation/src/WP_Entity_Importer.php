@@ -383,7 +383,6 @@ class WP_Entity_Importer {
 	 * @return int|bool Existing post ID if it exists, false otherwise.
 	 */
 	protected function post_exists( $data ) {
-		return false;
 		// Constant-time lookup if we prefilled
 		$exists_key = $data['guid'] ?? null;
 

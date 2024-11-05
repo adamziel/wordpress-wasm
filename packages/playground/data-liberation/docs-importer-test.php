@@ -51,8 +51,10 @@ function import_markdown_files() {
                 break;
             }
         }
+
         $parent_path = dirname($event->dir->getRealPath());
         $parent_id = $directory_indexes[$parent_path] ?? null;
+        $relative_path = substr($event->dir->getRealPath(), strlen($root_dir));
 
         if(null !== $directory_index_idx) {
             array_splice($files, $directory_index_idx, 1)[0];
@@ -61,6 +63,7 @@ function import_markdown_files() {
                 file_get_contents($file->getRealPath()),
                 $next_post_id,
                 $parent_id,
+                $relative_path,
                 slug_to_title($file->getFilename()),
             );
         } else {
@@ -71,6 +74,7 @@ function import_markdown_files() {
                 '',
                 $next_post_id,
                 $parent_id,
+                $relative_path,
                 slug_to_title($event->dir->getFilename()),
             );
         }
@@ -85,6 +89,7 @@ function import_markdown_files() {
                 file_get_contents($file->getRealPath()),
                 $next_post_id,
                 $directory_index_id,
+                $relative_path,
                 $title_fallback
             );
             ++$next_post_id;
@@ -98,8 +103,8 @@ function import_markdown_file(
     $markdown,
     $post_id,
     $parent_id,
+    $guid,
     $title_fallback = '',
-    $title_override = '',
 ) {
     $converter = new WP_Markdown_To_Blocks($markdown);
     $converter->parse();
@@ -111,7 +116,7 @@ function import_markdown_file(
         $block_markup = $removed_title['remaining_html'];
     }
 
-    $post_title = $title_override;
+    $post_title = '';
     if(!$post_title && !empty($removed_title['content'])) {
         $post_title = $removed_title['content'];
     }
