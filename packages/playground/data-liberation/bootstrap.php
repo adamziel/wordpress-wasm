@@ -47,13 +47,12 @@ require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/WP_WXR_URL_Rewrite_Processor.php';
 require_once __DIR__ . '/src/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/WP_Entity_Importer.php';
+require_once __DIR__ . '/src/WP_Modifiable_HTML_Processor.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_Reader.php';
-require_once __DIR__ . '/src/WP_Serialized_Pages_Reader.php';
 require_once __DIR__ . '/vendor/autoload.php';
-
 
 // Polyfill WordPress core functions
 if (!function_exists('_doing_it_wrong')) {

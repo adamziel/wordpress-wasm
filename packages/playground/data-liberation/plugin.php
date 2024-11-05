@@ -38,7 +38,7 @@ MD
 });
 
 add_action('init', function() {
-    // require __DIR__ . '/docs-importer-test.php';
+    require __DIR__ . '/docs-importer-test.php';
     return;
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';

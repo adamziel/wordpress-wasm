@@ -199,3 +199,85 @@ function urldecode_n( $input, $target_length ) {
 	$result .= substr( $input, $at );
 	return $result;
 }
+
+/**
+ * A generator that recursively list files in a directory.
+ * 
+ * Example:
+ * 
+ * ```php
+ * foreach(wp_list_files_recursive('./docs') as $event) {
+ * 
+ *    echo $event->type . " " . ($event->isFile ? 'file' : 'directory') . ' ' . $event->path . "\n";
+ * }
+ * // Output:
+ * // entering directory ./docs
+ * // listing file ./docs/file1.txt
+ * // listing file ./docs/file2.txt
+ * // entering directory ./docs/subdir
+ * // listing file ./docs/subdir/file3.txt
+ * // exiting directory ./docs/subdir
+ * // exiting directory ./docs
+ * ```
+ *
+ * @param string $dir
+ * @param integer $depth
+ * @yield WP_File_Visitor_Event
+ * @return Iterator<WP_File_Visitor_Event>
+ */
+function wp_visit_file_tree($dir) {
+    $directories = [];
+    $files = [];
+    $dh = opendir($dir);
+    while (($file = readdir($dh)) !== false) {
+        if ("." === $file || ".." === $file) {
+            continue;
+        }
+        $filePath = $dir . '/' . $file;
+        if (is_dir($filePath)) {
+            $directories[] = $filePath;
+            continue;
+        }
+
+        $files[] = new SplFileInfo($filePath);
+    }
+    closedir($dh);
+
+	yield new WP_File_Visitor_Event(
+		WP_File_Visitor_Event::EVENT_ENTER,
+		new SplFileInfo($dir),
+		$files
+	);
+
+    foreach($directories as $directory) {
+        yield from wp_visit_file_tree($directory);
+    }
+
+	yield new WP_File_Visitor_Event(
+		WP_File_Visitor_Event::EVENT_EXIT,
+		new SplFileInfo($dir)
+	);
+}
+
+class WP_File_Visitor_Event {
+	public $type;
+	public $dir;
+	public $files;
+
+	const EVENT_ENTER = 'entering';
+	const EVENT_EXIT = 'exiting';
+
+	public function __construct($type, $dir, $files=[]) {
+		$this->type = $type;
+		$this->dir = $dir;
+		$this->files = $files;
+	}
+
+	public function isEntering() {
+		return $this->type === self::EVENT_ENTER;
+	}
+
+	public function isExiting() {
+		return $this->type === self::EVENT_EXIT;
+	}
+}

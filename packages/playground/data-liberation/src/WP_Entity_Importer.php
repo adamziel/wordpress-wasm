@@ -383,6 +383,7 @@ class WP_Entity_Importer {
 	 * @return int|bool Existing post ID if it exists, false otherwise.
 	 */
 	protected function post_exists( $data ) {
+		return false;
 		// Constant-time lookup if we prefilled
 		$exists_key = $data['guid'] ?? null;
 
@@ -421,6 +422,7 @@ class WP_Entity_Importer {
 		 */
 		$data = apply_filters( 'wxr_importer.pre_process.post', $data );
 		if ( empty( $data ) ) {
+			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
 		}
 
@@ -429,6 +431,7 @@ class WP_Entity_Importer {
 
 		// Have we already processed this?
 		if ( isset( $this->mapping['post'][ $original_id ] ) ) {
+			$this->logger->debug( 'Skipping post, already processed' );
 			return;
 		}
 
@@ -624,6 +627,7 @@ class WP_Entity_Importer {
 		 * @param array $terms Raw term data, already processed.
 		 */
 		do_action( 'wxr_importer.processed.post', $post_id, $data );
+		return $post_id;
 	}
 
 	// @TOOD handle terms
@@ -1113,7 +1117,7 @@ class Logger {
 	 * @param string $message Message to log
 	 */
 	public function debug( $message ) {
-		error_log( '[DEBUG] ' . $message );
+		// echo( '[DEBUG] ' . $message );
 	}
 
 	/**
@@ -1122,7 +1126,7 @@ class Logger {
 	 * @param string $message Message to log
 	 */
 	public function info( $message ) {
-		error_log( '[INFO] ' . $message );
+		// echo( '[INFO] ' . $message );
 	}
 
 	/**
@@ -1131,7 +1135,7 @@ class Logger {
 	 * @param string $message Message to log
 	 */
 	public function warning( $message ) {
-		error_log( '[WARNING] ' . $message );
+		echo( '[WARNING] ' . $message );
 	}
 
 	/**
@@ -1140,7 +1144,7 @@ class Logger {
 	 * @param string $message Message to log
 	 */
 	public function error( $message ) {
-		error_log( '[ERROR] ' . $message );
+		echo( '[ERROR] ' . $message );
 	}
 
 	/**
@@ -1149,6 +1153,6 @@ class Logger {
 	 * @param string $message Message to log
 	 */
 	public function notice( $message ) {
-		error_log( '[NOTICE] ' . $message );
+		// echo( '[NOTICE] ' . $message );
 	}
 }
