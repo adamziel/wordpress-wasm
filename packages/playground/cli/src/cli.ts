@@ -104,7 +104,7 @@ async function run() {
 		})
 		.option('debug', {
 			describe:
-				'Return PHP error log content if an error occurs while building the site.',
+				'Print PHP error log content if an error occurs during Playground boot.',
 			type: 'boolean',
 			default: false,
 		})
