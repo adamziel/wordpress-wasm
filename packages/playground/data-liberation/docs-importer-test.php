@@ -27,6 +27,10 @@ function import_markdown_files() {
 
     $directory_indexes = [];
     foreach(wp_visit_file_tree($root_dir) as $event) {
+        $is_root = $event->dir->getPathName() === $root_dir;
+        if($is_root) {
+            continue;
+        }
         if($event->isExiting()) {
             // Clean up stale IDs to save some memory when processing
             // large directory trees.
@@ -54,7 +58,6 @@ function import_markdown_files() {
 
         $parent_path = dirname($event->dir->getRealPath());
         $parent_id = $directory_indexes[$parent_path] ?? null;
-        $relative_path = substr($event->dir->getRealPath(), strlen($root_dir));
 
         if(null !== $directory_index_idx) {
             array_splice($files, $directory_index_idx, 1)[0];
@@ -63,7 +66,7 @@ function import_markdown_files() {
                 file_get_contents($file->getRealPath()),
                 $next_post_id,
                 $parent_id,
-                $relative_path,
+                $file->getPathName(),
                 slug_to_title($file->getFilename()),
             );
         } else {
@@ -74,7 +77,7 @@ function import_markdown_files() {
                 '',
                 $next_post_id,
                 $parent_id,
-                $relative_path,
+                $event->dir->getPathName(),
                 slug_to_title($event->dir->getFilename()),
             );
         }
@@ -89,7 +92,7 @@ function import_markdown_files() {
                 file_get_contents($file->getRealPath()),
                 $next_post_id,
                 $directory_index_id,
-                $relative_path,
+                $file->getPathName(),
                 $title_fallback
             );
             ++$next_post_id;
@@ -137,7 +140,7 @@ function import_markdown_file(
     $entity_data = array(
         'post_id' => $post_id,
         'post_type' => 'page',
-        'guid' => $frontmatter['slug'] ?? 'README',
+        'guid' => $guid,
         'post_title' => $post_title,
         'post_content' => $block_markup,
         'post_excerpt' => $frontmatter['description'] ?? '',
