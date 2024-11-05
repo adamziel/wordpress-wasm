@@ -297,8 +297,8 @@ async function run() {
 
 			const constants: Record<string, string | number | boolean | null> =
 				{
-					WP_DEBUG: args.debug,
-					WP_DEBUG_LOG: args.debug,
+					WP_DEBUG: true,
+					WP_DEBUG_LOG: true,
 					WP_DEBUG_DISPLAY: false,
 				};
 
