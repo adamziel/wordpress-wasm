@@ -215,6 +215,7 @@ async function run() {
 					php: args.php as SupportedPHPVersion,
 					wp: args.wp,
 				},
+				login: args.login,
 			};
 		}
 
