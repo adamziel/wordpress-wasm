@@ -30,6 +30,22 @@ add_action('init', function() {
     }
     return;
 
+    $wxr_reader = WP_WXR_Reader::from_stream();
+    $bytes = new WP_File_Byte_Stream($wxr_path);
+    while($bytes->next_bytes() && !$wxr_reader->is_finished()) {
+        $wxr_reader->append_bytes($bytes->get_bytes());
+        if($bytes->is_finished()) {
+            $wxr_reader->input_finished();
+        }
+        while($wxr_reader->next_entity()) {
+            $importer->import_entity($reader->get_entity());
+        }
+        if($wxr_reader->get_last_error()) {
+            var_dump($wxr_reader->get_last_error());
+            die();
+        }
+    }
+
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
     $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
