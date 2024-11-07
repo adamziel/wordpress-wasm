@@ -16,8 +16,8 @@ class WPRewriteUrlsTests extends TestCase {
 	) {
 		$result = wp_rewrite_urls( array(
 			'block_markup' => $original_markup,
-			'current-site-url' => $current_site_url,
-			'new-site-url' => $new_site_url,
+			'from-url' => $current_site_url,
+			'to-url' => $new_site_url,
 		) );
 		$this->assertEquals( $expected_markup, $result, 'Failed to migrate the URLs in the block markup' );
 	}
@@ -208,8 +208,8 @@ class WPRewriteUrlsTests extends TestCase {
 		$new_site_url = "https://wordpress.org";
 		$result = wp_rewrite_urls( array(
 			'block_markup' => "<a href=\"$current_site_url/about-us/\"></a>",
-			'current-site-url' => $current_site_url,
-			'new-site-url' => $new_site_url,
+			'from-url' => $current_site_url,
+			'to-url' => $new_site_url,
 		) );
 		$this->assertEquals( "<a href=\"$new_site_url/about-us/\"></a>", $result, 'Failed to migrate the domain found in <a href=""></a>' );
 	}

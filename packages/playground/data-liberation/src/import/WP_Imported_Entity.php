@@ -27,4 +27,8 @@ class WP_Imported_Entity {
     public function get_data() {
         return $this->data;
     }
+
+    public function set_data($data) {
+        $this->data = $data;
+    }
 }

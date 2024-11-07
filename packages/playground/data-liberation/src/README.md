@@ -157,7 +157,7 @@ This actual output is produced:
 To migrate domain names from tricky-input.html, run:
 
 ```shell
-php bin/rewrite-urls.php migrate_urls --file ./tricky-input.html --current-site-url https://🚀-science.com/science --new-site-url https://science.wordpress.com
+php bin/rewrite-urls.php migrate_urls --file ./tricky-input.html --from-url https://🚀-science.com/science --to-url https://science.wordpress.com
 ```
 
 To list all the URLs found in that file, run:

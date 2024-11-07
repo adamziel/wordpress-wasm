@@ -82,7 +82,7 @@ class WP_Markdown_Directory_Tree_Reader {
 		return false;
 	}
 
-	public function get_entity() {
+	public function get_entity(): WP_Imported_Entity {
 		return $this->entity;
 	}
 

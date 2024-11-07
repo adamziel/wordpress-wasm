@@ -346,9 +346,9 @@ class WP_WXR_Reader {
 	 *
 	 * @since WP_VERSION
 	 *
-	 * @return array The entity data.
+	 * @return WP_Imported_Entity The entity.
 	 */
-	public function get_entity() {
+	public function get_entity(): WP_Imported_Entity {
 		return new WP_Imported_Entity(
 			$this->get_entity_type(),
 			$this->entity_data

@@ -20,65 +20,66 @@ use Rowbot\URL\URL;
  */
 function wp_rewrite_urls( $options ) {
 	if ( empty( $options['base_url'] ) ) {
-		$options['base_url'] = $options['current-site-url'];
+		$options['base_url'] = $options['from-url'];
 	}
 
-	$current_site_url = WP_URL::parse( $options['current-site-url'] );
-	if ( $current_site_url->pathname[ strlen( $current_site_url->pathname ) - 1 ] === '/' ) {
-		$current_site_url->pathname = substr( $current_site_url->pathname, 0, strlen( $current_site_url->pathname ) - 1 );
+	$from_url = WP_URL::parse( $options['from-url'] );
+	if ( $from_url->pathname[ strlen( $from_url->pathname ) - 1 ] === '/' ) {
+		$from_url->pathname = substr( $from_url->pathname, 0, strlen( $from_url->pathname ) - 1 );
 	}
-	$current_site_pathname_with_trailing_slash = $current_site_url->pathname === '/' ? $current_site_url->pathname : $current_site_url->pathname . '/';
-	$current_site_url_string                   = $current_site_url->toString();
+	$from_pathname_with_trailing_slash = $from_url->pathname === '/' ? $from_url->pathname : $from_url->pathname . '/';
+	$from_url_string                   = $from_url->toString();
 
-	$new_site_url = WP_URL::parse( $options['new-site-url'] );
-	if ( $new_site_url->pathname[ strlen( $new_site_url->pathname ) - 1 ] === '/' ) {
-		$new_site_url->pathname = substr( $new_site_url->pathname, 0, strlen( $new_site_url->pathname ) - 1 );
+	$to_url = WP_URL::parse( $options['to-url'] );
+	if ( $to_url->pathname[ strlen( $to_url->pathname ) - 1 ] === '/' ) {
+		$to_url->pathname = substr( $to_url->pathname, 0, strlen( $to_url->pathname ) - 1 );
 	}
-	$new_site_pathname_with_trailing_slash =
-		$new_site_url->pathname === '/' ? $new_site_url->pathname : $new_site_url->pathname . '/';
+	$new_pathname_with_trailing_slash =
+		$to_url->pathname === '/' ? $to_url->pathname : $to_url->pathname . '/';
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
-		if ( ! url_matches( $p->get_parsed_url(), $current_site_url_string ) ) {
+		if ( ! url_matches( $p->get_parsed_url(), $from_url_string ) ) {
 			continue;
 		}
 		$raw_url = $p->get_raw_url();
 
 		$parsed_matched_url           = $p->get_parsed_url();
-		$parsed_matched_url->protocol = $new_site_url->protocol;
-		$parsed_matched_url->hostname = $new_site_url->hostname;
+		$parsed_matched_url->hostname = $to_url->hostname;
+		$parsed_matched_url->protocol = $to_url->protocol;
+		$parsed_matched_url->port = $to_url->port;
 
 		// Update the pathname if needed.
-		if ( '/' !== $current_site_url->pathname ) {
+		if ( $from_url->pathname !== $to_url->pathname ) {
 			/**
-			 * The matched URL starts with $current_site_name->pathname.
+			 * The matched URL starts with $from_name->pathname.
 			 *
 			 * We want to retain the portion of the pathname that comes
-			 * after $current_site_name->pathname. This is not a simple
+			 * after $from_name->pathname. This is not a simple
 			 * substring operation because the matched URL may have
 			 * urlencoded bytes at the beginning. We need to decode
 			 * them before taking the substring.
 			 *
 			 * However, we can't just decode the entire pathname because
-			 * the part after $current_site_name->pathname may itself
+			 * the part after $from_name->pathname may itself
 			 * contain urlencoded bytes. If we decode them here, it
 			 * may change a path such as `/%2561/foo`, which decodes
 			 * as `/61/foo`, to `/a/foo`.
 			 *
 			 * Therefore, we're going to decode a part of the string. We'll
 			 * start at the beginning and keep going until we've found
-			 * enough decoded bytes to skip over $current_site_name->pathname.
+			 * enough decoded bytes to skip over $from_name->pathname.
 			 * Then we'll take the remaining, still encoded bytes as the new pathname.
 			 */
 			$decoded_matched_pathname     = urldecode_n(
 				$parsed_matched_url->pathname,
-				strlen( $current_site_pathname_with_trailing_slash )
+				strlen( $from_pathname_with_trailing_slash )
 			);
 			$parsed_matched_url->pathname =
-				$new_site_pathname_with_trailing_slash .
+				$new_pathname_with_trailing_slash .
 					substr(
 						$decoded_matched_pathname,
-						strlen( $current_site_pathname_with_trailing_slash )
+						strlen( $from_pathname_with_trailing_slash )
 					);
 		}
 
@@ -131,14 +132,14 @@ function wp_rewrite_urls( $options ) {
  * Check if a given URL matches the current site URL.
  *
  * @param URL $subject The URL to check.
- * @param string $current_site_url_no_trailing_slash The current site URL to compare against.
+ * @param string $from_url_no_trailing_slash The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function url_matches( URL $subject, string $current_site_url_no_trailing_slash ) {
-	$parsed_current_site_url            = WP_URL::parse( $current_site_url_no_trailing_slash );
-	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_current_site_url->pathname ), '/' );
+function url_matches( URL $subject, string $from_url_no_trailing_slash ) {
+	$parsed_from_url            = WP_URL::parse( $from_url_no_trailing_slash );
+	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
 
-	if ( $subject->hostname !== $parsed_current_site_url->hostname ) {
+	if ( $subject->hostname !== $parsed_from_url->hostname ) {
 		return false;
 	}
 
