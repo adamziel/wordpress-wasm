@@ -1,6 +1,9 @@
 import { StepHandler } from '.';
 import { unzipFile } from '@wp-playground/common';
 import { logger } from '@php-wasm/logger';
+import { versionStringToLoadedWordPressVersion } from '@wp-playground/wordpress';
+import { MinifiedWordPressVersions } from '@wp-playground/wordpress-builds';
+
 /**
  * @inheritDoc setSiteLanguage
  * @hasRunnableExample
@@ -18,6 +21,37 @@ export interface SetSiteLanguageStep {
 	/** The language to set, e.g. 'en_US' */
 	language: string;
 }
+
+/**
+ * Returns the URL to download a WordPress translation package.
+ *
+ * If the WordPress version doesn't have a translation package,
+ * the latest "RC" version will be used instead.
+ */
+const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
+	wpVersion = versionStringToLoadedWordPressVersion(wpVersion);
+	/**
+	 * RC and beta releases don't have individual translation packages.
+	 * They all share the same "RC" translation package.
+	 *
+	 * Nightly releases don't have a "nightly" translation package.
+	 * So, the best we can do is download the RC translation package,
+	 * because it contains the latest available translations.
+	 *
+	 * The WordPress.org translation API uses "RC" instead of
+	 * "RC1", "RC2", "BETA1", "BETA2", etc.
+	 *
+	 * For example translations for WordPress 6.6-BETA1 or 6.6-RC1 are found under
+	 * https://downloads.wordpress.org/translation/core/6.6-RC/en_GB.zip
+	 */
+	if (wpVersion === 'nightly' || wpVersion === 'beta') {
+		wpVersion = MinifiedWordPressVersions['beta'].replace(
+			/(rc|beta).*$/i,
+			'RC'
+		);
+	}
+	return `https://downloads.wordpress.org/translation/core/${wpVersion}/${language}.zip`;
+};
 
 /**
  * Sets the site language and download translations.
@@ -44,7 +78,7 @@ export const setSiteLanguage: StepHandler<SetSiteLanguageStep> = async (
 
 	const translations = [
 		{
-			url: `https://downloads.wordpress.org/translation/core/${wpVersion}/${language}.zip`,
+			url: getWordPressTranslationUrl(wpVersion, language),
 			type: 'core',
 		},
 	];
