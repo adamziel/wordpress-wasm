@@ -103,3 +103,11 @@ test('should not login the user in if the login query parameter is set to no', a
 		).toContain(path);
 	});
 });
+
+test('should correctly set the site language to es_ES', async ({
+	website,
+	wordpress,
+}) => {
+	await website.goto('./?language=es_ES&url=/wp-admin/');
+	await expect(wordpress.locator('body')).toContainText('Escritorio');
+});

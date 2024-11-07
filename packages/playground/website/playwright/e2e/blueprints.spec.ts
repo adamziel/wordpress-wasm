@@ -433,3 +433,18 @@ test('should correctly redirect to a multisite wp-admin url', async ({
 	await website.goto(`./#${encodedBlueprint}`);
 	await expect(wordpress.locator('body')).toContainText('General Settings');
 });
+
+['latest', 'nightly', 'beta'].forEach((version) => {
+	test(`should correctly set the site language to es_ES for the ${version} WordPress build`, async ({
+		website,
+		wordpress,
+	}) => {
+		const blueprint: Blueprint = {
+			landingPage: '/wp-admin/',
+			steps: [{ step: 'setSiteLanguage', language: 'es_ES' }],
+		};
+		const encodedBlueprint = JSON.stringify(blueprint);
+		await website.goto(`./#${encodedBlueprint}`);
+		await expect(wordpress.locator('body')).toContainText('Escritorio');
+	});
+});
