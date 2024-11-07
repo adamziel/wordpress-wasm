@@ -29,6 +29,16 @@ export interface SetSiteLanguageStep {
  * the latest "RC" version will be used instead.
  */
 const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
+	/**
+	 * Convert to Playground's WordPress build version format.
+	 *
+	 * The WordPress.org translation API uses the major.minor format
+	 * to find the translation package which is provided by
+	 * versionStringToLoadedWordPressVersion.
+	 *
+	 * Unreleased versions are converted to "nightly" or "beta"
+	 * and need to be converted to "RC" for the translation API.
+	 */
 	wpVersion = versionStringToLoadedWordPressVersion(wpVersion);
 	/**
 	 * RC and beta releases don't have individual translation packages.

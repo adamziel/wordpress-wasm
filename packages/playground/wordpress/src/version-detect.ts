@@ -18,6 +18,20 @@ export async function getLoadedWordPressVersion(
 	return versionStringToLoadedWordPressVersion(versionString);
 }
 
+/**
+ * Returns a WordPress build version string known to Playground
+ * for a given WordPress version string.
+ *
+ * Each released version will be converted to the major.minor format.
+ * For example 6.6.1 will be converted to 6.6.
+ *
+ * Release candidates (RC) and beta releases are converted to the "beta"
+ *
+ * Nightly releases are converted to "nightly".
+ *
+ * @param wpVersionString - A WordPress version string.
+ * @returns A Playground WordPress build version.
+ */
 export function versionStringToLoadedWordPressVersion(
 	wpVersionString: string
 ): string {
