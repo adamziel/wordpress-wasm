@@ -435,7 +435,7 @@ test('should correctly redirect to a multisite wp-admin url', async ({
 });
 
 ['latest', 'nightly', 'beta'].forEach((version) => {
-	test(`should correctly set the site language to es_ES for the ${version} WordPress build`, async ({
+	test(`should translate WP-admin to Spanish for the ${version} WordPress build`, async ({
 		website,
 		wordpress,
 	}) => {

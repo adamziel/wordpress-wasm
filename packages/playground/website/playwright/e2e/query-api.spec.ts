@@ -104,7 +104,7 @@ test('should not login the user in if the login query parameter is set to no', a
 	});
 });
 
-test('should correctly set the site language to es_ES', async ({
+test('should translate WP-admin to Spanish using the language query parameter', async ({
 	website,
 	wordpress,
 }) => {
