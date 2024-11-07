@@ -30,21 +30,14 @@ export interface SetSiteLanguageStep {
  */
 const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 	/**
-	 * Convert to Playground's WordPress build version format.
+	 * The translation API provides translations for all WordPress releases
+	 * including patch releases.
 	 *
-	 * The WordPress.org translation API uses the major.minor format
-	 * to find the translation package which is provided by
-	 * versionStringToLoadedWordPressVersion.
-	 *
-	 * Unreleased versions are converted to "nightly" or "beta"
-	 * and need to be converted to "RC" for the translation API.
-	 */
-	wpVersion = versionStringToLoadedWordPressVersion(wpVersion);
-	/**
-	 * RC and beta releases don't have individual translation packages.
+	 * RC and beta versions don't have individual translation packages.
 	 * They all share the same "RC" translation package.
 	 *
-	 * Nightly releases don't have a "nightly" translation package.
+	 * Development versions (called nightly in Playground) don't have
+	 * a "development" translation package.
 	 * So, the best we can do is download the RC translation package,
 	 * because it contains the latest available translations.
 	 *
@@ -54,7 +47,8 @@ const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 	 * For example translations for WordPress 6.6-BETA1 or 6.6-RC1 are found under
 	 * https://downloads.wordpress.org/translation/core/6.6-RC/en_GB.zip
 	 */
-	if (wpVersion === 'nightly' || wpVersion === 'beta') {
+	const wpVersionString = versionStringToLoadedWordPressVersion(wpVersion);
+	if (wpVersionString === 'nightly' || wpVersionString === 'beta') {
 		wpVersion = MinifiedWordPressVersions['beta'].replace(
 			/(rc|beta).*$/i,
 			'RC'
