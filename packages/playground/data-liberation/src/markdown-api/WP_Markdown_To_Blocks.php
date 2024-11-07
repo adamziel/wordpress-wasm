@@ -15,7 +15,7 @@ use League\CommonMark\Extension\Table\TableSection;
 
 
 class WP_Markdown_To_Blocks {
-	const STATE_READY = 'STATE_READY';
+	const STATE_READY    = 'STATE_READY';
 	const STATE_COMPLETE = 'STATE_COMPLETE';
 
 	private $state = self::STATE_READY;
@@ -25,16 +25,15 @@ class WP_Markdown_To_Blocks {
 
 	private $frontmatter = array();
 	private $markdown;
-	private $parsed_blocks = [];
-	private $block_markup = '';
-	
-	public function __construct( $markdown )
-	{
+	private $parsed_blocks = array();
+	private $block_markup  = '';
+
+	public function __construct( $markdown ) {
 		$this->markdown = $markdown;
 	}
 
 	public function parse() {
-		if(self::STATE_READY !== $this->state) {
+		if ( self::STATE_READY !== $this->state ) {
 			return false;
 		}
 		$this->convert_markdown_to_blocks();
@@ -63,10 +62,10 @@ class WP_Markdown_To_Blocks {
 				new \Webuni\FrontMatter\FrontMatter()
 			)
 		);
-		
+
 		$parser = new MarkdownParser( $environment );
 
-		$document = $parser->parse( $this->markdown );
+		$document          = $parser->parse( $this->markdown );
 		$this->frontmatter = $document->data;
 
 		$walker = $document->walker();
@@ -209,10 +208,10 @@ class WP_Markdown_To_Blocks {
 					case ExtensionInline\Image::class:
 						$html = new WP_HTML_Tag_Processor( '<img>' );
 						$html->next_tag();
-						if($node->getUrl()) {
+						if ( $node->getUrl() ) {
 							$html->set_attribute( 'src', $node->getUrl() );
 						}
-						if($node->getTitle()) {
+						if ( $node->getTitle() ) {
 							$html->set_attribute( 'title', $node->getTitle() );
 						}
 						$this->append_content( $html->get_updated_html() );
@@ -221,10 +220,10 @@ class WP_Markdown_To_Blocks {
 					case ExtensionInline\Link::class:
 						$html = new WP_HTML_Tag_Processor( '<a>' );
 						$html->next_tag();
-						if($node->getUrl()) {
+						if ( $node->getUrl() ) {
 							$html->set_attribute( 'href', $node->getUrl() );
 						}
-						if($node->getTitle()) {
+						if ( $node->getTitle() ) {
 							$html->set_attribute( 'title', $node->getTitle() );
 						}
 						$this->append_content( $html->get_updated_html() );
@@ -328,7 +327,7 @@ class WP_Markdown_To_Blocks {
 		$this->parsed_blocks = $this->root_block->innerBlocks;
 	}
 
-	static private function convert_blocks_to_markup( $blocks ) {
+	private static function convert_blocks_to_markup( $blocks ) {
 		$block_markup = '';
 
 		foreach ( $blocks as $block ) {

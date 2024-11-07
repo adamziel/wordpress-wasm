@@ -51,7 +51,7 @@ require_once __DIR__ . '/src/WP_Modifiable_HTML_Processor.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
-require_once __DIR__ . '/src/markdown-api/WP_Markdown_Reader.php';
+require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Polyfill WordPress core functions

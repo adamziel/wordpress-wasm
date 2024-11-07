@@ -6,40 +6,33 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-// echo'<plaintext>';
-// print_r(glob(__DIR__ . '/tests'));
-// die();
 add_action('init', function() {
-    return;
-    $reader = new WP_Markdown_Reader(<<<MD
-# Global Settings & Styles (theme.json)
+    $hash = md5('docs-importer-test');
+    if(file_exists('./.imported-' . $hash)) {
+        return;
+    }
+    touch('./.imported-' . $hash);
 
-WordPress 5.8 comes with [a new mechanism](https://make.wordpress.org/core/2021/06/25/introducing-theme-json-in-wordpress-5-8/) to configure the editor that enables a finer-grained control and introduces the first step in managing styles for future WordPress releases: the `theme.json` file.
-
-## Rationale
-
-The Block Editor API has evolved at different velocities and there are some growing pains, specially in areas that affect themes. Examples of this are: the ability to [control the editor programmatically](https://make.wordpress.org/core/2020/01/23/controlling-the-block-editor/), or [a block style system](https://github.com/WordPress/gutenberg/issues/9534) that facilitates user, theme, and core style preferences.
-
-This describes the current efforts to consolidate the various APIs related to styles into a single point – a `theme.json` file that should be located inside the root of the theme directory.
-
-### Settings for the block editor
-
-Instead of the proliferation of theme support flags or alternative methods, the `theme.json` files provides a canonical way to define the settings of the block editor. These settings includes things like:
-
--   What customization options should be made available or hidden from the user.
--   What are the default colors, font sizes... available to the user.
--   Defines the default layout of the editor (widths and available alignments).
-MD
-    );
-    $reader->next_entity();
+    $all_posts = get_posts(array('numberposts' => -1, 'post_type' => 'any', 'post_status' => 'any'));
+    foreach ($all_posts as $post) {
+        wp_delete_post($post->ID, true);
+    }
 
     $importer = new WP_Entity_Importer();
-    $importer->import_entity($reader->get_entity_type(), $reader->get_entity_data());
-});
+    $reader = new WP_Markdown_Directory_Tree_Reader(
+        __DIR__ . '/../../docs/site/docs',
+        1000
+    );
 
-add_action('init', function() {
-    require __DIR__ . '/docs-importer-test.php';
+    while($reader->next_entity()) {
+        $post_id = $importer->import_entity(
+            $reader->get_entity_type(),
+            $reader->get_entity_data()
+        );
+        $reader->set_created_post_id($post_id);
+    }
     return;
+
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
     $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
