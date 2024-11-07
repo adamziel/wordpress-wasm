@@ -9,7 +9,7 @@ require_once __DIR__ . '/bootstrap.php';
 add_action('init', function() {
     $hash = md5('docs-importer-test');
     if(file_exists('./.imported-' . $hash)) {
-        return;
+        // return;
     }
     touch('./.imported-' . $hash);
 
@@ -25,10 +25,7 @@ add_action('init', function() {
     );
 
     while($reader->next_entity()) {
-        $post_id = $importer->import_entity(
-            $reader->get_entity_type(),
-            $reader->get_entity_data()
-        );
+        $post_id = $importer->import_entity($reader->get_entity());
         $reader->set_created_post_id($post_id);
     }
     return;
@@ -64,7 +61,7 @@ add_action('init', function() {
             //     die();
             // }
             while($reader->next_entity()) {
-                $importer->import_entity($reader->get_entity_type(), $reader->get_entity_data());
+                $importer->import_entity($reader->get_entity());
             }
             return ! $reader->is_finished();
         })

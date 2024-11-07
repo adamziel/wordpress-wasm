@@ -342,13 +342,27 @@ class WP_WXR_Reader {
 	}
 
 	/**
+	 * Gets the data for the current entity.
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @return array The entity data.
+	 */
+	public function get_entity() {
+		return new WP_Imported_Entity(
+			$this->get_entity_type(),
+			$this->entity_data
+		);
+	}
+
+	/**
 	 * Gets the type of the current entity.
 	 *
 	 * @since WP_VERSION
 	 *
 	 * @return string|false The entity type, or false if no entity is being processed.
 	 */
-	public function get_entity_type() {
+	private function get_entity_type() {
 		if ( null !== $this->entity_type ) {
 			return $this->entity_type;
 		}
@@ -359,17 +373,6 @@ class WP_WXR_Reader {
 			return false;
 		}
 		return static::KNOWN_ENITIES[ $this->entity_tag ]['type'];
-	}
-
-	/**
-	 * Gets the data for the current entity.
-	 *
-	 * @since WP_VERSION
-	 *
-	 * @return array The entity data.
-	 */
-	public function get_entity_data() {
-		return $this->entity_data;
 	}
 
 	/**

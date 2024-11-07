@@ -47,6 +47,7 @@ require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/wxr/WP_WXR_URL_Rewrite_Processor.php';
 require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
+require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';

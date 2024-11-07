@@ -91,23 +91,25 @@ class WP_Entity_Importer {
 		);
 	}
 
-	public function import_entity( $type, $data ) {
-		switch ( $type ) {
-			case 'post':
+	public function import_entity( WP_Imported_Entity $entity ) {
+		$type = $entity->get_type();
+		$data = $entity->get_data();
+		switch ( $entity->get_type() ) {
+			case WP_Imported_Entity::TYPE_POST:
 				return $this->import_post( $data );
-			case 'post_meta':
+			case WP_Imported_Entity::TYPE_POST_META:
 				return $this->import_post_meta( $data, $data['post_id'] );
-			case 'comment':
+			case WP_Imported_Entity::TYPE_COMMENT:
 				return $this->import_comment( $data, $data['post_id'] );
-			case 'comment_meta':
+			case WP_Imported_Entity::TYPE_COMMENT_META:
 				return $this->import_comment_meta( $data, $data['comment_id'] );
-			case 'term':
-			case 'tag':
-			case 'category':
+			case WP_Imported_Entity::TYPE_TERM:
+			case WP_Imported_Entity::TYPE_TAG:
+			case WP_Imported_Entity::TYPE_CATEGORY:
 				return $this->import_term( $data );
-			case 'user':
+			case WP_Imported_Entity::TYPE_USER:
 				return $this->import_user( $data );
-			case 'site_option':
+			case WP_Imported_Entity::TYPE_SITE_OPTION:
 				return $this->import_site_option( $data );
 			default:
 				throw new \InvalidArgumentException( "Unknown entity type: $type" );

@@ -82,11 +82,7 @@ class WP_Markdown_Directory_Tree_Reader {
 		return false;
 	}
 
-	public function get_entity_type() {
-		return 'post';
-	}
-
-	public function get_entity_data() {
+	public function get_entity() {
 		return $this->entity;
 	}
 
@@ -141,7 +137,7 @@ class WP_Markdown_Directory_Tree_Reader {
 		if ( $options['parent_id'] ) {
 			$entity_data['post_parent'] = $options['parent_id'];
 		}
-		return $entity_data;
+		return new WP_Imported_Entity('post', $entity_data);
 	}
 
 	private function next_file() {
