@@ -4,11 +4,10 @@
  * from the Gutenberg plugin.
  *
  * @package WordPress
- * @subpackage Interactivity API
- * @since 6.5.0
+ * @subpackage Markdown API
  */
 
-final class WP_Modifiable_HTML_Processor extends WP_HTML_Processor {
+final class WP_Markdown_HTML_Processor extends WP_HTML_Processor {
 
 	public function get_string_index_after_current_token() {
 		$name = 'current_token';
