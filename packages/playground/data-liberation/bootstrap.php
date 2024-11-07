@@ -37,17 +37,16 @@ if(!class_exists('WP_HTML_Tag_Processor')) {
 	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-processor.php";
 }
 
-require_once __DIR__ . '/src/WP_Block_Markup_Processor.php';
-require_once __DIR__ . '/src/WP_Block_Markup_Url_Processor.php';
-require_once __DIR__ . '/src/WP_URL_In_Text_Processor.php';
-require_once __DIR__ . '/src/WP_URL.php';
+require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
+require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
+require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
+require_once __DIR__ . '/src/block-markup/WP_URL.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
-require_once __DIR__ . '/src/WP_WXR_URL_Rewrite_Processor.php';
-require_once __DIR__ . '/src/WP_WXR_Reader.php';
-require_once __DIR__ . '/src/WP_Entity_Importer.php';
-require_once __DIR__ . '/src/WP_Modifiable_HTML_Processor.php';
+require_once __DIR__ . '/src/wxr/WP_WXR_URL_Rewrite_Processor.php';
+require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
+require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';

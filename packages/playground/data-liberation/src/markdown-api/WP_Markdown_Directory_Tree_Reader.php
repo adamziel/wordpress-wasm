@@ -208,7 +208,7 @@ class WP_Markdown_Directory_Tree_Reader {
 	}
 
 	private function remove_first_h1_block_from_block_markup( $html ) {
-		$p = WP_Modifiable_HTML_Processor::create_fragment( $html );
+		$p = WP_Markdown_HTML_Processor::create_fragment( $html );
 		if ( false === $p->next_tag() ) {
 			return false;
 		}
