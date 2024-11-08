@@ -63,6 +63,31 @@ export async function convertFetchEventToPHPRequest(event: FetchEvent) {
 		throw e;
 	}
 
+	/**
+	 * Safari has a bug that prevents Service Workers from redirecting relative URLs.
+	 * When attempting to redirect to a relative URL, the network request will return an error.
+	 * See the Webkit bug for details: https://bugs.webkit.org/show_bug.cgi?id=282427.
+	 *
+	 * Because PHP and WordPress can redirect to both relative and absolute URLs
+	 * using the `location` header we need to ensure redirects are processed
+	 * correctly by the Service Worker.
+	 *
+	 * As a workaround for Safari Service Workers, we convert the `location` header
+	 * to an absolute URL for all redirect responses (300-399 status codes).
+	 * This resolves the issue because Safari correctly handles redirects
+	 * to absolute URLs provided by the `location` header.
+	 */
+	if (
+		phpResponse.httpStatusCode >= 300 &&
+		phpResponse.httpStatusCode <= 399 &&
+		phpResponse.headers['location']
+	) {
+		return Response.redirect(
+			phpResponse.headers['location'][0],
+			phpResponse.httpStatusCode
+		);
+	}
+
 	return new Response(phpResponse.bytes, {
 		headers: phpResponse.headers,
 		status: phpResponse.httpStatusCode,

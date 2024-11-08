@@ -1,5 +1,3 @@
-import { joinPaths } from '@php-wasm/util';
-
 /**
  * Scopes are unique strings, like `my-site`, used to uniquely brand
  * the outgoing HTTP traffic from each browser tab. This helps the
@@ -13,25 +11,6 @@ import { joinPaths } from '@php-wasm/util';
  *
  * For more information, see the README section on scopes.
  */
-
-/**
- * Checks if the URL pathname is scoped.
- *
- * @example
- * ```js
- * isUrlPathnameScoped('/scope:my-site/index.php');
- * // true
- *
- * isUrlPathnameScoped('/index.php');
- * // false
- * ```
- *
- * @param  pathname - The URL pathname to check.
- * @returns `true` if the URL pathname is scoped, `false` otherwise.
- */
-export function isUrlPathnameScoped(pathname: string): boolean {
-	return pathname.startsWith('/scope:');
-}
 
 /**
  * Checks if the given URL contains scope information.
@@ -49,7 +28,7 @@ export function isUrlPathnameScoped(pathname: string): boolean {
  * @returns `true` if the URL contains scope information, `false` otherwise.
  */
 export function isURLScoped(url: URL): boolean {
-	return isUrlPathnameScoped(url.pathname);
+	return url.pathname.startsWith(`/scope:`);
 }
 
 /**
@@ -135,56 +114,4 @@ export function removeURLScope(url: URL): URL {
 	const parts = newUrl.pathname.split('/');
 	newUrl.pathname = '/' + parts.slice(2).join('/');
 	return newUrl;
-}
-
-/**
- * Appends a pathname to the base URL and maintains scope information.
- *
- * If the pathname is scoped, it will maintain scope information from the pathname.
- * Otherwise, the pathname will be appended to the base URLs pathname to preserve the scope.
- *
- * If neither the pathname nor the base URL have scope information,
- * the base URL will be prepended to the pathname and the result will be unscoped.
- *
- * @example
- * ```js
- * appendPathnameToBaseUrlAndMaintainScope(new URL('http://localhost/scope:base/'), '/scope:pathname/index.php');
- * // 'http://localhost/scope:pathname/index.php'
- *
- * appendPathnameToBaseUrlAndMaintainScope(new URL('http://localhost/scope:base/', '/index.php'));
- * // 'http://localhost/scope:base/index.php'
- * ```
- *
- * @param  baseUrl  - The base URL to prepend to the pathname.
- * @param  pathname - The pathname to append to the base URL.
- * @returns The absolute URL.
- */
-export function appendPathnameToBaseUrlAndMaintainScope(
-	baseUrl: URL,
-	pathname: string
-): string {
-	/**
-	 * Base URL might include subpaths, like `/scope:my-site/` or `/scope:my-site/multisite-subsite/`.
-	 * These subpaths should be preserved in the resulting URL.
-	 *
-	 * But if the pathname starts with a scope like `/scope:my-site/`,
-	 * we use the pathname as is and don't prepend the base URL pathname.
-	 * In this case, we can assume the provided pathname is correct because
-	 * Playground paths start with a scope.
-	 *
-	 * Because Playground doesn't control the PHP code that is running,
-	 * we must account for both cases as they are technically possible and expected to work in PHP.
-	 *
-	 * If a redirect path is built based on the current URL, for example
-	 * `header('Location: ' . $_SERVER['REQUEST_URI']);`, then the redirect path
-	 * will include scope information.
-	 *
-	 * But when PHP make a redirect to a hardcoded path, they might not base it on
-	 * the current URL, so the redirect path might not include scope information.
-	 * For example, `header('Location: /wp-admin/');` expects to redirect to `/wp-admin/`.
-	 */
-	if (isUrlPathnameScoped(pathname)) {
-		return baseUrl.origin + pathname;
-	}
-	return baseUrl.origin + joinPaths(baseUrl.pathname, pathname);
 }
