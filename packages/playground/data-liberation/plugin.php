@@ -69,6 +69,7 @@ add_action('init', function() {
 
 
 add_action('init', function() {
+    $downloader = new WP_Attachment_Downloader(__DIR__ . '/attachments');
     $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
@@ -84,6 +85,11 @@ add_action('init', function() {
 
     $bytes = new WP_File_Byte_Stream($wxr_path);
     while(true) {
+        if($downloader->queue_full()) {
+            $downloader->poll();
+            continue;
+        }
+
         if(false === $bytes->next_bytes()) {
             $reader->input_finished();
         } else {
@@ -91,6 +97,40 @@ add_action('init', function() {
         }
         while($reader->next_entity()) {
             $entity = $reader->get_entity();
+            // Download attachments.
+            switch($entity->get_type()) {
+                case 'post':
+                    if($post['post_type'] === 'attachment') {
+                        // /wp-content/uploads/2024/01/image.jpg
+                        // But what if the attachment path does not start with /wp-content/uploads?
+                        // Should we stick to the original path? Typically no. It might be `/index.php`,
+                        // which we don't want to accidentally overwrite. However, some imports might
+                        // need to preserve the original path.
+                        // So then, should we force the /wp-content/uploads prefix?
+                        // Most of the time, yes, unless an explicit parameter was set to
+                        // always preserve the original path.
+                        // $attachment_path = '@TODO';
+                        $downloader->enqueue($post['attachment_url'], $attachment_path);
+                    }
+                    // @TODO: Should we detect <img src=""> in post content and
+                    //        download those assets as well?
+                    break;
+            }
+
+            /**
+             * @TODO:
+             * * What if the attachment is downloaded to a different path? How do we
+             *   approach rewriting the URLs in the post content? We may have already
+             *   inserted some posts into the database. Perhaps we need to do one pass
+             *   to download attachments, and a second pass to import the posts?
+             * * What if the attachment is not found? Error out? Ignore? In a UI-based
+             *   importer scenario, this is the time to log a failure to let the user
+             *   fix it later on. In a CLI-based Blueprint step importer scenario, we
+             *   might want to provide an "image not found" placeholder OR ignore the
+             *   failure.
+             */
+
+            // Rewrite the URLs in the post.
             switch($entity->get_type()) {
                 case 'post':
                     $data = $entity->get_data();
@@ -125,5 +165,9 @@ add_action('init', function() {
             // @TODO: Why do we need this? Why is_finished() isn't enough?
             break;
         }
+    }
+
+    while($downloader->poll()) {
+        // Twiddle our thumbs...
     }
 });
