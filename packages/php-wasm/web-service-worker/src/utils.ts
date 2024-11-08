@@ -72,10 +72,10 @@ export async function convertFetchEventToPHPRequest(event: FetchEvent) {
 	 * using the `location` header we need to ensure redirects are processed
 	 * correctly by the Service Worker.
 	 *
-	 * As a workaround for Safari Service Workers, we convert the `location` header
-	 * to an absolute URL for all redirect responses (300-399 status codes).
-	 * This resolves the issue because Safari correctly handles redirects
-	 * to absolute URLs provided by the `location` header.
+	 * As a workaround for Safari Service Workers, we use `Response.redirect()`
+	 * for all redirect responses (300-399 status codes) coming from PHP.
+	 * This solution was suggested in the Webkit bug comment:
+	 * https://bugs.webkit.org/show_bug.cgi?id=282427#c2
 	 */
 	if (
 		phpResponse.httpStatusCode >= 300 &&
