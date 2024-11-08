@@ -32,6 +32,10 @@ add_action('init', function() {
         1000
     );
 
+    // @TODO: Do two passes.
+    // * First pass: Download attachments and, if $download_all_images === true, also download other images
+    //   referenced in the posts.
+    // * Second pass: Import posts and rewrite URLs.
     while($reader->next_entity()) {
         $entity = $reader->get_entity();
         switch($entity->get_type()) {
