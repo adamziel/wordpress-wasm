@@ -83,6 +83,9 @@ add_action('init', function() {
     $importer = new WP_Entity_Importer();
     $reader = WP_WXR_Reader::from_stream();
 
+    // @TODO: Do two passes.
+    // * First pass: Download attachments.
+    // * Second pass: Import posts and rewrite URLs.
     $bytes = new WP_File_Byte_Stream($wxr_path);
     while(true) {
         if($downloader->queue_full()) {
