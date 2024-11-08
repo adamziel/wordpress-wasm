@@ -1,5 +1,4 @@
 import { joinPaths } from '@php-wasm/util';
-import { appendPathnameToBaseUrlAndMaintainScope } from '@php-wasm/scopes';
 import {
 	ensurePathPrefix,
 	toRelativeUrl,
