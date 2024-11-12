@@ -10,7 +10,8 @@ import {
 	Icon,
 	__experimentalItemGroup as ItemGroup,
 	__experimentalItem as Item,
-	Flex, DropdownMenu,
+	Flex,
+	DropdownMenu,
 } from '@wordpress/components';
 import { moreVertical, page } from '@wordpress/icons';
 import { ClockIcon, WordPressIcon } from '@wp-playground/components';
