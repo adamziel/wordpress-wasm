@@ -1,8 +1,6 @@
 import React from 'react';
 import { useRef, useState } from 'react';
 import { PlaygroundClient, importWordPressFiles } from '@wp-playground/client';
-
-import css from './style.module.css';
 import forms from '../../forms.module.css';
 import { logger } from '@php-wasm/logger';
 import ModalButtons from '../modal/modal-buttons';

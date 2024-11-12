@@ -19,7 +19,6 @@ import { OfflineNotice } from '../../offline-notice';
 import { DownloadAsZipMenuItem } from '../../toolbar-buttons/download-as-zip';
 import { GithubExportMenuItem } from '../../toolbar-buttons/github-export-menu-item';
 import { ReportError } from '../../toolbar-buttons/report-error';
-import { RestoreFromZipMenuItem } from '../../toolbar-buttons/restore-from-zip';
 import { TemporarySiteNotice } from '../temporary-site-notice';
 import { SiteInfo } from '../../../lib/state/redux/slice-sites';
 import {
