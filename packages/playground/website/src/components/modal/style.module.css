@@ -11,29 +11,6 @@
 	max-width: 350px;
 }
 
-.btn {
-	cursor: pointer;
-	background: none;
-	border: none;
-}
-
-.btn:hover,
-.btn:active {
-	opacity: 0.8;
-}
-
-.btn-close {
-	position: absolute;
-	right: -12px;
-}
-
-.modal-header {
-	position: relative;
-	padding-bottom: 15px;
-}
-
-.modal-inner {
-	position: relative;
-	text-align: left;
-	max-height: 90vh;
+.modal-buttons {
+	margin-top: 1.5rem;
 }

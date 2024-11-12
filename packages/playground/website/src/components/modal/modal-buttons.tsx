@@ -1,5 +1,6 @@
 import { Button, Flex } from '@wordpress/components';
 import React from 'react';
+import css from './style.module.css';
 
 interface ModalButtonsProps {
 	submitText?: string;
@@ -12,6 +13,7 @@ export default function ModalButtons({ submitText = 'Submit', areDisabled = fals
 	return (
 		<Flex
 			justify={'end'}
+			className={css.modalButtons}
 		>
 			<Button
 				isBusy={areBusy}
