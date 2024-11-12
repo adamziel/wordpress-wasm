@@ -226,7 +226,7 @@ export default function PreviewPRForm({
 				areDisabled={submitting}
 				onCancel={onClose}
 				onSubmit={handleSubmit}
-				submitText={'Preview'}
+				submitText="Preview"
 			/>
 		</div>
 	);

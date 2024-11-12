@@ -23,7 +23,7 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 		<>
 			{ (isModalOpen) &&
 				<Modal
-					title={'Connect to GitHub'}
+					title="Connect to GitHub"
 					className={cssModal.modal}
 					onRequestClose={() => {
 						setIsModalOpen(false);

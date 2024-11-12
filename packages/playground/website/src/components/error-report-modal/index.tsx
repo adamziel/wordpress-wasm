@@ -185,7 +185,7 @@ export function ErrorReportModal(props: { blueprint: Blueprint }) {
 						areDisabled={loading || !text}
 						onCancel={onClose}
 						onSubmit={onSubmit}
-						submitText={'Report error'}
+						submitText="Report error"
 					/>
 				</>
 			)}

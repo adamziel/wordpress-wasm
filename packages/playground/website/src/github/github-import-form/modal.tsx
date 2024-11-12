@@ -28,7 +28,7 @@ export function GithubImportModal({
 	};
 	return (
 		<Modal
-			title={'Import from GitHub'}
+			title="Import from GitHub"
 			className={css.modal}
 			onRequestClose={closeModal}
 		>

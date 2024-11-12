@@ -65,7 +65,7 @@ export default function ImportForm({
 				areDisabled={!file}
 				onCancel={onClose}
 				onSubmit={handleSubmit}
-				submitText={'Import'}
+				submitText="Import"
 			/>
 		</>
 	);

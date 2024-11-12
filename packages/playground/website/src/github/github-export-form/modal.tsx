@@ -34,7 +34,7 @@ export function GithubExportModal({
 
 	return (
 		<Modal
-			title={'Export to GitHub'}
+			title="Export to GitHub"
 			className={css.modal}
 			onRequestClose={closeModal}
 		>

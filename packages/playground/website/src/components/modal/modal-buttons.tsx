@@ -12,7 +12,7 @@ interface ModalButtonsProps {
 export default function ModalButtons({ submitText = 'Submit', areDisabled = false, areBusy, onCancel, onSubmit }: ModalButtonsProps) {
 	return (
 		<Flex
-			justify={'end'}
+			justify="end"
 			className={css.modalButtons}
 		>
 			<Button

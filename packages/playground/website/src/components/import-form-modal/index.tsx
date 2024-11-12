@@ -24,7 +24,7 @@ export const ImportFormModal = () => {
 
 	return (
 		<Modal
-				title={'Import Playground'}
+				title="Import Playground"
 				contentLabel='This is a dialog window which overlays the main content of the
 				page. The modal begins with a heading 2 called "Import
 				Playground". Pressing the Close Import Window will close

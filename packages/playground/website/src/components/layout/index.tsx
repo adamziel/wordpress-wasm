@@ -182,9 +182,9 @@ function Modals(blueprint: Blueprint) {
 	} else if (currentModal === modalSlugs.IMPORT_FORM) {
 		return <ImportFormModal />;
 	} else if (currentModal === modalSlugs.PREVIEW_PR_WP) {
-		return <PreviewPRModal target={'wordpress'} />;
+		return <PreviewPRModal target="wordpress" />;
 	} else if (currentModal === modalSlugs.PREVIEW_PR_GUTENBERG) {
-		return <PreviewPRModal target={'gutenberg'} />;
+		return <PreviewPRModal target="gutenberg" />;
 	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
 		return <GithubImportModal
 			onImported={({
