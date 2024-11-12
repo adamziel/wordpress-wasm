@@ -430,10 +430,10 @@ export default function GitHubExportForm({
 	if (pushResult) {
 		return (
 			<form id="export-playground-form" onSubmit={handleSubmit}>
-				<h3>
+				<h2>
 					Pull Request{' '}
 					{formValues.prAction === 'create' ? 'created' : 'updated'}!
-				</h3>
+				</h2>
 				<p>
 					Your changes have been submitted to GitHub. You can view
 					them here:{' '}
