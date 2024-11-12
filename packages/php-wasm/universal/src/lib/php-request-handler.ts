@@ -4,7 +4,6 @@ import {
 	toRelativeUrl,
 	removePathPrefix,
 	DEFAULT_BASE_URL,
-	isAbsoluteUrl,
 } from './urls';
 import { PHP, PHPExecutionFailureError, normalizeHeaders } from './php';
 import { PHPResponse } from './php-response';
@@ -319,7 +318,7 @@ export class PHPRequestHandler {
 	 * @param  request - PHP Request data.
 	 */
 	async request(request: PHPRequest): Promise<PHPResponse> {
-		const isAbsolute = isAbsoluteUrl(request.url);
+		const isAbsolute = URL.canParse(request.url);
 		const requestedUrl = new URL(
 			// Remove the hash part of the URL as it's not meant for the server.
 			request.url.split('#')[0],
