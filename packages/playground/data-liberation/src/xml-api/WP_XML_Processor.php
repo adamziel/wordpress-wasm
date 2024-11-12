@@ -47,6 +47,11 @@
  *       ]>
  *
  * @TODO: Support XML 1.1.
+ *
+ * @TODO: Evaluate the performance of utf8_codepoint_at() against using the mbstring
+ *        extension. If mbstring is faster, then use it whenever it's available with
+ *        utf8_codepoint_at() as a fallback.
+ *
  * @package WordPress
  * @subpackage HTML-API
  * @since WP_VERSION
@@ -480,7 +485,7 @@ class WP_XML_Processor {
 	private $is_closing_tag;
 
 	/**
-	 * Stores an explanation for why something failed, if it did.
+	 * Stores the error for why something failed, if it did.
 	 *
 	 * @see self::get_last_error
 	 *
@@ -569,6 +574,17 @@ class WP_XML_Processor {
 	protected $lexical_updates = array();
 
 	/**
+	 * Memory budget for the processed XML.
+	 *
+	 * append_bytes() will flush the processed bytes whenever the XML buffer
+	 * exceeds this budget. The lexical updates will be applied and the bookmarks
+	 * will be reset.
+	 *
+	 * @var int
+	 */
+	protected $memory_budget = 1024 * 1024 * 1024;
+
+	/**
 	 * Tracks and limits `seek()` calls to prevent accidental infinite loops.
 	 *
 	 * @since WP_VERSION
@@ -626,7 +642,7 @@ class WP_XML_Processor {
 			return null;
 		}
 
-		$processor = new WP_XML_Processor( $xml );
+		$processor = new WP_XML_Processor( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
 		$processor->input_finished();
 		return $processor;
 	}
@@ -635,7 +651,7 @@ class WP_XML_Processor {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
-		return new WP_XML_Processor( $xml );
+		return new WP_XML_Processor( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
 	}
 
 	/**
@@ -651,13 +667,27 @@ class WP_XML_Processor {
 	 * @see WP_XML_Processor::create_stream()
 	 *
 	 * @param string      $xml            XML to process.
+	 * @param string|null $use_the_static_create_methods_instead This constructor should not be called manually.
 	 */
-	protected function __construct( $xml ) {
+	protected function __construct( $xml, $use_the_static_create_methods_instead = null ) {
+		if ( self::CONSTRUCTOR_UNLOCK_CODE !== $use_the_static_create_methods_instead ) {
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf(
+					/* translators: %s: WP_XML_Processor::create_fragment(). */
+					__( 'Call %s to create an XML Processor instead of calling the constructor directly.' ),
+					'<code>WP_XML_Processor::create_fragment()</code>'
+				),
+				'6.4.0'
+			);
+		}
 		$this->xml = $xml;
 	}
 
 	public static function create_stream_processor( $node_visitor_callback ) {
 		$xml_processor = WP_XML_Processor::from_stream( '' );
+		// Don't auto-flush the processed bytes. We'll do that manually.
+		$xml_processor->memory_budget = null;
 		return new ProcessorByteStream(
 			$xml_processor,
 			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
@@ -737,6 +767,14 @@ class WP_XML_Processor {
 		if ( $this->parser_state === self::STATE_INCOMPLETE_INPUT ) {
 			$this->parser_state = self::STATE_READY;
 		}
+
+		// Periodically flush the processed bytes to avoid high memory usage.
+		if (
+			null !== $this->memory_budget &&
+			strlen( $this->xml ) > $this->memory_budget
+		) {
+			$this->flush_processed_xml();
+		}
 		return true;
 	}
 
@@ -754,20 +792,28 @@ class WP_XML_Processor {
 		// Flush updates
 		$this->get_updated_xml();
 
-		$processed_xml   = substr( $this->xml, 0, $this->bytes_already_parsed );
-		$unprocessed_xml = substr( $this->xml, $this->bytes_already_parsed );
+		$unreferenced_bytes = $this->bytes_already_parsed;
+		if ( null !== $this->token_starts_at ) {
+			$unreferenced_bytes = min( $unreferenced_bytes, $this->token_starts_at );
+		}
 
-		$breadcrumbs    = $this->get_breadcrumbs();
-		$parser_context = $this->parser_context;
-
-		$this->reset_state();
-
-		$this->xml                    = $unprocessed_xml;
-		$this->stack_of_open_elements = $breadcrumbs;
-		$this->parser_context         = $parser_context;
-		$this->had_previous_chunks    = true;
-
-		return $processed_xml;
+		$flushed_bytes               = substr( $this->xml, 0, $unreferenced_bytes );
+		$this->xml                   = substr( $this->xml, $unreferenced_bytes );
+		$this->bookmarks             = array();
+		$this->lexical_updates       = array();
+		$this->seek_count            = 0;
+		$this->had_previous_chunks   = true;
+		$this->bytes_already_parsed -= $unreferenced_bytes;
+		if ( null !== $this->token_starts_at ) {
+			$this->token_starts_at -= $unreferenced_bytes;
+		}
+		if ( null !== $this->tag_name_starts_at ) {
+			$this->tag_name_starts_at -= $unreferenced_bytes;
+		}
+		if ( null !== $this->text_starts_at ) {
+			$this->text_starts_at -= $unreferenced_bytes;
+		}
+		return $flushed_bytes;
 	}
 
 	/**
@@ -853,13 +899,15 @@ class WP_XML_Processor {
 			return false;
 		}
 
+		if ( self::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
+			$this->bytes_already_parsed = $was_at;
+			return false;
+		}
+
 		// Ensure that the tag closes before the end of the document.
-		if (
-			self::STATE_INCOMPLETE_INPUT === $this->parser_state ||
-			$this->bytes_already_parsed >= strlen( $this->xml )
-		) {
+		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
 			// Does this appropriately clear state (parsed attributes)?
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input( 'Tag attributes were not closed before the end of the document.' );
 			$this->bytes_already_parsed = $was_at;
 
 			return false;
@@ -867,7 +915,7 @@ class WP_XML_Processor {
 
 		$tag_ends_at = strpos( $this->xml, '>', $this->bytes_already_parsed );
 		if ( false === $tag_ends_at ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input( 'No > found at the end of a tag.' );
 			$this->bytes_already_parsed = $was_at;
 
 			return false;
@@ -877,7 +925,11 @@ class WP_XML_Processor {
 			$this->last_error = self::ERROR_SYNTAX;
 			_doing_it_wrong(
 				__METHOD__,
-				__( 'Invalid closing tag encountered.' ),
+				sprintf(
+					// translators: %d is the byte offset of the invalid closing tag.
+					__( 'Invalid closing tag encountered at index %d.' ),
+					$this->bytes_already_parsed
+				),
 				'WP_VERSION'
 			);
 			return false;
@@ -910,7 +962,7 @@ class WP_XML_Processor {
 
 		// Closer not found, the document is incomplete.
 		if ( false === $found_closer ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input( 'Closing tag missing.' );
 			$this->bytes_already_parsed = $was_at;
 			return false;
 		}
@@ -1379,7 +1431,7 @@ class WP_XML_Processor {
 			}
 
 			if ( $at + 1 >= $doc_length ) {
-				$this->set_incomplete_input_or_parse_error();
+				$this->mark_incomplete_input();
 				return false;
 			}
 
@@ -1392,6 +1444,10 @@ class WP_XML_Processor {
 			 * * https://www.w3.org/TR/xml/#NT-Name
 			 */
 			$tag_name_length = $this->parse_name( $at + 1 );
+			if ( false === $tag_name_length ) {
+				return false;
+			}
+
 			if ( $tag_name_length > 0 ) {
 				++$at;
 				$this->parser_state         = self::STATE_MATCHED_TAG;
@@ -1408,7 +1464,7 @@ class WP_XML_Processor {
 			 * the document. There is nothing left to parse.
 			 */
 			if ( $at + 1 >= $doc_length ) {
-				$this->set_incomplete_input_or_parse_error();
+				$this->mark_incomplete_input( 'No more tags found before the end of the document.' );
 
 				return false;
 			}
@@ -1429,7 +1485,7 @@ class WP_XML_Processor {
 					$closer_at = $at + 4;
 					// If it's not possible to close the comment then there is nothing more to scan.
 					if ( $doc_length <= $closer_at ) {
-						$this->set_incomplete_input_or_parse_error();
+						$this->mark_incomplete_input( 'The document ends with a comment opener.' );
 
 						return false;
 					}
@@ -1441,7 +1497,7 @@ class WP_XML_Processor {
 					while ( ++$closer_at < $doc_length ) {
 						$closer_at = strpos( $xml, '--', $closer_at );
 						if ( false === $closer_at || $closer_at + 2 === $doc_length ) {
-							$this->set_incomplete_input_or_parse_error();
+							$this->mark_incomplete_input( 'Unclosed comment.' );
 							return false;
 						}
 
@@ -1491,7 +1547,7 @@ class WP_XML_Processor {
 				) {
 					$closer_at = strpos( $xml, ']]>', $at + 1 );
 					if ( false === $closer_at ) {
-						$this->set_incomplete_input_or_parse_error();
+						$this->mark_incomplete_input( 'Unclosed CDATA section' );
 
 						return false;
 					}
@@ -1508,7 +1564,7 @@ class WP_XML_Processor {
 				 * Anything else here is either unsupported at this point or invalid
 				 * syntax. See the class-level @TODO annotations for more information.
 				 */
-				$this->set_incomplete_input_or_parse_error();
+				$this->mark_incomplete_input( 'Unsupported <! syntax.' );
 
 				return false;
 			}
@@ -1647,7 +1703,7 @@ class WP_XML_Processor {
 				'?' === $xml[ $at + 1 ]
 			) {
 				if ( $at + 4 >= $doc_length ) {
-					$this->set_incomplete_input_or_parse_error();
+					$this->mark_incomplete_input();
 
 					return false;
 				}
@@ -1684,7 +1740,7 @@ class WP_XML_Processor {
 				 */
 				$closer_at = strpos( $xml, '?>', $at );
 				if ( false === $closer_at ) {
-					$this->set_incomplete_input_or_parse_error();
+					$this->mark_incomplete_input();
 
 					return false;
 				}
@@ -1717,7 +1773,7 @@ class WP_XML_Processor {
 		 * This does not imply an incomplete parse; it indicates that there
 		 * can be nothing left in the document other than a #text node.
 		 */
-		$this->set_incomplete_input_or_parse_error();
+		$this->mark_incomplete_input();
 		$this->token_starts_at = $was_at;
 		$this->token_length    = $doc_length - $was_at;
 		$this->text_starts_at  = $was_at;
@@ -1736,7 +1792,7 @@ class WP_XML_Processor {
 		// Skip whitespace and slashes.
 		$this->bytes_already_parsed += strspn( $this->xml, " \t\f\r\n/", $this->bytes_already_parsed );
 		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input();
 			return false;
 		}
 
@@ -1763,7 +1819,7 @@ class WP_XML_Processor {
 		++$this->bytes_already_parsed;
 		$this->skip_whitespace();
 		if ( $this->bytes_already_parsed >= strlen( $this->xml ) ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input();
 			return false;
 		}
 		switch ( $this->xml[ $this->bytes_already_parsed ] ) {
@@ -1787,7 +1843,7 @@ class WP_XML_Processor {
 				$attribute_end = $value_start + $value_length + 1;
 
 				if ( $attribute_end - 1 >= strlen( $this->xml ) ) {
-					$this->set_incomplete_input_or_parse_error();
+					$this->mark_incomplete_input();
 
 					return false;
 				}
@@ -1814,7 +1870,7 @@ class WP_XML_Processor {
 		}
 
 		if ( $attribute_end >= strlen( $this->xml ) ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input();
 			return false;
 		}
 
@@ -1853,36 +1909,119 @@ class WP_XML_Processor {
 		$this->bytes_already_parsed += strspn( $this->xml, " \t\f\r\n", $this->bytes_already_parsed );
 	}
 
-	// Describes the first character of the attribute name:
-	// NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
-	// See https://www.w3.org/TR/xml/#NT-Name
-	const NAME_START_CHAR_PATTERN = ':a-z_A-Z\x{C0}-\x{D6}\x{D8}-\x{F6}\x{F8}-\x{2FF}\x{370}-\x{37D}\x{37F}-\x{1FFF}\x{200C}-\x{200D}\x{2070}-\x{218F}\x{2C00}-\x{2FEF}\x{3001}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFFD}\x{10000}-\x{EFFFF}';
-	const NAME_CHAR_PATTERN       = '\-\.0-9\x{B7}\x{0300}-\x{036F}\x{203F}-\x{2040}:a-z_A-Z\x{C0}-\x{D6}\x{D8}-\x{F6}\x{F8}-\x{2FF}\x{370}-\x{37D}\x{37F}-\x{1FFF}\x{200C}-\x{200D}\x{2070}-\x{218F}\x{2C00}-\x{2FEF}\x{3001}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFFD}\x{10000}-\x{EFFFF}';
+	/**
+	 * Parses a Name token starting at $offset
+	 *
+	 * Name ::= NameStartChar (NameChar)*
+	 *
+	 * @param int $offset
+	 * @return int
+	 */
 	private function parse_name( $offset ) {
-		if ( 1 !== preg_match(
-			'~[' . self::NAME_START_CHAR_PATTERN . ']~Ssu',
-			$this->xml[ $offset ],
-			$matches
-		) ) {
-			return 0;
+		$name_byte_length = 0;
+		while ( true ) {
+			/**
+			 * Parse the next unicode codepoint.
+			 *
+			 * We use a custom UTF-8 decoder here. No other method
+			 * is reliable and available enough to depend on it in
+			 * WordPress core:
+			 *
+			 * * mb_ord() – is not available on all hosts.
+			 * * iconv_substr() – is not available on all hosts.
+			 * * preg_match() – can fail with PREG_BAD_UTF8_ERROR when the input
+			 *                  contains an incomplete UTF-8 byte sequence – even
+			 *                  when that sequence comes after a valid match. This
+			 *                  failure mode cannot be reproduced with just any string.
+			 *                  The runtime must be in a specific state. It's unclear
+			 *                  how to reliably reproduce this failure mode in a
+			 *                  unit test.
+			 *
+			 * Performance-wise, character-by-character processing via utf8_codepoint_at
+			 * is still much faster than relying on preg_match(). The mbstring extension
+			 * is likely faster. It would be interesting to evaluate the performance
+			 * and prefer mbstring whenever it's available.
+			 */
+			$codepoint = utf8_codepoint_at(
+				$this->xml,
+				$offset + $name_byte_length,
+				$bytes_parsed
+			);
+
+			if (
+				null === $codepoint ||
+				! $this->is_valid_name_codepoint( $codepoint, $name_byte_length === 0 )
+			) {
+				break;
+			}
+
+			$name_byte_length += $bytes_parsed;
+		}
+		return $name_byte_length;
+	}
+
+	private function is_valid_name_codepoint( $codepoint, $test_as_first_character = false ) {
+		// Test against the NameStartChar pattern:
+		// NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+		// See https://www.w3.org/TR/xml/#NT-Name
+		if (
+			// :
+			58 === $codepoint ||
+			// _
+			95 === $codepoint ||
+			// A-Z
+			( 65 <= $codepoint && 90 >= $codepoint ) ||
+			// a-z
+			( 97 <= $codepoint && 122 >= $codepoint ) ||
+			// [#xC0-#xD6]
+			( 192 <= $codepoint && 214 >= $codepoint ) ||
+			// [#xD8-#xF6]
+			( 216 <= $codepoint && 246 >= $codepoint ) ||
+			// [#xF8-#x2FF]
+			( 248 <= $codepoint && 511 >= $codepoint ) ||
+			// [#x370-#x37D]
+			( 560 <= $codepoint && 573 >= $codepoint ) ||
+			// [#x37F-#x1FFF]
+			( 895 <= $codepoint && 4095 >= $codepoint ) ||
+			// [#x200C-#x200D]
+			( 5120 <= $codepoint && 5125 >= $codepoint ) ||
+			// [#x2070-#x218F]
+			( 8304 <= $codepoint && 8575 >= $codepoint ) ||
+			// [#x2C00-#x2FEF]
+			( 11264 <= $codepoint && 12287 >= $codepoint ) ||
+			// [#x3001-#xD7FF]
+			( 12288 <= $codepoint && 55295 >= $codepoint ) ||
+			// [#xF900-#xFDCF]
+			( 60160 <= $codepoint && 60671 >= $codepoint ) ||
+			// [#xFDF0-#xFFFD]
+			( 65536 <= $codepoint && 65543 >= $codepoint ) ||
+			// [#x10000-#xEFFFF]
+			( 1048576 <= $codepoint && 1114111 >= $codepoint )
+		) {
+			return true;
 		}
 
-		$name_length = 1;
+		if ( $test_as_first_character ) {
+			return false;
+		}
 
-		// Consume the rest of the name
-		preg_match(
-			'~\G([' . self::NAME_CHAR_PATTERN . ']+)~Ssu',
-			$this->xml,
-			$matches,
-			0,
-			$offset + 1
+		// Test against the NameChar pattern:
+		// NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+		// See https://www.w3.org/TR/xml/#NT-Name
+		return (
+			// "-"
+			45 === $codepoint ||
+			// "."
+			46 === $codepoint ||
+			// [0-9]
+			( 48 <= $codepoint && 57 >= $codepoint ) ||
+			// #xB7
+			183 === $codepoint ||
+			// [#x0300-#x036F]
+			( 480 <= $codepoint && 559 >= $codepoint ) ||
+			// [#x203F-#x2040]
+			( 5151 <= $codepoint && 5152 >= $codepoint )
 		);
-
-		if ( is_array( $matches ) && count( $matches ) > 0 ) {
-			$name_length += strlen( $matches[0] );
-		}
-
-		return $name_length;
 	}
 
 	/**
@@ -1930,25 +2069,6 @@ class WP_XML_Processor {
 		$this->text_length        = null;
 		$this->is_closing_tag     = null;
 		$this->attributes         = array();
-	}
-
-	protected function reset_state() {
-		$this->xml                  = '';
-		$this->parser_state         = self::STATE_READY;
-		$this->bytes_already_parsed = 0;
-		$this->token_starts_at      = null;
-		$this->token_length         = null;
-		$this->tag_name_starts_at   = null;
-		$this->tag_name_length      = null;
-		$this->text_starts_at       = null;
-		$this->text_length          = null;
-		$this->is_closing_tag       = null;
-		$this->last_error           = null;
-		$this->attributes           = array();
-		$this->bookmarks            = array();
-		$this->lexical_updates      = array();
-		$this->seek_count           = 0;
-		$this->had_previous_chunks  = false;
 	}
 
 	/**
@@ -2374,6 +2494,30 @@ class WP_XML_Processor {
 		return (
 			self::STATE_MATCHED_TAG === $this->parser_state &&
 			$this->is_closing_tag
+		);
+	}
+
+	/**
+	 * Indicates if the current tag token is a tag opener.
+	 *
+	 * Example:
+	 *
+	 *     $p = new WP_XML_Processor( '<wp:content></wp:content>' );
+	 *     $p->next_token();
+	 *     $p->is_tag_opener() === true;
+	 *
+	 *     $p->next_token();
+	 *     $p->is_tag_opener() === false;
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @return bool Whether the current tag is a tag closer.
+	 */
+	public function is_tag_opener() {
+		return (
+			self::STATE_MATCHED_TAG === $this->parser_state &&
+			! $this->is_closing_tag &&
+			! $this->is_empty_element()
 		);
 	}
 
@@ -2848,7 +2992,7 @@ class WP_XML_Processor {
 		// XML requires a root element. If we've reached the end of data in the prolog stage,
 		// before finding a root element, then the document is incomplete.
 		if ( WP_XML_Processor::STATE_COMPLETE === $this->parser_state ) {
-			$this->set_incomplete_input_or_parse_error();
+			$this->mark_incomplete_input();
 			return false;
 		}
 		// Do not step if we paused due to an incomplete input.
@@ -2922,7 +3066,12 @@ class WP_XML_Processor {
 						$this->last_error = self::ERROR_SYNTAX;
 						_doing_it_wrong(
 							__METHOD__,
-							__( 'The closing tag did not match the opening tag.' ),
+							sprintf(
+								// translators: %1$s is the name of the closing HTML tag, %2$s is the name of the opening HTML tag.
+								__( 'The closing tag "%1$s" did not match the opening tag "%2$s".' ),
+								$tag_name,
+								$popped
+							),
 							'WP_VERSION'
 						);
 						return false;
@@ -3110,15 +3259,17 @@ class WP_XML_Processor {
 		);
 	}
 
-	private function set_incomplete_input_or_parse_error() {
+	private function mark_incomplete_input(
+		$error_message = 'Unexpected syntax encountered.'
+	) {
 		if ( $this->expecting_more_input ) {
 			$this->parser_state = self::STATE_INCOMPLETE_INPUT;
-		} else {
-			$this->parser_state = self::STATE_INVALID_DOCUMENT;
-			$this->last_error   = self::ERROR_SYNTAX;
-			// @TODO: Add a more specific error message.
-			_doing_it_wrong( __METHOD__, 'Unexpected syntax encountered.', 'WP_VERSION' );
+			return;
 		}
+
+		$this->parser_state = self::STATE_INVALID_DOCUMENT;
+		$this->last_error   = self::ERROR_SYNTAX;
+		_doing_it_wrong( __METHOD__, $error_message, 'WP_VERSION' );
 	}
 
 	/**
@@ -3316,4 +3467,18 @@ class WP_XML_Processor {
 	 * @var string
 	 */
 	const PROCESS_CURRENT_NODE = 'process-current-node';
+
+
+	/**
+	 * Unlock code that must be passed into the constructor to create this class.
+	 *
+	 * This class extends the WP_HTML_Tag_Processor, which has a public class
+	 * constructor. Therefore, it's not possible to have a private constructor here.
+	 *
+	 * This unlock code is used to ensure that anyone calling the constructor is
+	 * doing so with a full understanding that it's intended to be a private API.
+	 *
+	 * @access private
+	 */
+	const CONSTRUCTOR_UNLOCK_CODE = 'Use WP_HTML_Processor::create_fragment() instead of calling the class constructor directly.';
 }

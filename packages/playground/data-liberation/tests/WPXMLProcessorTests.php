@@ -17,6 +17,10 @@ class WPXMLProcessorTests extends TestCase {
 	const XML_WITH_CLASSES = '<wp:content wp:post-type="main with-border" id="first"><wp:text wp:post-type="not-main bold with-border" id="second">Text</wp:text></wp:content>';
 	const XML_MALFORMED    = '<wp:content><wp:text wp:post-type="d-md-none" Notifications</wp:text><wp:text wp:post-type="d-none d-md-inline">Back to notifications</wp:text></wp:content>';
 
+	public function beforeEach() {
+		$GLOBALS['_doing_it_wrong_messages'] = [];
+	}
+
 	/**
 	 * @ticket 61365
 	 *
@@ -1677,4 +1681,41 @@ class WPXMLProcessorTests extends TestCase {
 		}
 		$this->assertTrue( $processor->is_paused_at_incomplete_input(), 'Did not indicate that the XML input was incomplete.' );
 	}
+
+	/**
+	 * @ticket 61365
+	 *
+	 * @covers WP_XML_Processor::next_token
+	 */
+	public function test_text_nodes_are_not_exposed_until_their_full_content_is_available() {
+		$processor = WP_XML_Processor::from_stream(
+			'<root>text'
+		);
+		$this->assertTrue( $processor->next_tag(), 'Did not find a tag.' );
+		$this->assertFalse( $processor->next_token(), 'Found a text node before it was fully available.' );
+		$processor->append_bytes( ', more text' );
+		$this->assertFalse( $processor->next_token(), 'Found a text node before it was fully available.' );
+		$processor->append_bytes( ', and even more text</root>' );
+		$this->assertTrue( $processor->next_token(), 'Did not find a tag after appending more text.' );
+		$this->assertEquals( 'text, more text, and even more text', $processor->get_modifiable_text(), 'Did not find the expected text.' );
+	}
+
+	/**
+	 * @ticket 61365
+	 *
+	 * @covers WP_XML_Processor::next_token
+	 */
+	public function test_escaped_cdata() {
+		$processor = WP_XML_Processor::from_string(
+			'<root>The CDATA section looks as follows: <![CDATA[<![CDATA[Your content goes here]]]]><![CDATA[>]]></root>'
+		);
+		$this->assertTrue( $processor->next_token(), 'Did not find a tag.' );
+		$this->assertTrue( $processor->next_token(), 'Did not find a text node.' );
+		$this->assertEquals( 'The CDATA section looks as follows: ', $processor->get_modifiable_text(), 'Did not find the expected text.' );
+		$this->assertTrue( $processor->next_token(), 'Did not find a CDATA node.' );
+		$this->assertEquals( '<![CDATA[Your content goes here]]', $processor->get_modifiable_text(), 'Did not find the expected text.' );
+		$this->assertTrue( $processor->next_token(), 'Did not find the second CDATA node.' );
+		$this->assertEquals( '>', $processor->get_modifiable_text(), 'Did not find the expected text.' );
+	}
+
 }

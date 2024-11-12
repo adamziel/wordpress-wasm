@@ -16716,7 +16716,7 @@ function getFontStylesAndWeights(fontFamilyFaces) {
       value: weightValue
     }) => {
       const optionName = styleValue === 'normal' ? weightName : (0,external_wp_i18n_namespaceObject.sprintf)( /* translators: 1: Font weight name. 2: Font style name. */
-      (0,external_wp_i18n_namespaceObject.__)('%1$s %2$s'), weightName, styleName);
+      (0,external_wp_i18n_namespaceObject._x)('%1$s %2$s', 'font'), weightName, styleName);
       combinedStyleAndWeightOptions.push({
         key: `${styleValue}-${weightValue}`,
         name: optionName,
@@ -22008,7 +22008,7 @@ class URLInput extends external_wp_element_namespaceObject.Component {
         showSuggestions: !!suggestions.length
       });
       if (!!suggestions.length) {
-        this.props.debouncedSpeak((0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %s: number of results. */
+        this.props.debouncedSpeak((0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %d: number of results. */
         (0,external_wp_i18n_namespaceObject._n)('%d result found, use up and down arrow keys to navigate.', '%d results found, use up and down arrow keys to navigate.', suggestions.length), suggestions.length), 'assertive');
       } else {
         this.props.debouncedSpeak((0,external_wp_i18n_namespaceObject.__)('No results.'), 'assertive');
@@ -30426,7 +30426,7 @@ function SpacingInputControl({
   if (showCustomValueInSelectList) {
     selectListSizes = [...spacingSizes, {
       name: !isMixed ?
-      // translators: A custom measurement, eg. a number followed by a unit like 12px.
+      // translators: %s: A custom measurement, e.g. a number followed by a unit like 12px.
       (0,external_wp_i18n_namespaceObject.sprintf)((0,external_wp_i18n_namespaceObject.__)('Custom (%s)'), value) : (0,external_wp_i18n_namespaceObject.__)('Mixed'),
       slug: 'custom',
       size: value
@@ -30477,8 +30477,8 @@ function SpacingInputControl({
   const sideLabel = ALL_SIDES.includes(side) && showSideInLabel ? LABELS[side] : '';
   const typeLabel = showSideInLabel ? type?.toLowerCase() : type;
   const ariaLabel = (0,external_wp_i18n_namespaceObject.sprintf)(
-  // translators: 1: The side of the block being modified (top, bottom, left, All sides etc.). 2. Type of spacing being modified (Padding, margin, etc)
-  (0,external_wp_i18n_namespaceObject.__)('%1$s %2$s'), sideLabel, typeLabel).trim();
+  // translators: 1: The side of the block being modified (top, bottom, left etc.). 2. Type of spacing being modified (padding, margin, etc).
+  (0,external_wp_i18n_namespaceObject._x)('%1$s %2$s', 'spacing'), sideLabel, typeLabel).trim();
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.__experimentalHStack, {
     className: "spacing-sizes-control__wrapper",
     children: [icon && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Icon, {
@@ -30890,8 +30890,8 @@ function SpacingSizesControl({
   };
   const sideLabel = ALL_SIDES.includes(view) && showSideInLabel ? LABELS[view] : '';
   const label = (0,external_wp_i18n_namespaceObject.sprintf)(
-  // translators: 2. Type of spacing being modified (Padding, margin, etc). 1: The side of the block being modified (top, bottom, left etc.).
-  (0,external_wp_i18n_namespaceObject.__)('%1$s %2$s'), labelProp, sideLabel).trim();
+  // translators: 1: The side of the block being modified (top, bottom, left etc.). 2. Type of spacing being modified (padding, margin, etc).
+  (0,external_wp_i18n_namespaceObject._x)('%1$s %2$s', 'spacing'), labelProp, sideLabel).trim();
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("fieldset", {
     className: "spacing-sizes-control",
     children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.__experimentalHStack, {
@@ -32227,41 +32227,45 @@ function isScrollable(element) {
   const style = window.getComputedStyle(element);
   return style.overflowX === 'auto' || style.overflowX === 'scroll' || style.overflowY === 'auto' || style.overflowY === 'scroll';
 }
-
+const WITH_OVERFLOW_ELEMENT_BLOCKS = ['core/navigation'];
 /**
- * Returns the rect of the element including all visible nested elements.
+ * Returns the bounding rectangle of an element, with special handling for blocks
+ * that have visible overflowing children (defined in WITH_OVERFLOW_ELEMENT_BLOCKS).
  *
- * Visible nested elements, including elements that overflow the parent, are
- * taken into account.
- *
- * This function is useful for calculating the visible area of a block that
- * contains nested elements that overflow the block, e.g. the Navigation block,
- * which can contain overflowing Submenu blocks.
- *
+ * For blocks like Navigation that can have overflowing elements (e.g. submenus),
+ * this function calculates the combined bounds of both the parent and its visible
+ * children. The returned rect may extend beyond the viewport.
  * The returned rect represents the full extent of the element and its visible
  * children, which may extend beyond the viewport.
  *
  * @param {Element} element Element.
  * @return {DOMRect} Bounding client rect of the element and its visible children.
  */
-function getVisibleElementBounds(element) {
+function getElementBounds(element) {
   const viewport = element.ownerDocument.defaultView;
   if (!viewport) {
     return new window.DOMRectReadOnly();
   }
   let bounds = element.getBoundingClientRect();
-  const stack = [element];
-  let currentElement;
-  while (currentElement = stack.pop()) {
-    for (const child of currentElement.children) {
-      if (isElementVisible(child)) {
-        let childBounds = child.getBoundingClientRect();
-        // If the parent is scrollable, use parent's scrollable bounds.
-        if (isScrollable(currentElement)) {
-          childBounds = currentElement.getBoundingClientRect();
+  const dataType = element.getAttribute('data-type');
+
+  /*
+   * For blocks with overflowing elements (like Navigation), include the bounds
+   * of visible children that extend beyond the parent container.
+   */
+  if (dataType && WITH_OVERFLOW_ELEMENT_BLOCKS.includes(dataType)) {
+    const stack = [element];
+    let currentElement;
+    while (currentElement = stack.pop()) {
+      // Children won’t affect bounds unless the element is not scrollable.
+      if (!isScrollable(currentElement)) {
+        for (const child of currentElement.children) {
+          if (isElementVisible(child)) {
+            const childBounds = child.getBoundingClientRect();
+            bounds = rectUnion(bounds, childBounds);
+            stack.push(child);
+          }
         }
-        bounds = rectUnion(bounds, childBounds);
-        stack.push(child);
       }
     }
   }
@@ -32346,7 +32350,7 @@ function BlockPopover({
     }
     return {
       getBoundingClientRect() {
-        return lastSelectedElement ? rectUnion(getVisibleElementBounds(selectedElement), getVisibleElementBounds(lastSelectedElement)) : getVisibleElementBounds(selectedElement);
+        return lastSelectedElement ? rectUnion(getElementBounds(selectedElement), getElementBounds(lastSelectedElement)) : getElementBounds(selectedElement);
       },
       contextElement: selectedElement
     };
@@ -36493,8 +36497,8 @@ function BlockCard({
       children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("h2", {
         className: "block-editor-block-card__title",
         children: name?.length ? (0,external_wp_i18n_namespaceObject.sprintf)(
-        // translators:  %1$s: Custom block name. %2$s: Block title.
-        (0,external_wp_i18n_namespaceObject.__)('%1$s (%2$s)'), name, title) : title
+        // translators:  1: Custom block name. 2: Block title.
+        (0,external_wp_i18n_namespaceObject._x)('%1$s (%2$s)', 'block label'), name, title) : title
       }), description && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalText, {
         className: "block-editor-block-card__description",
         children: description
@@ -46370,7 +46374,7 @@ function Pagination({
       }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalText, {
         variant: "muted",
         children: (0,external_wp_i18n_namespaceObject.sprintf)(
-        // translators: %1$s: Current page number, %2$s: Total number of pages.
+        // translators: 1: Current page number. 2: Total number of pages.
         (0,external_wp_i18n_namespaceObject._x)('%1$s of %2$s', 'paging'), currentPage, numPages)
       }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.__experimentalHStack, {
         expanded: false,
@@ -52949,7 +52953,7 @@ function getProps(contentElement, selectedBlockElement, scrollContainer, toolbar
 
   // Get how far the content area has been scrolled.
   const scrollTop = scrollContainer?.scrollTop || 0;
-  const blockRect = getVisibleElementBounds(selectedBlockElement);
+  const blockRect = getElementBounds(selectedBlockElement);
   const contentRect = contentElement.getBoundingClientRect();
 
   // Get the vertical position of top of the visible content area.
@@ -56673,7 +56677,7 @@ const BlockSettingsMenuControlsSlot = ({
     isGroupable,
     isUngroupable
   } = convertToGroupButtonProps;
-  const showConvertToGroupButton = isGroupable || isUngroupable;
+  const showConvertToGroupButton = (isGroupable || isUngroupable) && !isContentOnly;
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(block_settings_menu_controls_Slot, {
     fillProps: {
       ...fillProps,
@@ -56833,6 +56837,12 @@ function BlockSettingsDropdown({
   const currentClientId = block?.clientId;
   const count = clientIds.length;
   const firstBlockClientId = clientIds[0];
+  const isZoomOut = (0,external_wp_data_namespaceObject.useSelect)(select => {
+    const {
+      __unstableGetEditorMode
+    } = unlock(select(store));
+    return __unstableGetEditorMode() === 'zoom-out';
+  });
   const {
     firstParentClientId,
     onlyBlock,
@@ -56968,7 +56978,7 @@ function BlockSettingsDropdown({
             parentBlockType: parentBlockType
           }), count === 1 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(block_html_convert_button, {
             clientId: firstBlockClientId
-          }), !isContentOnly && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(CopyMenuItem, {
+          }), (!isContentOnly || isZoomOut) && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(CopyMenuItem, {
             clientIds: clientIds,
             onCopy: onCopy,
             shortcut: external_wp_keycodes_namespaceObject.displayShortcut.primary('c')
@@ -57941,7 +57951,7 @@ function PrivateBlockToolbar({
         })]
       }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(BlockEditVisuallyButton, {
         clientIds: blockClientIds
-      }), isDefaultEditingMode && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(block_settings_menu, {
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(block_settings_menu, {
         clientIds: blockClientIds
       })]
     })
@@ -58887,7 +58897,7 @@ const useTransformCommands = () => {
     } = transformation;
     return {
       name: 'core/block-editor/transform-to-' + name.replace('/', '-'),
-      // translators: %s: block title/name.
+      /* translators: %s: Block or block variation name. */
       label: (0,external_wp_i18n_namespaceObject.sprintf)((0,external_wp_i18n_namespaceObject.__)('Transform to %s'), title),
       icon: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(block_icon, {
         icon: icon
@@ -63186,7 +63196,7 @@ function VariationsButtons({
         showColors: true
       }),
       isPressed: selectedValue === variation.name,
-      label: selectedValue === variation.name ? variation.title : (0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %s: Name of the block variation */
+      label: selectedValue === variation.name ? variation.title : (0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %s: Block or block variation name. */
       (0,external_wp_i18n_namespaceObject.__)('Transform to %s'), variation.title),
       onClick: () => onSelectVariation(variation.name),
       "aria-label": variation.title,
@@ -63254,7 +63264,7 @@ function VariationsToggleGroupControl({
           showColors: true
         }),
         value: variation.name,
-        label: selectedValue === variation.name ? variation.title : (0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %s: Name of the block variation */
+        label: selectedValue === variation.name ? variation.title : (0,external_wp_i18n_namespaceObject.sprintf)( /* translators: %s: Block or block variation name. */
         (0,external_wp_i18n_namespaceObject.__)('Transform to %s'), variation.title)
       }, variation.name))
     })

@@ -3158,12 +3158,16 @@ function Layout({
       canUser,
       getPostType
     } = select(external_wp_coreData_namespaceObject.store);
+    const {
+      __unstableGetEditorMode
+    } = unlock(select(external_wp_blockEditor_namespaceObject.store));
     const supportsTemplateMode = settings.supportsTemplateMode;
     const isViewable = (_getPostType$viewable = getPostType(currentPostType)?.viewable) !== null && _getPostType$viewable !== void 0 ? _getPostType$viewable : false;
     const canViewTemplate = canUser('read', {
       kind: 'postType',
       name: 'wp_template'
     });
+    const isZoomOut = __unstableGetEditorMode() === 'zoom-out';
     return {
       mode: select(external_wp_editor_namespaceObject.store).getEditorMode(),
       isFullscreenActive: select(store).isFeatureActive('fullscreenMode'),
@@ -3171,7 +3175,7 @@ function Layout({
       hasBlockSelected: !!select(external_wp_blockEditor_namespaceObject.store).getBlockSelectionStart(),
       showIconLabels: get('core', 'showIconLabels'),
       isDistractionFree: get('core', 'distractionFree'),
-      showMetaBoxes: !DESIGN_POST_TYPES.includes(currentPostType) && select(external_wp_editor_namespaceObject.store).getRenderingMode() === 'post-only',
+      showMetaBoxes: !DESIGN_POST_TYPES.includes(currentPostType) && select(external_wp_editor_namespaceObject.store).getRenderingMode() === 'post-only' && !isZoomOut,
       isWelcomeGuideVisible: isFeatureActive('welcomeGuide'),
       templateId: supportsTemplateMode && isViewable && canViewTemplate && !isEditingTemplate ? getEditedPostTemplateId() : null
     };
@@ -3221,7 +3225,7 @@ function Layout({
           const newItem = items[0];
           const title = typeof newItem.title === 'string' ? newItem.title : newItem.title?.rendered;
           createSuccessNotice((0,external_wp_i18n_namespaceObject.sprintf)(
-          // translators: %s: Title of the created post e.g: "Post 1".
+          // translators: %s: Title of the created post or template, e.g: "Hello world".
           (0,external_wp_i18n_namespaceObject.__)('"%s" successfully created.'), (0,external_wp_htmlEntities_namespaceObject.decodeEntities)(title)), {
             type: 'snackbar',
             id: 'duplicate-post-action',

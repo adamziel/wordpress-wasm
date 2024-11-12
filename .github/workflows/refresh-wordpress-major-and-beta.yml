@@ -12,8 +12,8 @@ on:
         - cron: '*/20 * * * *'
 
 jobs:
-    build_and_deploy:
-        # Only run this workflow from the trunk branch and when it's triggered by dmsnell OR adamziel
+    build_wordpress_major_and_beta_push_to_github_and_deploy_website:
+        # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.actor == 'adamziel' ||
@@ -39,6 +39,7 @@ jobs:
                   curl -fsSL https://bun.sh/install | bash
             - uses: ./.github/actions/prepare-playground
             - name: 'Recompile WordPress'
+              id: build
               shell: bash
               env:
                   FORCE_REBUILD: ${{ github.event.inputs.force_rebuild }}
@@ -48,13 +49,13 @@ jobs:
               run: |
                   if [ -z "$(git status --porcelain)" ]; then
                       echo "No changes"
-                      echo 'CHANGES=0' >> $GITHUB_OUTPUT
+                      echo 'COMMIT_CHANGES=0' >> $GITHUB_OUTPUT
                   else
                       echo "Changes detected"
-                      echo 'CHANGES=1' >> $GITHUB_OUTPUT
+                      echo 'COMMIT_CHANGES=1' >> $GITHUB_OUTPUT
                   fi
             - name: Push rebuilt WordPress to GitHub
-              if: steps.changes.outputs.CHANGES == '1'
+              if: steps.changes.outputs.COMMIT_CHANGES == '1'
               run: |
                   git config --global user.name "deployment_bot"
                   git config --global user.email "deployment_bot@users.noreply.github.com"
@@ -67,7 +68,7 @@ jobs:
                       git push origin HEAD:trunk
                   fi;
             - name: Deploy website
-              if: steps.changes.outputs.CHANGES == '1'
+              if: steps.changes.outputs.COMMIT_CHANGES == '1'
               uses: benc-uk/workflow-dispatch@v1
               with:
                   workflow: build-website.yml

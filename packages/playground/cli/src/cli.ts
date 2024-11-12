@@ -104,7 +104,7 @@ async function run() {
 		})
 		.option('debug', {
 			describe:
-				'Return PHP error log content if an error occurs while building the site.',
+				'Print PHP error log content if an error occurs during Playground boot.',
 			type: 'boolean',
 			default: false,
 		})
@@ -296,6 +296,13 @@ async function run() {
 				? readAsFile(preinstalledWpContentPath)
 				: fetchWordPress(wpDetails.url, monitor);
 
+			const constants: Record<string, string | number | boolean | null> =
+				{
+					WP_DEBUG: true,
+					WP_DEBUG_LOG: true,
+					WP_DEBUG_DISPLAY: false,
+				};
+
 			requestHandler = await bootWordPress({
 				siteUrl: absoluteUrl,
 				createPhpRuntime: async () =>
@@ -307,6 +314,7 @@ async function run() {
 					'/internal/shared/ca-bundle.crt':
 						rootCertificates.join('\n'),
 				},
+				constants,
 				phpIniEntries: {
 					'openssl.cafile': '/internal/shared/ca-bundle.crt',
 					allow_url_fopen: '1',

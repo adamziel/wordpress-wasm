@@ -32,12 +32,14 @@ require_once __DIR__ . '/src/WP_URL.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/WP_WXR_URL_Rewrite_Processor.php';
-
+require_once __DIR__ . '/src/WP_WXR_Reader.php';
+require_once __DIR__ . '/src/utf8_decoder.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
-
 // Polyfill WordPress core functions
+$GLOBALS['_doing_it_wrong_messages'] = [];
 function _doing_it_wrong($method, $message, $version) {
+	$GLOBALS['_doing_it_wrong_messages'][] = $message;
 }
 
 function __($input) {
@@ -76,4 +78,38 @@ function wp_kses_uri_attributes() {
 		'usemap',
 		'xmlns',
 	);
+}
+
+function mbstring_binary_safe_encoding( $reset = false ) {
+	static $encodings  = array();
+	static $overloaded = null;
+
+	if ( is_null( $overloaded ) ) {
+		if ( function_exists( 'mb_internal_encoding' )
+			&& ( (int) ini_get( 'mbstring.func_overload' ) & 2 ) // phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.mbstring_func_overloadDeprecated
+		) {
+			$overloaded = true;
+		} else {
+			$overloaded = false;
+		}
+	}
+
+	if ( false === $overloaded ) {
+		return;
+	}
+
+	if ( ! $reset ) {
+		$encoding = mb_internal_encoding();
+		array_push( $encodings, $encoding );
+		mb_internal_encoding( 'ISO-8859-1' );
+	}
+
+	if ( $reset && $encodings ) {
+		$encoding = array_pop( $encodings );
+		mb_internal_encoding( $encoding );
+	}
+}
+
+function reset_mbstring_encoding() {
+	mbstring_binary_safe_encoding( true );
 }
