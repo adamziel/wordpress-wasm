@@ -1,11 +1,11 @@
-import { Icon, Modal, Spinner } from '@wordpress/components';
+import { Icon, Spinner } from '@wordpress/components';
 import { oAuthState } from '../state';
 import { GitHubIcon } from '../github';
 import css from './style.module.css';
-import cssModal from '../../components/modal/style.module.css';
 import { useState } from 'react';
 import classNames from 'classnames';
 import { useActiveSite } from '../../lib/state/redux/store';
+import { ModalComponent as Modal } from '../../components/modal';
 
 const OAUTH_FLOW_URL = 'oauth.php?redirect=1';
 const urlParams = new URLSearchParams(window.location.search);
@@ -24,7 +24,6 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 			{ (isModalOpen) &&
 				<Modal
 					title="Connect to GitHub"
-					className={cssModal.modal}
 					onRequestClose={() => {
 						setIsModalOpen(false);
 					}}

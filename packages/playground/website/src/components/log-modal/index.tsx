@@ -3,8 +3,8 @@ import { logEventType, logger } from '@php-wasm/logger';
 
 import classNames from 'classnames';
 import css from './style.module.css';
-
-import { Modal, TextControl } from '@wordpress/components';
+import { ModalComponent as Modal } from '../modal';
+import { TextControl } from '@wordpress/components';
 import {
 	PlaygroundDispatch,
 	PlaygroundReduxState,

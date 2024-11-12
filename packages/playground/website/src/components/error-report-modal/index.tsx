@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { logger } from '@php-wasm/logger';
-import { TextareaControl, TextControl, Modal } from '@wordpress/components';
-
-import css from '../modal/style.module.css';
-
+import { TextareaControl, TextControl } from '@wordpress/components';
 import { Blueprint } from '@wp-playground/blueprints';
 import { useDispatch } from 'react-redux';
 import {
@@ -12,6 +9,7 @@ import {
 	useAppSelector,
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
+import { ModalComponent as Modal } from '../../components/modal';
 import ModalButtons from '../modal/modal-buttons';
 
 export function ErrorReportModal(props: { blueprint: Blueprint }) {
@@ -157,7 +155,7 @@ export function ErrorReportModal(props: { blueprint: Blueprint }) {
 	}
 
 	return (
-		<Modal title={getTitle()} onRequestClose={onClose} className={css.modalSmall}>
+		<Modal title={getTitle()} onRequestClose={onClose} small>
 			<p>{getContent()}</p>
 			{showForm() && (
 				<>

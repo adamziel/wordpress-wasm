@@ -247,10 +247,6 @@ export function SiteInfoPanel({
 												onClose={onClose}
 												disabled={!playground}
 											/>
-											<RestoreFromZipMenuItem
-												onClose={onClose}
-												disabled={!playground}
-											/>
 										</MenuGroup>
 										<MenuGroup>
 											<MenuItem

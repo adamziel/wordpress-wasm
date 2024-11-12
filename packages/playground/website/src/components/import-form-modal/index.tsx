@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import ImportForm from '../import-form/index';
-import { Modal } from '@wordpress/components';
+import { ModalComponent as Modal } from '../../components/modal';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 

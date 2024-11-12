@@ -46,7 +46,7 @@ export default function ImportForm({
 
 	return (
 		<>
-			<p className={css.modalText}>
+			<p>
 				You may replace the current WordPress Playground site with a
 				previously exported one.
 			</p>

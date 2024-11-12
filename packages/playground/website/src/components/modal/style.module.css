@@ -4,6 +4,7 @@
 	textarea {
 		resize: vertical;
 		width: 100% !important;
+		min-height: 3lh;
 	}
 }
 
