@@ -1,9 +1,10 @@
+import React from 'react';
+import { useDispatch } from 'react-redux';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
-import ImportForm from './index';
+import ImportForm from '../import-form/index';
 import { Modal } from '@wordpress/components';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
-import { useDispatch } from 'react-redux';
 
 export const ImportFormModal = () => {
 	const playground = usePlaygroundClient();

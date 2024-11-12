@@ -32,8 +32,8 @@ import {
 	setActiveModal,
 	setSiteManagerOpen,
 } from '../../lib/state/redux/slice-ui';
-import { ImportFormModal } from '../import-form/modal';
-import { PreviewPRModal } from '../../github/preview-pr/modal';
+import { ImportFormModal } from '../import-form-modal';
+import { PreviewPRModal } from '../../github/preview-pr';
 
 acquireOAuthTokenIfNeeded();
 
