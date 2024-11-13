@@ -8,7 +8,12 @@ use Rowbot\URL\URL;
  * Example:
  *
  * ```php
- * php > wp_rewrite_urls('<!-- wp:image {"src": "http://legacy-blog.com/image.jpg"} -->')
+ * php > wp_rewrite_urls([
+ *   'block_markup' => '<!-- wp:image {"src": "http://legacy-blog.com/image.jpg"} -->',
+ *   'url-mapping' => [
+ *     'http://legacy-blog.com' => 'https://modern-webstore.org'
+ *   ]
+ * ])
  * <!-- wp:image {"src":"https:\/\/modern-webstore.org\/image.jpg"} -->
  * ```
  *
@@ -20,105 +25,97 @@ use Rowbot\URL\URL;
  */
 function wp_rewrite_urls( $options ) {
 	if ( empty( $options['base_url'] ) ) {
-		$options['base_url'] = $options['from-url'];
+		// Use first from-url as base_url if not specified
+		$from_urls = array_keys($options['url-mapping']);
+		$options['base_url'] = $from_urls[0];
 	}
 
-	$from_url = WP_URL::parse( $options['from-url'] );
-	if ( $from_url->pathname[ strlen( $from_url->pathname ) - 1 ] === '/' ) {
-		$from_url->pathname = substr( $from_url->pathname, 0, strlen( $from_url->pathname ) - 1 );
-	}
-	$from_pathname_with_trailing_slash = $from_url->pathname === '/' ? $from_url->pathname : $from_url->pathname . '/';
-	$from_url_string                   = $from_url->toString();
+	$url_mapping = [];
+	foreach ($options['url-mapping'] as $from_url_string => $to_url_string) {
+		$from_url = WP_URL::parse($from_url_string);
+		if ( $from_url->pathname[ strlen( $from_url->pathname ) - 1 ] === '/' ) {
+			$from_url->pathname = substr( $from_url->pathname, 0, strlen( $from_url->pathname ) - 1 );
+		}
+		$from_pathname_with_trailing_slash = $from_url->pathname === '/' ? $from_url->pathname : $from_url->pathname . '/';
 
-	$to_url = WP_URL::parse( $options['to-url'] );
-	if ( $to_url->pathname[ strlen( $to_url->pathname ) - 1 ] === '/' ) {
-		$to_url->pathname = substr( $to_url->pathname, 0, strlen( $to_url->pathname ) - 1 );
+		$to_url = WP_URL::parse($to_url_string);
+		if ( $to_url->pathname[ strlen( $to_url->pathname ) - 1 ] === '/' ) {
+			$to_url->pathname = substr( $to_url->pathname, 0, strlen( $to_url->pathname ) - 1 );
+		}
+		$new_pathname_with_trailing_slash = $to_url->pathname === '/' ? $to_url->pathname : $to_url->pathname . '/';
+
+		$url_mapping[] = [
+			'from_url' => $from_url,
+			'from_url_string' => $from_url->toString(),
+			'from_pathname_with_trailing_slash' => $from_pathname_with_trailing_slash,
+			'to_url' => $to_url,
+			'new_pathname_with_trailing_slash' => $new_pathname_with_trailing_slash
+		];
 	}
-	$new_pathname_with_trailing_slash =
-		$to_url->pathname === '/' ? $to_url->pathname : $to_url->pathname . '/';
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
-		if ( ! url_matches( $p->get_parsed_url(), $from_url_string ) ) {
+		$raw_url = $p->get_raw_url();
+		$parsed_url = $p->get_parsed_url();
+
+		$mapping = null;
+		foreach ($url_mapping as $mapping_candidate) {
+			if ( url_matches( $parsed_url, $mapping_candidate['from_url_string'] ) ) {
+				$mapping = $mapping_candidate;
+				break;
+			}
+		}
+
+		if ( $mapping === null ) {
 			continue;
 		}
-		$raw_url = $p->get_raw_url();
 
-		$parsed_matched_url           = $p->get_parsed_url();
-		$parsed_matched_url->hostname = $to_url->hostname;
-		$parsed_matched_url->protocol = $to_url->protocol;
-		$parsed_matched_url->port = $to_url->port;
+		$parsed_url->hostname = $mapping['to_url']->hostname;
+		$parsed_url->protocol = $mapping['to_url']->protocol;
+		$parsed_url->port = $mapping['to_url']->port;
 
 		// Update the pathname if needed.
-		if ( $from_url->pathname !== $to_url->pathname ) {
-			/**
-			 * The matched URL starts with $from_name->pathname.
-			 *
-			 * We want to retain the portion of the pathname that comes
-			 * after $from_name->pathname. This is not a simple
-			 * substring operation because the matched URL may have
-			 * urlencoded bytes at the beginning. We need to decode
-			 * them before taking the substring.
-			 *
-			 * However, we can't just decode the entire pathname because
-			 * the part after $from_name->pathname may itself
-			 * contain urlencoded bytes. If we decode them here, it
-			 * may change a path such as `/%2561/foo`, which decodes
-			 * as `/61/foo`, to `/a/foo`.
-			 *
-			 * Therefore, we're going to decode a part of the string. We'll
-			 * start at the beginning and keep going until we've found
-			 * enough decoded bytes to skip over $from_name->pathname.
-			 * Then we'll take the remaining, still encoded bytes as the new pathname.
-			 */
-			$decoded_matched_pathname     = urldecode_n(
-				$parsed_matched_url->pathname,
-				strlen( $from_pathname_with_trailing_slash )
+		if ( $mapping['from_url']->pathname !== $mapping['to_url']->pathname ) {
+			$decoded_matched_pathname = urldecode_n(
+				$parsed_url->pathname,
+				strlen( $mapping['from_pathname_with_trailing_slash'] )
 			);
-			$parsed_matched_url->pathname =
-				$new_pathname_with_trailing_slash .
+			$parsed_url->pathname =
+				$mapping['new_pathname_with_trailing_slash'] .
 					substr(
 						$decoded_matched_pathname,
-						strlen( $from_pathname_with_trailing_slash )
+						strlen( $mapping['from_pathname_with_trailing_slash'] )
 					);
 		}
 
 		/*
-		 * Stylistic choice – if the matched URL has no trailing slash,
-		 * do not add it to the new URL. The WHATWG URL parser will
-		 * add one automatically if the path is empty, so we have to
-		 * explicitly remove it.
-		 */
-		$new_raw_url     = $parsed_matched_url->toString();
-		$raw_matched_url = $p->get_raw_url();
+		* Stylistic choice – if the matched URL has no trailing slash,
+		* do not add it to the new URL. The WHATWG URL parser will
+		* add one automatically if the path is empty, so we have to
+		* explicitly remove it.
+		*/
+		$new_raw_url = $parsed_url->toString();
 		if (
-			$raw_matched_url[ strlen( $raw_matched_url ) - 1 ] !== '/' &&
-			$parsed_matched_url->pathname === '/' &&
-			$parsed_matched_url->search === '' &&
-			$parsed_matched_url->hash === ''
+			$raw_url[ strlen( $raw_url ) - 1 ] !== '/' &&
+			$parsed_url->pathname === '/' &&
+			$parsed_url->search === '' &&
+			$parsed_url->hash === ''
 		) {
 			$new_raw_url = rtrim( $new_raw_url, '/' );
 		}
 		if ( $new_raw_url ) {
 			$is_relative = (
-				// Ensure protocol-less URLs coming from text nodes
-				// are not treated as relative.
-				//
-				// We're only capturing absolute URLs from text nodes,
-				// but some of them may look like relative URLs to the
-				// URL parser. For example, "mysite.com/path" would
-				// be parsed as a relative URL.
 				$p->get_token_type() !== '#text' &&
 				! str_starts_with( $raw_url, 'http://' ) &&
 				! str_starts_with( $raw_url, 'https://' )
 			);
 			if ( $is_relative ) {
-				$new_relative_url = $parsed_matched_url->pathname;
-				if ( $parsed_matched_url->search !== '' ) {
-					$new_relative_url .= $parsed_matched_url->search;
+				$new_relative_url = $parsed_url->pathname;
+				if ( $parsed_url->search !== '' ) {
+					$new_relative_url .= $parsed_url->search;
 				}
-				if ( $parsed_matched_url->hash !== '' ) {
-					$new_relative_url .= $parsed_matched_url->hash;
+				if ( $parsed_url->hash !== '' ) {
+					$new_relative_url .= $parsed_url->hash;
 				}
 				$p->set_raw_url( $new_relative_url );
 			} else {
@@ -128,6 +125,7 @@ function wp_rewrite_urls( $options ) {
 	}
 	return $p->get_updated_html();
 }
+
 /**
  * Check if a given URL matches the current site URL.
  *

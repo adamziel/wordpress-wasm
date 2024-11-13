@@ -9,7 +9,7 @@ require_once __DIR__ . '/bootstrap.php';
 add_action('init', function() {
     $hash = md5('docs-importer-test');
     if(file_exists('./.imported-' . $hash)) {
-        // return;
+        return;
     }
     touch('./.imported-' . $hash);
 
@@ -121,18 +121,15 @@ add_action('init', function() {
                 // @TODO: Do a single pass to rewrite all the URLs
                 $data['post_content'] = wp_rewrite_urls(array(
                     'block_markup' => $data['post_content'],
-                    'from-url' => $base_site_url,
-                    'to-url' => 'http://127.0.0.1:9400/',
-                ));
+                    'url-mapping' => [
+                        $base_site_url => 'http://127.0.0.1:9400/',
 
-                // Rewrite attachments URLs. Point them to the location we downloaded
-                // them to.
-                // @TODO: Contain these to wp-content/uploads/. Do not migrate attachments
-                //        to other locations.
-                $data['post_content'] = wp_rewrite_urls(array(
-                    'block_markup' => $data['post_content'],
-                    'from-url' => 'http://@site/',
-                    'to-url' => 'http://127.0.0.1:9400/wp-content/plugins/data-liberation/attachments/',
+                        // Rewrite attachments URLs. Point them to the location we downloaded
+                        // them to.
+                        // @TODO: Contain these to wp-content/uploads/. Do not migrate attachments
+                        //        to other locations.
+                        'http://@site' => 'http://127.0.0.1:9400/wp-content/plugins/data-liberation/attachments/',
+                    ],
                 ));
                 $entity->set_data($data);
 
@@ -216,18 +213,21 @@ add_action('init', function() {
                     $data = $entity->get_data();
                     $data['guid'] = wp_rewrite_urls(array(
                         'block_markup' => $data['guid'],
-                        'from-url' => 'https://playground.internal/',
-                        'to-url' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        'url-mapping' => [
+                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        ],
                     ));
                     $data['post_content'] = wp_rewrite_urls(array(
                         'block_markup' => $data['post_content'],
-                        'from-url' => 'https://playground.internal/',
-                        'to-url' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        'url-mapping' => [
+                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        ],
                     ));
                     $data['post_excerpt'] = wp_rewrite_urls(array(
                         'block_markup' => $data['post_excerpt'],
-                        'from-url' => 'https://playground.internal/',
-                        'to-url' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        'url-mapping' => [
+                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
+                        ],
                     ));
                     $entity->set_data($data);
                     break;

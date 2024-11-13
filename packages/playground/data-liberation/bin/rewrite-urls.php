@@ -60,8 +60,9 @@ switch ( $command ) {
 		$result = wp_rewrite_urls( array(
 			'block_markup' => $block_markup,
 			'base_url' => $base_url,
-			'from-url' => $options['from-url'],
-			'to-url' => $options['to-url'],
+			'url-mapping' => [
+				$options['from-url'] => $options['to-url'],
+			],
 		) );
 		if(!is_string($result)) {
 			echo "Error! \n";

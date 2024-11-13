@@ -16,8 +16,9 @@ class WPRewriteUrlsTests extends TestCase {
 	) {
 		$result = wp_rewrite_urls( array(
 			'block_markup' => $original_markup,
-			'from-url' => $current_site_url,
-			'to-url' => $new_site_url,
+			'url-mapping' => [
+				$current_site_url => $new_site_url,
+			],
 		) );
 		$this->assertEquals( $expected_markup, $result, 'Failed to migrate the URLs in the block markup' );
 	}
