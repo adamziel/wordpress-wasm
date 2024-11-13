@@ -114,6 +114,7 @@ test('should not login the user in if the login query parameter is set to no', a
 test('should retain encoded control characters in the URL', async ({
 	website,
 	wordpress,
+	browserName,
 }) => {
 	test.skip(
 		browserName === 'firefox',
