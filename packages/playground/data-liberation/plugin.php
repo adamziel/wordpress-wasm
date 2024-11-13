@@ -7,7 +7,6 @@
 require_once __DIR__ . '/bootstrap.php';
 
 add_action('init', function() {
-    return;
     $hash = md5('docs-importer-test');
     if(file_exists('./.imported-' . $hash)) {
         // return;
@@ -26,27 +25,113 @@ add_action('init', function() {
      * there's no need to re-fetch it.
      */
 
-    $importer = new WP_Entity_Importer();
+    // Do two passes.
+
+    // First pass: Download all the attachments
+    $docs_root = __DIR__ . '/../../docs/site';
+    $docs_content_root = $docs_root . '/docs';
     $reader = new WP_Markdown_Directory_Tree_Reader(
-        __DIR__ . '/../../docs/site/docs',
+        $docs_content_root,
         1000
     );
-
-    // @TODO: Do two passes.
-    // * First pass: Download attachments and, if $download_all_images === true, also download other images
-    //   referenced in the posts.
-    // * Second pass: Import posts and rewrite URLs.
+    $downloader = new WP_Attachment_Downloader(__DIR__ . '/attachments');
+    $base_site_url = 'https://stylish-press.wordpress.org/';
     while($reader->next_entity()) {
+        if($downloader->queue_full()) {
+            echo 'Queue full, polling...';
+            $downloader->poll();
+            continue;
+        }
+
         $entity = $reader->get_entity();
         switch($entity->get_type()) {
             case 'post':
                 $data = $entity->get_data();
+
+                // @TODO: What should $base_url be?
+                $base_url = null;
+
+                // @TODO: Should we parse the post here? Or should the reader emit
+                //        the URLs as other entities?
+                // Well, doing it in the reader would require every reader to implemet
+                // the same repetitive logic and also reason about domains, so maybe
+                // it's better to do it here.
+                $p = new WP_Block_Markup_Url_Processor( $data['post_content'], $base_url );
+                while ( $p->next_url() ) {
+                    if ( ! url_matches( $p->get_parsed_url(), 'http://@site' ) ) {
+                        continue;
+                    }
+
+                    // When processing Markdown, we only want to download the images
+                    // referenced in the image tags.
+                    $raw_url = $p->get_raw_url();
+                    if ( $p->get_tag() !== 'IMG' || $p->get_inspected_attribute_name() !== 'src' ) {
+                        continue;
+                    }
+
+                    // If the host is @site, we're dealing with a local file.
+                    // Let's use a file:// URL, then.
+                    // We're not comparing the host to @site because the host is
+                    // actually just `site` and there's an empty username in the URL.
+                    if(str_starts_with($raw_url, 'http://@site')) {
+                        $raw_url = 'file://' . rtrim($docs_root, '/') . '/' . substr($raw_url, strlen('http://@site/'));
+                    }
+
+                    // @TODO: figure out whether there's a good reason to stick to the
+                    //        same assets paths on the new site. Maybe it's fine to
+                    //        compute a new path for each asset?
+                    $enqueued = $downloader->enqueue_if_not_exists($raw_url, $p->get_parsed_url()->pathname);
+                    if(false === $enqueued) {
+                        // @TODO: Save the failure info somewhere so the user can review it later
+                        //        and either retry or provide their own asset.
+                        // Meanwhile, we may either halt the content import, or provide a placeholder
+                        // asset.
+                        error_log("Failed to enqueue attachment: $raw_url");
+                        continue;
+                    }
+                }
+                break;
+        }
+    }
+
+    while($downloader->poll()) {
+        // Twiddle our thumbs until all the attachments are downloaded...
+    }
+
+    // Second pass: Import posts and rewrite URLs.
+    // All the attachments are downloaded so we don't have to worry about missing
+    // assets.
+    $importer = new WP_Entity_Importer();
+    $reader = new WP_Markdown_Directory_Tree_Reader(
+        $docs_content_root,
+        1000
+    );
+    while($reader->next_entity()) {
+        $entity = $reader->get_entity();
+        switch($entity->get_type()) {
+            case 'post':
+                // Create the post
+                $data = $entity->get_data();
+
+                // @TODO: Do a single pass to rewrite all the URLs
                 $data['post_content'] = wp_rewrite_urls(array(
                     'block_markup' => $data['post_content'],
-                    'from-url' => 'https://stylish-press.wordpress.org/',
-                    'to-url' => 'https://playground.wordpress.net/scope:stylish-press/',
+                    'from-url' => $base_site_url,
+                    'to-url' => 'http://127.0.0.1:9400/',
+                ));
+
+                // Rewrite attachments URLs. Point them to the location we downloaded
+                // them to.
+                // @TODO: Contain these to wp-content/uploads/. Do not migrate attachments
+                //        to other locations.
+                $data['post_content'] = wp_rewrite_urls(array(
+                    'block_markup' => $data['post_content'],
+                    'from-url' => 'http://@site/',
+                    'to-url' => 'http://127.0.0.1:9400/wp-content/plugins/data-liberation/attachments/',
                 ));
                 $entity->set_data($data);
+
+                // @TODO: Also create the attachments and connect them to the post.
                 break;
         }
         $post_id = $importer->import_entity($entity);

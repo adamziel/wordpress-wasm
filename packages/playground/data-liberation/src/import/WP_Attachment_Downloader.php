@@ -6,19 +6,57 @@ use WordPress\AsyncHTTP\Request;
 class WP_Attachment_Downloader {
     private $client;
     private $fps = [];
-    private $output_directory;
+    private $output_root;
     private $partial_files = [];
     private $output_paths = [];
 
-    public function __construct( $output_directory ) {
+    public function __construct( $output_root ) {
         $this->client = new Client();
-        $this->output_directory = $output_directory;
+        $this->output_root = $output_root;
     }
 
-    public function enqueue($url, $output_path) {
-        $request = new Request($url);
-        $this->client->enqueue($request);
-        $this->output_paths[$request->id] = $output_path;
+    public function enqueue_if_not_exists($url, $output_path = null) {
+        if (null === $output_path) {
+            // Use the path from the URL.
+            $parsed_url = parse_url($url);
+            if (false === $parsed_url) {
+                return false;
+            }
+            $output_path = $parsed_url['path'];
+        }
+        $output_path = $this->output_root . '/' . ltrim($output_path, '/');
+        if (file_exists($output_path)) {
+            return false;
+        }
+
+        $output_dir = dirname($output_path);
+        if (!file_exists($output_dir)) {
+            // @TODO: think through the chmod of the created directory.
+            mkdir($output_dir, 0777, true);
+        }
+
+        $protocol = parse_url($url, PHP_URL_SCHEME);
+        if (null === $protocol) {
+            return false;
+        }
+
+        switch($protocol) {
+            case 'file':
+                $local_path = parse_url($url, PHP_URL_PATH);
+                if (false === $local_path) {
+                    return false;
+                }
+                // Just copy the file over.
+                // @TODO: think through the chmod of the created file.
+                return copy($local_path, $output_path);
+            case 'http':
+            case 'https':
+                $request = new Request($url);
+                $this->client->enqueue($request);
+                $this->output_paths[$request->id] = $output_path;
+                return true;
+        }
+        return false;
     }
 
     public function queue_full() {
@@ -34,24 +72,30 @@ class WP_Attachment_Downloader {
         
         switch($event) {
             case Client::EVENT_GOT_HEADERS:
-                $filename = $this->get_unique_filename($request);
-                $this->partial_files[$request->id] = $filename;
-                $this->fps[$request->id] = fopen($this->output_directory . '/' . $filename . '.partial', 'wb');
+                $this->partial_files[$request->id] = $this->output_paths[$request->id] . '.partial';
+                $this->fps[$request->id] = fopen($this->output_paths[$request->id] . '.partial', 'wb');
                 break;
             case Client::EVENT_BODY_CHUNK_AVAILABLE:
                 $chunk = $this->client->get_response_body_chunk();
                 fwrite($this->fps[$request->id], $chunk);
                 break;
             case Client::EVENT_FAILED:
-                fclose($this->fps[$request->id]);
-                unlink($this->output_directory . '/' . $this->partial_files[$request->id] . '.partial');
-                unset($this->partial_files[$request->id]);
+                if(isset($this->fps[$request->id])) {
+                    fclose($this->fps[$request->id]);
+                }
+                $partial_file = $this->output_root . '/' . $this->partial_files[$request->id] . '.partial';
+                if(file_exists($partial_file)) {
+                    unlink($partial_file);
+                }
+                if(isset($this->output_paths[$request->id])) {
+                    unset($this->output_paths[$request->id]);
+                }
                 break;
             case Client::EVENT_FINISHED:
                 fclose($this->fps[$request->id]);
                 rename(
-                    $this->output_directory . '/' . $this->partial_files[$request->id] . '.partial',
-                    $this->output_directory . '/' . $this->partial_files[$request->id]
+                    $this->output_root . '/' . $this->output_paths[$request->id] . '.partial',
+                    $this->output_root . '/' . $this->partial_files[$request->id]
                 );
                 unset($this->partial_files[$request->id]);
                 break;
@@ -60,30 +104,5 @@ class WP_Attachment_Downloader {
         return true;
     }
 
-    private function filename_from_request(Request $request) {
-        $url = $request->url;
-        $path = parse_url($url, PHP_URL_PATH);
-        $last_segment = basename($path);
-        return $last_segment ?: $request->id;
-    }
-
-    private function get_unique_filename(Request $request) {
-        $base_filename = $this->filename_from_request($request);
-        $filename = $base_filename;
-        $counter = 1;
-
-        // Keep incrementing counter until we find a filename that doesn't exist
-        while (file_exists($this->output_directory . '/' . $filename) || 
-               file_exists($this->output_directory . '/' . $filename . '.partial')) {
-            $info = pathinfo($base_filename);
-            $filename = $info['filename'] . '-' . $counter;
-            if (isset($info['extension'])) {
-                $filename .= '.' . $info['extension'];
-            }
-            $counter++;
-        }
-
-        return $filename;
-    }
 }
 
