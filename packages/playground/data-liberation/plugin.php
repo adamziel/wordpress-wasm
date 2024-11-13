@@ -137,23 +137,6 @@ add_action('init', function() {
         $post_id = $importer->import_entity($entity);
         $reader->set_created_post_id($post_id);
     }
-    return;
-
-    $wxr_reader = WP_WXR_Reader::from_stream();
-    $bytes = new WP_File_Byte_Stream($wxr_path);
-    while($bytes->next_bytes() && !$wxr_reader->is_finished()) {
-        $wxr_reader->append_bytes($bytes->get_bytes());
-        if($bytes->is_finished()) {
-            $wxr_reader->input_finished();
-        }
-        while($wxr_reader->next_entity()) {
-            $importer->import_entity($reader->get_entity());
-        }
-        if($wxr_reader->get_last_error()) {
-            var_dump($wxr_reader->get_last_error());
-            die();
-        }
-    }
 });
 
 
