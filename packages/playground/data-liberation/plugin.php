@@ -98,9 +98,14 @@ add_action('init', function() {
         // Twiddle our thumbs until all the attachments are downloaded...
     }
 
+    // We have all the assets downloaded now, yay!
+
     // Second pass: Import posts and rewrite URLs.
     // All the attachments are downloaded so we don't have to worry about missing
     // assets.
+    // @TODO consider reusing the markdown computed during the first pass.
+    //       it's a question of whether computing new block markup is faster than
+    //       storing and re-reading the one computed during the first pass.
     $importer = new WP_Entity_Importer();
     $reader = new WP_Markdown_Directory_Tree_Reader(
         $docs_content_root,
