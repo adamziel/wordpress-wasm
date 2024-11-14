@@ -22,19 +22,19 @@ export const ImportFormModal = () => {
 	}
 
 	return (
-			<Modal
-				isOpen={!!playground}
-				contentLabel='This is a dialog window which overlays the main content of the
+		<Modal
+			isOpen={!!playground}
+			contentLabel='This is a dialog window which overlays the main content of the
 				page. The modal begins with a heading 2 called "Import
 				Playground". Pressing the Close Import Window will close
 				the modal and bring you back to where you were on the page.'
-				onRequestClose={closeModal}
-			>
-				<ImportForm
-					playground={playground!}
-					onClose={closeModal}
-					onImported={handleImported}
-				/>
-			</Modal>
+			onRequestClose={closeModal}
+		>
+			<ImportForm
+				playground={playground!}
+				onClose={closeModal}
+				onImported={handleImported}
+			/>
+		</Modal>
 	);
 };

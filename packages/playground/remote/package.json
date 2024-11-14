@@ -1,6 +1,6 @@
 {
 	"name": "@wp-playground/remote",
-	"version": "0.0.1",
+	"version": "1.0.11",
 	"description": "WordPress Playground remote host",
 	"repository": {
 		"type": "git",
@@ -20,5 +20,9 @@
 	"files": [
 		"/lib",
 		"/index.d.ts"
-	]
+	],
+	"publishConfig": {
+		"access": "public",
+		"directory": "../../../dist/packages/playground/remote"
+	}
 }

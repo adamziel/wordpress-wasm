@@ -9,6 +9,142 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.11] (2024-11-11) 
+
+
+
+
+## [v1.0.10] (2024-11-08) 
+
+### Enhancements
+
+- [CLI] Set debug constants during boot. ([#1983](https://github.com/WordPress/wordpress-playground/pull/1983))
+
+### Bug Fixes
+
+- [CLI] Restore the "login" argument handler. ([#1985](https://github.com/WordPress/wordpress-playground/pull/1985))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@bgrgicak
+
+
+## [v1.0.9] (2024-11-04) 
+
+### Enhancements
+
+- [Data Liberation] Fork humanmade/WordPress-Importer. ([#1968](https://github.com/WordPress/wordpress-playground/pull/1968))
+- [Data Liberation] Merge both XML processors into a single WP_XML_Processor. ([#1960](https://github.com/WordPress/wordpress-playground/pull/1960))
+- [Data liberation] Add blueprints-library as a submodule. ([#1967](https://github.com/WordPress/wordpress-playground/pull/1967))
+
+### Tools
+
+
+#### Import/Export
+
+- [Data Liberation] WP_WXR_Reader. ([#1972](https://github.com/WordPress/wordpress-playground/pull/1972))
+
+### Documentation
+
+- Rewrite clone examples to use HTTPS instead of SSH. ([#1963](https://github.com/WordPress/wordpress-playground/pull/1963))
+
+### Website
+
+- Consistent width of settings, logs, and blueprint gallery sidebars. ([#1964](https://github.com/WordPress/wordpress-playground/pull/1964))
+
+### Bug Fixes
+
+- Fix: Import & Export from Github causes reloading the playground even before accept this step. ([#1908](https://github.com/WordPress/wordpress-playground/pull/1908))
+- [WordPress build] Only build the latest patch version of WordPress. ([#1955](https://github.com/WordPress/wordpress-playground/pull/1955))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @bgrgicak
+
+
+## [v1.0.8] (2024-10-30) 
+
+### Enhancements
+
+- [Data liberation] wp_rewrite_urls(). ([#1893](https://github.com/WordPress/wordpress-playground/pull/1893))
+
+### PHP WebAssembly
+
+- [PHP.wasm for Node] Fix php.js import path in the published npm package. ([#1958](https://github.com/WordPress/wordpress-playground/pull/1958))
+
+### Website
+
+- Restore .d.ts files missing from the published @wp-playground/remote npm package. ([#1949](https://github.com/WordPress/wordpress-playground/pull/1949))
+
+### Various
+
+- [Data Liberation] Add XML API, Stream API, WXR URL Rewriter API. ([#1952](https://github.com/WordPress/wordpress-playground/pull/1952))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @psrpinto
+
+
+## [v1.0.7] (2024-10-28)
+
+## [v1.0.6] (2024-10-28)
+
+### Website
+
+-   Query API: Preserve multiple ?plugin= query params. ([#1947](https://github.com/WordPress/wordpress-playground/pull/1947))
+-   [Remote] Enable releasing @wp-playground/remote by making it public. ([#1948](https://github.com/WordPress/wordpress-playground/pull/1948))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak
+
+## [v1.0.5] (2024-10-25)
+
+### Enhancements
+
+-   [CORS Proxy] Rate-limits IPv6 requests based on /64 subnets, not specific addresses. ([#1923](https://github.com/WordPress/wordpress-playground/pull/1923))
+
+### Blueprints
+
+-   Reload after autologin to set login cookies during boot. ([#1914](https://github.com/WordPress/wordpress-playground/pull/1914))
+-   Skip empty lines in the runSql step. ([#1939](https://github.com/WordPress/wordpress-playground/pull/1939))
+
+### Documentation
+
+-   Clarified wp beta to also include rc version. ([#1936](https://github.com/WordPress/wordpress-playground/pull/1936))
+
+### PHP WebAssembly
+
+-   Enable CURL in Playground Web. ([#1935](https://github.com/WordPress/wordpress-playground/pull/1935))
+-   PHP: Implement TLS 1.2 to decrypt https:// and ssl:// traffic and translate it into fetch(). ([#1926](https://github.com/WordPress/wordpress-playground/pull/1926))
+
+### Website
+
+-   Hide Settings menu after clicking "Restore from .zip. ([#1904](https://github.com/WordPress/wordpress-playground/pull/1904))
+-   Publish @wp-playground/remote (types only). ([#1924](https://github.com/WordPress/wordpress-playground/pull/1924))
+
+### Bug Fixes
+
+-   CORS Proxy: Index update_at column because it is used for lookup. ([#1931](https://github.com/WordPress/wordpress-playground/pull/1931))
+-   CORS Proxy: Reject targeting self. ([#1932](https://github.com/WordPress/wordpress-playground/pull/1932))
+-   Docs: Fix typo. ([#1934](https://github.com/WordPress/wordpress-playground/pull/1934))
+-   Explicitly request no-cache to discourage WP Cloud from edge caching CORS proxy results. ([#1930](https://github.com/WordPress/wordpress-playground/pull/1930))
+-   Remove test code added in #1914. ([#1928](https://github.com/WordPress/wordpress-playground/pull/1928))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @bgrgicak @bph @brandonpayton @ockham @psrpinto
+
 ## [v1.0.4] (2024-10-21)
 
 ### Enhancements

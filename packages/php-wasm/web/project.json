@@ -1,6 +1,6 @@
 {
 	"name": "php-wasm-web",
-	"$schema": "../../node_modules/nx/schemas/project-schema.json",
+	"$schema": "../../../node_modules/nx/schemas/project-schema.json",
 	"sourceRoot": "packages/php-wasm/web/src",
 	"projectType": "library",
 	"implicitDependencies": ["php-wasm-compile"],

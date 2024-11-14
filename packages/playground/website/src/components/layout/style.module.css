@@ -1,14 +1,21 @@
 :root {
 	--site-manager-site-list-width: 320px;
-	--site-manager-site-info-min-width: 350px;
+	--site-manager-site-info-min-width: 555px;
 	--site-manager-width-desktop: calc(
 		var(--site-manager-site-list-width) +
-			var(--site-manager-site-info-min-width)
+		var(--site-manager-site-info-min-width) +
+		2 * var(--site-manager-border-width)
 	);
 	--site-view-min-width: 320px;
 	--site-manager-background-color: #1e1e1e;
 	--site-manager-border-width: 12px;
 	--site-manager-border-radius: 12px;
+}
+
+@media screen and (max-width: 890px) {
+	:root {
+		--site-manager-site-info-min-width: 60%;
+	}
 }
 
 body {
@@ -27,7 +34,7 @@ body {
 }
 
 .site-manager-wrapper {
-	max-width: 1300px;
+	max-width: var(--site-manager-width-desktop);
 	@media (max-width: 875px) {
 		min-width: 0;
 		width: 100%;
@@ -43,13 +50,13 @@ body {
 .site-manager-wrapper-enter-active {
 	opacity: 1;
 	transform: none;
-	max-width: 1300px;
+	max-width: var(--site-manager-width-desktop);
 	@media (max-width: 875px) {
 		width: 100%;
 	}
 }
 
-/* 
+/*
  * Repeated rule to ensure it's more specific than
  * .site-manager-wrapper-exit
  */
@@ -60,8 +67,8 @@ body {
 
 .site-manager-wrapper-exit-active,
 .site-manager-wrapper-enter-active {
-	transition: 
-		/* 
+	transition:
+		/*
 		 * Workaround: Animate max-width to allow `width: auto`
 		 * The `width` property needs to be `auto` to ensure the
 		 * site manager panel expands and shrinks with its content.
@@ -134,7 +141,7 @@ body {
 
 /*
  * Unfortunately we cannot use calc() in media queries.
- * 
+ *
  * 1166px = --site-manager-width + --site-view-min-width
  *
  * This manual calculation ensures the site view gets hidden

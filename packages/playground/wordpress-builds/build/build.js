@@ -1,8 +1,8 @@
-
 import path, { join } from 'path';
 import { spawn } from 'child_process';
 import yargs from 'yargs';
 import { promises as fs, statSync } from 'fs';
+import semver from 'semver';
 
 const parser = yargs(process.argv.slice(2))
 	.usage('Usage: $0 [options]')
@@ -25,27 +25,56 @@ const parser = yargs(process.argv.slice(2))
 		},
 		force: {
 			type: 'boolean',
-			description: 'Force rebuild even if the version is already downloaded',
+			description:
+				'Force rebuild even if the version is already downloaded',
 			default: process.env.FORCE_REBUILD === 'true',
 		},
 	});
 
 const args = parser.argv;
 
-let latestVersions = await fetch('https://api.wordpress.org/core/version-check/1.7/?channel=beta')
-	.then((res) => res.json())
+let wpVersions = await fetch(
+	'https://api.wordpress.org/core/version-check/1.7/?channel=beta'
+).then((res) => res.json());
 
-latestVersions = latestVersions
-	.offers
-	.filter((v) => v.response === 'autoupdate')
+wpVersions = wpVersions.offers.filter((v) => v.response === 'autoupdate');
 
 let beta = null;
-if (latestVersions[0].current.includes('beta') || latestVersions[0].current.toLowerCase().includes('rc')) {
-	beta = latestVersions[0];
-	latestVersions = latestVersions.slice(1);
+if (
+	wpVersions[0].current.includes('beta') ||
+	wpVersions[0].current.toLowerCase().includes('rc')
+) {
+	beta = wpVersions[0];
+	wpVersions = wpVersions.slice(1);
 }
 
-function toVersionInfo(apiVersion, slug=null) {
+/**
+ * Create a list of the latest patch versions for each major.minor version.
+ *
+ * Sometimes the API may include multiple patch versions for the same major.minor version.
+ * Playground builds only the latest patch version.
+ */
+const latestVersions = wpVersions.reduce((versionAccumulator, wpVersion) => {
+	const [major, minor] = wpVersion.version.split('.');
+	const majorMinor = `${major}.${minor}`;
+
+	const currentVersionIndex = versionAccumulator.findIndex((v) =>
+		v.version.startsWith(majorMinor)
+	);
+	if (-1 === currentVersionIndex) {
+		versionAccumulator.push(wpVersion);
+	} else if (
+		semver.gt(
+			wpVersion.version,
+			versionAccumulator[currentVersionIndex].version
+		)
+	) {
+		versionAccumulator[currentVersionIndex] = wpVersion;
+	}
+	return versionAccumulator;
+}, []);
+
+function toVersionInfo(apiVersion, slug = null) {
 	if (!apiVersion) {
 		return {};
 	}
@@ -75,11 +104,13 @@ if (args.wpVersion === 'nightly') {
 	}[args.wpVersion];
 	versionInfo = toVersionInfo(relevantApiVersion);
 } else if (args.wpVersion.match(/\d\.\d/)) {
-	const relevantApiVersion = latestVersions.find((v) => v.version.startsWith(args.wpVersion));
+	const relevantApiVersion = latestVersions.find((v) =>
+		v.version.startsWith(args.wpVersion)
+	);
 	versionInfo = toVersionInfo(relevantApiVersion);
 }
 
-if(!versionInfo.url) {
+if (!versionInfo.url) {
 	process.stdout.write(`WP version ${args.wpVersion} is not supported\n`);
 	process.stdout.write(await parser.getHelp());
 	process.exit(1);
@@ -101,7 +132,11 @@ try {
 	versions = {};
 }
 
-if (!args.force && versionInfo.slug !== 'nightly' && versions[versionInfo.slug] === versionInfo.version) {
+if (
+	!args.force &&
+	versionInfo.slug !== 'nightly' &&
+	versions[versionInfo.slug] === versionInfo.version
+) {
 	process.stdout.write(
 		`The requested version was ${args.wpVersion}, but its latest release (${versionInfo.version}) is already downloaded\n`
 	);
@@ -124,7 +159,7 @@ try {
 			'../../cli/src/cli.ts',
 			'run-blueprint',
 			`--wp=${versionInfo.url}`,
-			`--mount-before-install=${wordpressDir}:/wordpress`
+			`--mount-before-install=${wordpressDir}:/wordpress`,
 		],
 		{ cwd: sourceDir, stdio: 'inherit' }
 	);

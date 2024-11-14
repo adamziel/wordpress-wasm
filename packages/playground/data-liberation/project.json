@@ -3,5 +3,53 @@
 	"$schema": "../../../node_modules/nx/schemas/project-schema.json",
 	"sourceRoot": "packages/playground/data-liberation",
 	"projectType": "library",
-	"targets": {}
+	"targets": {
+		"install": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["composer install"],
+				"parallel": false
+			}
+		},
+		"lint:php": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": [
+					"./vendor/bin/phpcs --standard=./phpcs.xml -s ./src"
+				],
+				"parallel": false
+			}
+		},
+		"lint:php:fix": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": [
+					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src"
+				],
+				"parallel": false
+			}
+		},
+		"test:phpunit": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["./vendor/bin/phpunit -c ./phpunit.xml"],
+				"parallel": false
+			}
+		},
+		"test:phpunit:watch": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": [
+					"./vendor/bin/phpunit -c ./phpunit.xml",
+					"fswatch -o ./**/*.php | xargs -n1 -I{} ./vendor/bin/phpunit -c ./phpunit.xml"
+				],
+				"parallel": false
+			}
+		}
+	}
 }
