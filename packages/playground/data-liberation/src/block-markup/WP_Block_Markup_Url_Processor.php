@@ -12,14 +12,16 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	 * @var URL
 	 */
 	private $parsed_url;
-	private $base_url;
+	private $base_url_string;
+	private $base_url_object;
 	private $url_in_text_processor;
 	private $url_in_text_node_updated;
 	private $inspected_url_attribute_idx = - 1;
 
-	public function __construct( $html, $base_url = null ) {
+	public function __construct( $html, $base_url_string = null ) {
 		parent::__construct( $html );
-		$this->base_url = $base_url;
+		$this->base_url_string = $base_url_string;
+		$this->base_url_object = $base_url_string ? WP_URL::parse($base_url_string) : null;
 	}
 
 	public function get_updated_html(): string {
@@ -93,7 +95,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			 * to filter out such false positives e.g. by checking the domain against
 			 * a list of accepted domains, or the TLD against a list of public suffixes.
 			 */
-			$this->url_in_text_processor = new WP_URL_In_Text_Processor( $this->get_modifiable_text(), $this->base_url );
+			$this->url_in_text_processor = new WP_URL_In_Text_Processor( $this->get_modifiable_text(), $this->base_url_string );
 		}
 
 		while ( $this->url_in_text_processor->next_url() ) {
@@ -130,7 +132,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			 * Without a base URL, this Processor would incorrectly skip it.
 			 */
 			if ( is_string( $url_maybe ) ) {
-				$parsed_url = WP_URL::parse( $url_maybe, $this->base_url );
+				$parsed_url = WP_URL::parse( $url_maybe, $this->base_url_string );
 				if ( false !== $parsed_url ) {
 					$this->raw_url    = $url_maybe;
 					$this->parsed_url = $parsed_url;
@@ -192,6 +194,111 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 
 				return $this->url_in_text_processor->set_raw_url( $new_url );
 		}
+	}
+
+	/**
+	 * Rewrites the components of the currently matched URL from ones 
+	 * provided in $from_url to ones specified in $to_url.
+	 * 
+	 * It preserves the relative nature of the matched URL.
+	 * 
+	 * @TODO: Should this method live in this class? It's specific to the import process
+	 *        and the URL rewriting logic and has knowledge about the quirks of detecting
+	 *        relative URLs in text nodes. On the other hand, the detection is performed
+	 *        by this WP_URL_In_Text_Processor class so maybe the two do go hand in hand?
+	 */
+	function rewrite_url_components( URL $to_url ) {
+		$from_url = url_matches($this->get_parsed_url(), $this->base_url_string)? $this->base_url_object : $this->get_parsed_url();
+		
+		$updated_url = clone $this->get_parsed_url();
+
+		$updated_url->hostname = $to_url->hostname;
+		$updated_url->protocol = $to_url->protocol;
+		$updated_url->port = $to_url->port;
+	
+		// Update the pathname if needed.
+		$from_pathname = $from_url->pathname;
+		$to_pathname = $to_url->pathname;
+		if ( $from_pathname !== $to_pathname ) {
+			if ( $from_pathname[ strlen( $from_pathname ) - 1 ] === '/' ) {
+				$from_pathname = substr( $from_pathname, 0, strlen( $from_pathname ) - 1 );
+			}
+			$from_pathname_with_trailing_slash = $from_pathname === '/' ? $from_pathname : $from_pathname . '/';
+	
+			$decoded_matched_pathname = urldecode_n(
+				$updated_url->pathname,
+				strlen( $from_pathname_with_trailing_slash )
+			);
+			/**
+			 * If there's nothing to carry over from the original pathname,
+			 * use the rewritten pathname as is.
+			 * 
+			 * @TODO: Document this behavior in a human-readable way.
+			 */
+			if(strlen($decoded_matched_pathname) >= strlen($from_pathname_with_trailing_slash)) {
+				$updated_url->pathname = $to_pathname;
+			} else {
+				// Otherwise, add a trailing slash to the target pathname part and
+				// carry over the rest from the original pathname.
+				if ( $to_pathname[ strlen( $to_pathname ) - 1 ] === '/' ) {
+					$to_pathname = substr( $to_pathname, 0, strlen( $to_pathname ) - 1 );
+				}
+				$to_pathname_with_trailing_slash = $to_pathname === '/' ? $to_pathname : $to_pathname . '/';
+				$updated_url->pathname =
+					$to_pathname_with_trailing_slash .
+						substr(
+							$decoded_matched_pathname,
+							strlen( $from_pathname_with_trailing_slash )
+						);
+			}
+		}
+
+		/*
+		 * Stylistic choice – if the updated URL has no trailing slash,
+		 * do not add it to the new URL. The WHATWG URL parser will
+		 * add one automatically if the path is empty, so we have to
+		 * explicitly remove it.
+		 */
+		$new_raw_url = $updated_url->toString();
+		if (
+			$updated_url->pathname[ strlen( $updated_url->pathname ) - 1 ] !== '/' &&
+			$updated_url->pathname === '/' &&
+			$updated_url->search === '' &&
+			$updated_url->hash === ''
+		) {
+			$new_raw_url = rtrim( $new_raw_url, '/' );
+		}
+		if ( ! $new_raw_url ) {
+			// @TODO: When does this happen? Let's add the test coverage and
+			//        doubly verify the logic.
+			return false;
+		}
+	
+		$is_relative = (
+			// The URL-rewriting specific logic. We make an assumption that only
+			// absolute URLs are detected in text nodes.
+			// @TODO: Verify this assumption, evaluate whether this is the right
+			//        place to place this logic. Perhaps this *method* could be
+			//        decoupled into two separate *functions*?
+			$this->get_token_type() !== '#text' &&
+			! str_starts_with( $new_raw_url, 'http://' ) &&
+			! str_starts_with( $new_raw_url, 'https://' )
+		);
+		if ( ! $is_relative ) {
+			$this->set_raw_url( $new_raw_url );
+			return true;
+		}
+		
+		$new_relative_url = $updated_url->pathname;
+		if ( $updated_url->search !== '' ) {
+			$new_relative_url .= $updated_url->search;
+		}
+		if ( $updated_url->hash !== '' ) {
+			$new_relative_url .= $updated_url->hash;
+		}
+		
+		$this->set_raw_url( $new_relative_url );
+		return true;
 	}
 
 	public function get_inspected_attribute_name() {

@@ -32,94 +32,19 @@ function wp_rewrite_urls( $options ) {
 
 	$url_mapping = [];
 	foreach ($options['url-mapping'] as $from_url_string => $to_url_string) {
-		$from_url = WP_URL::parse($from_url_string);
-		if ( $from_url->pathname[ strlen( $from_url->pathname ) - 1 ] === '/' ) {
-			$from_url->pathname = substr( $from_url->pathname, 0, strlen( $from_url->pathname ) - 1 );
-		}
-		$from_pathname_with_trailing_slash = $from_url->pathname === '/' ? $from_url->pathname : $from_url->pathname . '/';
-
-		$to_url = WP_URL::parse($to_url_string);
-		if ( $to_url->pathname[ strlen( $to_url->pathname ) - 1 ] === '/' ) {
-			$to_url->pathname = substr( $to_url->pathname, 0, strlen( $to_url->pathname ) - 1 );
-		}
-		$new_pathname_with_trailing_slash = $to_url->pathname === '/' ? $to_url->pathname : $to_url->pathname . '/';
-
 		$url_mapping[] = [
-			'from_url' => $from_url,
-			'from_url_string' => $from_url->toString(),
-			'from_pathname_with_trailing_slash' => $from_pathname_with_trailing_slash,
-			'to_url' => $to_url,
-			'new_pathname_with_trailing_slash' => $new_pathname_with_trailing_slash
+			'from_url' => WP_URL::parse($from_url_string),
+			'to_url' => WP_URL::parse($to_url_string),
 		];
 	}
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
-		$raw_url = $p->get_raw_url();
 		$parsed_url = $p->get_parsed_url();
-
-		$mapping = null;
-		foreach ($url_mapping as $mapping_candidate) {
-			if ( url_matches( $parsed_url, $mapping_candidate['from_url_string'] ) ) {
-				$mapping = $mapping_candidate;
+		foreach ($url_mapping as $mapping) {
+			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
+				$p->rewrite_url_components( $mapping['from_url'], $mapping['to_url'] );
 				break;
-			}
-		}
-
-		if ( $mapping === null ) {
-			continue;
-		}
-
-		$parsed_url->hostname = $mapping['to_url']->hostname;
-		$parsed_url->protocol = $mapping['to_url']->protocol;
-		$parsed_url->port = $mapping['to_url']->port;
-
-		// Update the pathname if needed.
-		if ( $mapping['from_url']->pathname !== $mapping['to_url']->pathname ) {
-			$decoded_matched_pathname = urldecode_n(
-				$parsed_url->pathname,
-				strlen( $mapping['from_pathname_with_trailing_slash'] )
-			);
-			$parsed_url->pathname =
-				$mapping['new_pathname_with_trailing_slash'] .
-					substr(
-						$decoded_matched_pathname,
-						strlen( $mapping['from_pathname_with_trailing_slash'] )
-					);
-		}
-
-		/*
-		* Stylistic choice – if the matched URL has no trailing slash,
-		* do not add it to the new URL. The WHATWG URL parser will
-		* add one automatically if the path is empty, so we have to
-		* explicitly remove it.
-		*/
-		$new_raw_url = $parsed_url->toString();
-		if (
-			$raw_url[ strlen( $raw_url ) - 1 ] !== '/' &&
-			$parsed_url->pathname === '/' &&
-			$parsed_url->search === '' &&
-			$parsed_url->hash === ''
-		) {
-			$new_raw_url = rtrim( $new_raw_url, '/' );
-		}
-		if ( $new_raw_url ) {
-			$is_relative = (
-				$p->get_token_type() !== '#text' &&
-				! str_starts_with( $raw_url, 'http://' ) &&
-				! str_starts_with( $raw_url, 'https://' )
-			);
-			if ( $is_relative ) {
-				$new_relative_url = $parsed_url->pathname;
-				if ( $parsed_url->search !== '' ) {
-					$new_relative_url .= $parsed_url->search;
-				}
-				if ( $parsed_url->hash !== '' ) {
-					$new_relative_url .= $parsed_url->hash;
-				}
-				$p->set_raw_url( $new_relative_url );
-			} else {
-				$p->set_raw_url( $new_raw_url );
 			}
 		}
 	}
@@ -133,8 +58,8 @@ function wp_rewrite_urls( $options ) {
  * @param string $from_url_no_trailing_slash The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function url_matches( URL $subject, string $from_url_no_trailing_slash ) {
-	$parsed_from_url            = WP_URL::parse( $from_url_no_trailing_slash );
+function url_matches( URL $subject, $from_url ) {
+	$parsed_from_url            = is_string($from_url) ? WP_URL::parse( $from_url ) : $from_url;
 	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
 
 	if ( $subject->hostname !== $parsed_from_url->hostname ) {
