@@ -11,7 +11,7 @@ require_once __DIR__ . '/bootstrap.php';
 add_action('init', function() {
     $hash = md5('docs-importer-test');
     if(file_exists('./.imported-' . $hash)) {
-        // return;
+        return;
     }
     touch('./.imported-' . $hash);
 
@@ -160,14 +160,18 @@ add_action('init', function() {
     // Second pass: Import posts and rewrite URLs.
     // All the attachments are downloaded so we don't have to worry about missing
     // assets.
-    // @TODO consider reusing the markdown computed during the first pass.
-    //       it's a question of whether computing new block markup is faster than
-    //       storing and re-reading the one computed during the first pass.
     $importer = new WP_Entity_Importer();
     $reader = new WP_Markdown_Directory_Tree_Reader(
         $docs_content_root,
         1000
     );
+    /**
+     * @TODO: Explore a way of making this idempotent. Maybe
+     *        use GUIDs to detect whether a post or an attachment
+     *        has already been imported? That would be slow on
+     *        large datasets, but are we ever going to import
+     *        a bunch of markdown files into a large site?
+     */
     while($reader->next_entity()) {
         $entity = $reader->get_entity();
         switch($entity->get_type()) {
@@ -180,7 +184,31 @@ add_action('init', function() {
                     if ( $matched_asset_url($p) ) {
                         $asset_url = WP_URL::parse($final_assets_url . '/' . $compute_asset_filename($p->get_parsed_url()));
                         $p->rewrite_url_components( $asset_url);
-                        // @TODO: Create an attachment in the database and connect it to the post.
+
+                        // Create attachments
+                        // @TODO: Move this WordPress-specific insertions to an importer
+                        $filename = $compute_asset_filename($p->get_parsed_url());
+                        $filepath = $final_assets_url . '/' . $filename;
+                        $filetype = wp_check_filetype($filename);
+                        
+                        $attachment = array(
+                            'guid' => $filepath,
+                            'post_mime_type' => $filetype['type'],
+                            'post_title' => preg_replace('/\.[^.]+$/', '', $filename),
+                            'post_content' => '',
+                            'post_status' => 'inherit'
+                        );
+
+                        $attach_id = wp_insert_attachment($attachment, $filepath, $post_id);
+                        // @TODO: Check for attachment creation errors                        
+                        // @TODO: Make it work in Asyncify
+                        // Generate and update attachment metadata
+                        // if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+                        //     include( ABSPATH . 'wp-admin/includes/image.php' );
+                        // }
+                        // $attach_data = wp_generate_attachment_metadata($attach_id, $filepath);
+                        // wp_update_attachment_metadata($attach_id, $attach_data);
+
                     } else if ( url_matches( $p->get_parsed_url(), $migrating_from_url ) ) {
                         $p->rewrite_url_components( WP_URL::parse('http://127.0.0.1:9400/') );
                     } else {

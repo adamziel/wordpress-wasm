@@ -73,11 +73,19 @@ class WP_Attachment_Downloader {
         switch($event) {
             case Client::EVENT_GOT_HEADERS:
                 $this->partial_files[$request->id] = $this->output_paths[$request->id] . '.partial';
+                if(file_exists($this->partial_files[$request->id])) {
+                    unlink($this->partial_files[$request->id]);
+                }
                 $this->fps[$request->id] = fopen($this->output_paths[$request->id] . '.partial', 'wb');
+                if(false === $this->fps[$request->id]) {
+                    // @TODO: Log an error.
+                }
                 break;
             case Client::EVENT_BODY_CHUNK_AVAILABLE:
                 $chunk = $this->client->get_response_body_chunk();
-                fwrite($this->fps[$request->id], $chunk);
+                if(false === fwrite($this->fps[$request->id], $chunk)) {
+                    // @TODO: Log an error.
+                }
                 break;
             case Client::EVENT_FAILED:
                 if(isset($this->fps[$request->id])) {
@@ -93,10 +101,12 @@ class WP_Attachment_Downloader {
                 break;
             case Client::EVENT_FINISHED:
                 fclose($this->fps[$request->id]);
-                rename(
+                if(false === rename(
                     $this->output_root . '/' . $this->output_paths[$request->id] . '.partial',
                     $this->output_root . '/' . $this->partial_files[$request->id]
-                );
+                )) {
+                    // @TODO: Log an error.
+                }
                 unset($this->partial_files[$request->id]);
                 break;
         } 
