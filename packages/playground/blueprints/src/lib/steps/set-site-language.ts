@@ -36,8 +36,7 @@ const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 	 * RC and beta versions don't have individual translation packages.
 	 * They all share the same "RC" translation package.
 	 *
-	 * Development versions (called nightly in Playground) don't have
-	 * a "development" translation package.
+	 * Nightly versions don't have a "nightly" translation package.
 	 * So, the best we can do is download the RC translation package,
 	 * because it contains the latest available translations.
 	 *

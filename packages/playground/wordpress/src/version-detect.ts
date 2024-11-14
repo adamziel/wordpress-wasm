@@ -19,13 +19,19 @@ export async function getLoadedWordPressVersion(
 }
 
 /**
- * Returns a WordPress build version string known to Playground
+ * Returns a WordPress build version string supported by Playground,
  * for a given WordPress version string.
+ *
+ * Playground supports the last 4 major.minor versions of WordPress,
+ * the latest beta or RC release (depending on which is newer),
+ * and nightly releases.
+ * You can find the full list of supported build versions in
+ * packages/playground/wordpress-builds/src/wordpress/wp-versions.json
  *
  * Each released version will be converted to the major.minor format.
  * For example 6.6.1 will be converted to 6.6.
  *
- * Release candidates (RC) and beta releases are converted to the "beta"
+ * Release candidates (RC) and beta releases are converted to "beta".
  *
  * Nightly releases are converted to "nightly".
  *
