@@ -12,6 +12,10 @@ class WP_URL {
 		return URL::parse( $url, $base ) ?? false;
 	}
 
+	public static function canParse( $url, $base = null ) {
+		return URL::canParse( $url, $base );
+	}
+
 	/**
 	 * Prepends a protocol to any matched URL without the double slash.
 	 *

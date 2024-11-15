@@ -13,7 +13,6 @@ class WP_Markdown_Directory_Tree_Reader {
 	private $pending_directory_index;
 	private $pending_files      = array();
 	private $parent_ids         = array();
-	private $is_directory_index = false;
 	private $next_post_id;
 
 	public function __construct( $root_dir, $first_post_id ) {
@@ -21,10 +20,12 @@ class WP_Markdown_Directory_Tree_Reader {
 		$this->next_post_id = $first_post_id;
 	}
 
-	public function set_created_post_id( $post_id ) {
-		if ( $this->is_directory_index ) {
-			$depth                      = $this->file_visitor->get_current_depth();
-			$this->parent_ids[ $depth ] = $post_id;
+	public function generator() {
+		while ( true ) {
+			if ( false === $this->next_entity() ) {
+				break;
+			}
+			yield $this->entity;
 		}
 	}
 
@@ -43,21 +44,22 @@ class WP_Markdown_Directory_Tree_Reader {
 					$markdown = file_get_contents( $this->pending_directory_index->getRealPath() );
 					$guid     = $this->pending_directory_index->getRealPath();
 				}
+				$post_id = $this->next_post_id;
+				++$this->next_post_id;
 				$this->entity = $this->markdown_to_post_entity(
 					array(
 						'markdown' => $markdown,
 						'guid' => $guid,
-						'post_id' => $this->next_post_id,
+						'post_id' => $post_id,
 						'parent_id' => $parent_id,
 						'title_fallback' => $this->slug_to_title( $dir->getFileName() ),
 					)
 				);
-				++$this->next_post_id;
 				$this->pending_directory_index = null;
-				$this->is_directory_index      = true;
+				$depth                         = $this->file_visitor->get_current_depth();
+				$this->parent_ids[ $depth ]    = $post_id;
 				return true;
 			}
-			$this->is_directory_index = false;
 
 			while ( count( $this->pending_files ) ) {
 				$parent_id    = $this->parent_ids[ $this->file_visitor->get_current_depth() ] ?? null;
@@ -172,14 +174,14 @@ class WP_Markdown_Directory_Tree_Reader {
 
 	protected function choose_directory_index( $files ) {
 		foreach ( $files as $idx => $file ) {
-			if ( $this->is_directory_index( $file ) ) {
+			if ( $this->looks_like_directory_index( $file ) ) {
 				return $idx;
 			}
 		}
 		return -1;
 	}
 
-	protected function is_directory_index( $file ) {
+	protected function looks_like_directory_index( $file ) {
 		return str_contains( $file->getFilename(), 'index' );
 	}
 

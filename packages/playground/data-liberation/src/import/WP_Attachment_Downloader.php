@@ -26,7 +26,9 @@ class WP_Attachment_Downloader {
         }
         $output_path = $this->output_root . '/' . ltrim($output_path, '/');
         if (file_exists($output_path)) {
-            return false;
+            // @TODO: Reconsider the return value. The enqueuing operation failed,
+            //        but overall already having a file seems like a success.
+            return true;
         }
 
         $output_dir = dirname($output_path);
@@ -51,6 +53,7 @@ class WP_Attachment_Downloader {
                 return copy($local_path, $output_path);
             case 'http':
             case 'https':
+                var_dump($url);
                 $request = new Request($url);
                 $this->output_paths[$request->id] = $output_path;
                 $this->client->enqueue($request);
@@ -96,9 +99,11 @@ class WP_Attachment_Downloader {
                 if(isset($this->fps[$original_request_id])) {
                     fclose($this->fps[$original_request_id]);
                 }
-                $partial_file = $this->output_root . '/' . $this->partial_files[$original_request_id] . '.partial';
-                if(file_exists($partial_file)) {
-                    unlink($partial_file);
+                if(isset($this->partial_files[$original_request_id])) {
+                    $partial_file = $this->output_root . '/' . $this->partial_files[$original_request_id] . '.partial';
+                    if(file_exists($partial_file)) {
+                        unlink($partial_file);
+                    }
                 }
                 unset($this->output_paths[$original_request_id]);
                 break;
