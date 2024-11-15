@@ -40,15 +40,6 @@ const clientsSlice = createSlice({
 	name: 'clients',
 	initialState,
 	reducers: {
-		// addClientInfo: (state, action: PayloadAction<ClientInfo>) => {
-		// 	return clientsAdapter.addOne(state, action.payload);
-		// },
-		// updateClientInfo: (state, action: PayloadAction<ClientInfo>) => {
-		// 	return clientsAdapter.updateOne(state, {
-		// 		id: action.payload.siteSlug,
-		// 		changes: action.payload,
-		// 	});
-		// },
 		addClientInfo: clientsAdapter.addOne,
 		updateClientInfo: (
 			state,

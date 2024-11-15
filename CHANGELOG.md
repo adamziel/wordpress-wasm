@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.11] (2024-11-11) 
+
+
+
+
+## [v1.0.10] (2024-11-08) 
+
+### Enhancements
+
+- [CLI] Set debug constants during boot. ([#1983](https://github.com/WordPress/wordpress-playground/pull/1983))
+
+### Bug Fixes
+
+- [CLI] Restore the "login" argument handler. ([#1985](https://github.com/WordPress/wordpress-playground/pull/1985))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@bgrgicak
+
+
 ## [v1.0.9] (2024-11-04) 
 
 ### Enhancements
