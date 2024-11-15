@@ -15,8 +15,6 @@
  *   messing with the imported content. The downside would be the same. What else?
  *   Perhaps that could be a choice and left up to the API consumer?
  * * Potentially – idempotent import.
- * * Remove all the logic reasoning about relative URLs. We're relying on the
- *   WHATWG URL API to turn a relative URL + base URL into an absolute URL.
  */
 
 require_once __DIR__ . '/bootstrap.php';
@@ -77,8 +75,6 @@ add_action('init', function() {
         };
         $markdown_importer = WP_Markdown_Importer::create(
             $markdown_entities_factory, [
-                // @TODO: When processing relative URLs, treat them as relative to
-                //        the current file – be it a file:// URL or an absolute URL.
                 'source_site_url' => 'file://' . $docs_content_root,
                 'local_markdown_assets_root' => $docs_root,
                 'local_markdown_assets_url_prefix' => '@site/',
@@ -306,14 +302,15 @@ class WP_Stream_Importer {
      *   different permissions. Just because Bob deletes his copy, doesn't
      *   mean we should delete Alice's copy.
      */
-    private function new_asset_filename(string $asset_url) {
-        $filename = md5($asset_url);
-        $parsed_url = WP_URL::parse($asset_url);
+    private function new_asset_filename(string $raw_asset_url) {
+        $filename = md5($raw_asset_url);
+        $parsed_url = WP_URL::parse($raw_asset_url);
         if(false !== $parsed_url) {
             $pathname = $parsed_url->pathname;
         } else {
-            // $asset_url is not an absolute URL – perhaps it's a relative path.
-            $pathname = $asset_url;
+            // Assume $raw_asset_url is a relative path when it cannot be
+            // parsed as an absolute URL.
+            $pathname = $raw_asset_url;
         }
         $extension = pathinfo($pathname, PATHINFO_EXTENSION);
         if(!empty($extension)) {
