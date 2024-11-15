@@ -15,6 +15,8 @@
  *   messing with the imported content. The downside would be the same. What else?
  *   Perhaps that could be a choice and left up to the API consumer?
  * * Potentially – idempotent import.
+ * * Remove all the logic reasoning about relative URLs. We're relying on the
+ *   WHATWG URL API to turn a relative URL + base URL into an absolute URL.
  */
 
 require_once __DIR__ . '/bootstrap.php';
@@ -38,7 +40,7 @@ add_filter('wp_kses_uri_attributes', function() {
     return [];
 });
 
-echo '<plaintext>';
+// echo '<plaintext>';
 // var_dump(glob('/wordpress/wp-content/uploads/*'));
 // var_dump(glob('/wordpress/wp-content/plugins/data-liberation/../../docs/site/static/img/*'));
 // die("X");
@@ -60,36 +62,42 @@ add_action('init', function() {
         wp_delete_post($post->ID, true);
     }
 
-    $docs_root = __DIR__ . '/../../docs/site';
-    $docs_content_root = $docs_root . '/docs';
-    $markdown_entities_factory = function() use ($docs_content_root) {
-        $reader = new WP_Markdown_Directory_Tree_Reader(
-            $docs_content_root,
-            1000
-        );
-        return $reader->generator();
-    };
-    $markdown_importer = WP_Markdown_Importer::create(
-        $markdown_entities_factory, [
-            // 'source_site_url' => 'http://@site',
-            'local_markdown_assets_root' => $docs_root,
-            'local_markdown_assets_url_prefix' => '@site',
-        ]
-    );
-    $markdown_importer->frontload_assets();
-    $markdown_importer->import_posts();
-    // die("X");
+    $mode = 'wxr';
+    // $mode = 'markdown';
 
-    // $wxr_entities_factory = function() use ($wxr_path) {
-    //     return WP_WXR_Reader::stream_from(
-    //         new WP_File_Byte_Stream($wxr_path)
-    //     );
-    // };
-    // $wxr_importer = WP_Stream_Importer::create(
-    //     $wxr_entities_factory
-    // );
-    // $wxr_importer->frontload_assets();
-    // $wxr_importer->import_posts();
+    if('markdown' === $mode) {
+        $docs_root = __DIR__ . '/../../docs/site';
+        $docs_content_root = $docs_root . '/docs';
+        $markdown_entities_factory = function() use ($docs_content_root) {
+            $reader = new WP_Markdown_Directory_Tree_Reader(
+                $docs_content_root,
+                1000
+            );
+            return $reader->generator();
+        };
+        $markdown_importer = WP_Markdown_Importer::create(
+            $markdown_entities_factory, [
+                // @TODO: When processing relative URLs, treat them as relative to
+                //        the current file – be it a file:// URL or an absolute URL.
+                'source_site_url' => 'file://' . $docs_content_root,
+                'local_markdown_assets_root' => $docs_root,
+                'local_markdown_assets_url_prefix' => '@site/',
+            ]
+        );
+        $markdown_importer->frontload_assets();
+        $markdown_importer->import_posts();
+    } else {
+        $wxr_entities_factory = function() use ($wxr_path) {
+            return WP_WXR_Reader::stream_from(
+                new WP_File_Byte_Stream($wxr_path)
+            );
+        };
+        $wxr_importer = WP_Stream_Importer::create(
+            $wxr_entities_factory
+        );
+        $wxr_importer->frontload_assets();
+        $wxr_importer->import_posts();
+    }
 });
 
 /**
@@ -100,6 +108,9 @@ add_action('init', function() {
  * * Import the posts, rewrite the URLs and IDs before inserting anything.
  * * Never do any post-processing at the database level after inserting. That's
  *   too slow for large datasets.
+ * 
+ * @TODO: Error out if `source_site_url` is not set by the time we're processing
+ *        the first encountered URL.
  */
 class WP_Stream_Importer {
 
@@ -123,6 +134,11 @@ class WP_Stream_Importer {
         $entity_iterator_factory,
         $options = []
     ) {
+        $options = static::parse_options($options);
+        return new WP_Stream_Importer($entity_iterator_factory, $options);
+    }
+
+    static protected function parse_options($options) {
         if(!isset($options['new_site_url'])) {
             $options['new_site_url'] = get_site_url();
         }
@@ -139,10 +155,10 @@ class WP_Stream_Importer {
         // Remove the trailing slash to make concatenation easier later.
         $options['uploads_url'] = rtrim($options['uploads_url'], '/');
 
-        return new static($entity_iterator_factory, $options);
+        return $options;
     }
 
-    private function __construct(
+    protected function __construct(
         $entity_iterator_factory,
         $options = []
     ) {
@@ -180,8 +196,8 @@ class WP_Stream_Importer {
                         $data['attachment_url']
                     );
                 } else if(isset($data['post_content'])) {
-                    $this->enqueue_attachments_referenced_in_post_content(
-                        $data['post_content']
+                    $this->enqueue_attachments_referenced_in_post(
+                        $data
                     );
                 }
             }
@@ -225,14 +241,9 @@ class WP_Stream_Importer {
                         $p = new WP_Block_Markup_Url_Processor( $data[$key], $this->source_site_url );
                         while ( $p->next_url() ) {
                             if ( $this->url_processor_matched_asset_url( $p ) ) {
-                                $filename = $this->new_asset_filename($p->get_raw_url());
+                                $filename = $this->new_asset_filename( $p->get_raw_url() );
                                 $new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-                                // rewrite_url_components doesn't play well with 
-                                // src="@site/image.png" that's sometimes encountered
-                                // in imported Docusaurus files.
-                                //
-                                // $p->rewrite_url_components(WP_URL::parse($new_asset_url));
-                                $p->set_raw_url($new_asset_url);
+                                $p->rewrite_url_components(WP_URL::parse($new_asset_url));
                                 $attachments[] = $new_asset_url;
                                 /**
                                  * @TODO: How would we know a specific image block refers to a specific
@@ -323,49 +334,54 @@ class WP_Stream_Importer {
      * reader with reimplementing the same logic. So let's just keep it
      * separated.
      */
-    protected function enqueue_attachments_referenced_in_post_content($post_content) {
-        $p = new WP_Block_Markup_Url_Processor( $post_content, $this->source_site_url );
+    protected function enqueue_attachments_referenced_in_post($post) {
+        $p = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
         while ( $p->next_url() ) {
             if ( ! $this->url_processor_matched_asset_url( $p ) ) {
                 continue;
             }
 
-            $enqueued = $this->enqueue_attachment_download( $p->get_raw_url() );
+            $enqueued = $this->enqueue_attachment_download(
+                $p->get_raw_url(),
+                $post['source_path'] ?? $post['slug'] ?? null
+            );
             if(false === $enqueued) {
                 continue;
             }
         }
     }
 
-    protected function enqueue_attachment_download(string $attachment_url) {
-        if ( ! WP_URL::canParse($attachment_url) ) {
-            /**
-             * This is not an absolute URL and we cannot process it.
-             * 
-             * If this is a relative path, we don't know whether it's relative to the page URL
-             * or to a local directory from which the imported data is being loaded.
-             * 
-             * If this is not a relative path, it's unclear whether we can do anything at all here.
-             * 
-             * @TODO: Do not log an error here. This is called as a part of enqueue_attachments_referenced_in_post_content()
-             *        which may yield a few false positives. Let's just write it somewhere and allow the user to review all
-             *        such failures later on.
-             */
-            _doing_it_wrong(__METHOD__, "The attachment URL '$attachment_url' must be an absolute file://, http://, or https:// URL.", '__WP_VERSION__');
-            return false;
-        }
+    protected function enqueue_attachment_download(string $raw_url, $context_path = null) {
+        $new_filename = $this->new_asset_filename($raw_url);
+        $downloadable_url = $this->rewrite_attachment_url($raw_url, $context_path);
         $success = $this->downloader->enqueue_if_not_exists(
-            $attachment_url,
-            $this->new_asset_filename($attachment_url)
+            $downloadable_url,
+            $new_filename
         );
         if(false === $success) {
             // @TODO: Save the failure info somewhere so the user can review it later
             //        and either retry or provide their own asset.
             // Meanwhile, we may either halt the content import, or provide a placeholder
             // asset.
-            _doing_it_wrong(__METHOD__, "Failed to enqueue attachment: " . $attachment_url, '__WP_VERSION__');
+            _doing_it_wrong(__METHOD__, "Failed to fetch attachment '$raw_url' from '$downloadable_url'", '__WP_VERSION__');
         }
         return $success;
+    }
+
+    protected function rewrite_attachment_url(string $raw_url, $context_path = null) {
+        if ( WP_URL::canParse($raw_url) ) {
+            // Absolute URL, nothing to do.
+            return $raw_url;
+        }
+        $base_url = $this->source_site_url;
+        if(null !== $base_url && null !== $context_path) {
+            $base_url = $base_url . '/' . ltrim($context_path, '/');
+        }
+        $parsed_url = WP_URL::parse($raw_url, $base_url);
+        if(false === $parsed_url) {
+            return false;
+        }
+        return $parsed_url->toString();
     }
 
     /**
@@ -397,6 +413,15 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
         $entity_iterator_factory,
         $options = []
     ) {
+        $options = static::parse_options($options);
+        return new WP_Markdown_Importer($entity_iterator_factory, $options);
+    }
+
+    static protected function parse_options($options) {
+        if(!isset($options['source_site_url'])) {
+            _doing_it_wrong(__METHOD__, 'The source_site_url option is required.', '__WP_VERSION__');
+            return false;
+        }
         if(!isset($options['local_markdown_assets_root'])) {
             _doing_it_wrong(__METHOD__, 'The markdown_assets_root option is required.', '__WP_VERSION__');
             return false;
@@ -411,10 +436,10 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
             return null;
         }
 
-        return parent::create($entity_iterator_factory, $options);
+        return parent::parse_options($options);
     }
 
-    protected function enqueue_attachment_download(string $attachment_url) {
+    protected function rewrite_attachment_url(string $raw_url, $context_path = null) {
         /**
          * For Docusaurus docs, URLs starting with `@site` are referring
          * to local files. Let's convert them to file:// URLs.
@@ -423,8 +448,7 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
          * the host is actually just "site". The "@" symbol denotes an empty
          * username and is present in the URL string.
          */
-        var_dump($attachment_url);
-        if(str_starts_with($attachment_url, $this->options['local_markdown_assets_url_prefix'])) {
+        if(str_starts_with($raw_url, $this->options['local_markdown_assets_url_prefix'])) {
             // @TODO: Source the file from the current input stream if we can.
             //        This would allow stream-importing zipped Markdown and WXR directory
             //        structures.
@@ -432,42 +456,16 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
             //        that are already downloaded and available in a local directory just
             //        to avoid additional data transfer and the hurdle with implementing
             //        multiple range requests.
-            $attachment_url = implode('', [
+            $relative_asset_path = substr($raw_url, strlen($this->options['local_markdown_assets_url_prefix']));
+            $relative_asset_path = '/' . ltrim($relative_asset_path, '/');
+            $raw_url = implode('', [
                 'file://',
                 $this->options['local_markdown_assets_root'],
-                substr($attachment_url, strlen($this->options['local_markdown_assets_url_prefix']))
+                $relative_asset_path,
             ]);
-        } else if(!WP_URL::canParse($attachment_url)) {
-            /**
-             * This is not an absolute URL, but it could be relative path.
-             * 
-             * If so, it can be either relative to the page URL or to the local directory
-             * from which the imported data is being loaded.
-             * 
-             * Let's try treating it as a local path first.
-             */
-            $local_path = $this->options['local_markdown_assets_root'] . '/' . $attachment_url;
-            if(file_exists($local_path)) {
-                /**
-                 * It seems to be a local path.
-                 * We don't know that for sure, since we may accidentally have a local file
-                 * with a coinciding name, but that's the assumption we're making.
-                 *
-                 * @TODO: Make the asset resolution strategy configurable by the API consumer.
-                 */
-                $attachment_url = 'file://' . $local_path;
-            } else {
-                /**
-                 * If it's not a local path, let's treat it as a path that's relative to the
-                 * source site URL. It may not be that at all, and that's fine. The request
-                 * will fail and the user will get a chance to review it in the UI later on.
-                 * 
-                 * @TODO: save the failure info somewhere so the user can review it later.
-                 */
-                $attachment_url = $this->source_site_url . '/' . $attachment_url;
-            }
         }
-        return parent::enqueue_attachment_download($attachment_url);
+
+        return parent::rewrite_attachment_url($raw_url);
     }
 
     /**

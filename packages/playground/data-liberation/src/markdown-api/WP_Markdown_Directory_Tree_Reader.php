@@ -16,7 +16,7 @@ class WP_Markdown_Directory_Tree_Reader {
 	private $next_post_id;
 
 	public function __construct( $root_dir, $first_post_id ) {
-		$this->file_visitor = new WP_File_Visitor( $root_dir );
+		$this->file_visitor = new WP_File_Visitor( realpath( $root_dir ) );
 		$this->next_post_id = $first_post_id;
 	}
 
@@ -39,17 +39,17 @@ class WP_Markdown_Directory_Tree_Reader {
 					// No directory index candidate – let's create a fake page
 					// just to have something in the page tree.
 					$markdown = '';
-					$guid     = $dir->getPathName();
+					$source_path     = $dir->getPathName();
 				} else {
 					$markdown = file_get_contents( $this->pending_directory_index->getRealPath() );
-					$guid     = $this->pending_directory_index->getRealPath();
+					$source_path     = $this->pending_directory_index->getRealPath();
 				}
 				$post_id = $this->next_post_id;
 				++$this->next_post_id;
 				$this->entity = $this->markdown_to_post_entity(
 					array(
 						'markdown' => $markdown,
-						'guid' => $guid,
+						'source_path' => $source_path,
 						'post_id' => $post_id,
 						'parent_id' => $parent_id,
 						'title_fallback' => $this->slug_to_title( $dir->getFileName() ),
@@ -67,7 +67,7 @@ class WP_Markdown_Directory_Tree_Reader {
 				$this->entity = $this->markdown_to_post_entity(
 					array(
 						'markdown' => file_get_contents( $file->getRealPath() ),
-						'guid' => $file->getRealPath(),
+						'source_path' => $file->getRealPath(),
 						'post_id' => $this->next_post_id,
 						'parent_id' => $parent_id,
 						'title_fallback' => $this->slug_to_title( $file->getFileName() ),
@@ -119,12 +119,28 @@ class WP_Markdown_Directory_Tree_Reader {
 		$entity_data = array(
 			'post_id' => $options['post_id'],
 			'post_type' => 'page',
-			'guid' => $options['guid'],
+			'guid' => $options['source_path'],
 			'post_title' => $post_title,
 			'post_content' => $block_markup,
 			'post_excerpt' => $frontmatter['description'] ?? '',
 			'post_status' => 'publish',
 		);
+
+		/**
+		 * Technically `source_path` isn't a part of the WordPress post object,
+		 * but we need it to resolve relative URLs in the imported content.
+		 * 
+		 * This path is relative to the root directory traversed by this class.
+		 */
+		if( !empty($options['source_path']) ) {
+			$source_path = $options['source_path'];
+			$root_dir = $this->file_visitor->get_root_dir();
+			if(str_starts_with($source_path, $root_dir)) {
+				$source_path = substr($source_path, strlen($root_dir));
+			}
+			$source_path = ltrim($source_path, '/');
+			$entity_data['source_path'] = $source_path;
+		}
 
 		if ( ! empty( $frontmatter['slug'] ) ) {
 			$slug                     = $frontmatter['slug'];

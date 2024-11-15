@@ -53,7 +53,6 @@ class WP_Attachment_Downloader {
                 return copy($local_path, $output_path);
             case 'http':
             case 'https':
-                var_dump($url);
                 $request = new Request($url);
                 $this->output_paths[$request->id] = $output_path;
                 $this->client->enqueue($request);

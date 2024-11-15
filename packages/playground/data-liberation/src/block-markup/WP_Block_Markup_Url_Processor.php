@@ -133,15 +133,11 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			 */
 			if ( is_string( $url_maybe ) ) {
 				$parsed_url = WP_URL::parse( $url_maybe, $this->base_url_string );
-				if ( false !== $parsed_url ) {
-					$this->raw_url    = $url_maybe;
-					$this->parsed_url = $parsed_url;
-				} else {
-					// We cannot parse the attribute value as a URL.
-					// It could be a relative path or a malformed value.
-					// Either way, let's expose the raw value only.
-					$this->raw_url    = $url_maybe;
+				if ( false === $parsed_url ) {
+					return false;
 				}
+				$this->raw_url    = $url_maybe;
+				$this->parsed_url = $parsed_url;
 
 				return true;
 			}

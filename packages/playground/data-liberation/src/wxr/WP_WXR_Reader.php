@@ -334,7 +334,7 @@ class WP_WXR_Reader {
 	 * Iterates over entities parsed from a WXR byte stream.
 	 */
 	public static function stream_from(WP_File_Byte_Stream $bytes) {
-		$reader = new WP_WXR_Reader();
+		$reader = static::from_stream();
 		while(true) {
 			if(false === $bytes->next_bytes()) {
 				$reader->input_finished();
