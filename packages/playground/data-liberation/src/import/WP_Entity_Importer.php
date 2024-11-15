@@ -489,20 +489,10 @@ class WP_Entity_Importer {
 		}
 
 		// Map the parent post, or mark it as one we need to fix
-		$requires_remapping = false;
-		if ( $parent_id ) {
-			if ( isset( $this->mapping['post'][ $parent_id ] ) ) {
-				$data['post_parent'] = $this->mapping['post'][ $parent_id ];
-			} else {
-				$meta[]             = array(
-					'key' => '_wxr_import_parent',
-					'value' => $parent_id,
-				);
-				$requires_remapping = true;
-
-				$data['post_parent'] = 0;
-			}
+		if(isset($data['post_parent'])) {
+			$data['post_parent'] = $this->map_post_id((int)$data['post_parent']);
 		}
+		$requires_remapping = false;
 
 		// Map the author, or mark it as one we need to fix
 		$author = sanitize_user( $data['post_author'] ?? '', true );
@@ -640,6 +630,24 @@ class WP_Entity_Importer {
 		 */
 		do_action( 'wxr_importer.processed.post', $post_id, $data );
 		return $post_id;
+	}
+
+	/**
+	 * Given an ID suggested by the WXR file, return the ID that should be used
+	 * in the WordPress database on the new site. Just because the original site
+	 * used, say, 173 as an ID, doesn't mean that ID is available on the new site.
+	 * 
+	 * @TODO: Consider what type of remapping should we do here?
+	 *        Add 1,000,000,000 to the largest ID in the database without
+	 *        changing the autoincrement value? Using negative IDs and then
+	 *        mapping them back to positive IDs?
+	 * 
+	 *        Or perhaps relying on IDs is a wrong approach entirely and relying
+	 *        on GUIDs would be more useful? But then we'd need a ton of
+	 *        GUID => ID lookups that would slow down large imports.
+	 */
+	private function map_post_id($id) {
+		return $id;
 	}
 
 	// @TOOD handle terms
