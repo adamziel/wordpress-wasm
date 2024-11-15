@@ -2,6 +2,8 @@
 /**
  * Plugin Name: Data Liberation
  * Description: Data parsing and importing primitives.
+ * 
+ * @TODO: Parent ID isn't correctly imported, especially visible in a11y unit tests data
  */
 
 use Rowbot\URL\URL;
@@ -231,7 +233,7 @@ add_action('init', function() {
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
     $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
-    $hash = md5($wxr_path.'a');
+    $hash = md5($wxr_path);
     if(file_exists('./.imported-' . $hash)) {
         return;
     }
@@ -260,6 +262,23 @@ add_action('init', function() {
         }
         return $filename;
     };
+    // This is populated from the WXR file's <wp:base_blog_url> tag.
+    $migrating_from_url = null;
+    $matched_asset_url = function(WP_Block_Markup_Url_Processor $p) use (&$migrating_from_url) {
+        if(null === $migrating_from_url) {
+            var_dump($p->get_parsed_url());
+            die();
+        }
+        return (
+            // When processing Markdown, we only want to download the images
+            // referenced in the image tags.
+            // @TODO: How can we process the videos?
+            // @TODO: What other asset types are there?
+            $p->get_tag() === 'IMG' &&
+            $p->get_inspected_attribute_name() === 'src' &&
+            (!$migrating_from_url || url_matches( $p->get_parsed_url(), $migrating_from_url ))
+        );
+    };
     while(true) {
         if($downloader->queue_full()) {
             $downloader->poll();
@@ -274,25 +293,40 @@ add_action('init', function() {
         while($reader->next_entity()) {
             $entity = $reader->get_entity();
             $data = $entity->get_data();
-            // Download attachments.
-            if('post' === $entity->get_type() && isset($data['post_type']) && $data['post_type'] === 'attachment') {
-                // /wp-content/uploads/2024/01/image.jpg
-                // But what if the attachment path does not start with /wp-content/uploads?
-                // Should we stick to the original path? Typically no. It might be `/index.php`,
-                // which we don't want to accidentally overwrite. However, some imports might
-                // need to preserve the original path.
-                // So then, should we force the /wp-content/uploads prefix?
-                // Most of the time, yes, unless an explicit parameter was set to
-                // always preserve the original path.
-                // $attachment_path = '@TODO';
-                $url = WP_URL::parse($data['attachment_url']);
-                $downloader->enqueue_if_not_exists(
-                    $url->toString(),
-                    $compute_asset_filename($url)
-                );
+            if('site_option' === $entity->get_type() && $data['option_name'] === 'home') {
+                $migrating_from_url = $data['option_value'];
+            } else if('post' === $entity->get_type()) {
+                // Download media attachments.
+                if(isset($data['post_type']) && $data['post_type'] === 'attachment') {
+                    $url = WP_URL::parse($data['attachment_url']);
 
-                // @TODO: Should we detect <img src=""> in post content and
-                //        download those assets as well?
+                    $downloader->enqueue_if_not_exists(
+                        $url->toString(),
+                        $compute_asset_filename($url)
+                    );
+                } else if(isset($data['post_content'])) {
+                    // Download the images listed in the post content – just like in the
+                    // markdown importer
+                    $p = new WP_Block_Markup_Url_Processor( $data['post_content'], $migrating_from_url );
+                    while ( $p->next_url() ) {
+                        if ( ! $matched_asset_url( $p ) ) {
+                            continue;
+                        }
+
+                        $enqueued = $downloader->enqueue_if_not_exists(
+                            $p->get_raw_url(),
+                            $compute_asset_filename($p->get_parsed_url())
+                        );
+                        if(false === $enqueued) {
+                            // @TODO: Save the failure info somewhere so the user can review it later
+                            //        and either retry or provide their own asset.
+                            // Meanwhile, we may either halt the content import, or provide a placeholder
+                            // asset.
+                            error_log("Failed to enqueue attachment: " . $p->get_raw_url());
+                            continue;
+                        }
+                    }
+                }
             }
         }
         if($reader->get_last_error()) {
@@ -316,7 +350,6 @@ add_action('init', function() {
     $reader = WP_WXR_Reader::from_stream();
     $bytes = new WP_File_Byte_Stream($wxr_path);
     $importer = new WP_Entity_Importer();
-    $migrating_from_url = 'https://playground.internal/';
     $final_site_url = 'http://127.0.0.1:9400';
     $final_assets_url = $final_site_url . '/wp-content/plugins/data-liberation/attachments';
 
@@ -344,13 +377,12 @@ add_action('init', function() {
                 case 'post':
                     $data = $entity->get_data();
                     foreach(['guid', 'post_content', 'post_excerpt'] as $key) {
-                        $p = new WP_Block_Markup_Url_Processor( $data['post_content'], $migrating_from_url );
+                        if(!isset($data[$key])) {
+                            continue;
+                        }
+                        $p = new WP_Block_Markup_Url_Processor( $data[$key], $migrating_from_url );
                         while ( $p->next_url() ) {
-                            // @TODO: How do we know if the URL is for an attachment?
-                            if ( 
-                                $p->get_tag() === 'IMG' &&
-                                $p->get_inspected_attribute_name() === 'src'
-                            ) {
+                            if ( $matched_asset_url( $p ) ) {
                                 $p->rewrite_url_components(
                                     WP_URL::parse($final_assets_url . '/' . $compute_asset_filename($p->get_parsed_url()))
                                 );

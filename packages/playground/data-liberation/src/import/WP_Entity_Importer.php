@@ -1,4 +1,21 @@
 <?php
+/**
+ * @TODO
+ * * Handle missing fields. Some WXR files have comments, but no author information.
+ *   Some others have posts, but no content. What should the importer do in these
+ *   cases?
+ * * Performant deduplication by GUID. When a post with a given GUID is found, let's
+ *   make a decision:
+ *   - Skip importing the new one
+ *   - Update the existing one
+ *   In both cases, we need to decide what to do with the comments, post_meta,
+ *   attachments, etc:
+ *   * Should we overwrite the ones in the database?
+ *   * Insert the ones from WXR in addition to the existing ones?
+ *   * Ignore the ones from WXR?
+ * * Don't run any blocking downloads of attachments here. We're only inserting
+ *   the data at this point. All the downloads have already been processed by now.
+ */
 
 class WP_Entity_Importer {
 
@@ -321,7 +338,7 @@ class WP_Entity_Importer {
 			 * @param array $data Raw data imported for the term.
 			 * @param array $meta Meta data supplied for the term.
 			 */
-			do_action( 'wxr_importer.process_failed.term', $result, $data, $meta );
+			do_action( 'wxr_importer.process_failed.term', $result, $data );
 			return false;
 		}
 
@@ -436,7 +453,8 @@ class WP_Entity_Importer {
 			return;
 		}
 
-		$post_type_object = get_post_type_object( $data['post_type'] );
+		$post_type = $data['post_type'] ?? 'post';
+		$post_type_object = get_post_type_object( $post_type );
 
 		// Is this type even valid?
 		if ( ! $post_type_object ) {
@@ -444,7 +462,7 @@ class WP_Entity_Importer {
 				sprintf(
 					__( 'Failed to import "%1$s": Invalid post type %2$s', 'wordpress-importer' ),
 					$data['post_title'],
-					$data['post_type']
+					$post_type
 				)
 			);
 			return false;
@@ -503,15 +521,6 @@ class WP_Entity_Importer {
 			$data['post_author'] = (int) get_current_user_id();
 		}
 
-		// Does the post look like it contains attachment images?
-		if ( preg_match( self::REGEX_HAS_ATTACHMENT_REFS, $data['post_content'] ) ) {
-			$meta[]             = array(
-				'key' => '_wxr_import_has_attachment_refs',
-				'value' => true,
-			);
-			$requires_remapping = true;
-		}
-
 		// Whitelist to just the keys we allow
 		$postdata = array(
 			'import_id' => $data['post_id'] ?? null,
@@ -543,7 +552,9 @@ class WP_Entity_Importer {
 
 		$postdata = apply_filters( 'wp_import_post_data_processed', $postdata, $data );
 
-		if ( 'attachment' === $postdata['post_type'] ) {
+		if ( isset($postdata['post_type']) && 'attachment' === $postdata['post_type'] ) {
+			// @TODO: Do not download any attachments here. We're just inserting the data
+			//        at this point. All the downloads have already been processed by now.
 			if ( ! $this->options['fetch_attachments'] ) {
 				$this->logger->notice(
 					sprintf(
@@ -557,7 +568,7 @@ class WP_Entity_Importer {
 				 * @param array $data Raw data imported for the post.
 				 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 				 */
-				do_action( 'wxr_importer.process_skipped.post', $data, $meta );
+				do_action( 'wxr_importer.process_skipped.post', $data );
 				return false;
 			}
 			$remote_url = ! empty( $data['attachment_url'] ) ? $data['attachment_url'] : $data['guid'];
@@ -966,8 +977,21 @@ class WP_Entity_Importer {
 
 		// Run standard core filters
 		$comment['comment_post_ID'] = $post_id;
-		$comment                    = wp_filter_comment( $comment );
+		// @TODO: How to handle missing fields? Use sensible defaults? What defaults?
+		if(!isset($comment['comment_author_IP'])) {
+			$comment['comment_author_IP'] = '';
+		}
+		if(!isset($comment['comment_author_url'])) {
+			$comment['comment_author_url'] = '';
+		}
+		if(!isset($comment['comment_author_email'])) {
+			$comment['comment_author_email'] = '';
+		}
+		if(!isset($comment['comment_date'])) {
+			$comment['comment_date'] = date('Y-m-d H:i:s');
+		}
 
+		$comment                    = wp_filter_comment( $comment );
 		// wp_insert_comment expects slashed data
 		$comment_id                               = wp_insert_comment( wp_slash( $comment ) );
 		$this->mapping['comment'][ $original_id ] = $comment_id;
@@ -984,7 +1008,7 @@ class WP_Entity_Importer {
 		 * @param int $post_id Post parent of the comment
 		 * @param array $post Post data
 		 */
-		do_action( 'wp_import_insert_comment', $comment_id, $comment, $post_id, $post );
+		do_action( 'wp_import_insert_comment', $comment_id, $comment, $post_id );
 
 		/**
 		 * Post processing completed.
@@ -994,7 +1018,7 @@ class WP_Entity_Importer {
 		 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 		 * @param array $post_id Parent post ID.
 		 */
-		do_action( 'wxr_importer.processed.comment', $comment_id, $comment, $meta, $post_id );
+		do_action( 'wxr_importer.processed.comment', $comment_id, $comment, $post_id );
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
@@ -1035,7 +1059,8 @@ class WP_Entity_Importer {
 	 * @return int|bool Existing comment ID if it exists, false otherwise.
 	 */
 	protected function comment_exists( $data ) {
-		$exists_key = sha1( $data['comment_author'] . ':' . $data['comment_date'] );
+		$comment_date = $data['comment_date'] ?? date('Y-m-d H:i:s');
+		$exists_key = sha1( $data['comment_author'] . ':' . $comment_date );
 
 		// Constant-time lookup if we prefilled
 		if ( $this->options['prefill_existing_comments'] ) {
@@ -1048,7 +1073,7 @@ class WP_Entity_Importer {
 		}
 
 		// Still nothing, try comment_exists, and cache it
-		$exists                                 = comment_exists( $data['comment_author'], $data['comment_date'] );
+		$exists                                 = comment_exists( $data['comment_author'], $comment_date );
 		$this->exists['comment'][ $exists_key ] = $exists;
 
 		return $exists;

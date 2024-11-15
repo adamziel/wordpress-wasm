@@ -1,4 +1,12 @@
 <?php
+/**
+ * @TODO
+ * * Transform images to image blocks, not inline <img> tags. Otherwise their width
+ *   exceeds that of the paragraph block they're in.
+ * * Consider implementing a dedicated markdown parser – similarly how we have
+ *   a small, dedicated, and fast XML, HTML, etc. parsers. It would solve for
+ *   code complexity, bundle size, performance, PHP compatibility, etc.
+ */
 
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;

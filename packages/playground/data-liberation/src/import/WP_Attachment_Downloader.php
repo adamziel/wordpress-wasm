@@ -52,8 +52,8 @@ class WP_Attachment_Downloader {
             case 'http':
             case 'https':
                 $request = new Request($url);
-                $this->client->enqueue($request);
                 $this->output_paths[$request->id] = $output_path;
+                $this->client->enqueue($request);
                 return true;
         }
         return false;
@@ -69,45 +69,55 @@ class WP_Attachment_Downloader {
         }
         $event = $this->client->get_event();
         $request = $this->client->get_request();
+        // The request object we get from the client may be a redirect. 
+        // Let's keep referring to the original request.
+        $original_request_id = $request->original_request()->id;
         
         switch($event) {
             case Client::EVENT_GOT_HEADERS:
-                $this->partial_files[$request->id] = $this->output_paths[$request->id] . '.partial';
-                if(file_exists($this->partial_files[$request->id])) {
-                    unlink($this->partial_files[$request->id]);
-                }
-                $this->fps[$request->id] = fopen($this->output_paths[$request->id] . '.partial', 'wb');
-                if(false === $this->fps[$request->id]) {
-                    // @TODO: Log an error.
+                if(!$request->is_redirected()) {
+                    $this->partial_files[$original_request_id] = $this->output_paths[$original_request_id] . '.partial';
+                    if(file_exists($this->partial_files[$original_request_id])) {
+                        unlink($this->partial_files[$original_request_id]);
+                    }
+                    $this->fps[$original_request_id] = fopen($this->output_paths[$original_request_id] . '.partial', 'wb');
+                    if(false === $this->fps[$original_request_id]) {
+                        // @TODO: Log an error.
+                    }
                 }
                 break;
             case Client::EVENT_BODY_CHUNK_AVAILABLE:
                 $chunk = $this->client->get_response_body_chunk();
-                if(false === fwrite($this->fps[$request->id], $chunk)) {
+                if(false === fwrite($this->fps[$original_request_id], $chunk)) {
                     // @TODO: Log an error.
                 }
                 break;
             case Client::EVENT_FAILED:
-                if(isset($this->fps[$request->id])) {
-                    fclose($this->fps[$request->id]);
+                if(isset($this->fps[$original_request_id])) {
+                    fclose($this->fps[$original_request_id]);
                 }
-                $partial_file = $this->output_root . '/' . $this->partial_files[$request->id] . '.partial';
+                $partial_file = $this->output_root . '/' . $this->partial_files[$original_request_id] . '.partial';
                 if(file_exists($partial_file)) {
                     unlink($partial_file);
                 }
-                if(isset($this->output_paths[$request->id])) {
-                    unset($this->output_paths[$request->id]);
-                }
+                unset($this->output_paths[$original_request_id]);
                 break;
             case Client::EVENT_FINISHED:
-                fclose($this->fps[$request->id]);
-                if(false === rename(
-                    $this->output_root . '/' . $this->output_paths[$request->id] . '.partial',
-                    $this->output_root . '/' . $this->partial_files[$request->id]
-                )) {
-                    // @TODO: Log an error.
+                if(!$request->is_redirected()) {
+                    // Only clean up if this was the last request in the chain.
+                    if(isset($this->fps[$original_request_id])) {
+                        fclose($this->fps[$original_request_id]);
+                    }
+                    if(isset($this->output_paths[$original_request_id]) && isset($this->partial_files[$original_request_id])) {
+                        if(false === rename(
+                            $this->partial_files[$original_request_id],
+                            $this->output_paths[$original_request_id]
+                        )) {
+                            // @TODO: Log an error.
+                        }
+                    }
+                    unset($this->partial_files[$original_request_id]);
                 }
-                unset($this->partial_files[$request->id]);
                 break;
         } 
 
