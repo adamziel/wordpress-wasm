@@ -783,6 +783,44 @@ class WP_Entity_Importer {
 	}
 
 	/**
+	 * Import attachments.
+	 * @TODO: Explore other interfaces for attachment import.
+	 */
+	public function import_attachment($filepath, $post_id) {
+		$filename = basename($filepath);
+		// Check if attachment with this guid already exists
+		$existing_attachment = get_posts(array(
+			'post_type' => 'attachment',
+			'posts_per_page' => 1,
+			'guid' => $filepath,
+			'fields' => 'ids'
+		));
+
+		if (empty($existing_attachment)) {
+			$filetype = wp_check_filetype($filename);
+			$attachment = array(
+				'guid' => $filepath,
+				'post_mime_type' => $filetype['type'],
+				'post_title' => preg_replace('/\.[^.]+$/', '', $filename),
+				'post_content' => '',
+				'post_status' => 'inherit'
+			);
+			$attach_id = wp_insert_attachment($attachment, $filepath, $post_id);
+		} else {
+			$attach_id = $existing_attachment[0];
+		}
+		// @TODO: Check for attachment creation errors                        
+		// @TODO: Make it work with Asyncify
+		// Generate and update attachment metadata
+		// if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+		//     include( ABSPATH . 'wp-admin/includes/image.php' );
+		// }
+		// $attach_data = wp_generate_attachment_metadata($attach_id, $filepath);
+		// wp_update_attachment_metadata($attach_id, $attach_data);
+		return $attach_id;
+	}
+
+	/**
 	 * Process and import post meta items.
 	 *
 	 * @param array $meta List of meta data arrays

@@ -667,6 +667,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "_php_stream_set_option",\
 "_php_stream_write",\
 "_php_stream_xport_create",\
+"zif_stream_socket_enable_crypto",\
 "do_cli",\
 "do_cli_server",\
 "execute_ex",\

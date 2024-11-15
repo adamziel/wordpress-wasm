@@ -9,6 +9,7 @@ use Rowbot\URL\URL;
 require_once __DIR__ . '/bootstrap.php';
 
 add_action('init', function() {
+    return;
     $hash = md5('docs-importer-test');
     if(file_exists('./.imported-' . $hash)) {
         return;
@@ -111,6 +112,13 @@ add_action('init', function() {
                     $source_url = $p->get_raw_url();
                     if(str_starts_with($source_url, 'http://@site')) {
                         // @TODO: Use some form of joinPaths()
+                        // @TODO: Source the file from the current input stream if we can.
+                        //        This would allow stream-importing zipped Markdown and WXR directory
+                        //        structures.
+                        //        Maybe for v1 we could just support importing them from ZIP files
+                        //        that are already downloaded and available in a local directory just
+                        //        to avoid additional data transfer and the hurdle with implementing
+                        //        multiple range requests.
                         $source_url = 'file://' . rtrim($docs_root, '/') . '/' . substr($source_url, strlen('http://@site/'));
                     }
 
@@ -173,6 +181,7 @@ add_action('init', function() {
      *        a bunch of markdown files into a large site?
      */
     while($reader->next_entity()) {
+        $attachments = [];
         $entity = $reader->get_entity();
         switch($entity->get_type()) {
             case 'post':
@@ -185,30 +194,8 @@ add_action('init', function() {
                         $asset_url = WP_URL::parse($final_assets_url . '/' . $compute_asset_filename($p->get_parsed_url()));
                         $p->rewrite_url_components( $asset_url);
 
-                        // Create attachments
-                        // @TODO: Move this WordPress-specific insertions to an importer
                         $filename = $compute_asset_filename($p->get_parsed_url());
-                        $filepath = $final_assets_url . '/' . $filename;
-                        $filetype = wp_check_filetype($filename);
-                        
-                        $attachment = array(
-                            'guid' => $filepath,
-                            'post_mime_type' => $filetype['type'],
-                            'post_title' => preg_replace('/\.[^.]+$/', '', $filename),
-                            'post_content' => '',
-                            'post_status' => 'inherit'
-                        );
-
-                        $attach_id = wp_insert_attachment($attachment, $filepath, $post_id);
-                        // @TODO: Check for attachment creation errors                        
-                        // @TODO: Make it work in Asyncify
-                        // Generate and update attachment metadata
-                        // if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-                        //     include( ABSPATH . 'wp-admin/includes/image.php' );
-                        // }
-                        // $attach_data = wp_generate_attachment_metadata($attach_id, $filepath);
-                        // wp_update_attachment_metadata($attach_id, $attach_data);
-
+                        $attachments[] = $final_assets_url . '/' . $filename;
                     } else if ( url_matches( $p->get_parsed_url(), $migrating_from_url ) ) {
                         $p->rewrite_url_components( WP_URL::parse('http://127.0.0.1:9400/') );
                     } else {
@@ -216,34 +203,63 @@ add_action('init', function() {
                     }
                 }
                 $data['post_content'] = $p->get_updated_html();
-                $entity->set_data($data);                
+                $entity->set_data($data);
                 break;
         }
         $post_id = $importer->import_entity($entity);
         $reader->set_created_post_id($post_id);
+        foreach($attachments as $filepath) {
+            $importer->import_attachment($filepath, $post_id);
+        }
     }
 });
 
 
+/**
+ * @TODO: Model this after the Markdown importer above.
+ *        Just don't infer the attachment URLs from the post content and
+ *        instead use the attachments listed in the WXR file.
+ *
+ * Question: How would we know a specific image block refers to a specific
+ *           attachment? We need to cross-correlate that to rewrite the URL.
+ *           The image block could have query parameters, too, but presumably the
+ *           path would be the same at least? What if the same file is referred
+ *           to by two different URLs? e.g. assets.site.com and site.com/assets/ ?
+ */
 add_action('init', function() {
     $downloader = new WP_Attachment_Downloader(__DIR__ . '/attachments');
-    $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
+    // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
-    // $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
+    $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
     $hash = md5($wxr_path.'a');
     if(file_exists('./.imported-' . $hash)) {
         return;
     }
     touch('./.imported-' . $hash);
-    return;
 
-    $importer = new WP_Entity_Importer();
-    $reader = WP_WXR_Reader::from_stream();
-
-    // @TODO: Do two passes.
+    // Do two passes.
     // * First pass: Download attachments.
-    // * Second pass: Import posts and rewrite URLs.
+    $reader = WP_WXR_Reader::from_stream();
     $bytes = new WP_File_Byte_Stream($wxr_path);
+    /**
+     * The downloaded file name is based on the URL hash.
+     * 
+     * While using a content hash is tempting, it has two downsides:
+     * * We may need to download the asset before computing the hash.
+     * * It would de-duplicate the imported assets even if they have
+     *   different URLs. This would cause subtle issues in the new sites.
+     *   Imagine two users uploading the same image. Each user has
+     *   different permissions. Just because Bob deletes his copy, doesn't
+     *   mean we should delete Alice's copy.
+     */
+    $compute_asset_filename = function(URL $asset_url) {
+        $filename = md5($asset_url->toString());
+        $extension = pathinfo($asset_url->pathname, PATHINFO_EXTENSION);
+        if(!empty($extension)) {
+            $filename .= '.' . $extension;
+        }
+        return $filename;
+    };
     while(true) {
         if($downloader->queue_full()) {
             $downloader->poll();
@@ -257,65 +273,27 @@ add_action('init', function() {
         }
         while($reader->next_entity()) {
             $entity = $reader->get_entity();
+            $data = $entity->get_data();
             // Download attachments.
-            switch($entity->get_type()) {
-                case 'post':
-                    if($post['post_type'] === 'attachment') {
-                        // /wp-content/uploads/2024/01/image.jpg
-                        // But what if the attachment path does not start with /wp-content/uploads?
-                        // Should we stick to the original path? Typically no. It might be `/index.php`,
-                        // which we don't want to accidentally overwrite. However, some imports might
-                        // need to preserve the original path.
-                        // So then, should we force the /wp-content/uploads prefix?
-                        // Most of the time, yes, unless an explicit parameter was set to
-                        // always preserve the original path.
-                        // $attachment_path = '@TODO';
-                        $downloader->enqueue($post['attachment_url'], $attachment_path);
-                    }
-                    // @TODO: Should we detect <img src=""> in post content and
-                    //        download those assets as well?
-                    break;
-            }
+            if('post' === $entity->get_type() && isset($data['post_type']) && $data['post_type'] === 'attachment') {
+                // /wp-content/uploads/2024/01/image.jpg
+                // But what if the attachment path does not start with /wp-content/uploads?
+                // Should we stick to the original path? Typically no. It might be `/index.php`,
+                // which we don't want to accidentally overwrite. However, some imports might
+                // need to preserve the original path.
+                // So then, should we force the /wp-content/uploads prefix?
+                // Most of the time, yes, unless an explicit parameter was set to
+                // always preserve the original path.
+                // $attachment_path = '@TODO';
+                $url = WP_URL::parse($data['attachment_url']);
+                $downloader->enqueue_if_not_exists(
+                    $url->toString(),
+                    $compute_asset_filename($url)
+                );
 
-            /**
-             * @TODO:
-             * * What if the attachment is downloaded to a different path? How do we
-             *   approach rewriting the URLs in the post content? We may have already
-             *   inserted some posts into the database. Perhaps we need to do one pass
-             *   to download attachments, and a second pass to import the posts?
-             * * What if the attachment is not found? Error out? Ignore? In a UI-based
-             *   importer scenario, this is the time to log a failure to let the user
-             *   fix it later on. In a CLI-based Blueprint step importer scenario, we
-             *   might want to provide an "image not found" placeholder OR ignore the
-             *   failure.
-             */
-
-            // Rewrite the URLs in the post.
-            switch($entity->get_type()) {
-                case 'post':
-                    $data = $entity->get_data();
-                    $data['guid'] = wp_rewrite_urls(array(
-                        'block_markup' => $data['guid'],
-                        'url-mapping' => [
-                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
-                        ],
-                    ));
-                    $data['post_content'] = wp_rewrite_urls(array(
-                        'block_markup' => $data['post_content'],
-                        'url-mapping' => [
-                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
-                        ],
-                    ));
-                    $data['post_excerpt'] = wp_rewrite_urls(array(
-                        'block_markup' => $data['post_excerpt'],
-                        'url-mapping' => [
-                            'https://playground.internal/' => 'http://127.0.0.1:9400/scope:stylish-press/',
-                        ],
-                    ));
-                    $entity->set_data($data);
-                    break;
+                // @TODO: Should we detect <img src=""> in post content and
+                //        download those assets as well?
             }
-            $importer->import_entity($entity);
         }
         if($reader->get_last_error()) {
             var_dump($reader->get_last_error());
@@ -332,5 +310,79 @@ add_action('init', function() {
 
     while($downloader->poll()) {
         // Twiddle our thumbs...
+    }
+
+    // * Second pass: Import posts and rewrite URLs.
+    $reader = WP_WXR_Reader::from_stream();
+    $bytes = new WP_File_Byte_Stream($wxr_path);
+    $importer = new WP_Entity_Importer();
+    $migrating_from_url = 'https://playground.internal/';
+    $final_site_url = 'http://127.0.0.1:9400';
+    $final_assets_url = $final_site_url . '/wp-content/plugins/data-liberation/attachments';
+
+    while(true) {
+        if(false === $bytes->next_bytes()) {
+            $reader->input_finished();
+        } else {
+            $reader->append_bytes($bytes->get_bytes());
+        }
+        while($reader->next_entity()) {
+            $entity = $reader->get_entity();
+
+            /**
+             * @TODO:
+             * * What if the attachment is not found? Error out? Ignore? In a UI-based
+             *   importer scenario, this is the time to log a failure to let the user
+             *   fix it later on. In a CLI-based Blueprint step importer scenario, we
+             *   might want to provide an "image not found" placeholder OR ignore the
+             *   failure.
+             */
+
+            $attachments = [];
+            // Rewrite the URLs in the post.
+            switch($entity->get_type()) {
+                case 'post':
+                    $data = $entity->get_data();
+                    foreach(['guid', 'post_content', 'post_excerpt'] as $key) {
+                        $p = new WP_Block_Markup_Url_Processor( $data['post_content'], $migrating_from_url );
+                        while ( $p->next_url() ) {
+                            // @TODO: How do we know if the URL is for an attachment?
+                            if ( 
+                                $p->get_tag() === 'IMG' &&
+                                $p->get_inspected_attribute_name() === 'src'
+                            ) {
+                                $p->rewrite_url_components(
+                                    WP_URL::parse($final_assets_url . '/' . $compute_asset_filename($p->get_parsed_url()))
+                                );
+        
+                                $filename = $compute_asset_filename($p->get_parsed_url());
+                                $attachments[] = $final_assets_url . '/' . $filename;
+                            } else if ( url_matches( $p->get_parsed_url(), $migrating_from_url ) ) {
+                                $p->rewrite_url_components( WP_URL::parse($final_site_url) );
+                            } else {
+                                // Ignore other URLs.
+                            }
+                        }
+                        $data[$key] = $p->get_updated_html();
+                    }
+                    $entity->set_data($data);
+                    break;
+            }
+            $post_id = $importer->import_entity($entity);
+            foreach($attachments as $filepath) {
+                $importer->import_attachment($filepath, $post_id);
+            }
+        }
+        if($reader->get_last_error()) {
+            var_dump($reader->get_last_error());
+            die();
+        }
+        if($reader->is_finished()) {
+            break;
+        }
+        if(null === $bytes->get_bytes()) {
+            // @TODO: Why do we need this? Why is_finished() isn't enough?
+            break;
+        }
     }
 });

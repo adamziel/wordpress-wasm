@@ -714,7 +714,8 @@ class WP_WXR_Reader {
 	 */
 	private function emit_entity() {
 		if ( $this->entity_type === 'post' ) {
-			$this->last_post_id = $this->entity_data['post_id'];
+			// Not all posts have a `<wp:post_id>` tag.
+			$this->last_post_id = $this->entity_data['post_id'] ?? null;
 		} elseif ( $this->entity_type === 'post_meta' ) {
 			$this->entity_data['post_id'] = $this->last_post_id;
 		} elseif ( $this->entity_type === 'comment' ) {

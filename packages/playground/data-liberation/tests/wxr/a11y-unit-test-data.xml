@@ -667,6 +667,7 @@ Lorem Ipsum је једноставно модел текста који се к
 <item>
   <title>Page with comments</title>
   <link>http://wpthemetestdata.wordpress.com/about/page-with-comments/</link>
+  <wp:post_id>156</wp:post_id>
   <wp:postmeta>
     <wp:meta_key>_wp_page_template</wp:meta_key>
     <wp:meta_value><![CDATA[default]]></wp:meta_value>
