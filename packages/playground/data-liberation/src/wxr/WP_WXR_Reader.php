@@ -33,7 +33,7 @@
  *
  * Example:
  *
- *     $reader = WP_WXR_Reader::from_stream();
+ *     $reader = WP_WXR_Reader::create_for_streaming();
  *
  *     // Add data as it becomes available
  *     $reader->append_bytes( fread( $file_handle, 8192 ) );
@@ -314,8 +314,8 @@ class WP_WXR_Reader {
 	 * @param string $wxr_bytes The WXR content as a string.
 	 * @return WP_WXR_Reader The new reader instance.
 	 */
-	public static function from_string( $wxr_bytes = '' ) {
-		return new WP_WXR_Reader( WP_XML_Processor::from_string( $wxr_bytes ) );
+	public static function create_from_string( $wxr_bytes = '' ) {
+		return new WP_WXR_Reader( WP_XML_Processor::create_from_string( $wxr_bytes ) );
 	}
 
 	/**
@@ -326,15 +326,15 @@ class WP_WXR_Reader {
 	 * @param string $wxr_bytes Optional initial WXR content.
 	 * @return WP_WXR_Reader The new reader instance.
 	 */
-	public static function from_stream( $wxr_bytes = '' ) {
-		return new WP_WXR_Reader( WP_XML_Processor::from_stream( $wxr_bytes ) );
+	public static function create_for_streaming( $wxr_bytes = '' ) {
+		return new WP_WXR_Reader( WP_XML_Processor::create_for_streaming( $wxr_bytes ) );
 	}
 
 	/**
 	 * Iterates over entities parsed from a WXR byte stream.
 	 */
 	public static function stream_from(WP_File_Byte_Stream $bytes) {
-		$reader = static::from_stream();
+		$reader = static::create_for_streaming();
 		while(true) {
 			if(false === $bytes->next_bytes()) {
 				$reader->input_finished();

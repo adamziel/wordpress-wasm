@@ -637,7 +637,7 @@ class WP_XML_Processor {
 	/**
 	 *
 	 */
-	public static function from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
+	public static function create_from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
@@ -647,7 +647,7 @@ class WP_XML_Processor {
 		return $processor;
 	}
 
-	public static function from_stream( $xml, $known_definite_encoding = 'UTF-8' ) {
+	public static function create_for_streaming( $xml, $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
@@ -685,7 +685,7 @@ class WP_XML_Processor {
 	}
 
 	public static function create_stream_processor( $node_visitor_callback ) {
-		$xml_processor = WP_XML_Processor::from_stream( '' );
+		$xml_processor = WP_XML_Processor::create_for_streaming( '' );
 		// Don't auto-flush the processed bytes. We'll do that manually.
 		$xml_processor->memory_budget = null;
 		return new ProcessorByteStream(
