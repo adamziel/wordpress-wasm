@@ -132,8 +132,8 @@ class WP_Stream_Importer {
 	 * @TODO: Explore a way of making this idempotent. Maybe
 	 *        use GUIDs to detect whether a post or an attachment
 	 *        has already been imported? That would be slow on
-	 *        large datasets, but are we ever going to import
-	 *        a bunch of markdown files into a large site?
+	 *        large datasets, but maybe it could be a choice for
+	 *        the API consumer?
 	 */
 	public function import_posts() {
 		$importer = new WP_Entity_Importer();
