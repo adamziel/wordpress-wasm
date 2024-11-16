@@ -210,7 +210,7 @@ class WP_Stream_Importer {
 	 * compute an idempotent and deterministic new path for each asset.
 	 *
 	 * While using a content hash is tempting, it has two downsides:
-	 * * We may need to download the asset before computing the hash.
+	 * * We'd need to download the asset before computing the hash.
 	 * * It would de-duplicate the imported assets even if they have
 	 *   different URLs. This would cause subtle issues in the new sites.
 	 *   Imagine two users uploading the same image. Each user has
