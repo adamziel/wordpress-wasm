@@ -118,6 +118,7 @@ class WP_Stream_Importer {
 			// Twiddle our thumbs as the downloader processes the requests...
 			/**
 			 * @TODO:
+			 * * Consider inlining the downloader code into this class.
 			 * * Process and store failures.
 			 *   E.g. what if the attachment is not found? Error out? Ignore? In a UI-based
 			 *   importer scenario, this is the time to log a failure to let the user
