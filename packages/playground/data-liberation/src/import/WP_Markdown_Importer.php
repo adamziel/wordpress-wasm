@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Assume markdown importer is not fully re-entrant. We're unlikely to see 100GB of
- * markdown files so let's specialize in managable data amounts for now. The only
- * re-entrant part would be pre-fetching the static assets. If the asset already exists,
- * there's no need to re-fetch it.
- */
 class WP_Markdown_Importer extends WP_Stream_Importer {
 
 	public static function create(
@@ -42,10 +36,6 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 		/**
 		 * For Docusaurus docs, URLs starting with `@site` are referring
 		 * to local files. Let's convert them to file:// URLs.
-		 *
-		 * Also, we cannot just compare the host to `@site` because, after parsing,
-		 * the host is actually just "site". The "@" symbol denotes an empty
-		 * username and is present in the URL string.
 		 */
 		if ( str_starts_with( $raw_url, $this->options['local_markdown_assets_url_prefix'] ) ) {
 			// @TODO: Source the file from the current input stream if we can.
