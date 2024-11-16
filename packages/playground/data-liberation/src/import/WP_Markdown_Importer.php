@@ -57,13 +57,10 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 			//        multiple range requests.
 			$relative_asset_path = substr( $raw_url, strlen( $this->options['local_markdown_assets_url_prefix'] ) );
 			$relative_asset_path = '/' . ltrim( $relative_asset_path, '/' );
-			$raw_url             = implode(
-				'',
-				array(
-					'file://',
-					$this->options['local_markdown_assets_root'],
-					$relative_asset_path,
-				)
+			$raw_url             = (
+				'file://' .
+				$this->options['local_markdown_assets_root'] .
+				$relative_asset_path
 			);
 		}
 
