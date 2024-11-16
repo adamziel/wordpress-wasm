@@ -26,22 +26,22 @@ use Rowbot\URL\URL;
 function wp_rewrite_urls( $options ) {
 	if ( empty( $options['base_url'] ) ) {
 		// Use first from-url as base_url if not specified
-		$from_urls = array_keys($options['url-mapping']);
+		$from_urls           = array_keys( $options['url-mapping'] );
 		$options['base_url'] = $from_urls[0];
 	}
 
-	$url_mapping = [];
-	foreach ($options['url-mapping'] as $from_url_string => $to_url_string) {
-		$url_mapping[] = [
-			'from_url' => WP_URL::parse($from_url_string),
-			'to_url' => WP_URL::parse($to_url_string),
-		];
+	$url_mapping = array();
+	foreach ( $options['url-mapping'] as $from_url_string => $to_url_string ) {
+		$url_mapping[] = array(
+			'from_url' => WP_URL::parse( $from_url_string ),
+			'to_url' => WP_URL::parse( $to_url_string ),
+		);
 	}
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
 		$parsed_url = $p->get_parsed_url();
-		foreach ($url_mapping as $mapping) {
+		foreach ( $url_mapping as $mapping ) {
 			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
 				$p->rewrite_url_components( $mapping['from_url'], $mapping['to_url'] );
 				break;
@@ -59,7 +59,7 @@ function wp_rewrite_urls( $options ) {
  * @return bool Whether the URL matches the current site URL.
  */
 function url_matches( URL $subject, $from_url ) {
-	$parsed_from_url            = is_string($from_url) ? WP_URL::parse( $from_url ) : $from_url;
+	$parsed_from_url                    = is_string( $from_url ) ? WP_URL::parse( $from_url ) : $from_url;
 	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
 
 	if ( $subject->hostname !== $parsed_from_url->hostname ) {

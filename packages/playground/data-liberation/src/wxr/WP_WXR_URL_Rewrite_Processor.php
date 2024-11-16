@@ -11,9 +11,9 @@ class WP_WXR_URL_Rewrite_Processor {
 					$updated_text = wp_rewrite_urls(
 						array(
 							'block_markup' => $text,
-							'url-mapping' => [
+							'url-mapping' => array(
 								$current_site_url => $new_site_url,
-							],
+							),
 						)
 					);
 					if ( $updated_text !== $text ) {

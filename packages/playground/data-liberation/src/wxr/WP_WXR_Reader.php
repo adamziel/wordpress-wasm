@@ -333,26 +333,26 @@ class WP_WXR_Reader {
 	/**
 	 * Iterates over entities parsed from a WXR byte stream.
 	 */
-	public static function stream_from(WP_File_Byte_Stream $bytes) {
+	public static function stream_from( WP_File_Byte_Stream $bytes ) {
 		$reader = static::create_for_streaming();
-		while(true) {
-			if(false === $bytes->next_bytes()) {
+		while ( true ) {
+			if ( false === $bytes->next_bytes() ) {
 				$reader->input_finished();
 			} else {
-				$reader->append_bytes($bytes->get_bytes());
+				$reader->append_bytes( $bytes->get_bytes() );
 			}
-			while($reader->next_entity()) {
+			while ( $reader->next_entity() ) {
 				yield $reader->get_entity();
 			}
-			if($reader->get_last_error()) {
+			if ( $reader->get_last_error() ) {
 				// @TODO: Handle errors.
-				var_dump($reader->get_last_error());
+				var_dump( $reader->get_last_error() );
 				die();
 			}
-			if($reader->is_finished()) {
+			if ( $reader->is_finished() ) {
 				break;
 			}
-			if(null === $bytes->get_bytes()) {
+			if ( null === $bytes->get_bytes() ) {
 				// @TODO: Why do we need this? Why is_finished() isn't enough?
 				break;
 			}

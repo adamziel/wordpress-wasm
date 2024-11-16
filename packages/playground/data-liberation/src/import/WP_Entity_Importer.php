@@ -453,7 +453,7 @@ class WP_Entity_Importer {
 			return;
 		}
 
-		$post_type = $data['post_type'] ?? 'post';
+		$post_type        = $data['post_type'] ?? 'post';
 		$post_type_object = get_post_type_object( $post_type );
 
 		// Is this type even valid?
@@ -489,8 +489,8 @@ class WP_Entity_Importer {
 		}
 
 		// Map the parent post, or mark it as one we need to fix
-		if(isset($data['post_parent'])) {
-			$data['post_parent'] = $this->map_post_id((int)$data['post_parent']);
+		if ( isset( $data['post_parent'] ) ) {
+			$data['post_parent'] = $this->map_post_id( (int) $data['post_parent'] );
 		}
 		$requires_remapping = false;
 
@@ -542,7 +542,7 @@ class WP_Entity_Importer {
 
 		$postdata = apply_filters( 'wp_import_post_data_processed', $postdata, $data );
 
-		if ( isset($postdata['post_type']) && 'attachment' === $postdata['post_type'] ) {
+		if ( isset( $postdata['post_type'] ) && 'attachment' === $postdata['post_type'] ) {
 			// @TODO: Do not download any attachments here. We're just inserting the data
 			//        at this point. All the downloads have already been processed by now.
 			if ( ! $this->options['fetch_attachments'] ) {
@@ -636,17 +636,17 @@ class WP_Entity_Importer {
 	 * Given an ID suggested by the WXR file, return the ID that should be used
 	 * in the WordPress database on the new site. Just because the original site
 	 * used, say, 173 as an ID, doesn't mean that ID is available on the new site.
-	 * 
+	 *
 	 * @TODO: Consider what type of remapping should we do here?
 	 *        Add 1,000,000,000 to the largest ID in the database without
 	 *        changing the autoincrement value? Using negative IDs and then
 	 *        mapping them back to positive IDs?
-	 * 
+	 *
 	 *        Or perhaps relying on IDs is a wrong approach entirely and relying
 	 *        on GUIDs would be more useful? But then we'd need a ton of
 	 *        GUID => ID lookups that would slow down large imports.
 	 */
-	private function map_post_id($id) {
+	private function map_post_id( $id ) {
 		return $id;
 	}
 
@@ -805,30 +805,32 @@ class WP_Entity_Importer {
 	 * Import attachments.
 	 * @TODO: Explore other interfaces for attachment import.
 	 */
-	public function import_attachment($filepath, $post_id) {
-		$filename = basename($filepath);
+	public function import_attachment( $filepath, $post_id ) {
+		$filename = basename( $filepath );
 		// Check if attachment with this guid already exists
-		$existing_attachment = get_posts(array(
-			'post_type' => 'attachment',
-			'posts_per_page' => 1,
-			'guid' => $filepath,
-			'fields' => 'ids'
-		));
+		$existing_attachment = get_posts(
+			array(
+				'post_type' => 'attachment',
+				'posts_per_page' => 1,
+				'guid' => $filepath,
+				'fields' => 'ids',
+			)
+		);
 
-		if (empty($existing_attachment)) {
-			$filetype = wp_check_filetype($filename);
+		if ( empty( $existing_attachment ) ) {
+			$filetype   = wp_check_filetype( $filename );
 			$attachment = array(
 				'guid' => $filepath,
 				'post_mime_type' => $filetype['type'],
-				'post_title' => preg_replace('/\.[^.]+$/', '', $filename),
+				'post_title' => preg_replace( '/\.[^.]+$/', '', $filename ),
 				'post_content' => '',
-				'post_status' => 'inherit'
+				'post_status' => 'inherit',
 			);
-			$attach_id = wp_insert_attachment($attachment, $filepath, $post_id);
+			$attach_id  = wp_insert_attachment( $attachment, $filepath, $post_id );
 		} else {
 			$attach_id = $existing_attachment[0];
 		}
-		// @TODO: Check for attachment creation errors                        
+		// @TODO: Check for attachment creation errors
 		// @TODO: Make it work with Asyncify
 		// Generate and update attachment metadata
 		// if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
@@ -986,20 +988,20 @@ class WP_Entity_Importer {
 		// Run standard core filters
 		$comment['comment_post_ID'] = $post_id;
 		// @TODO: How to handle missing fields? Use sensible defaults? What defaults?
-		if(!isset($comment['comment_author_IP'])) {
+		if ( ! isset( $comment['comment_author_IP'] ) ) {
 			$comment['comment_author_IP'] = '';
 		}
-		if(!isset($comment['comment_author_url'])) {
+		if ( ! isset( $comment['comment_author_url'] ) ) {
 			$comment['comment_author_url'] = '';
 		}
-		if(!isset($comment['comment_author_email'])) {
+		if ( ! isset( $comment['comment_author_email'] ) ) {
 			$comment['comment_author_email'] = '';
 		}
-		if(!isset($comment['comment_date'])) {
-			$comment['comment_date'] = date('Y-m-d H:i:s');
+		if ( ! isset( $comment['comment_date'] ) ) {
+			$comment['comment_date'] = date( 'Y-m-d H:i:s' );
 		}
 
-		$comment                    = wp_filter_comment( $comment );
+		$comment = wp_filter_comment( $comment );
 		// wp_insert_comment expects slashed data
 		$comment_id                               = wp_insert_comment( wp_slash( $comment ) );
 		$this->mapping['comment'][ $original_id ] = $comment_id;
@@ -1067,8 +1069,8 @@ class WP_Entity_Importer {
 	 * @return int|bool Existing comment ID if it exists, false otherwise.
 	 */
 	protected function comment_exists( $data ) {
-		$comment_date = $data['comment_date'] ?? date('Y-m-d H:i:s');
-		$exists_key = sha1( $data['comment_author'] . ':' . $comment_date );
+		$comment_date = $data['comment_date'] ?? date( 'Y-m-d H:i:s' );
+		$exists_key   = sha1( $data['comment_author'] . ':' . $comment_date );
 
 		// Constant-time lookup if we prefilled
 		if ( $this->options['prefill_existing_comments'] ) {

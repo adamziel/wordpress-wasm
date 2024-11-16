@@ -21,7 +21,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	public function __construct( $html, $base_url_string = null ) {
 		parent::__construct( $html );
 		$this->base_url_string = $base_url_string;
-		$this->base_url_object = $base_url_string ? WP_URL::parse($base_url_string) : null;
+		$this->base_url_object = $base_url_string ? WP_URL::parse( $base_url_string ) : null;
 	}
 
 	public function get_updated_html(): string {
@@ -198,34 +198,34 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	}
 
 	/**
-	 * Rewrites the components of the currently matched URL from ones 
+	 * Rewrites the components of the currently matched URL from ones
 	 * provided in $from_url to ones specified in $to_url.
-	 * 
+	 *
 	 * It preserves the relative nature of the matched URL.
-	 * 
+	 *
 	 * @TODO: Should this method live in this class? It's specific to the import process
 	 *        and the URL rewriting logic and has knowledge about the quirks of detecting
 	 *        relative URLs in text nodes. On the other hand, the detection is performed
 	 *        by this WP_URL_In_Text_Processor class so maybe the two do go hand in hand?
 	 */
 	function rewrite_url_components( URL $to_url ) {
-		$from_url = url_matches($this->get_parsed_url(), $this->base_url_string)? $this->base_url_object : $this->get_parsed_url();
-		
+		$from_url = url_matches( $this->get_parsed_url(), $this->base_url_string ) ? $this->base_url_object : $this->get_parsed_url();
+
 		$updated_url = clone $this->get_parsed_url();
 
 		$updated_url->hostname = $to_url->hostname;
 		$updated_url->protocol = $to_url->protocol;
-		$updated_url->port = $to_url->port;
-	
+		$updated_url->port     = $to_url->port;
+
 		// Update the pathname if needed.
 		$from_pathname = $from_url->pathname;
-		$to_pathname = $to_url->pathname;
+		$to_pathname   = $to_url->pathname;
 		if ( $from_pathname !== $to_pathname ) {
 			if ( $from_pathname[ strlen( $from_pathname ) - 1 ] === '/' ) {
 				$from_pathname = substr( $from_pathname, 0, strlen( $from_pathname ) - 1 );
 			}
 			$from_pathname_with_trailing_slash = $from_pathname === '/' ? $from_pathname : $from_pathname . '/';
-	
+
 			$decoded_matched_pathname = urldecode_n(
 				$updated_url->pathname,
 				strlen( $from_pathname_with_trailing_slash )
@@ -233,10 +233,10 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			/**
 			 * If there's nothing to carry over from the original pathname,
 			 * use the rewritten pathname as is.
-			 * 
+			 *
 			 * @TODO: Document this behavior in a human-readable way.
 			 */
-			if(strlen($decoded_matched_pathname) >= strlen($from_pathname_with_trailing_slash)) {
+			if ( strlen( $decoded_matched_pathname ) >= strlen( $from_pathname_with_trailing_slash ) ) {
 				$updated_url->pathname = $to_pathname;
 			} else {
 				// Otherwise, add a trailing slash to the target pathname part and
@@ -245,7 +245,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 					$to_pathname = substr( $to_pathname, 0, strlen( $to_pathname ) - 1 );
 				}
 				$to_pathname_with_trailing_slash = $to_pathname === '/' ? $to_pathname : $to_pathname . '/';
-				$updated_url->pathname =
+				$updated_url->pathname           =
 					$to_pathname_with_trailing_slash .
 						substr(
 							$decoded_matched_pathname,
@@ -274,7 +274,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			//        doubly verify the logic.
 			return false;
 		}
-	
+
 		$is_relative = (
 			// The URL-rewriting specific logic. We make an assumption that only
 			// absolute URLs are detected in text nodes.
@@ -289,7 +289,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			$this->set_raw_url( $new_raw_url );
 			return true;
 		}
-		
+
 		$new_relative_url = $updated_url->pathname;
 		if ( $updated_url->search !== '' ) {
 			$new_relative_url .= $updated_url->search;
@@ -297,7 +297,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 		if ( $updated_url->hash !== '' ) {
 			$new_relative_url .= $updated_url->hash;
 		}
-		
+
 		$this->set_raw_url( $new_relative_url );
 		return true;
 	}

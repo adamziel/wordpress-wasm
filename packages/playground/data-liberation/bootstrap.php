@@ -49,6 +49,8 @@ require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
 require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
+require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
+require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';

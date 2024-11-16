@@ -11,8 +11,8 @@ class WP_Markdown_Directory_Tree_Reader {
 	private $entity;
 
 	private $pending_directory_index;
-	private $pending_files      = array();
-	private $parent_ids         = array();
+	private $pending_files = array();
+	private $parent_ids    = array();
 	private $next_post_id;
 
 	public function __construct( $root_dir, $first_post_id ) {
@@ -38,15 +38,15 @@ class WP_Markdown_Directory_Tree_Reader {
 				if ( false === $this->pending_directory_index ) {
 					// No directory index candidate – let's create a fake page
 					// just to have something in the page tree.
-					$markdown = '';
-					$source_path     = $dir->getPathName();
+					$markdown    = '';
+					$source_path = $dir->getPathName();
 				} else {
-					$markdown = file_get_contents( $this->pending_directory_index->getRealPath() );
-					$source_path     = $this->pending_directory_index->getRealPath();
+					$markdown    = file_get_contents( $this->pending_directory_index->getRealPath() );
+					$source_path = $this->pending_directory_index->getRealPath();
 				}
 				$post_id = $this->next_post_id;
 				++$this->next_post_id;
-				$this->entity = $this->markdown_to_post_entity(
+				$this->entity                  = $this->markdown_to_post_entity(
 					array(
 						'markdown' => $markdown,
 						'source_path' => $source_path,
@@ -129,16 +129,16 @@ class WP_Markdown_Directory_Tree_Reader {
 		/**
 		 * Technically `source_path` isn't a part of the WordPress post object,
 		 * but we need it to resolve relative URLs in the imported content.
-		 * 
+		 *
 		 * This path is relative to the root directory traversed by this class.
 		 */
-		if( !empty($options['source_path']) ) {
+		if ( ! empty( $options['source_path'] ) ) {
 			$source_path = $options['source_path'];
-			$root_dir = $this->file_visitor->get_root_dir();
-			if(str_starts_with($source_path, $root_dir)) {
-				$source_path = substr($source_path, strlen($root_dir));
+			$root_dir    = $this->file_visitor->get_root_dir();
+			if ( str_starts_with( $source_path, $root_dir ) ) {
+				$source_path = substr( $source_path, strlen( $root_dir ) );
 			}
-			$source_path = ltrim($source_path, '/');
+			$source_path                = ltrim( $source_path, '/' );
 			$entity_data['source_path'] = $source_path;
 		}
 
@@ -155,7 +155,7 @@ class WP_Markdown_Directory_Tree_Reader {
 		if ( $options['parent_id'] ) {
 			$entity_data['post_parent'] = $options['parent_id'];
 		}
-		return new WP_Imported_Entity('post', $entity_data);
+		return new WP_Imported_Entity( 'post', $entity_data );
 	}
 
 	private function next_file() {
