@@ -98,25 +98,7 @@ if (!function_exists('esc_url')) {
 
 if (!function_exists('wp_kses_uri_attributes')) {
 	function wp_kses_uri_attributes() {
-		return array(
-			'action',
-			'archive',
-			'background',
-			'cite',
-			'classid',
-			'codebase',
-			'data',
-			'formaction',
-			'href',
-			'icon',
-			'longdesc',
-			'manifest',
-			'poster',
-			'profile',
-			'src',
-			'usemap',
-			'xmlns',
-		);
+		return array();
 	}
 }
 
