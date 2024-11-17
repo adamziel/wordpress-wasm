@@ -11,16 +11,11 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHTTP/HttpError.ph
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHTTP/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHTTP/Client.php';
 
-require_once __DIR__ . '/src/stream-api/WP_Stream_Processor.php';
-require_once __DIR__ . '/src/stream-api/WP_Byte_Stream_State.php';
-require_once __DIR__ . '/src/stream-api/WP_Byte_Stream.php';
-require_once __DIR__ . '/src/stream-api/WP_Processor_Byte_Stream.php';
-require_once __DIR__ . '/src/stream-api/WP_File_Reader.php';
-require_once __DIR__ . '/src/stream-api/WP_GZ_File_Reader.php';
-require_once __DIR__ . '/src/stream-api/WP_Remote_File_Reader.php';
-require_once __DIR__ . '/src/stream-api/WP_Remote_File_Ranged_Reader.php';
-require_once __DIR__ . '/src/stream-api/WP_Stream_Paused_State.php';
-require_once __DIR__ . '/src/stream-api/WP_Stream_Chain.php';
+require_once __DIR__ . '/src/byte-readers/WP_Byte_Reader.php';
+require_once __DIR__ . '/src/byte-readers/WP_File_Reader.php';
+require_once __DIR__ . '/src/byte-readers/WP_GZ_File_Reader.php';
+require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
+require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
 
 if(!class_exists('WP_HTML_Tag_Processor')) {
 	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-token.php";
@@ -47,13 +42,15 @@ require_once __DIR__ . '/src/block-markup/WP_URL.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
-require_once __DIR__ . '/src/wxr/WP_WXR_URL_Rewrite_Processor.php';
 require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
 require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
 require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
 require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
+
+require_once __DIR__ . '/src/compression/GZipReader.php';
+
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';

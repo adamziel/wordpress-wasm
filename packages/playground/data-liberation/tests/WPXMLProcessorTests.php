@@ -1736,10 +1736,10 @@ class WPXMLProcessorTests extends TestCase {
 		$processor->next_tag();
 		$this->assertEquals( 'first_child', $processor->get_tag(), 'Did not find a tag.' );
 		$paused_state = $processor->pause();
-		$this->assertEquals( 10, $paused_state['position_in_the_input_stream'], 'Wrong position in the input stream exported.' );
+		$this->assertEquals( 10, $paused_state['token_byte_offset_in_the_input_stream'], 'Wrong position in the input stream exported.' );
 
 		$resumed = WP_XML_Processor::create_for_streaming(
-			substr( $xml, $paused_state['position_in_the_input_stream'] )
+			substr( $xml, $paused_state['token_byte_offset_in_the_input_stream'] )
 		);
 		$resumed->resume( $paused_state );
 		$this->assertEquals( 'first_child', $resumed->get_tag(), 'Did not find a tag.' );

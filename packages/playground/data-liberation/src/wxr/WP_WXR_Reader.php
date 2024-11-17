@@ -124,14 +124,7 @@
  *
  * @since WP_VERSION
  */
-class WP_WXR_Reader extends WP_Byte_Stream {
-	// @TODO: We're faking this is a byte stream. It only accepts
-	//        bytes as an input, but doesn't actually emit any bytes.
-	//        Maybe that's fine, though? Let's spend some more time
-	//        thinking about this.
-	protected function generate_next_chunk(): bool {
-		return $this->next_entity();
-	}
+class WP_WXR_Reader {
 
 	/**
 	 * The XML processor used to parse the WXR file.
@@ -165,6 +158,14 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 * @var array
 	 */
 	private $entity_data;
+
+	/**
+	 * The byte offset of the current entity in the original input stream.
+	 *
+	 * @since WP_VERSION
+	 * @var int
+	 */
+	private $entity_byte_offset;
 
 	/**
 	 * Whether the current entity has been emitted.
@@ -205,6 +206,26 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 * @var string
 	 */
 	private $text_buffer = '';
+
+	/**
+	 * Stream to pull bytes from when the input bytes are exhausted.
+	 *
+	 * @var WP_Byte_Reader
+	 */
+	private $upstream;
+
+	/**
+	 * Mapping of WXR tags representing site options to their WordPress options names.
+	 * These tags are only matched if they are children of the <channel> element.
+	 *
+	 * @since WP_VERSION
+	 * @var array
+	 */
+	const KNOWN_SITE_OPTIONS = array(
+		'wp:base_blog_url' => 'home',
+		'wp:base_site_url' => 'siteurl',
+		'title' => 'blogname',
+	);
 
 	/**
 	 * Mapping of WXR tags to their corresponding entity types and field mappings.
@@ -313,73 +334,31 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 		),
 	);
 
-	/**
-	 * Creates a new WXR reader from a string.
-	 *
-	 * @since WP_VERSION
-	 *
-	 * @param string $wxr_bytes The WXR content as a string.
-	 * @return WP_WXR_Reader The new reader instance.
-	 */
-	public static function create_from_string( $wxr_bytes = '' ) {
-		return new WP_WXR_Reader( WP_XML_Processor::create_from_string( $wxr_bytes ) );
-	}
-
-	/**
-	 * Creates a new WXR reader for streaming input.
-	 *
-	 * @since WP_VERSION
-	 *
-	 * @param string $wxr_bytes Optional initial WXR content.
-	 * @return WP_WXR_Reader The new reader instance.
-	 */
-	public static function create_for_streaming( $wxr_bytes = '' ) {
-		return new WP_WXR_Reader( WP_XML_Processor::create_for_streaming( $wxr_bytes ) );
-	}
-
-	/**
-	 * Iterates over entities parsed from a WXR byte stream.
-	 * 
-	 * @TODO: Consider a generic interface for chaining streams like
-	 *        this.
-	 */
-	public function entities_from( WP_File_Reader $bytes ) {
-		$reader = $this;
-		while ( true ) {
-			if ( false === $bytes->next_bytes() ) {
-				$reader->input_finished();
-			} else {
-				$reader->append_bytes( $bytes->get_bytes() );
-			}
-			while ( $reader->next_entity() ) {
-				yield $reader->get_entity();
-			}
-			if ( $reader->get_last_error() ) {
-				// @TODO: Handle errors.
-				var_dump( $reader->get_last_error() );
-				die();
-			}
-			if ( $reader->is_finished() ) {
-				break;
-			}
-			if ( null === $bytes->get_bytes() ) {
-				// @TODO: Why do we need this? Why is_finished() isn't enough?
-				break;
-			}
-		}
-	}
-
 	public function pause() {
-		return [
+		$upstream_state = $this->upstream ? $this->upstream->pause() : null;
+		if ( $upstream_state ) {
+			// @TODO: Don't assume this specific key name. Find a way to generalize
+			//        this to, e.g., remote HTTP byte sources.
+			$upstream_state['offset_in_file'] = $this->entity_byte_offset;
+		}
+		return array(
 			'xml' => $this->xml->pause(),
+			'upstream' => $upstream_state,
 			'last_post_id' => $this->last_post_id,
 			'last_comment_id' => $this->last_comment_id,
-		];
+		);
 	}
 
 	public function resume( $paused_state ) {
+		if ( $paused_state['upstream'] ) {
+			if ( ! $this->upstream ) {
+				// @TODO: _doing_it_wrong()
+				return false;
+			}
+			$this->upstream->resume( $paused_state['upstream'] );
+		}
 		$this->xml->resume( $paused_state['xml'] );
-		$this->last_post_id = $paused_state['last_post_id'];
+		$this->last_post_id    = $paused_state['last_post_id'];
 		$this->last_comment_id = $paused_state['last_comment_id'];
 		$this->next_entity();
 	}
@@ -391,9 +370,8 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 *
 	 * @param WP_XML_Processor $xml The XML processor to use.
 	 */
-	protected function __construct( $xml = '' ) {
-		$this->xml = $xml;
-		parent::__construct();
+	public function __construct() {
+		$this->xml = WP_XML_Processor::create_for_streaming();
 	}
 
 	/**
@@ -459,7 +437,7 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 *
 	 * @param string $bytes The bytes to append.
 	 */
-	public function append_bytes( string $bytes, $context = null ) {
+	public function append_bytes( string $bytes ): void {
 		$this->xml->append_bytes( $bytes );
 	}
 
@@ -513,10 +491,35 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 * @return bool Whether another entity was found.
 	 */
 	public function next_entity() {
-		if (
-			$this->xml->is_finished() ||
-			$this->xml->is_paused_at_incomplete_input()
-		) {
+		while ( true ) {
+			if ( $this->read_next_entity() ) {
+				return true;
+			}
+			// If the read failed because of incomplete input data,
+			// try pulling more bytes from upstream before giving up.
+			if ( $this->is_paused_at_incomplete_input() &&
+				$this->pull_upstream_bytes()
+			) {
+				continue;
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * Advances to the next entity in the WXR file.
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @return bool Whether another entity was found.
+	 */
+	private function read_next_entity() {
+		if ( $this->xml->is_finished() ) {
+			$this->after_entity();
+			return false;
+		}
+
+		if ( $this->xml->is_paused_at_incomplete_input() ) {
 			return false;
 		}
 
@@ -598,6 +601,9 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 				// the previous entity is finished.
 				if ( $this->xml->is_tag_opener() ) {
 					$this->set_entity_tag( $tag );
+					if ( array_key_exists( $this->xml->get_tag(), static::KNOWN_ENITIES ) ) {
+						$this->entity_byte_offset = $this->get_current_byte_offset();
+					}
 				}
 				continue;
 			}
@@ -645,6 +651,15 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 					$this->last_opener_attributes[ $name ] = $this->xml->get_attribute( $name );
 				}
 				$this->text_buffer = '';
+
+				$is_site_option_opener = (
+					count( $this->xml->get_breadcrumbs() ) === 3 &&
+					$this->xml->matches_breadcrumbs( array( 'rss', 'channel', '*' ) ) &&
+					array_key_exists( $this->xml->get_tag(), static::KNOWN_SITE_OPTIONS )
+				);
+				if ( $is_site_option_opener ) {
+					$this->entity_byte_offset = $this->get_current_byte_offset();
+				}
 				continue;
 			}
 
@@ -725,7 +740,8 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 		/**
 		 * Emit the last unemitted entity after parsing all the data.
 		 */
-		if ( $this->is_finished() &&
+		if (
+			$this->is_finished() &&
 			$this->entity_type &&
 			! $this->entity_finished
 		) {
@@ -743,23 +759,56 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 	 * @return bool Whether a site_option entity was emitted.
 	 */
 	private function parse_site_option() {
-		$known_options = array(
-			'wp:base_blog_url' => 'home',
-			'wp:base_site_url' => 'siteurl',
-			'title' => 'blogname',
-		);
-
-		if ( ! array_key_exists( $this->xml->get_tag(), $known_options ) ) {
+		if ( ! array_key_exists( $this->xml->get_tag(), static::KNOWN_SITE_OPTIONS ) ) {
 			return false;
 		}
 
 		$this->entity_type = 'site_option';
 		$this->entity_data = array(
-			'option_name' => $known_options[ $this->xml->get_tag() ],
+			'option_name' => static::KNOWN_SITE_OPTIONS[ $this->xml->get_tag() ],
 			'option_value' => $this->text_buffer,
 		);
 		$this->emit_entity();
 		return true;
+	}
+
+	/**
+	 * Connects a byte stream to automatically pull bytes from once
+	 * the last input chunk have been processed.
+	 *
+	 * @param WP_Byte_Reader $stream The upstream stream.
+	 */
+	public function connect_upstream( WP_Byte_Reader $stream ) {
+		$this->upstream = $stream;
+	}
+
+	/**
+	 * Appends another chunk of bytes from upstream if available.
+	 */
+	private function pull_upstream_bytes() {
+		if ( ! $this->upstream ) {
+			return false;
+		}
+		if ( ! $this->upstream->next_bytes() ) {
+			if ( $this->upstream->is_finished() ) {
+				$this->input_finished();
+			}
+			return false;
+		}
+		$this->append_bytes( $this->upstream->get_bytes() );
+		return true;
+	}
+
+	/**
+	 * Returns current's XML token offset in the input stream.
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @return int The current byte offset.
+	 */
+	private function get_current_byte_offset() {
+		$paused_xml_state = $this->xml->pause();
+		return $paused_xml_state['token_byte_offset_in_the_input_stream'];
 	}
 
 	/**
@@ -812,5 +861,6 @@ class WP_WXR_Reader extends WP_Byte_Stream {
 		$this->entity_finished        = false;
 		$this->text_buffer            = '';
 		$this->last_opener_attributes = array();
+		$this->entity_byte_offset     = null;
 	}
 }

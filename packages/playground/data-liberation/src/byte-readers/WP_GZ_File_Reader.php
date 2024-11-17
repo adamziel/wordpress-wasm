@@ -2,7 +2,11 @@
 
 class WP_GZ_File_Reader extends WP_File_Reader {
 
-	protected function generate_next_chunk(): bool {
+	public function next_bytes(): bool {
+		$this->output_bytes = '';
+		if ( $this->last_error || $this->is_finished() ) {
+			return false;
+		}
 		if ( ! $this->file_pointer ) {
 			$this->file_pointer = gzopen( $this->file_path, 'r' );
 			if ( $this->offset_in_file ) {
@@ -15,8 +19,8 @@ class WP_GZ_File_Reader extends WP_File_Reader {
 			$this->state->finish();
 			return false;
 		}
-		$this->offset_in_file      += strlen( $bytes );
-		$this->state->output_bytes .= $bytes;
+		$this->offset_in_file += strlen( $bytes );
+		$this->output_bytes   .= $bytes;
 		return true;
 	}
 }

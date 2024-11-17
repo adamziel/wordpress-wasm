@@ -664,58 +664,19 @@ class WP_XML_Processor {
 		return new WP_XML_Processor( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
 	}
 
-	public static function create_stream_processor( $node_visitor_callback ) {
-		$xml_processor = WP_XML_Processor::create_for_streaming( '' );
-		// Don't auto-flush the processed bytes. We'll do that manually.
-		$xml_processor->memory_budget = null;
-		return new ProcessorByteStream(
-			$xml_processor,
-			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
-				$new_bytes = $state->consume_input_bytes();
-				if ( null !== $new_bytes ) {
-					$xml_processor->append_bytes( $new_bytes );
-				}
-				$tokens_found = 0;
-				while ( $xml_processor->next_token() ) {
-					++$tokens_found;
-					$node_visitor_callback( $xml_processor );
-				}
-
-				$buffer = '';
-				if ( $tokens_found > 0 ) {
-					$buffer .= $xml_processor->flush_processed_xml();
-				} elseif (
-					$tokens_found === 0 &&
-					! $xml_processor->is_paused_at_incomplete_input() &&
-					$xml_processor->get_current_depth() === 0
-				) {
-					$buffer .= $xml_processor->flush_processed_xml();
-					$buffer .= $xml_processor->get_updated_xml();
-					$state->finish();
-				}
-
-				if ( ! strlen( $buffer ) ) {
-					return false;
-				}
-
-				$state->output_bytes = $buffer;
-				return true;
-			}
-		);
-	}
-
 	/**
 	 * Pauses the processor and returns an array of the information needed to resume.
 	 *
 	 * @TODO:
 	 * – What to do with bookmarks when pausing?
-	 * – Include all the information needed to resume in XML bookmarks
+	 * – Consider including all the below information in internal bookmarks. Consider using a logic
+	 *   similar to resume() in seek().
 	 * – Consider a WP_XML_Processor_Paused_State or a WP_XML_Processor_Bookmark class.
 	 * – Should we flush the enqueued lexical updates first?
 	 */
 	public function pause() {
 		return array(
-			'position_in_the_input_stream' => $this->bytes_already_forgotten + $this->token_starts_at,
+			'token_byte_offset_in_the_input_stream' => $this->bytes_already_forgotten + $this->token_starts_at,
 			'bytes_already_forgotten' => $this->bytes_already_forgotten,
 			'parser_context' => $this->parser_context,
 			'stack_of_open_elements' => $this->stack_of_open_elements,
@@ -781,7 +742,7 @@ class WP_XML_Processor {
 			);
 			return false;
 		}
-		$this->xml                .= $next_chunk;
+		$this->xml .= $next_chunk;
 		if ( $this->parser_state === self::STATE_INCOMPLETE_INPUT ) {
 			$this->parser_state = self::STATE_READY;
 		}
@@ -804,6 +765,11 @@ class WP_XML_Processor {
 	 */
 	public function input_finished() {
 		$this->expecting_more_input = false;
+		$this->parser_state         = self::STATE_READY;
+	}
+
+	public function is_expecting_more_input() {
+		return $this->expecting_more_input;
 	}
 
 	public function flush_processed_xml() {
