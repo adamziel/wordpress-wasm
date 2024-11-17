@@ -124,7 +124,14 @@
  *
  * @since WP_VERSION
  */
-class WP_WXR_Reader {
+class WP_WXR_Reader extends WP_Byte_Stream {
+	// @TODO: We're faking this is a byte stream. It only accepts
+	//        bytes as an input, but doesn't actually emit any bytes.
+	//        Maybe that's fine, though? Let's spend some more time
+	//        thinking about this.
+	protected function generate_next_chunk(): bool {
+		return $this->next_entity();
+	}
 
 	/**
 	 * The XML processor used to parse the WXR file.
@@ -332,9 +339,12 @@ class WP_WXR_Reader {
 
 	/**
 	 * Iterates over entities parsed from a WXR byte stream.
+	 * 
+	 * @TODO: Consider a generic interface for chaining streams like
+	 *        this.
 	 */
-	public static function stream_from( WP_File_Byte_Stream $bytes ) {
-		$reader = static::create_for_streaming();
+	public function entities_from( WP_File_Reader $bytes ) {
+		$reader = $this;
 		while ( true ) {
 			if ( false === $bytes->next_bytes() ) {
 				$reader->input_finished();
@@ -359,6 +369,21 @@ class WP_WXR_Reader {
 		}
 	}
 
+	public function pause() {
+		return [
+			'xml' => $this->xml->pause(),
+			'last_post_id' => $this->last_post_id,
+			'last_comment_id' => $this->last_comment_id,
+		];
+	}
+
+	public function resume( $paused_state ) {
+		$this->xml->resume( $paused_state['xml'] );
+		$this->last_post_id = $paused_state['last_post_id'];
+		$this->last_comment_id = $paused_state['last_comment_id'];
+		$this->next_entity();
+	}
+
 	/**
 	 * Constructor.
 	 *
@@ -368,6 +393,7 @@ class WP_WXR_Reader {
 	 */
 	protected function __construct( $xml = '' ) {
 		$this->xml = $xml;
+		parent::__construct();
 	}
 
 	/**
@@ -433,7 +459,7 @@ class WP_WXR_Reader {
 	 *
 	 * @param string $bytes The bytes to append.
 	 */
-	public function append_bytes( string $bytes ) {
+	public function append_bytes( string $bytes, $context = null ) {
 		$this->xml->append_bytes( $bytes );
 	}
 

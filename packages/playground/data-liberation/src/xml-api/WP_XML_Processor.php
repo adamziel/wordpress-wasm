@@ -22,6 +22,9 @@
  * starting with 1.0, however, because most that's what most WXR
  * files declare.
  *
+ * @TODO: Scrutinize pause() and resume() methods. Can we avoid exposing string
+ *        indices and other internal state?
+ *
  * @TODO: Track specific error states, expose informative messages, line
  *        numbers, indexes, and other debugging info.
  *
@@ -396,6 +399,15 @@ class WP_XML_Processor {
 	public $bytes_already_parsed = 0;
 
 	/**
+	 * How many XML bytes from the original stream have already been removed
+	 * from the memory.
+	 *
+	 * @since WP_VERSION
+	 * @var int
+	 */
+	public $bytes_already_forgotten = 0;
+
+	/**
 	 * Byte offset in input document where current token starts.
 	 *
 	 * Example:
@@ -632,8 +644,6 @@ class WP_XML_Processor {
 	 */
 	public $stack_of_open_elements = array();
 
-	public $had_previous_chunks = false;
-
 	/**
 	 *
 	 */
@@ -647,41 +657,11 @@ class WP_XML_Processor {
 		return $processor;
 	}
 
-	public static function create_for_streaming( $xml, $known_definite_encoding = 'UTF-8' ) {
+	public static function create_for_streaming( $xml = '', $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
 		return new WP_XML_Processor( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
-	}
-
-	/**
-	 * Constructor.
-	 *
-	 * Do not use this method. Use the static creator methods instead.
-	 *
-	 * @access private
-	 *
-	 * @since 6.4.0
-	 *
-	 * @see WP_XML_Processor::create_fragment()
-	 * @see WP_XML_Processor::create_stream()
-	 *
-	 * @param string      $xml            XML to process.
-	 * @param string|null $use_the_static_create_methods_instead This constructor should not be called manually.
-	 */
-	protected function __construct( $xml, $use_the_static_create_methods_instead = null ) {
-		if ( self::CONSTRUCTOR_UNLOCK_CODE !== $use_the_static_create_methods_instead ) {
-			_doing_it_wrong(
-				__METHOD__,
-				sprintf(
-					/* translators: %s: WP_XML_Processor::create_fragment(). */
-					__( 'Call %s to create an XML Processor instead of calling the constructor directly.' ),
-					'<code>WP_XML_Processor::create_fragment()</code>'
-				),
-				'6.4.0'
-			);
-		}
-		$this->xml = $xml;
 	}
 
 	public static function create_stream_processor( $node_visitor_callback ) {
@@ -724,28 +704,67 @@ class WP_XML_Processor {
 		);
 	}
 
-	/*
-	@TODO: implement these methods for re-entrancy
-
+	/**
+	 * Pauses the processor and returns an array of the information needed to resume.
+	 *
+	 * @TODO:
+	 * – What to do with bookmarks when pausing?
+	 * – Include all the information needed to resume in XML bookmarks
+	 * – Consider a WP_XML_Processor_Paused_State or a WP_XML_Processor_Bookmark class.
+	 * – Should we flush the enqueued lexical updates first?
+	 */
 	public function pause() {
 		return array(
-			'xml' => $this->xml,
-			// @TODO: Include all the information below in the bookmark:
-			'bytes_already_parsed' => $this->token_starts_at,
-			'breadcrumbs' => $this->get_breadcrumbs(),
+			'position_in_the_input_stream' => $this->bytes_already_forgotten + $this->token_starts_at,
+			'bytes_already_forgotten' => $this->bytes_already_forgotten,
 			'parser_context' => $this->parser_context,
 			'stack_of_open_elements' => $this->stack_of_open_elements,
+			'expecting_more_input' => $this->expecting_more_input,
 		);
 	}
 
-	public function resume( $paused ) {
-		$this->xml                    = $paused['xml'];
-		$this->stack_of_open_elements = $paused['stack_of_open_elements'];
-		$this->parser_context         = $paused['parser_context'];
-		$this->bytes_already_parsed   = $paused['bytes_already_parsed'];
-		$this->parse_next_token();
+	/**
+	 * @TODO:
+	 * – Validate the paused state, return false if it's invalid.
+	 */
+	public function resume( $paused_state ) {
+		$this->bytes_already_parsed    = 0;
+		$this->bytes_already_forgotten = $paused_state['bytes_already_forgotten'];
+		$this->stack_of_open_elements  = $paused_state['stack_of_open_elements'];
+		$this->parser_context          = $paused_state['parser_context'];
+		$this->expecting_more_input    = $paused_state['expecting_more_input'];
+		$this->next_token();
 	}
-	*/
+
+	/**
+	 * Constructor.
+	 *
+	 * Do not use this method. Use the static creator methods instead.
+	 *
+	 * @access private
+	 *
+	 * @since 6.4.0
+	 *
+	 * @see WP_XML_Processor::create_fragment()
+	 * @see WP_XML_Processor::create_stream()
+	 *
+	 * @param string      $xml            XML to process.
+	 * @param string|null $use_the_static_create_methods_instead This constructor should not be called manually.
+	 */
+	protected function __construct( $xml, $use_the_static_create_methods_instead = null ) {
+		if ( self::CONSTRUCTOR_UNLOCK_CODE !== $use_the_static_create_methods_instead ) {
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf(
+					/* translators: %s: WP_XML_Processor::create_fragment(). */
+					__( 'Call %s to create an XML Processor instead of calling the constructor directly.' ),
+					'<code>WP_XML_Processor::create_fragment()</code>'
+				),
+				'6.4.0'
+			);
+		}
+		$this->xml = $xml;
+	}
 
 	/**
 	 * Wipes out the processed XML and appends the next chunk of XML to
@@ -763,7 +782,6 @@ class WP_XML_Processor {
 			return false;
 		}
 		$this->xml                .= $next_chunk;
-		$this->had_previous_chunks = true;
 		if ( $this->parser_state === self::STATE_INCOMPLETE_INPUT ) {
 			$this->parser_state = self::STATE_READY;
 		}
@@ -802,7 +820,6 @@ class WP_XML_Processor {
 		$this->bookmarks             = array();
 		$this->lexical_updates       = array();
 		$this->seek_count            = 0;
-		$this->had_previous_chunks   = true;
 		$this->bytes_already_parsed -= $unreferenced_bytes;
 		if ( null !== $this->token_starts_at ) {
 			$this->token_starts_at -= $unreferenced_bytes;
@@ -813,6 +830,7 @@ class WP_XML_Processor {
 		if ( null !== $this->text_starts_at ) {
 			$this->text_starts_at -= $unreferenced_bytes;
 		}
+		$this->bytes_already_forgotten += $unreferenced_bytes;
 		return $flushed_bytes;
 	}
 
@@ -1576,7 +1594,7 @@ class WP_XML_Processor {
 			 */
 			if (
 				0 === $at &&
-				! $this->had_previous_chunks &&
+				0 === $this->bytes_already_forgotten &&
 				! $this->is_closing_tag &&
 				'?' === $xml[ $at + 1 ] &&
 				'x' === $xml[ $at + 2 ] &&

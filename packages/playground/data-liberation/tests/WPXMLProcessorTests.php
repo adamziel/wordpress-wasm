@@ -1718,4 +1718,33 @@ class WPXMLProcessorTests extends TestCase {
 		$this->assertEquals( '>', $processor->get_modifiable_text(), 'Did not find the expected text.' );
 	}
 
+	/**
+	 * @ticket 61365
+	 *
+	 * @covers WP_XML_Processor::pause
+	 * @covers WP_XML_Processor::resume
+	 */
+	public function test_pause_and_resume() {
+		$xml = <<<XML
+			<root>
+				<first_child>Hello there</first_child>
+				<second_child>I am a second child</second_child>
+			</root>
+		XML;
+		$processor = WP_XML_Processor::create_for_streaming( $xml );
+		$processor->next_tag();
+		$processor->next_tag();
+		$this->assertEquals( 'first_child', $processor->get_tag(), 'Did not find a tag.' );
+		$paused_state = $processor->pause();
+		$this->assertEquals( 10, $paused_state['position_in_the_input_stream'], 'Wrong position in the input stream exported.' );
+
+		$resumed = WP_XML_Processor::create_for_streaming(
+			substr( $xml, $paused_state['position_in_the_input_stream'] )
+		);
+		$resumed->resume( $paused_state );
+		$this->assertEquals( 'first_child', $resumed->get_tag(), 'Did not find a tag.' );
+		$resumed->next_token();
+		$this->assertEquals( 'Hello there', $resumed->get_modifiable_text(), 'Did not find the expected text.' );
+	}
+
 }

@@ -1,6 +1,6 @@
 <?php
 
-class WP_File_Byte_Stream extends WP_Byte_Stream {
+class WP_File_Reader extends WP_Byte_Stream {
 
 	protected $file_path;
 	protected $chunk_size;
@@ -14,6 +14,10 @@ class WP_File_Byte_Stream extends WP_Byte_Stream {
 		$this->append_eof();
 	}
 
+	/**
+	 * Really these are just `tell()` and `seek()` operations, only the state is more
+	 * involved than a simple offset. Hmm.
+	 */
 	public function pause() {
 		return array(
 			'file_path' => $this->file_path,

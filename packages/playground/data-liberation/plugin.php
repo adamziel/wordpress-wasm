@@ -30,7 +30,6 @@ add_filter('wp_kses_uri_attributes', function() {
 // var_dump(glob('/wordpress/wp-content/plugins/data-liberation/../../docs/site/static/img/*'));
 // die("X");
 add_action('init', function() {
-    // return;
     // echo '<plaintext>';
     // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
     // $wxr_path = __DIR__ . '/tests/wxr/woocommerce-demo-products.xml';
@@ -71,7 +70,7 @@ add_action('init', function() {
     } else {
         $wxr_entities_factory = function() use ($wxr_path) {
             return WP_WXR_Reader::stream_from(
-                new WP_File_Byte_Stream($wxr_path)
+                new WP_File_Reader($wxr_path)
             );
         };
         $wxr_importer = WP_Stream_Importer::create(

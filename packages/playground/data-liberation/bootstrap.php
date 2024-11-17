@@ -15,7 +15,10 @@ require_once __DIR__ . '/src/stream-api/WP_Stream_Processor.php';
 require_once __DIR__ . '/src/stream-api/WP_Byte_Stream_State.php';
 require_once __DIR__ . '/src/stream-api/WP_Byte_Stream.php';
 require_once __DIR__ . '/src/stream-api/WP_Processor_Byte_Stream.php';
-require_once __DIR__ . '/src/stream-api/WP_File_Byte_Stream.php';
+require_once __DIR__ . '/src/stream-api/WP_File_Reader.php';
+require_once __DIR__ . '/src/stream-api/WP_GZ_File_Reader.php';
+require_once __DIR__ . '/src/stream-api/WP_Remote_File_Reader.php';
+require_once __DIR__ . '/src/stream-api/WP_Remote_File_Ranged_Reader.php';
 require_once __DIR__ . '/src/stream-api/WP_Stream_Paused_State.php';
 require_once __DIR__ . '/src/stream-api/WP_Stream_Chain.php';
 
