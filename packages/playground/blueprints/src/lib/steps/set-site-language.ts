@@ -57,9 +57,8 @@ const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 		);
 	} else if (!wpVersionString.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
 		/**
-		 * If the provided WordPress version string isn't a major.minor
-		 * or major.minor.patch, the latest available WordPress build version
-		 * will be used instead.
+		 * If the WordPress version string isn't a major.minor or major.minor.patch,
+		 * the latest available WordPress build version will be used instead.
 		 */
 		wpVersion = LatestMinifiedWordPressVersion;
 	}
