@@ -350,6 +350,7 @@ class WP_WXR_Reader implements Iterator {
 	}
 
 	public function resume( $paused_state ) {
+		// @TODO: Validate the paused state.
 		if ( $paused_state['upstream'] ) {
 			if ( ! $this->upstream ) {
 				// @TODO: _doing_it_wrong()
