@@ -124,7 +124,7 @@
  *
  * @since WP_VERSION
  */
-class WP_WXR_Reader {
+class WP_WXR_Reader implements Iterator {
 
 	/**
 	 * The XML processor used to parse the WXR file.
@@ -862,5 +862,28 @@ class WP_WXR_Reader {
 		$this->text_buffer            = '';
 		$this->last_opener_attributes = array();
 		$this->entity_byte_offset     = null;
+	}
+
+	public function current(): object {
+		return $this->get_entity();
+	}
+
+	private $last_next_result = null;
+	public function next(): void {
+		// @TODO: Don't keep track of this. Just make sure the next_entity()
+		//        call will make the is_finished() true.
+		$this->last_next_result = $this->next_entity();
+	}
+
+	public function key(): int {
+		return 0;
+	}
+
+	public function valid(): bool {
+		return false !== $this->last_next_result && ! $this->is_finished() && ! $this->get_last_error();
+	}
+
+	public function rewind(): void {
+		// noop
 	}
 }

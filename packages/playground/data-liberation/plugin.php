@@ -51,15 +51,14 @@ add_action('init', function() {
     if('markdown' === $mode) {
         $docs_root = __DIR__ . '/../../docs/site';
         $docs_content_root = $docs_root . '/docs';
-        $markdown_entities_factory = function() use ($docs_content_root) {
-            $reader = new WP_Markdown_Directory_Tree_Reader(
+        $entity_iterator_factory = function() use ($docs_content_root) {
+            return new WP_Markdown_Directory_Tree_Reader(
                 $docs_content_root,
                 1000
             );
-            return $reader->generator();
         };
         $markdown_importer = WP_Markdown_Importer::create(
-            $markdown_entities_factory, [
+            $entity_iterator_factory, [
                 'source_site_url' => 'file://' . $docs_content_root,
                 'local_markdown_assets_root' => $docs_root,
                 'local_markdown_assets_url_prefix' => '@site/',
@@ -68,13 +67,13 @@ add_action('init', function() {
         $markdown_importer->frontload_assets();
         $markdown_importer->import_posts();
     } else {
-        $wxr_entities_factory = function() use ($wxr_path) {
-            return WP_WXR_Reader::stream_from(
-                new WP_File_Reader($wxr_path)
-            );
+        $entity_iterator_factory = function() use ($wxr_path) {
+            $wxr = new WP_WXR_Reader();
+            $wxr->connect_upstream(new WP_File_Reader($wxr_path));
+            return $wxr;
         };
         $wxr_importer = WP_Stream_Importer::create(
-            $wxr_entities_factory
+            $entity_iterator_factory
         );
         $wxr_importer->frontload_assets();
         $wxr_importer->import_posts();

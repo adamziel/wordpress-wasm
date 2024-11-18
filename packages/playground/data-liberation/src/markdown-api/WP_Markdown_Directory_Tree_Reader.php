@@ -6,7 +6,7 @@
  * data importing pipeline that's not specific to a single input format.
  */
 
-class WP_Markdown_Directory_Tree_Reader {
+class WP_Markdown_Directory_Tree_Reader implements Iterator {
 	private $file_visitor;
 	private $entity;
 
@@ -14,19 +14,11 @@ class WP_Markdown_Directory_Tree_Reader {
 	private $pending_files = array();
 	private $parent_ids    = array();
 	private $next_post_id;
+	private $is_finished = false;
 
 	public function __construct( $root_dir, $first_post_id ) {
 		$this->file_visitor = new WP_File_Visitor( realpath( $root_dir ) );
 		$this->next_post_id = $first_post_id;
-	}
-
-	public function generator() {
-		while ( true ) {
-			if ( false === $this->next_entity() ) {
-				break;
-			}
-			yield $this->entity;
-		}
 	}
 
 	public function next_entity() {
@@ -81,6 +73,7 @@ class WP_Markdown_Directory_Tree_Reader {
 				break;
 			}
 		}
+		$this->is_finished = true;
 		return false;
 	}
 
@@ -260,5 +253,25 @@ class WP_Markdown_Directory_Tree_Reader {
 				$p->get_string_index_after_current_token()
 			),
 		);
+	}
+
+	public function current(): object {
+		return $this->get_entity();
+	}
+
+	public function next(): void {
+		$this->next_entity();
+	}
+
+	public function key(): int {
+		return 0;
+	}
+
+	public function valid(): bool {
+		return ! $this->is_finished;
+	}
+
+	public function rewind(): void {
+		// noop
 	}
 }

@@ -13,7 +13,7 @@ class WP_Remote_File_Reader implements WP_Byte_Reader {
 	private $request;
 	private $current_chunk;
 	private $last_error;
-	private $is_finished;
+	private $is_finished = false;
 	private $bytes_already_read;
 	private $skip_bytes = 0;
 

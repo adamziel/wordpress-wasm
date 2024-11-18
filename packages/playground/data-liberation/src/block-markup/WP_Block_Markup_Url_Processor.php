@@ -208,9 +208,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	 *        relative URLs in text nodes. On the other hand, the detection is performed
 	 *        by this WP_URL_In_Text_Processor class so maybe the two do go hand in hand?
 	 */
-	function rewrite_url_components( URL $to_url ) {
-		$from_url = url_matches( $this->get_parsed_url(), $this->base_url_string ) ? $this->base_url_object : $this->get_parsed_url();
-
+	function replace_base_url( URL $to_url ) {
 		$updated_url = clone $this->get_parsed_url();
 
 		$updated_url->hostname = $to_url->hostname;
@@ -218,40 +216,22 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 		$updated_url->port     = $to_url->port;
 
 		// Update the pathname if needed.
+		$from_url      = $this->get_parsed_url();
 		$from_pathname = $from_url->pathname;
 		$to_pathname   = $to_url->pathname;
-		if ( $from_pathname !== $to_pathname ) {
-			if ( $from_pathname[ strlen( $from_pathname ) - 1 ] === '/' ) {
-				$from_pathname = substr( $from_pathname, 0, strlen( $from_pathname ) - 1 );
-			}
-			$from_pathname_with_trailing_slash = $from_pathname === '/' ? $from_pathname : $from_pathname . '/';
-
-			$decoded_matched_pathname = urldecode_n(
-				$updated_url->pathname,
-				strlen( $from_pathname_with_trailing_slash )
+		if ( $this->base_url_object->pathname !== $to_pathname ) {
+			$base_pathname_with_trailing_slash = rtrim( $this->base_url_object->pathname, '/' ) . '/';
+			$decoded_matched_pathname          = urldecode_n(
+				$from_pathname,
+				strlen( $base_pathname_with_trailing_slash )
 			);
-			/**
-			 * If there's nothing to carry over from the original pathname,
-			 * use the rewritten pathname as is.
-			 *
-			 * @TODO: Document this behavior in a human-readable way.
-			 */
-			if ( strlen( $decoded_matched_pathname ) >= strlen( $from_pathname_with_trailing_slash ) ) {
-				$updated_url->pathname = $to_pathname;
-			} else {
-				// Otherwise, add a trailing slash to the target pathname part and
-				// carry over the rest from the original pathname.
-				if ( $to_pathname[ strlen( $to_pathname ) - 1 ] === '/' ) {
-					$to_pathname = substr( $to_pathname, 0, strlen( $to_pathname ) - 1 );
-				}
-				$to_pathname_with_trailing_slash = $to_pathname === '/' ? $to_pathname : $to_pathname . '/';
-				$updated_url->pathname           =
-					$to_pathname_with_trailing_slash .
-						substr(
-							$decoded_matched_pathname,
-							strlen( $from_pathname_with_trailing_slash )
-						);
-			}
+			$to_pathname_with_trailing_slash   = rtrim( $to_pathname, '/' ) . '/';
+			$updated_url->pathname             =
+				$to_pathname_with_trailing_slash .
+					substr(
+						$decoded_matched_pathname,
+						strlen( $base_pathname_with_trailing_slash )
+					);
 		}
 
 		/*
@@ -262,10 +242,10 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 		 */
 		$new_raw_url = $updated_url->toString();
 		if (
-			$updated_url->pathname[ strlen( $updated_url->pathname ) - 1 ] !== '/' &&
-			$updated_url->pathname === '/' &&
-			$updated_url->search === '' &&
-			$updated_url->hash === ''
+			$from_url->pathname[ strlen( $from_url->pathname ) - 1 ] !== '/' &&
+			$from_url->pathname !== '/' &&
+			$from_url->search === '' &&
+			$from_url->hash === ''
 		) {
 			$new_raw_url = rtrim( $new_raw_url, '/' );
 		}
@@ -282,8 +262,8 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 			//        place to place this logic. Perhaps this *method* could be
 			//        decoupled into two separate *functions*?
 			$this->get_token_type() !== '#text' &&
-			! str_starts_with( $new_raw_url, 'http://' ) &&
-			! str_starts_with( $new_raw_url, 'https://' )
+			! str_starts_with( $this->get_raw_url(), 'http://' ) &&
+			! str_starts_with( $this->get_raw_url(), 'https://' )
 		);
 		if ( ! $is_relative ) {
 			$this->set_raw_url( $new_raw_url );

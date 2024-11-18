@@ -43,7 +43,7 @@ function wp_rewrite_urls( $options ) {
 		$parsed_url = $p->get_parsed_url();
 		foreach ( $url_mapping as $mapping ) {
 			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
-				$p->rewrite_url_components( $mapping['from_url'], $mapping['to_url'] );
+				$p->replace_base_url( $mapping['to_url'] );
 				break;
 			}
 		}
@@ -83,10 +83,10 @@ function url_matches( URL $subject, $from_url ) {
  * '"is 6 %3C 6?%22 – asked Achilles' because only the first encoded byte is decoded.
  *
  * @param string $string The string to decode.
- * @param int $target_length The maximum length of the resulting string.
+ * @param int $decode_n The number of bytes to decode in $input
  * @return string The decoded string.
  */
-function urldecode_n( $input, $target_length ) {
+function urldecode_n( $input, $decode_n ) {
 	$result = '';
 	$at     = 0;
 	while ( true ) {
@@ -100,23 +100,28 @@ function urldecode_n( $input, $target_length ) {
 		$result .= substr( $input, $last_at, $at - $last_at );
 
 		// If we've already decoded the requested number of bytes, stop.
-		if ( strlen( $result ) >= $target_length ) {
+		if ( strlen( $result ) >= $decode_n ) {
 			break;
 		}
 
 		++$at;
+		if ( $at > strlen( $input ) ) {
+			break;
+		}
+
 		$decodable_length = strspn(
 			$input,
 			'0123456789ABCDEFabcdef',
 			$at,
 			2
 		);
+
 		if ( $decodable_length === 2 ) {
 			// Decode the hex sequence.
 			$result .= chr( hexdec( $input[ $at ] . $input[ $at + 1 ] ) );
 			$at     += 2;
 		} else {
-			// Consume the percent sign and move on.
+			// Consume the next byte and move on.
 			$result .= '%';
 		}
 	}

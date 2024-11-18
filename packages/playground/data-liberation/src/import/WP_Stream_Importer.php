@@ -155,7 +155,7 @@ class WP_Stream_Importer {
 							if ( $this->url_processor_matched_asset_url( $p ) ) {
 								$filename      = $this->new_asset_filename( $p->get_raw_url() );
 								$new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-								$p->rewrite_url_components( WP_URL::parse( $new_asset_url ) );
+								$p->replace_base_url( WP_URL::parse( $new_asset_url ) );
 								$attachments[] = $new_asset_url;
 								/**
 								 * @TODO: How would we know a specific image block refers to a specific
@@ -170,7 +170,7 @@ class WP_Stream_Importer {
 								$p->get_parsed_url() &&
 								url_matches( $p->get_parsed_url(), $this->source_site_url )
 							) {
-								$p->rewrite_url_components( WP_URL::parse( $this->options['new_site_url'] ) );
+								$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
 							} else {
 								// Ignore other URLs.
 							}
