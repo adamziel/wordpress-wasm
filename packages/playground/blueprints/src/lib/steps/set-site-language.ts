@@ -2,7 +2,10 @@ import { StepHandler } from '.';
 import { unzipFile } from '@wp-playground/common';
 import { logger } from '@php-wasm/logger';
 import { versionStringToLoadedWordPressVersion } from '@wp-playground/wordpress';
-import { MinifiedWordPressVersions } from '@wp-playground/wordpress-builds';
+import {
+	LatestMinifiedWordPressVersion,
+	MinifiedWordPressVersions,
+} from '@wp-playground/wordpress-builds';
 
 /**
  * @inheritDoc setSiteLanguage
@@ -52,6 +55,13 @@ const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 			/(rc|beta).*$/i,
 			'RC'
 		);
+	} else if (!wpVersionString.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
+		/**
+		 * If the provided WordPress version string isn't a major.minor
+		 * or major.minor.patch, the latest available WordPress build version
+		 * will be used instead.
+		 */
+		wpVersion = LatestMinifiedWordPressVersion;
 	}
 	return `https://downloads.wordpress.org/translation/core/${wpVersion}/${language}.zip`;
 };
