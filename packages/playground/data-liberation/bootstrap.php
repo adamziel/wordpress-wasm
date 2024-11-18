@@ -34,6 +34,9 @@ if(!class_exists('WP_HTML_Tag_Processor')) {
 	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-unsupported-exception.php";
 	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-processor.php";
 }
+if (!isset($html5_named_character_references)) {
+	require_once __DIR__ . "/src/wordpress-core-html-api/html5-named-character-references.php";
+}
 
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
@@ -43,13 +46,14 @@ require_once __DIR__ . '/src/block-markup/WP_URL.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
+require_once __DIR__ . '/src/import/WP_Block_Object.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
+require_once __DIR__ . '/src/import/WP_File_Visitor.php';
+require_once __DIR__ . '/src/import/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
 require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
 require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
-
-require_once __DIR__ . '/src/compression/GZipReader.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 

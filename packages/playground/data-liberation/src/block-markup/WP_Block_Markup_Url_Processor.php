@@ -208,7 +208,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	 *        relative URLs in text nodes. On the other hand, the detection is performed
 	 *        by this WP_URL_In_Text_Processor class so maybe the two do go hand in hand?
 	 */
-	function replace_base_url( URL $to_url ) {
+	public function replace_base_url( URL $to_url ) {
 		$updated_url = clone $this->get_parsed_url();
 
 		$updated_url->hostname = $to_url->hostname;

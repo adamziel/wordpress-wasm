@@ -158,17 +158,21 @@ function wp_visit_file_tree( $dir ) {
 	$directories = array();
 	$files       = array();
 	$dh          = opendir( $dir );
-	while ( ( $file = readdir( $dh ) ) !== false ) {
+	while ( true ) {
+		$file = readdir( $dh );
+		if ( $file === false ) {
+			break;
+		}
 		if ( '.' === $file || '..' === $file ) {
 			continue;
 		}
-		$filePath = $dir . '/' . $file;
-		if ( is_dir( $filePath ) ) {
-			$directories[] = $filePath;
+		$file_path = $dir . '/' . $file;
+		if ( is_dir( $file_path ) ) {
+			$directories[] = $file_path;
 			continue;
 		}
 
-		$files[] = new SplFileInfo( $filePath );
+		$files[] = new SplFileInfo( $file_path );
 	}
 	closedir( $dh );
 
@@ -186,119 +190,4 @@ function wp_visit_file_tree( $dir ) {
 		WP_File_Visitor_Event::EVENT_EXIT,
 		new SplFileInfo( $dir )
 	);
-}
-
-class WP_File_Visitor {
-	private $dir;
-	private $directories = array();
-	private $files       = array();
-	private $currentEvent;
-	private $iteratorStack = array();
-	private $currentIterator;
-	private $depth = 0;
-
-	public function __construct( $dir ) {
-		$this->dir             = $dir;
-		$this->iteratorStack[] = $this->createIterator( $dir );
-	}
-
-	public function get_current_depth() {
-		return $this->depth;
-	}
-
-	public function get_root_dir() {
-		return $this->dir;
-	}
-
-	private function createIterator( $dir ) {
-		$this->directories = array();
-		$this->files       = array();
-
-		$dh = opendir( $dir );
-		if ( $dh === false ) {
-			return new ArrayIterator( array() );
-		}
-
-		while ( ( $file = readdir( $dh ) ) !== false ) {
-			if ( '.' === $file || '..' === $file ) {
-				continue;
-			}
-			$filePath = $dir . '/' . $file;
-			if ( is_dir( $filePath ) ) {
-				$this->directories[] = $filePath;
-				continue;
-			}
-			$this->files[] = new SplFileInfo( $filePath );
-		}
-		closedir( $dh );
-
-		$events = array(
-			new WP_File_Visitor_Event( WP_File_Visitor_Event::EVENT_ENTER, new SplFileInfo( $dir ), $this->files ),
-		);
-
-		foreach ( $this->directories as $directory ) {
-			$events[] = $directory; // Placeholder for recursion
-		}
-
-		$events[] = new WP_File_Visitor_Event( WP_File_Visitor_Event::EVENT_EXIT, new SplFileInfo( $dir ) );
-
-		return new ArrayIterator( $events );
-	}
-
-	public function next() {
-		while ( ! empty( $this->iteratorStack ) ) {
-			$this->currentIterator = end( $this->iteratorStack );
-
-			if ( $this->currentIterator->valid() ) {
-				$current = $this->currentIterator->current();
-				$this->currentIterator->next();
-
-				if ( $current instanceof WP_File_Visitor_Event ) {
-					if ( $current->isEntering() ) {
-						++$this->depth;
-					}
-					$this->currentEvent = $current;
-					if ( $current->isExiting() ) {
-						--$this->depth;
-					}
-					return true;
-				} else {
-					// It's a directory path, push a new iterator onto the stack
-					$this->iteratorStack[] = $this->createIterator( $current );
-				}
-			} else {
-				array_pop( $this->iteratorStack );
-			}
-		}
-
-		return false;
-	}
-
-	public function get_event() {
-		return $this->currentEvent;
-	}
-}
-
-
-class WP_File_Visitor_Event {
-	public $type;
-	public $dir;
-	public $files;
-
-	const EVENT_ENTER = 'entering';
-	const EVENT_EXIT  = 'exiting';
-
-	public function __construct( $type, $dir, $files = array() ) {
-		$this->type  = $type;
-		$this->dir   = $dir;
-		$this->files = $files;
-	}
-
-	public function isEntering() {
-		return $this->type === self::EVENT_ENTER;
-	}
-
-	public function isExiting() {
-		return $this->type === self::EVENT_EXIT;
-	}
 }

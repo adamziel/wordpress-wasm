@@ -281,7 +281,7 @@ class WP_Stream_Importer {
 	}
 
 	protected function rewrite_attachment_url( string $raw_url, $context_path = null ) {
-		if ( WP_URL::canParse( $raw_url ) ) {
+		if ( WP_URL::can_parse( $raw_url ) ) {
 			// Absolute URL, nothing to do.
 			return $raw_url;
 		}

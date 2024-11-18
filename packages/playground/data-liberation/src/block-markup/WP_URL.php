@@ -12,7 +12,7 @@ class WP_URL {
 		return URL::parse( $url, $base ) ?? false;
 	}
 
-	public static function canParse( $url, $base = null ) {
+	public static function can_parse( $url, $base = null ) {
 		return URL::canParse( $url, $base );
 	}
 

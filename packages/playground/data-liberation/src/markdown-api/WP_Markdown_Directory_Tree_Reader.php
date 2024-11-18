@@ -161,7 +161,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 			if ( $is_root ) {
 				continue;
 			}
-			if ( $event->isExiting() ) {
+			if ( $event->is_exiting() ) {
 				// Clean up stale IDs to save some memory when processing
 				// large directory trees.
 				unset( $this->parent_ids[ $event->dir->getRealPath() ] );

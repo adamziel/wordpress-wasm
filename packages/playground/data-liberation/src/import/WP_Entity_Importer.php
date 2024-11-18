@@ -136,6 +136,7 @@ class WP_Entity_Importer {
 	public function import_site_option( $data ) {
 		$this->logger->info(
 			sprintf(
+				/* translators: %s: option name */
 				__( 'Imported site option "%s"', 'wordpress-importer' ),
 				$data['option_name']
 			)
@@ -150,7 +151,7 @@ class WP_Entity_Importer {
 		 *
 		 * @param array $data User data. (Return empty to skip.)
 		 */
-		$data = apply_filters( 'wp_importer.pre_import.user', $data );
+		$data = apply_filters( 'wp_importer_pre_import_user', $data );
 		if ( empty( $data ) ) {
 			return false;
 		}
@@ -208,6 +209,7 @@ class WP_Entity_Importer {
 		if ( is_wp_error( $user_id ) ) {
 			$this->logger->error(
 				sprintf(
+					/* translators: %s: user login */
 					__( 'Failed to import user "%s"', 'wordpress-importer' ),
 					$userdata['user_login']
 				)
@@ -220,7 +222,7 @@ class WP_Entity_Importer {
 			 * @param WP_Error $user_id Error object.
 			 * @param array $userdata Raw data imported for the user.
 			 */
-			do_action( 'wxr_importer.process_failed.user', $user_id, $userdata );
+			do_action( 'wxr_importer_process_failed_user', $user_id, $userdata );
 			return false;
 		}
 
@@ -231,12 +233,14 @@ class WP_Entity_Importer {
 
 		$this->logger->info(
 			sprintf(
+				/* translators: %s: user login */
 				__( 'Imported user "%s"', 'wordpress-importer' ),
 				$userdata['user_login']
 			)
 		);
 		$this->logger->debug(
 			sprintf(
+				/* translators: 1: original user ID, 2: new user ID */
 				__( 'User %1$d remapped to %2$d', 'wordpress-importer' ),
 				$original_id,
 				$user_id
@@ -250,7 +254,7 @@ class WP_Entity_Importer {
 		 * @param int $user_id New user ID.
 		 * @param array $userdata Raw data imported for the user.
 		 */
-		do_action( 'wxr_importer.processed.user', $user_id, $userdata );
+		do_action( 'wxr_importer_processed_user', $user_id, $userdata );
 	}
 
 	public function import_term( $data ) {
@@ -260,7 +264,7 @@ class WP_Entity_Importer {
 		 * @param array $data Term data. (Return empty to skip.)
 		 * @param array $meta Meta data.
 		 */
-		$data = apply_filters( 'wxr_importer.pre_process.term', $data );
+		$data = apply_filters( 'wxr_importer_pre_process_term', $data );
 		if ( empty( $data ) ) {
 			return false;
 		}
@@ -277,7 +281,7 @@ class WP_Entity_Importer {
 			 *
 			 * @param array $data Raw data imported for the term.
 			 */
-			do_action( 'wxr_importer.process_already_imported.term', $data );
+			do_action( 'wxr_importer_process_already_imported_term', $data );
 
 			$this->mapping['term'][ $mapping_key ]    = $existing;
 			$this->mapping['term_id'][ $original_id ] = $existing;
@@ -323,6 +327,7 @@ class WP_Entity_Importer {
 		if ( is_wp_error( $result ) ) {
 			$this->logger->warning(
 				sprintf(
+					/* translators: 1: taxonomy name, 2: term name */
 					__( 'Failed to import %1$s %2$s', 'wordpress-importer' ),
 					$data['taxonomy'],
 					$data['name']
@@ -338,7 +343,7 @@ class WP_Entity_Importer {
 			 * @param array $data Raw data imported for the term.
 			 * @param array $meta Meta data supplied for the term.
 			 */
-			do_action( 'wxr_importer.process_failed.term', $result, $data );
+			do_action( 'wxr_importer_process_failed_term', $result, $data );
 			return false;
 		}
 
@@ -349,6 +354,7 @@ class WP_Entity_Importer {
 
 		$this->logger->info(
 			sprintf(
+			/* translators: 1: term name, 2: taxonomy name */
 				__( 'Imported "%1$s" (%2$s)', 'wordpress-importer' ),
 				$data['name'],
 				$data['taxonomy']
@@ -356,6 +362,7 @@ class WP_Entity_Importer {
 		);
 		$this->logger->debug(
 			sprintf(
+			/* translators: 1: original term ID, 2: new term ID */
 				__( 'Term %1$d remapped to %2$d', 'wordpress-importer' ),
 				$original_id,
 				$term_id
@@ -370,7 +377,7 @@ class WP_Entity_Importer {
 		 * @param int $term_id New term ID.
 		 * @param array $data Raw data imported for the term.
 		 */
-		do_action( 'wxr_importer.processed.term', $term_id, $data );
+		do_action( 'wxr_importer_processed_term', $term_id, $data );
 	}
 
 
@@ -438,7 +445,7 @@ class WP_Entity_Importer {
 		 * @param array $comments Comments on the post.
 		 * @param array $terms Terms on the post.
 		 */
-		$data = apply_filters( 'wxr_importer.pre_process.post', $data );
+		$data = apply_filters( 'wxr_importer_pre_process_post', $data );
 		if ( empty( $data ) ) {
 			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
@@ -460,6 +467,7 @@ class WP_Entity_Importer {
 		if ( ! $post_type_object ) {
 			$this->logger->warning(
 				sprintf(
+					/* translators: 1: post title, 2: post type */
 					__( 'Failed to import "%1$s": Invalid post type %2$s', 'wordpress-importer' ),
 					$data['post_title'],
 					$post_type
@@ -472,6 +480,7 @@ class WP_Entity_Importer {
 		if ( $post_exists ) {
 			$this->logger->info(
 				sprintf(
+					/* translators: 1: post type name, 2: post title */
 					__( '%1$s "%2$s" already exists.', 'wordpress-importer' ),
 					$post_type_object->labels->singular_name,
 					$data['post_title']
@@ -483,7 +492,7 @@ class WP_Entity_Importer {
 			 *
 			 * @param array $data Raw data imported for the post.
 			 */
-			do_action( 'wxr_importer.process_already_imported.post', $data );
+			do_action( 'wxr_importer_process_already_imported_post', $data );
 
 			return false;
 		}
@@ -548,6 +557,7 @@ class WP_Entity_Importer {
 			if ( ! $this->options['fetch_attachments'] ) {
 				$this->logger->notice(
 					sprintf(
+						/* translators: %s: post title */
 						__( 'Skipping attachment "%s", fetching attachments disabled' ),
 						$data['post_title']
 					)
@@ -558,7 +568,7 @@ class WP_Entity_Importer {
 				 * @param array $data Raw data imported for the post.
 				 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 				 */
-				do_action( 'wxr_importer.process_skipped.post', $data );
+				do_action( 'wxr_importer_process_skipped_post', $data );
 				return false;
 			}
 			$remote_url = ! empty( $data['attachment_url'] ) ? $data['attachment_url'] : $data['guid'];
@@ -571,6 +581,7 @@ class WP_Entity_Importer {
 		if ( is_wp_error( $post_id ) ) {
 			$this->logger->error(
 				sprintf(
+					/* translators: 1: post title, 2: post type name */
 					__( 'Failed to import "%1$s" (%2$s)', 'wordpress-importer' ),
 					$data['post_title'],
 					$post_type_object->labels->singular_name
@@ -587,7 +598,7 @@ class WP_Entity_Importer {
 			 * @param array $comments Raw comment data, already processed by {@see process_comments}.
 			 * @param array $terms Raw term data, already processed.
 			 */
-			do_action( 'wxr_importer.process_failed.post', $post_id, $data, $meta, $comments, $terms );
+			do_action( 'wxr_importer_process_failed_post', $post_id, $data, $meta, $comments, $terms );
 			return false;
 		}
 
@@ -606,6 +617,7 @@ class WP_Entity_Importer {
 
 		$this->logger->info(
 			sprintf(
+				/* translators: 1: post title, 2: post type name */
 				__( 'Imported "%1$s" (%2$s)', 'wordpress-importer' ),
 				$data['post_title'] ?? '',
 				$post_type_object->labels->singular_name
@@ -613,6 +625,7 @@ class WP_Entity_Importer {
 		);
 		$this->logger->debug(
 			sprintf(
+				/* translators: 1: original post ID, 2: new post ID */
 				__( 'Post %1$d remapped to %2$d', 'wordpress-importer' ),
 				$original_id,
 				$post_id
@@ -628,7 +641,7 @@ class WP_Entity_Importer {
 		 * @param array $comments Raw comment data, already processed by {@see process_comments}.
 		 * @param array $terms Raw term data, already processed.
 		 */
-		do_action( 'wxr_importer.processed.post', $post_id, $data );
+		do_action( 'wxr_importer_processed_post', $post_id, $data );
 		return $post_id;
 	}
 
@@ -860,7 +873,7 @@ class WP_Entity_Importer {
 		 * @param array $meta_item Meta data. (Return empty to skip.)
 		 * @param int $post_id Post the meta is attached to.
 		 */
-		$meta_item = apply_filters( 'wxr_importer.pre_process.post_meta', $meta_item, $post_id );
+		$meta_item = apply_filters( 'wxr_importer_pre_process_post_meta', $meta_item, $post_id );
 		if ( empty( $meta_item ) ) {
 			return false;
 		}
@@ -923,7 +936,7 @@ class WP_Entity_Importer {
 		 * @param array $comment Comment data. (Return empty to skip.)
 		 * @param int $post_id Post the comment is attached to.
 		 */
-		$comment = apply_filters( 'wxr_importer.pre_process.comment', $comment, $post_id );
+		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id );
 		if ( empty( $comment ) ) {
 			return false;
 		}
@@ -943,7 +956,7 @@ class WP_Entity_Importer {
 				 *
 				 * @param array $comment Raw data imported for the comment.
 				 */
-				do_action( 'wxr_importer.process_already_imported.comment', $comment );
+				do_action( 'wxr_importer_process_already_imported_comment', $comment );
 
 				$this->mapping['comment'][ $original_id ] = $existing;
 				return;
@@ -998,7 +1011,7 @@ class WP_Entity_Importer {
 			$comment['comment_author_email'] = '';
 		}
 		if ( ! isset( $comment['comment_date'] ) ) {
-			$comment['comment_date'] = date( 'Y-m-d H:i:s' );
+			$comment['comment_date'] = gmdate( 'Y-m-d H:i:s' );
 		}
 
 		$comment = wp_filter_comment( $comment );
@@ -1028,7 +1041,7 @@ class WP_Entity_Importer {
 		 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 		 * @param array $post_id Parent post ID.
 		 */
-		do_action( 'wxr_importer.processed.comment', $comment_id, $comment, $post_id );
+		do_action( 'wxr_importer_processed_comment', $comment_id, $comment, $post_id );
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
@@ -1069,7 +1082,7 @@ class WP_Entity_Importer {
 	 * @return int|bool Existing comment ID if it exists, false otherwise.
 	 */
 	protected function comment_exists( $data ) {
-		$comment_date = $data['comment_date'] ?? date( 'Y-m-d H:i:s' );
+		$comment_date = $data['comment_date'] ?? gmdate( 'Y-m-d H:i:s' );
 		$exists_key   = sha1( $data['comment_author'] . ':' . $comment_date );
 
 		// Constant-time lookup if we prefilled
@@ -1107,9 +1120,10 @@ class WP_Entity_Importer {
 	 */
 	protected function prefill_existing_terms() {
 		global $wpdb;
-		$query  = "SELECT t.term_id, tt.taxonomy, t.slug FROM {$wpdb->terms} AS t";
-		$query .= " JOIN {$wpdb->term_taxonomy} AS tt ON t.term_id = tt.term_id";
-		$terms  = $wpdb->get_results( $query );
+		$query  = "SELECT t_term_id, tt.taxonomy, t.slug FROM {$wpdb->terms} AS t";
+		$query .= " JOIN {$wpdb->term_taxonomy} AS tt ON t_term_id = tt_term_id";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$terms = $wpdb->get_results( $query );
 
 		foreach ( $terms as $item ) {
 			$exists_key                          = sha1( $item->taxonomy . ':' . $item->slug );
@@ -1184,6 +1198,7 @@ class WP_Entity_Importer {
  *       seems useful for usage in wp-cli, Blueprints,
  *       and other non-web environments.
  */
+// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
 class Logger {
 	/**
 	 * Log a debug message.

@@ -77,7 +77,11 @@ class WP_Markdown_To_Blocks {
 		$this->frontmatter = $document->data;
 
 		$walker = $document->walker();
-		while ( $event = $walker->next() ) {
+		while ( true ) {
+			$event = $walker->next();
+			if ( ! $event ) {
+				break;
+			}
 			$node = $event->getNode();
 
 			if ( $event->isEntering() ) {
@@ -178,7 +182,7 @@ class WP_Markdown_To_Blocks {
 						break;
 
 					case Block\Paragraph::class:
-						if ( $this->current_block->blockName === 'list-item' ) {
+						if ( $this->current_block->block_name === 'list-item' ) {
 							break;
 						}
 						$this->push_block(
@@ -270,9 +274,9 @@ class WP_Markdown_To_Blocks {
 						$tag           = $type === 'head' ? 'th' : 'td';
 
 						$parsed_rows = array();
-						foreach ( $table_section->innerBlocks as $row ) {
+						foreach ( $table_section->inner_blocks as $row ) {
 							$parsed_row = array();
-							foreach ( $row->innerBlocks as $cell ) {
+							foreach ( $row->inner_blocks as $cell ) {
 								$parsed_row[] = array(
 									'tag' => $tag,
 									'content' => $cell->attrs['content'] ?? '',
@@ -287,7 +291,7 @@ class WP_Markdown_To_Blocks {
 						} else {
 							$table->attrs[ $type ] = $parsed_rows;
 						}
-						$table->innerBlocks = array();
+						$table->inner_blocks = array();
 						break;
 					case Table::class:
 						$table  = '<figure class="wp-block-table">';
@@ -311,7 +315,7 @@ class WP_Markdown_To_Blocks {
 						break;
 
 					case Block\Paragraph::class:
-						if ( $this->current_block->blockName === 'list-item' ) {
+						if ( $this->current_block->block_name === 'list-item' ) {
 							break;
 						}
 						$this->append_content( '</p>' );
@@ -332,7 +336,7 @@ class WP_Markdown_To_Blocks {
 				}
 			}
 		}
-		$this->parsed_blocks = $this->root_block->innerBlocks;
+		$this->parsed_blocks = $this->root_block->inner_blocks;
 	}
 
 	private static function convert_blocks_to_markup( $blocks ) {
@@ -350,15 +354,15 @@ class WP_Markdown_To_Blocks {
 			if ( $encoded_attrs === '[]' ) {
 				$encoded_attrs = '';
 			}
-			$p->set_modifiable_text( " wp:{$block->blockName} " . $encoded_attrs . ' ' );
+			$p->set_modifiable_text( " wp:{$block->block_name} " . $encoded_attrs . ' ' );
 			$open_comment = $p->get_updated_html();
 
 			$block_markup .= $open_comment . "\n";
 			$block_markup .= $content . "\n";
-			$block_markup .= self::convert_blocks_to_markup( $block->innerBlocks );
+			$block_markup .= self::convert_blocks_to_markup( $block->inner_blocks );
 
 			// End of block comment
-			$block_markup .= "<!-- /wp:{$block->blockName} -->\n";
+			$block_markup .= "<!-- /wp:{$block->block_name} -->\n";
 		}
 
 		return $block_markup;
@@ -371,18 +375,18 @@ class WP_Markdown_To_Blocks {
 		$this->current_block->attrs['content'] .= $content;
 	}
 
-	private function push_block( $name, $attributes = array(), $innerBlocks = array() ) {
-		$block                              = $this->create_block( $name, $attributes, $innerBlocks );
-		$this->current_block->innerBlocks[] = $block;
+	private function push_block( $name, $attributes = array(), $inner_blocks = array() ) {
+		$block                               = $this->create_block( $name, $attributes, $inner_blocks );
+		$this->current_block->inner_blocks[] = $block;
 		array_push( $this->block_stack, $block );
 		$this->current_block = $block;
 	}
 
-	private function create_block( $name, $attributes = array(), $innerBlocks = array() ) {
+	private function create_block( $name, $attributes = array(), $inner_blocks = array() ) {
 		return new WP_Block_Object(
 			$name,
 			$attributes,
-			$innerBlocks
+			$inner_blocks
 		);
 	}
 
@@ -392,37 +396,5 @@ class WP_Markdown_To_Blocks {
 			$this->current_block = end( $this->block_stack );
 			return $popped;
 		}
-	}
-}
-
-class WP_Block_Object {
-	public $blockName;
-	public $attrs;
-	public $innerBlocks;
-
-	public function __construct( $blockName, $attrs = array(), $innerBlocks = array() ) {
-		$this->blockName   = $blockName;
-		$this->attrs       = $attrs;
-		$this->innerBlocks = $innerBlocks;
-	}
-
-	public function as_array() {
-		$attrs   = $this->attrs;
-		$content = $attrs['content'] ?? null;
-		unset( $attrs['content'] );
-		return array(
-			'blockName' => $this->blockName,
-			'attrs' => $attrs,
-			'innerBlocks' => array_map(
-				function ( $block ) {
-					return $block->as_array();
-				},
-				$this->innerBlocks
-			),
-			'innerHTML' => $this->attrs['content'] ?? null,
-			'innerContent' => array(
-				htmlspecialchars_decode( $this->attrs['content'] ?? '' ),
-			),
-		);
 	}
 }
