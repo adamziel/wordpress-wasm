@@ -1,7 +1,6 @@
 import { StepHandler } from '.';
 import { unzipFile } from '@wp-playground/common';
 import { logger } from '@php-wasm/logger';
-import { versionStringToLoadedWordPressVersion } from '@wp-playground/wordpress';
 import {
 	LatestMinifiedWordPressVersion,
 	MinifiedWordPressVersions,
@@ -31,7 +30,10 @@ export interface SetSiteLanguageStep {
  * If the WordPress version doesn't have a translation package,
  * the latest "RC" version will be used instead.
  */
-const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
+export const getWordPressTranslationUrl = (
+	wpVersion: string,
+	language: string
+) => {
 	/**
 	 * The translation API provides translations for all WordPress releases
 	 * including patch releases.
@@ -49,13 +51,12 @@ const getWordPressTranslationUrl = (wpVersion: string, language: string) => {
 	 * For example translations for WordPress 6.6-BETA1 or 6.6-RC1 are found under
 	 * https://downloads.wordpress.org/translation/core/6.6-RC/en_GB.zip
 	 */
-	const wpVersionString = versionStringToLoadedWordPressVersion(wpVersion);
-	if (wpVersionString === 'nightly' || wpVersionString === 'beta') {
+	if (wpVersion.match(/(\d.\d(.\d)?)-(alpha|beta|nightly|rc).*$/i)) {
 		wpVersion = MinifiedWordPressVersions['beta'].replace(
 			/(rc|beta).*$/i,
 			'RC'
 		);
-	} else if (!wpVersionString.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
+	} else if (!wpVersion.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
 		/**
 		 * If the WordPress version string isn't a major.minor or major.minor.patch,
 		 * the latest available WordPress build version will be used instead.
