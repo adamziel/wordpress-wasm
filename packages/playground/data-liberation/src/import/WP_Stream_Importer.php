@@ -84,7 +84,7 @@ class WP_Stream_Importer {
 	 * Downloads all the assets referenced in the imported entities.
 	 *
 	 * This method is idempotent, re-entrant, and should be called
-	 * before import_posts() so that every inserted post already has
+	 * before import_entities() so that every inserted post already has
 	 * all its attachments downloaded.
 	 */
 	public function frontload_assets() {
@@ -136,7 +136,7 @@ class WP_Stream_Importer {
 	 *        large datasets, but maybe it could be a choice for
 	 *        the API consumer?
 	 */
-	public function import_posts() {
+	public function import_entities() {
 		$importer = new WP_Entity_Importer();
 		$factory  = $this->entity_iterator_factory;
 		$entities = $factory();

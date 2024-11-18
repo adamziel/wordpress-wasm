@@ -815,7 +815,9 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "stream_resource_regular_dtor",\
 "stream_array_from_fd_set",\
 "zend_call_function",\
+"zend_call_method_if_exists",\
 "zend_call_known_function",\
+"php_userstreamop_set_option",\
 "zend_close_rsrc_list",\
 "zend_deactivate",\
 "zend_destroy_rsrc_list",\
@@ -826,6 +828,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "zend_execute",\
 "zend_execute_scripts",\
 "zend_error",\
+"zend_deprecated_function",\
 "zend_error_va_list",\
 "zend_hash_apply",\
 "zend_hash_graceful_reverse_destroy",\
@@ -842,6 +845,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "zif_call_user_func",\
 "zif_json_encode",\
 "zif_call_user_func_array",\
+"zend_user_it_get_current_data",\
 "zif_fclose",\
 "zif_feof",\
 "zif_file_get_contents",\

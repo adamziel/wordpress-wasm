@@ -866,6 +866,9 @@ class WP_WXR_Reader implements Iterator {
 	}
 
 	public function current(): object {
+		if ( null === $this->entity_data && ! $this->is_finished() && ! $this->get_last_error() ) {
+			$this->next();
+		}
 		return $this->get_entity();
 	}
 
