@@ -101,13 +101,12 @@ curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:443:$resolvedIp"
 ]);
 
-// Pass all incoming headers except cookies and authorization
+// Pass all incoming headers except cookies and host
 $curlHeaders = filter_headers_strings(
     kv_headers_to_curl_format(getallheaders()),
     [
         'Cookie',
-        'Authorization',
-        'Host',
+        'Host'
     ]
 );
 curl_setopt(
