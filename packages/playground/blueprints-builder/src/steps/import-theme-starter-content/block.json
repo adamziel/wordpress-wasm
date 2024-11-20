@@ -1,0 +1,28 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/import-theme-starter-content",
+	"version": "0.1.0",
+	"title": "Import theme starter content",
+	"category": "data",
+	"description": "Imports a theme Starter Content into WordPress.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "importThemeStarterContent"
+		},
+		"themeSlug": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

@@ -1,0 +1,32 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/login",
+	"version": "0.1.0",
+	"title": "Login",
+	"category": "config",
+	"description": "Logs in to Playground. Under the hood, this function submits the wp-login.php form just like a user would.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "login"
+		},
+		"username": {
+			"type": "string",
+			"default": ""
+		},
+		"password": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

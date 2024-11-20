@@ -1,0 +1,28 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/set-site-options",
+	"version": "0.1.0",
+	"title": "Set Site Options",
+	"category": "config",
+	"description": "Sets site options. This is equivalent to calling update_option for each option in the options object.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "setSiteOptions"
+		},
+		"options": {
+			"type": "object",
+			"default": {}
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

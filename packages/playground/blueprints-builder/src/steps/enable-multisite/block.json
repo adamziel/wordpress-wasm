@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/enable-multisite",
+	"version": "0.1.0",
+	"title": "Enable Multisite",
+	"category": "config",
+	"description": "Defines the Multisite constants in a wp-config.php file.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "enableMultisite"
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

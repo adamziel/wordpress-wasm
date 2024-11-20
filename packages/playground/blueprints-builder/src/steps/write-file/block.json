@@ -1,0 +1,29 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/write-file",
+	"version": "0.1.0",
+	"title": "Write File",
+	"category": "file-system",
+	"description": "Writes data to a file at the specified path.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "writeFile"
+		},
+		"path": {
+			"type": "string"
+		},
+		"data": {
+			"type": "string"
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/activate-plugin",
+	"version": "0.1.0",
+	"title": "Activate plugin",
+	"category": "extend",
+	"description": "Activates a WordPress plugin (if it's installed).",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "activatePlugin"
+		},
+		"pluginName": {
+			"type": "string",
+			"default": ""
+		},
+		"pluginPath": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

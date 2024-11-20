@@ -1,0 +1,28 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/define-site-url",
+	"version": "0.1.0",
+	"title": "Define Site Url",
+	"category": "config",
+	"description": "Sets WP_HOME and WP_SITEURL constants for the WordPress installation. \n Using this step on playground.wordpress.net is moot. It is useful when building a custom Playground-based tool, like wp-now, or deploying Playground on a custom domain.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "defineSiteUrl"
+		},
+		"siteUrl": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

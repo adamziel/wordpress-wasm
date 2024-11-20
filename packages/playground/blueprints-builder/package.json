@@ -1,0 +1,23 @@
+{
+  "name": "wp-playground-blueprint-editor",
+  "version": "1.0.0",
+  "description": "Design playground blueprints with a specialized block editor interface in WordPress.",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "npm install && npm run build && composer install"
+  },
+  "author": "lubus",
+  "license": "ISC",
+  "devDependencies": {
+    "@wordpress/scripts": "^28.6.0"
+  },
+  "dependencies": {
+    "@wordpress/blob": "^4.7.0",
+    "@wordpress/blocks": "^13.7.0",
+    "@wordpress/dataviews": "^4.3.0",
+    "@wordpress/icons": "^10.6.0"
+  }
+}

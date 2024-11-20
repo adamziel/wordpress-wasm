@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/run-php",
+	"version": "0.1.0",
+	"title": "Run PHP",
+	"category": "scripts",
+	"description": "Runs PHP code. When running WordPress functions, the code key must first load wp-load.php and start with \"<?php require_once 'wordpress/wp-load.php'; \".",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "runPHP"
+		},
+		"code": {
+			"type": "string",
+			"default": "<?php require_once 'wordpress/wp-load.php'; \n // Add You Code ?>"
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

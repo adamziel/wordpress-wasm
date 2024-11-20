@@ -1,0 +1,32 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/update-user-meta",
+	"version": "0.1.0",
+	"title": "Update User Meta",
+	"category": "config",
+	"description": "Updates user meta. This is equivalent to calling update_user_meta for each meta value in the meta object.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "updateUserMeta"
+		},
+		"meta": {
+			"type": "object",
+			"default": {}
+		},
+		"userId": {
+			"type":"number",
+			"default": 1
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

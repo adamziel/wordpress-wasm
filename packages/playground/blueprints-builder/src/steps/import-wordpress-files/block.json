@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/import-wordpress-files",
+	"version": "0.1.0",
+	"title": "Import WordPress files",
+	"category": "data",
+	"description": "Imports top-level WordPress files from a given zip file into the documentRoot. For example, if a zip file contains the wp-content and wp-includes directories, they will replace the corresponding directories in Playground's documentRoot.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "importWordPressFiles"
+		},
+		"wordPressFilesZip": {
+			"type": "object",
+			"default": {
+				"resource": "url",
+				"url": ""
+			},
+			"properties": {
+				"resource": {
+					"type": "string"
+				},
+				"url": {
+					"type": "string"
+				}
+			}
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

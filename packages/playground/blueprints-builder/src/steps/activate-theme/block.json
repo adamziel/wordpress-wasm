@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/activate-theme",
+	"version": "0.1.0",
+	"title": "Activate Theme",
+	"category": "extend",
+	"description": "Activates a WordPress theme (if it's installed).",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "activateTheme"
+		},
+		"themeFolderName": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

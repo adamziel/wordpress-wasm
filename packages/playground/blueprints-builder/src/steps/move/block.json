@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/move",
+	"version": "0.1.0",
+	"title": "Move File/Dir",
+	"category": "file-system",
+	"description": "Moves a file or directory from one path to another.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "mv"
+		},
+		"fromPath": {
+			"type": "string",
+			"default": ""
+		},
+		"toPath": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

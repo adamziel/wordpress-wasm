@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/import-wxr",
+	"version": "0.1.0",
+	"title": "Import Wxr",
+	"category": "data",
+	"description": "Imports a WXR file into WordPress.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "importWxr"
+		},
+		"file": {
+			"type": "object",
+			"default": {
+				"resource": "url",
+				"url": ""
+			},
+			"properties": {
+				"resource": {
+					"type": "string"
+				},
+				"url": {
+					"type": "string"
+				}
+			}
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

@@ -1,0 +1,41 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/unzip",
+	"version": "0.1.0",
+	"title": "Unzip",
+	"category": "file-system",
+	"description": "Unzip a zip file.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "unzip"
+		},
+		"zipFile": {
+			"type": "object",
+			"default": {
+				"resource": "vfs",
+				"path": ""
+			},
+			"properties": {
+				"resource": {
+					"type": "string"
+				},
+				"path": {
+					"type": "string"
+				}
+			}
+		},
+		"extractToPath": {
+			"type": "string"
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

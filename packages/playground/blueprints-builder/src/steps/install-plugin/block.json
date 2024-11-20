@@ -1,0 +1,51 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "playground-step/install-plugin",
+	"version": "0.1.0",
+	"title": "Install Plugin",
+	"category": "extend",
+	"description": "Installs a WordPress plugin in the Playground",
+	"example": {},
+	"supports": {
+		"html": false,
+		"customClassName": false
+	},
+	"attributes": {
+		"step": {
+			"type": "string",
+			"default": "installPlugin"
+		},
+		"pluginZipFile": {
+			"type": "object",
+			"default": {
+				"resource": "url",
+				"url": ""
+			},
+			"properties": {
+				"resource": {
+					"type": "string",
+					"enum": [
+						"url",
+						"wordpress.org/plugins",
+						"vfs"
+					]
+				}
+			}
+		},
+		"options": {
+			"type": "object",
+			"default": {
+				"activate": true
+			},
+			"properties": {
+				"activate": {
+					"type": "boolean"
+				}
+			}
+		}
+	},
+	"textdomain": "wp-playground-blueprint-editor",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}
