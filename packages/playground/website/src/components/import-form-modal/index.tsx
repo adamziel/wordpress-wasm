@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import ImportForm from '../import-form/index';
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 
@@ -24,18 +24,18 @@ export const ImportFormModal = () => {
 
 	return (
 		<Modal
-				title="Import Playground"
-				contentLabel='This is a dialog window which overlays the main content of the
+			title="Import Playground"
+			contentLabel='This is a dialog window which overlays the main content of the
 				page. The modal begins with a heading 2 called "Import
 				Playground". Pressing the Close Import Window will close
 				the modal and bring you back to where you were on the page.'
-				onRequestClose={closeModal}
-			>
-				<ImportForm
-					playground={playground!}
-					onClose={closeModal}
-					onImported={handleImported}
-				/>
+			onRequestClose={closeModal}
+		>
+			<ImportForm
+				playground={playground!}
+				onClose={closeModal}
+				onImported={handleImported}
+			/>
 		</Modal>
 	);
 };

@@ -3,7 +3,7 @@ import { usePlaygroundClient } from '../../lib/use-playground-client';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 
 interface GithubImportModalProps {
 	defaultOpen?: boolean;

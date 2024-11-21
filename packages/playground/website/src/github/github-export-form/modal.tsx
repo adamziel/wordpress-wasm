@@ -3,7 +3,7 @@ import { usePlaygroundClient } from '../../lib/use-playground-client';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 
 interface GithubExportModalProps {
 	allowZipExport: GitHubExportFormProps['allowZipExport'];

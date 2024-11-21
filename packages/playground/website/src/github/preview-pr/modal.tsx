@@ -1,4 +1,4 @@
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 import PreviewPRForm from './form';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
@@ -9,9 +9,9 @@ interface PreviewPRModalProps {
 }
 
 const targetName = {
-	'wordpress': 'WordPress',
-	'gutenberg': 'Gutenberg'
-}
+	wordpress: 'WordPress',
+	gutenberg: 'Gutenberg',
+};
 
 export function PreviewPRModal({ target }: PreviewPRModalProps) {
 	const dispatch: PlaygroundDispatch = useDispatch();

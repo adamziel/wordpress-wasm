@@ -9,7 +9,7 @@ import {
 	useAppSelector,
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 import ModalButtons from '../modal/modal-buttons';
 
 export function ErrorReportModal(props: { blueprint: Blueprint }) {
@@ -172,11 +172,7 @@ export function ErrorReportModal(props: { blueprint: Blueprint }) {
 						onChange={setLogs}
 					/>
 
-					<TextControl
-						label="Url"
-						value={url}
-						onChange={setUrl}
-					/>
+					<TextControl label="Url" value={url} onChange={setUrl} />
 
 					<ModalButtons
 						areBusy={loading}

@@ -1,28 +1,24 @@
 import React from 'react';
-import { Modal } from '@wordpress/components';
-import css from './style.module.css';
-import { ModalProps } from '@wordpress/components/build-types/modal/types';
+import { Modal as WordPressModal } from '@wordpress/components';
+import type { ModalProps as WordPressModalProps } from '@wordpress/components/build-types/modal/types';
 import classNames from 'classnames';
+import css from './style.module.css';
 
-interface ModalComponentProps extends ModalProps {
+interface ModalProps extends WordPressModalProps {
 	small?: boolean;
 }
-export function ModalComponent({
-	small,
-	className,
-	children,
-	...rest
-}: ModalComponentProps) {
-	const modalClass = classNames(css.modal, {
-		[css.modalSmall]: small,
-	}, className);
+export function Modal({ small, className, children, ...rest }: ModalProps) {
+	const modalClass = classNames(
+		css.modal,
+		{
+			[css.modalSmall]: small,
+		},
+		className
+	);
 
 	return (
-		<Modal
-			className={modalClass}
-			{...rest}
-		>
+		<WordPressModal className={modalClass} {...rest}>
 			{children}
-		</Modal>
+		</WordPressModal>
 	);
 }

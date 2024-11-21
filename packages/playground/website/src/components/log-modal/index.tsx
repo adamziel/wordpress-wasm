@@ -3,7 +3,7 @@ import { logEventType, logger } from '@php-wasm/logger';
 
 import classNames from 'classnames';
 import css from './style.module.css';
-import { ModalComponent as Modal } from '../modal';
+import { Modal } from '../modal';
 import { TextControl } from '@wordpress/components';
 import {
 	PlaygroundDispatch,
@@ -24,9 +24,7 @@ export function LogModal(props: { description?: JSX.Element; title?: string }) {
 
 	return (
 		<Modal title={props.title || 'Error Logs'} onRequestClose={onClose}>
-			<div>
-				{props.description}
-			</div>
+			<div>{props.description}</div>
 			<SiteLogs key={activeModal} className={css.logsInsideModal} />
 		</Modal>
 	);

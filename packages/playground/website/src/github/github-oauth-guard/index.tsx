@@ -5,7 +5,7 @@ import css from './style.module.css';
 import { useState } from 'react';
 import classNames from 'classnames';
 import { useActiveSite } from '../../lib/state/redux/store';
-import { ModalComponent as Modal } from '../../components/modal';
+import { Modal } from '../../components/modal';
 
 const OAUTH_FLOW_URL = 'oauth.php?redirect=1';
 const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +21,7 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 	return (
 		// eslint-disable-next-line react/jsx-no-useless-fragment
 		<>
-			{ (isModalOpen) &&
+			{isModalOpen && (
 				<Modal
 					title="Connect to GitHub"
 					onRequestClose={() => {
@@ -32,7 +32,7 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 						{children}
 					</GitHubOAuthGuard>
 				</Modal>
-			}
+			)}
 		</>
 	);
 }
