@@ -7,6 +7,7 @@ import { setActiveSiteError } from '../../lib/state/redux/slice-ui';
 import { useDispatch } from 'react-redux';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import ModalButtons from '../../components/modal/modal-buttons';
+import type { Blueprint } from '@wp-playground/blueprints';
 
 interface PreviewPRFormProps {
 	onImported: () => void;
@@ -83,12 +84,10 @@ export default function PreviewPRForm({
 				.toLowerCase()
 				.includes('github.com/wordpress/gutenberg/pull')
 		) {
-			// @ts-ignore
-			prNumber = prNumber.match(/\/pull\/(\d+)/)[1];
+			prNumber = prNumber.match(/\/pull\/(\d+)/)![1];
 		}
 
 		// Verify that the PR exists and that GitHub CI finished building it
-		// @ts-ignore
 		const zipArtifactUrl = `https://playground.wordpress.net/plugin-proxy.php?org=WordPress&repo=${
 			targetParams[target].repo
 		}&workflow=${targetParams[target].workflow}&artifact=${
@@ -156,8 +155,7 @@ export default function PreviewPRForm({
 		}
 
 		// Redirect to the Playground site with the Blueprint to download and apply the PR
-		const blueprint = {
-			$schema: 'https://playground.wordpress.net/blueprint-schema.json',
+		const blueprint: Blueprint = {
 			landingPage: urlParams.get('url') || '/wp-admin',
 			login: true,
 			features: {
@@ -181,8 +179,7 @@ export default function PreviewPRForm({
 				targetParams.set('mode', urlParams.get('mode') as string);
 			}
 			targetParams.set('core-pr', prNumber);
-			// @ts-ignore
-			window.location =
+			window.location.href =
 				localhost +
 				'./?' +
 				targetParams.toString() +
@@ -197,8 +194,7 @@ export default function PreviewPRForm({
 				);
 				if (importSite) {
 					// Add it as the first step in the blueprint
-					// @ts-ignore
-					blueprint.steps.unshift({
+					blueprint.steps!.unshift({
 						step: 'importWordPressFiles',
 						wordPressFilesZip: {
 							resource: 'url',
@@ -211,8 +207,7 @@ export default function PreviewPRForm({
 			}
 
 			const encoded = JSON.stringify(blueprint);
-			// @ts-ignore
-			window.location =
+			window.location.href =
 				localhost +
 				'./?gutenberg-pr=' +
 				prNumber +
