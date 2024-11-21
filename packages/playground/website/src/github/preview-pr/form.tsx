@@ -17,22 +17,22 @@ interface PreviewPRFormProps {
 const urlParams = new URLSearchParams(window.location.search);
 
 export const targetParams = {
-	'wordpress': {
+	wordpress: {
 		repo: 'wordpress-develop',
 		workflow: 'Test%20Build%20Processes',
-		artifact: 'wordpress-build-'
+		artifact: 'wordpress-build-',
 	},
-	'gutenberg': {
+	gutenberg: {
 		repo: 'gutenberg',
 		workflow: 'Build%20Gutenberg%20Plugin%20Zip',
-		artifact: 'gutenberg-plugin'
-	}
-}
+		artifact: 'gutenberg-plugin',
+	},
+};
 
 export default function PreviewPRForm({
 	onImported,
 	onClose,
-	target = 'wordpress'
+	target = 'wordpress',
 }: PreviewPRFormProps) {
 	const dispatch: PlaygroundDispatch = useDispatch();
 	const [value, setValue] = useState<string>('');
@@ -58,9 +58,11 @@ export default function PreviewPRForm({
 	}
 
 	function renderRetryIn(retryIn: number) {
-		setError(`Waiting for GitHub to finish building PR ${value}. This might take 15 minutes or more! Retrying in ${
-			retryIn / 1000
-		}...`);
+		setError(
+			`Waiting for GitHub to finish building PR ${value}. This might take 15 minutes or more! Retrying in ${
+				retryIn / 1000
+			}...`
+		);
 	}
 
 	async function previewPr(prValue: string) {
@@ -87,7 +89,11 @@ export default function PreviewPRForm({
 
 		// Verify that the PR exists and that GitHub CI finished building it
 		// @ts-ignore
-		const zipArtifactUrl = `https://playground.wordpress.net/plugin-proxy.php?org=WordPress&repo=${targetParams[target].repo}&workflow=${targetParams[target].workflow}&artifact=${targetParams[target].artifact}${target === 'wordpress' ? prNumber : ''}&pr=${prNumber}`;
+		const zipArtifactUrl = `https://playground.wordpress.net/plugin-proxy.php?org=WordPress&repo=${
+			targetParams[target].repo
+		}&workflow=${targetParams[target].workflow}&artifact=${
+			targetParams[target].artifact
+		}${target === 'wordpress' ? prNumber : ''}&pr=${prNumber}`;
 		// Send the HEAD request to zipArtifactUrl to confirm the PR and the artifact both exist
 		const response = await fetch(zipArtifactUrl + '&verify_only=true');
 		if (response.status !== 200) {
@@ -111,7 +117,9 @@ export default function PreviewPRForm({
 				error === 'artifact_not_available'
 			) {
 				if (parseInt(prNumber) < 5749) {
-					setError(`The PR ${prNumber} predates the Pull Request previewer and requires a rebase before it can be previewed.`);
+					setError(
+						`The PR ${prNumber} predates the Pull Request previewer and requires a rebase before it can be previewed.`
+					);
 				} else {
 					let retryIn = 30000;
 					renderRetryIn(retryIn);
@@ -132,9 +140,13 @@ export default function PreviewPRForm({
 					};
 				}
 			} else if (error === 'artifact_invalid') {
-				setError(`The PR ${prNumber} requires a rebase before it can be previewed.`);
+				setError(
+					`The PR ${prNumber} requires a rebase before it can be previewed.`
+				);
 			} else {
-				setError(`The PR ${prNumber} couldn't be previewed due to an unexpected error. Please try again later or fill an issue in the WordPress Playground repository.`);
+				setError(
+					`The PR ${prNumber} couldn't be previewed due to an unexpected error. Please try again later or fill an issue in the WordPress Playground repository.`
+				);
 				// https://github.com/WordPress/wordpress-playground/issues/new
 			}
 
@@ -145,17 +157,13 @@ export default function PreviewPRForm({
 
 		// Redirect to the Playground site with the Blueprint to download and apply the PR
 		const blueprint = {
-			$schema:
-				'https://playground.wordpress.net/blueprint-schema.json',
+			$schema: 'https://playground.wordpress.net/blueprint-schema.json',
 			landingPage: urlParams.get('url') || '/wp-admin',
 			login: true,
-			preferredVersions: {
-				php: '7.4',
-			},
 			features: {
 				networking: true,
 			},
-			steps: []
+			steps: [],
 		};
 		const encoded = JSON.stringify(blueprint);
 		let localhost = null;
@@ -175,12 +183,18 @@ export default function PreviewPRForm({
 			targetParams.set('core-pr', prNumber);
 			// @ts-ignore
 			window.location =
-				localhost + './?' + targetParams.toString() + '#' + encodeURI(encoded);
+				localhost +
+				'./?' +
+				targetParams.toString() +
+				'#' +
+				encodeURI(encoded);
 		} else if (target === 'gutenberg') {
 			// [gutenberg] If there's a import-site query parameter, pass that to the blueprint
 			const urlParams = new URLSearchParams(window.location.search);
 			try {
-				const importSite = new URL(urlParams.get('import-site') as string);
+				const importSite = new URL(
+					urlParams.get('import-site') as string
+				);
 				if (importSite) {
 					// Add it as the first step in the blueprint
 					// @ts-ignore
@@ -199,7 +213,11 @@ export default function PreviewPRForm({
 			const encoded = JSON.stringify(blueprint);
 			// @ts-ignore
 			window.location =
-				localhost + './?gutenberg-pr=' + prNumber + '#' + encodeURI(encoded);
+				localhost +
+				'./?gutenberg-pr=' +
+				prNumber +
+				'#' +
+				encodeURI(encoded);
 
 			onImported();
 		}
@@ -208,9 +226,11 @@ export default function PreviewPRForm({
 	return (
 		<div>
 			<div className={css.content}>
-				{ submitting && <div className={css.overlay}>
-					<Spinner />
-				</div>}
+				{submitting && (
+					<div className={css.overlay}>
+						<Spinner />
+					</div>
+				)}
 				<TextControl
 					disabled={submitting}
 					label="Pull request number or URL"
