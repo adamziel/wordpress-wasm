@@ -1,0 +1,14 @@
+{
+	"$schema": "../../../blueprints/public/blueprint-schema.json",
+	"constants": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true
+	},
+	"login": true,
+	"steps": [
+		{
+			"step": "activatePlugin",
+			"pluginPath": "data-liberation/plugin.php"
+		}
+	]
+}

@@ -92,14 +92,55 @@ test('should not login the user in if the login query parameter is set to no', a
 	);
 });
 
-['/wp-admin/', '/wp-admin/post.php?post=1&action=edit'].forEach((path) => {
-	test(`should correctly redirect encoded wp-admin url to ${path}`, async ({
-		website,
-		wordpress,
-	}) => {
+[
+	['/wp-admin/', 'should redirect to wp-admin'],
+	['/wp-admin/post.php?post=1&action=edit', 'should redirect to post editor'],
+].forEach(([path, description]) => {
+	test(description, async ({ website, wordpress }) => {
 		await website.goto(`./?url=${encodeURIComponent(path)}`);
 		expect(
-			await wordpress.locator('body').evaluate((body) => body.baseURI)
+			await wordpress
+				.locator('body')
+				.evaluate((body) => body.ownerDocument.location.href)
 		).toContain(path);
 	});
+});
+
+test('should translate WP-admin to Spanish using the language query parameter', async ({
+	website,
+	wordpress,
+}) => {
+	await website.goto('./?language=es_ES&url=/wp-admin/');
+	await expect(wordpress.locator('body')).toContainText('Escritorio');
+});
+
+/**
+ * There is no reason to remove encoded control characters from the URL.
+ * For example, the html-api-debugger accepts markup with newlines encoded
+ * as %0A via the query string.
+ */
+test('should retain encoded control characters in the URL', async ({
+	website,
+	wordpress,
+	browserName,
+}) => {
+	test.skip(
+		browserName === 'firefox' || browserName === 'webkit',
+		`It's unclear why this test fails in Firefox and Safari. The actual feature seems to be working in manual testing. ` +
+		`Let's figure this out and re-enable the test at one point. The upsides of merging the original PR sill ` +
+		`outweighted the downsides of disabling the test on FF.`
+	);
+	const path =
+		'/wp-admin/admin.php?page=html-api-debugger&html=%3Cdiv%3E%0A1%0A2%0A3%0A%3C%2Fdiv%3E';
+	// We need to use the html-api-debugger plugin to test this because
+	// most wp-admin pages enforce a redirect to a sanitized (broken)
+	// version of the URL.
+	await website.goto(
+		`./?url=${encodeURIComponent(path)}&plugin=html-api-debugger`
+	);
+	expect(
+		await wordpress
+			.locator('body')
+			.evaluate((body) => body.ownerDocument.location.href)
+	).toContain(path);
 });

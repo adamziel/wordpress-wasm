@@ -318,9 +318,7 @@ export class PHPRequestHandler {
 	 * @param  request - PHP Request data.
 	 */
 	async request(request: PHPRequest): Promise<PHPResponse> {
-		const isAbsolute =
-			request.url.startsWith('http://') ||
-			request.url.startsWith('https://');
+		const isAbsolute = URL.canParse(request.url);
 		const requestedUrl = new URL(
 			// Remove the hash part of the URL as it's not meant for the server.
 			request.url.split('#')[0],

@@ -4,6 +4,23 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.12] (2024-11-18) 
+
+### Website
+
+- [Service Worker] Support redirects to relative URLs in Safari. ([#1978](https://github.com/WordPress/wordpress-playground/pull/1978))
+
+#### Blueprints
+
+- [Query API] Use the exact redirect URL provided in the ?url= query param. ([#1945](https://github.com/WordPress/wordpress-playground/pull/1945))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak
+
+
 ## [v1.0.11] (2024-11-11) 
 
 

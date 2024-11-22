@@ -3,7 +3,7 @@
 require_once __DIR__ . "/../bootstrap.php";
 
 if ( $argc < 2 ) {
-	echo "Usage: php script.php <command> --file <input-file> --current-site-url <current site url> --new-site-url <target url>\n";
+	echo "Usage: php script.php <command> --file <input-file> --from-url <current site url> --to-url <target url>\n";
 	echo "Commands:\n";
 	echo "  list_urls: List all the URLs found in the input file.\n";
 	echo "  migrate_urls: Migrate all the URLs found in the input file from the current site to the target site.\n";
@@ -34,7 +34,7 @@ $block_markup = file_get_contents( $inputFile );
 
 // @TODO: Decide – should the current site URL be always required to
 //        populate $base_url?
-$base_url = $options['current-site-url'] ?? 'https://playground.internal';
+$base_url = $options['from-url'] ?? 'https://playground.internal';
 $p        = new WP_Block_Markup_Url_Processor( $block_markup, $base_url );
 
 switch ( $command ) {
@@ -44,24 +44,25 @@ switch ( $command ) {
 		echo "\n";
 		break;
 	case 'migrate_urls':
-		if ( ! isset( $options['current-site-url'] ) ) {
-			echo "The --current-site-url option is required for the migrate_urls command.\n";
+		if ( ! isset( $options['from-url'] ) ) {
+			echo "The --from-url option is required for the migrate_urls command.\n";
 			exit( 1 );
 		}
-		if ( ! isset( $options['new-site-url'] ) ) {
-			echo "The --new-site-url option is required for the migrate_urls command.\n";
+		if ( ! isset( $options['to-url'] ) ) {
+			echo "The --to-url option is required for the migrate_urls command.\n";
 			exit( 1 );
 		}
 
-		echo "Replacing $base_url with " . $options['new-site-url'] . " in the input.\n\n";
+		echo "Replacing $base_url with " . $options['to-url'] . " in the input.\n\n";
 		if (!is_dir('./assets')) {
 			mkdir('./assets/', 0777, true);
 		}
 		$result = wp_rewrite_urls( array(
 			'block_markup' => $block_markup,
 			'base_url' => $base_url,
-			'current-site-url' => $options['current-site-url'],
-			'new-site-url' => $options['new-site-url'],
+			'url-mapping' => [
+				$options['from-url'] => $options['to-url'],
+			],
 		) );
 		if(!is_string($result)) {
 			echo "Error! \n";

@@ -22,6 +22,9 @@
  * starting with 1.0, however, because most that's what most WXR
  * files declare.
  *
+ * @TODO: Scrutinize pause() and resume() methods. Can we avoid exposing string
+ *        indices and other internal state?
+ *
  * @TODO: Track specific error states, expose informative messages, line
  *        numbers, indexes, and other debugging info.
  *
@@ -396,6 +399,15 @@ class WP_XML_Processor {
 	public $bytes_already_parsed = 0;
 
 	/**
+	 * How many XML bytes from the original stream have already been removed
+	 * from the memory.
+	 *
+	 * @since WP_VERSION
+	 * @var int
+	 */
+	public $bytes_already_forgotten = 0;
+
+	/**
 	 * Byte offset in input document where current token starts.
 	 *
 	 * Example:
@@ -632,12 +644,10 @@ class WP_XML_Processor {
 	 */
 	public $stack_of_open_elements = array();
 
-	public $had_previous_chunks = false;
-
 	/**
 	 *
 	 */
-	public static function from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
+	public static function create_from_string( $xml, $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
@@ -647,11 +657,44 @@ class WP_XML_Processor {
 		return $processor;
 	}
 
-	public static function from_stream( $xml, $known_definite_encoding = 'UTF-8' ) {
+	public static function create_for_streaming( $xml = '', $known_definite_encoding = 'UTF-8' ) {
 		if ( 'UTF-8' !== $known_definite_encoding ) {
 			return null;
 		}
 		return new WP_XML_Processor( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
+	}
+
+	/**
+	 * Pauses the processor and returns an array of the information needed to resume.
+	 *
+	 * @TODO:
+	 * – What to do with bookmarks when pausing?
+	 * – Consider including all the below information in internal bookmarks. Consider using a logic
+	 *   similar to resume() in seek().
+	 * – Consider a WP_XML_Processor_Paused_State or a WP_XML_Processor_Bookmark class.
+	 * – Should we flush the enqueued lexical updates first?
+	 */
+	public function pause() {
+		return array(
+			'token_byte_offset_in_the_input_stream' => $this->bytes_already_forgotten + $this->token_starts_at,
+			'bytes_already_forgotten' => $this->bytes_already_forgotten,
+			'parser_context' => $this->parser_context,
+			'stack_of_open_elements' => $this->stack_of_open_elements,
+			'expecting_more_input' => $this->expecting_more_input,
+		);
+	}
+
+	/**
+	 * @TODO:
+	 * – Validate the paused state, return false if it's invalid.
+	 */
+	public function resume( $paused_state ) {
+		$this->bytes_already_parsed    = 0;
+		$this->bytes_already_forgotten = $paused_state['bytes_already_forgotten'];
+		$this->stack_of_open_elements  = $paused_state['stack_of_open_elements'];
+		$this->parser_context          = $paused_state['parser_context'];
+		$this->expecting_more_input    = $paused_state['expecting_more_input'];
+		$this->next_token();
 	}
 
 	/**
@@ -684,69 +727,6 @@ class WP_XML_Processor {
 		$this->xml = $xml;
 	}
 
-	public static function create_stream_processor( $node_visitor_callback ) {
-		$xml_processor = WP_XML_Processor::from_stream( '' );
-		// Don't auto-flush the processed bytes. We'll do that manually.
-		$xml_processor->memory_budget = null;
-		return new ProcessorByteStream(
-			$xml_processor,
-			function ( $state ) use ( $xml_processor, $node_visitor_callback ) {
-				$new_bytes = $state->consume_input_bytes();
-				if ( null !== $new_bytes ) {
-					$xml_processor->append_bytes( $new_bytes );
-				}
-				$tokens_found = 0;
-				while ( $xml_processor->next_token() ) {
-					++$tokens_found;
-					$node_visitor_callback( $xml_processor );
-				}
-
-				$buffer = '';
-				if ( $tokens_found > 0 ) {
-					$buffer .= $xml_processor->flush_processed_xml();
-				} elseif (
-					$tokens_found === 0 &&
-					! $xml_processor->is_paused_at_incomplete_input() &&
-					$xml_processor->get_current_depth() === 0
-				) {
-					$buffer .= $xml_processor->flush_processed_xml();
-					$buffer .= $xml_processor->get_updated_xml();
-					$state->finish();
-				}
-
-				if ( ! strlen( $buffer ) ) {
-					return false;
-				}
-
-				$state->output_bytes = $buffer;
-				return true;
-			}
-		);
-	}
-
-	/*
-	@TODO: implement these methods for re-entrancy
-
-	public function pause() {
-		return array(
-			'xml' => $this->xml,
-			// @TODO: Include all the information below in the bookmark:
-			'bytes_already_parsed' => $this->token_starts_at,
-			'breadcrumbs' => $this->get_breadcrumbs(),
-			'parser_context' => $this->parser_context,
-			'stack_of_open_elements' => $this->stack_of_open_elements,
-		);
-	}
-
-	public function resume( $paused ) {
-		$this->xml                    = $paused['xml'];
-		$this->stack_of_open_elements = $paused['stack_of_open_elements'];
-		$this->parser_context         = $paused['parser_context'];
-		$this->bytes_already_parsed   = $paused['bytes_already_parsed'];
-		$this->parse_next_token();
-	}
-	*/
-
 	/**
 	 * Wipes out the processed XML and appends the next chunk of XML to
 	 * any remaining unprocessed XML.
@@ -762,8 +742,7 @@ class WP_XML_Processor {
 			);
 			return false;
 		}
-		$this->xml                .= $next_chunk;
-		$this->had_previous_chunks = true;
+		$this->xml .= $next_chunk;
 		if ( $this->parser_state === self::STATE_INCOMPLETE_INPUT ) {
 			$this->parser_state = self::STATE_READY;
 		}
@@ -786,6 +765,11 @@ class WP_XML_Processor {
 	 */
 	public function input_finished() {
 		$this->expecting_more_input = false;
+		$this->parser_state         = self::STATE_READY;
+	}
+
+	public function is_expecting_more_input() {
+		return $this->expecting_more_input;
 	}
 
 	public function flush_processed_xml() {
@@ -802,7 +786,6 @@ class WP_XML_Processor {
 		$this->bookmarks             = array();
 		$this->lexical_updates       = array();
 		$this->seek_count            = 0;
-		$this->had_previous_chunks   = true;
 		$this->bytes_already_parsed -= $unreferenced_bytes;
 		if ( null !== $this->token_starts_at ) {
 			$this->token_starts_at -= $unreferenced_bytes;
@@ -813,6 +796,7 @@ class WP_XML_Processor {
 		if ( null !== $this->text_starts_at ) {
 			$this->text_starts_at -= $unreferenced_bytes;
 		}
+		$this->bytes_already_forgotten += $unreferenced_bytes;
 		return $flushed_bytes;
 	}
 
@@ -1576,7 +1560,7 @@ class WP_XML_Processor {
 			 */
 			if (
 				0 === $at &&
-				! $this->had_previous_chunks &&
+				0 === $this->bytes_already_forgotten &&
 				! $this->is_closing_tag &&
 				'?' === $xml[ $at + 1 ] &&
 				'x' === $xml[ $at + 2 ] &&
