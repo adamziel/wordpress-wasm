@@ -32,7 +32,9 @@ export interface SetSiteLanguageStep {
  */
 export const getWordPressTranslationUrl = (
 	wpVersion: string,
-	language: string
+	language: string,
+	latestBetaVersion: string = MinifiedWordPressVersions['beta'],
+	latestMinifiedVersion: string = LatestMinifiedWordPressVersion
 ) => {
 	/**
 	 * The translation API provides translations for all WordPress releases
@@ -51,17 +53,18 @@ export const getWordPressTranslationUrl = (
 	 * For example translations for WordPress 6.6-BETA1 or 6.6-RC1 are found under
 	 * https://downloads.wordpress.org/translation/core/6.6-RC/en_GB.zip
 	 */
-	if (wpVersion.match(/(\d.\d(.\d)?)-(alpha|beta|nightly|rc).*$/i)) {
-		wpVersion = MinifiedWordPressVersions['beta'].replace(
-			/(rc|beta).*$/i,
-			'RC'
-		);
+	if (wpVersion.match(/^(\d.\d(.\d)?)-(alpha|beta|nightly|rc).*$/i)) {
+		wpVersion = latestBetaVersion
+			// Remove the patch version, e.g. 6.6.1-RC1 -> 6.6-RC1
+			.replace(/^(\d.\d)(.\d+)/i, '$1')
+			// Replace "rc" and "beta" with "RC", e.g. 6.6-nightly -> 6.6-RC
+			.replace(/(rc|beta).*$/i, 'RC');
 	} else if (!wpVersion.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
 		/**
 		 * If the WordPress version string isn't a major.minor or major.minor.patch,
 		 * the latest available WordPress build version will be used instead.
 		 */
-		wpVersion = LatestMinifiedWordPressVersion;
+		wpVersion = latestMinifiedVersion;
 	}
 	return `https://downloads.wordpress.org/translation/core/${wpVersion}/${language}.zip`;
 };
