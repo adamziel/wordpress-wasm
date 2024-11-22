@@ -211,7 +211,8 @@ export function BlueprintsPanel({
 					</FlexItem>
 				) : isError ? (
 					<FlexItem
-						style={{ alignSelf: 'stretch', padding: '0 24px' }}
+						className={css.paddedH}
+						style={{ alignSelf: 'stretch' }}
 					>
 						<p>
 							Could not load the Blueprints from the gallery. Try
@@ -219,9 +220,7 @@ export function BlueprintsPanel({
 						</p>
 					</FlexItem>
 				) : (
-					<FlexItem
-						style={{ alignSelf: 'stretch' }}
-					>
+					<FlexItem style={{ alignSelf: 'stretch' }}>
 						<DataViews<BlueprintsIndexEntry>
 							data={indexEntries as BlueprintsIndexEntry[]}
 							view={view}
