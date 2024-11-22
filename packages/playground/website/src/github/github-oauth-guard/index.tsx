@@ -18,22 +18,21 @@ export function GitHubOAuthGuardModal({ children }: GitHubOAuthGuardProps) {
 		return null;
 	}
 
+	if (!isModalOpen) {
+		return null;
+	}
+
 	return (
-		// eslint-disable-next-line react/jsx-no-useless-fragment
-		<>
-			{isModalOpen && (
-				<Modal
-					title="Connect to GitHub"
-					onRequestClose={() => {
-						setIsModalOpen(false);
-					}}
-				>
-					<GitHubOAuthGuard mayLoseProgress={false}>
-						{children}
-					</GitHubOAuthGuard>
-				</Modal>
-			)}
-		</>
+		<Modal
+			title="Connect to GitHub"
+			onRequestClose={() => {
+				setIsModalOpen(false);
+			}}
+		>
+			<GitHubOAuthGuard mayLoseProgress={false}>
+				{children}
+			</GitHubOAuthGuard>
+		</Modal>
 	);
 }
 
