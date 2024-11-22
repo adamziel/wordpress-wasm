@@ -42,7 +42,7 @@ export default function PreviewPRForm({
 		}
 	}, []);
 
-	async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
+	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 
 		if (!value) {
@@ -209,7 +209,7 @@ export default function PreviewPRForm({
 	}
 
 	return (
-		<div>
+		<form onSubmit={handleSubmit}>
 			<div className={css.content}>
 				{submitting && (
 					<div className={css.overlay}>
@@ -233,6 +233,6 @@ export default function PreviewPRForm({
 				onSubmit={handleSubmit}
 				submitText="Preview"
 			/>
-		</div>
+		</form>
 	);
 }
