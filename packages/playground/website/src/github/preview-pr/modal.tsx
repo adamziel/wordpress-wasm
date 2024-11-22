@@ -18,20 +18,13 @@ export function PreviewPRModal({ target }: PreviewPRModalProps) {
 	const closeModal = () => {
 		dispatch(setActiveModal(null));
 	};
-	function handleImported() {
-		closeModal();
-	}
 	return (
 		<Modal
 			small
 			title={`Preview a ${targetName[target]} PR`}
 			onRequestClose={closeModal}
 		>
-			<PreviewPRForm
-				onClose={closeModal}
-				onImported={handleImported}
-				target={target}
-			/>
+			<PreviewPRForm onClose={closeModal} target={target} />
 		</Modal>
 	);
 }

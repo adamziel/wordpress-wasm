@@ -7,7 +7,6 @@ import ModalButtons from '../../components/modal/modal-buttons';
 import type { Blueprint } from '@wp-playground/blueprints';
 
 interface PreviewPRFormProps {
-	onImported: () => void;
 	onClose: () => void;
 	target: 'wordpress' | 'gutenberg';
 }
@@ -28,7 +27,6 @@ export const targetParams = {
 };
 
 export default function PreviewPRForm({
-	onImported,
 	onClose,
 	target = 'wordpress',
 }: PreviewPRFormProps) {
@@ -158,14 +156,6 @@ export default function PreviewPRForm({
 			},
 			steps: [],
 		};
-		const encoded = JSON.stringify(blueprint);
-		let localhost = null;
-		const isLocalhost =
-			window.location.hostname === 'localhost' ||
-			window.location.hostname === '127.0.0.1';
-		if (isLocalhost) {
-			localhost = /website-server/;
-		}
 
 		if (target === 'wordpress') {
 			// [wordpress] Passthrough the mode query parameter if it exists
@@ -174,12 +164,16 @@ export default function PreviewPRForm({
 				targetParams.set('mode', urlParams.get('mode') as string);
 			}
 			targetParams.set('core-pr', prNumber);
-			window.location.href =
-				localhost +
-				'./?' +
-				targetParams.toString() +
-				'#' +
-				encodeURI(encoded);
+
+			const blueprintJson = JSON.stringify(blueprint);
+			const urlWithPreview = new URL(
+				window.location.pathname,
+				window.location.href
+			);
+			urlWithPreview.search = targetParams.toString();
+			urlWithPreview.hash = encodeURI(blueprintJson);
+
+			window.location.href = urlWithPreview.toString();
 		} else if (target === 'gutenberg') {
 			// [gutenberg] If there's a import-site query parameter, pass that to the blueprint
 			const urlParams = new URLSearchParams(window.location.search);
@@ -201,15 +195,16 @@ export default function PreviewPRForm({
 				logger.error('Invalid import-site URL');
 			}
 
-			const encoded = JSON.stringify(blueprint);
-			window.location.href =
-				localhost +
-				'./?gutenberg-pr=' +
-				prNumber +
-				'#' +
-				encodeURI(encoded);
+			const blueprintJson = JSON.stringify(blueprint);
 
-			onImported();
+			const urlWithPreview = new URL(
+				window.location.pathname,
+				window.location.href
+			);
+			urlWithPreview.searchParams.set('gutenberg-pr', prNumber);
+			urlWithPreview.hash = encodeURI(blueprintJson);
+
+			window.location.href = urlWithPreview.toString();
 		}
 	}
 
