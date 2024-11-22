@@ -446,14 +446,14 @@ export default function GitHubExportForm({
 					</a>
 				</p>
 
-				{pushResult.forked ? (
+				{pushResult.forked && (
 					<p>
 						Because of access restrictions set by your organization,
 						these changes could not be submitted directly to the
 						repository. Instead, they were submitted to your fork of
 						the repository.
 					</p>
-				) : false}
+				)}
 
 				<div className={forms.submitRow}>
 					<Button variant="primary" size="large" onClick={onClose}>
