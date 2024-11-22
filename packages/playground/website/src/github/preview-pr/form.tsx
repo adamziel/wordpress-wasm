@@ -3,9 +3,6 @@ import { useState } from 'react';
 import { Spinner, TextControl } from '@wordpress/components';
 import css from './style.module.css';
 import { logger } from '@php-wasm/logger';
-import { setActiveSiteError } from '../../lib/state/redux/slice-ui';
-import { useDispatch } from 'react-redux';
-import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import ModalButtons from '../../components/modal/modal-buttons';
 import type { Blueprint } from '@wp-playground/blueprints';
 
@@ -35,7 +32,6 @@ export default function PreviewPRForm({
 	onClose,
 	target = 'wordpress',
 }: PreviewPRFormProps) {
-	const dispatch: PlaygroundDispatch = useDispatch();
 	const [value, setValue] = useState<string>('');
 	const [submitting, setSubmitting] = useState<boolean>(false);
 	const [errorMsg, setError] = useState<string>('');
