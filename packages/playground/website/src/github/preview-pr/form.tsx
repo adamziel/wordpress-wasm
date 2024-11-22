@@ -104,8 +104,7 @@ export default function PreviewPRForm({
 				}
 			} catch (e) {
 				logger.error(e);
-				// TODO: Is it right error here?
-				dispatch(setActiveSiteError('site-boot-failed'));
+				setError('An unexpected error occurred. Please try again.');
 				return;
 			}
 
