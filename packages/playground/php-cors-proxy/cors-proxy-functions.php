@@ -354,3 +354,24 @@ function rewrite_relative_redirect(
     }
     return $proxy_absolute_url . $redirect_location;
 }
+
+/**
+ * Answers whether CORS is allowed for the specified origin.
+ */
+function should_respond_with_cors_headers($host, $origin) {
+    if (
+        $host !== 'playground.wordpress.net' &&
+        $origin === 'https://playground.wordpress.net'
+    ) {
+        return true;
+    }
+
+    $origin_host = parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST);
+    $is_local_origin = in_array(
+        $origin_host,
+        array('localhost', '127.0.0.1'),
+        true
+    );
+
+    return $is_local_origin;
+}
