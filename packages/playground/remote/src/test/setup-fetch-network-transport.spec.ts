@@ -26,7 +26,8 @@ describe('handleRequest', () => {
 		);
 	});
 	it('Should preserve the Content-Type header when POSTing', async () => {
-		const fetchMock = vitest.fn(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const fetchMock = vitest.fn(async (u: string, o: RequestInit) => {
 			return {
 				status: 200,
 				statusText: 'OK',
