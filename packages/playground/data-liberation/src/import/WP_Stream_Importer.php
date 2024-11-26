@@ -614,7 +614,6 @@ class WP_Stream_Importer {
 		$this->active_downloads[ $cursor ] = array();
 
 		$data = $entity->get_data();
-
 		switch ( $entity->get_type() ) {
 			case 'asset_retry':
 				$this->enqueue_attachment_download(
@@ -676,8 +675,8 @@ class WP_Stream_Importer {
 		$this->imported_entities_counts = array();
 
 		if ( null === $this->entity_iterator ) {
-			$this->downloader         = new WP_Attachment_Downloader( $this->options );
 			$this->entity_iterator    = $this->create_entity_iterator();
+			$this->importer           = new WP_Entity_Importer();
 			$this->topological_sorter = new WP_Topological_Sorter();
 		}
 
