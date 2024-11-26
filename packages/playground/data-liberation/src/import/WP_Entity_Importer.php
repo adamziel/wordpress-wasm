@@ -95,7 +95,7 @@ class WP_Entity_Importer {
 		$this->mapping['term_id']   = array();
 		$this->requires_remapping   = $empty_types;
 		$this->exists               = $empty_types;
-		$this->logger               = new Logger();
+		$this->logger               = isset( $options['logger'] ) ? $options['logger'] : new WP_Logger();
 
 		$this->options = wp_parse_args(
 			$options,
@@ -1191,59 +1191,5 @@ class WP_Entity_Importer {
 		}
 
 		return $a['comment_id'] - $b['comment_id'];
-	}
-}
-
-/**
- * @TODO how to treat this? Should this class even exist?
- *       how does WordPress handle different levels? It
- *       seems useful for usage in wp-cli, Blueprints,
- *       and other non-web environments.
- */
-// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
-class Logger {
-	/**
-	 * Log a debug message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function debug( $message ) {
-		// echo( '[DEBUG] ' . $message );
-	}
-
-	/**
-	 * Log an info message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function info( $message ) {
-		// echo( '[INFO] ' . $message );
-	}
-
-	/**
-	 * Log a warning message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function warning( $message ) {
-		echo( '[WARNING] ' . $message );
-	}
-
-	/**
-	 * Log an error message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function error( $message ) {
-		echo( '[ERROR] ' . $message );
-	}
-
-	/**
-	 * Log a notice message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function notice( $message ) {
-		// echo( '[NOTICE] ' . $message );
 	}
 }

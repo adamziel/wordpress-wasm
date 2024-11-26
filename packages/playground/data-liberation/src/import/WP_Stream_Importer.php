@@ -129,6 +129,11 @@ class WP_Stream_Importer {
 	protected $active_downloads = array();
 	protected $downloader;
 
+	/**
+	 * @var WP_Topological_Sorter
+	 */
+	private $topological_sorter;
+
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_path ) {
@@ -573,7 +578,9 @@ class WP_Stream_Importer {
 		$cursor                            = $this->entity_iterator->get_reentrancy_cursor();
 		$this->active_downloads[ $cursor ] = array();
 
-		$data = $entity->get_data();
+		$data     = $entity->get_data();
+		$upstream = $this->entity_iterator->get_upstream();
+
 		switch ( $entity->get_type() ) {
 			case 'asset_retry':
 				$this->enqueue_attachment_download(
@@ -583,7 +590,18 @@ class WP_Stream_Importer {
 					)
 				);
 				break;
+			case 'category':
+			case 'term':
+				$this->topological_sorter->map_term( $upstream, $data );
+				break;
+			case 'site_option':
+				if ( $data['option_name'] === 'home' ) {
+					$this->source_site_url = $data['option_value'];
+				}
+				break;
 			case 'post':
+				$this->topological_sorter->map_post( $upstream, $data );
+
 				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
 					$this->enqueue_attachment_download( $data['attachment_url'] );
 				} elseif ( isset( $data['post_content'] ) ) {

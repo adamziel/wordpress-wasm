@@ -399,6 +399,10 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		$this->xml = $xml;
 	}
 
+	public function get_upstream() {
+		return $this->entity_byte_offset;
+	}
+
 	public function get_reentrancy_cursor() {
 		/**
 		 * @TODO: Instead of adjusting the XML cursor internals, adjust the get_reentrancy_cursor()
