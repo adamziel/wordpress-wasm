@@ -399,7 +399,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		$this->xml = $xml;
 	}
 
-	public function get_upstream() {
+	public function get_entity_byte_offset() {
 		return $this->entity_byte_offset;
 	}
 

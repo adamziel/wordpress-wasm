@@ -299,9 +299,8 @@ class WP_Stream_Importer {
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				// @TODO: Topologically sort the entities.
-				$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
-				return false;
+				$this->next_topological_sort_step();
+				return true;
 			case self::STAGE_FRONTLOAD_ASSETS:
 				if ( true === $this->frontload_next_entity() ) {
 					return true;
@@ -511,6 +510,42 @@ class WP_Stream_Importer {
 		}
 	}
 
+	private function next_topological_sort_step() {
+		if ( null === $this->entity_iterator ) {
+			$this->downloader         = new WP_Attachment_Downloader( $this->options );
+			$this->entity_iterator    = $this->create_entity_iterator();
+			$this->topological_sorter = new WP_Topological_Sorter();
+		}
+
+		if ( ! $this->entity_iterator->valid() ) {
+			$this->stage              = self::STAGE_FRONTLOAD_ASSETS;
+			$this->topological_sorter = null;
+			$this->downloader         = null;
+			$this->entity_iterator    = null;
+			$this->resume_at_entity   = null;
+			return;
+		}
+
+		// $cursor = $this->entity_iterator->get_reentrancy_cursor();
+		$entity   = $this->entity_iterator->current();
+		$data     = $entity->get_data();
+		$upstream = $this->entity_iterator->get_entity_byte_offset();
+
+		switch ( $entity->get_type() ) {
+			case 'category':
+			case 'term':
+				$this->topological_sorter->map_term( $upstream, $data );
+				break;
+			case 'post':
+				$this->topological_sorter->map_post( $upstream, $data );
+				break;
+		}
+
+		$this->entity_iterator->next();
+
+		return true;
+	}
+
 	/**
 	 * Downloads all the assets referenced in the imported entities.
 	 *
@@ -578,8 +613,7 @@ class WP_Stream_Importer {
 		$cursor                            = $this->entity_iterator->get_reentrancy_cursor();
 		$this->active_downloads[ $cursor ] = array();
 
-		$data     = $entity->get_data();
-		$upstream = $this->entity_iterator->get_upstream();
+		$data = $entity->get_data();
 
 		switch ( $entity->get_type() ) {
 			case 'asset_retry':
@@ -600,8 +634,6 @@ class WP_Stream_Importer {
 				}
 				break;
 			case 'post':
-				$this->topological_sorter->map_post( $upstream, $data );
-
 				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
 					$this->enqueue_attachment_download( $data['attachment_url'] );
 				} elseif ( isset( $data['post_content'] ) ) {
@@ -644,8 +676,9 @@ class WP_Stream_Importer {
 		$this->imported_entities_counts = array();
 
 		if ( null === $this->entity_iterator ) {
-			$this->entity_iterator = $this->create_entity_iterator();
-			$this->importer        = new WP_Entity_Importer();
+			$this->downloader         = new WP_Attachment_Downloader( $this->options );
+			$this->entity_iterator    = $this->create_entity_iterator();
+			$this->topological_sorter = new WP_Topological_Sorter();
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
