@@ -527,17 +527,16 @@ class WP_Stream_Importer {
 		}
 
 		// $cursor = $this->entity_iterator->get_reentrancy_cursor();
-		$entity   = $this->entity_iterator->current();
-		$data     = $entity->get_data();
-		$upstream = $this->entity_iterator->get_entity_byte_offset();
+		$entity = $this->entity_iterator->current();
+		$data   = $entity->get_data();
+		$offset = $this->entity_iterator->get_entity_byte_offset();
 
 		switch ( $entity->get_type() ) {
 			case 'category':
-			case 'term':
-				$this->topological_sorter->map_term( $upstream, $data );
+				$this->topological_sorter->map_category( $offset, $data );
 				break;
 			case 'post':
-				$this->topological_sorter->map_post( $upstream, $data );
+				$this->topological_sorter->map_post( $offset, $data );
 				break;
 		}
 

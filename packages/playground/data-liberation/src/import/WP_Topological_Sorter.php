@@ -9,9 +9,10 @@
  */
 class WP_Topological_Sorter {
 
-	public $unsorted_posts = array();
-	public $terms          = array();
-	public $index          = array();
+	public $unsorted_posts      = array();
+	public $unsorted_categories = array();
+	public $category_index      = array();
+	public $post_index          = array();
 
 	/**
 	 * Variable for keeping counts of orphaned posts/attachments, it'll also be assigned as temporarty post ID.
@@ -27,18 +28,19 @@ class WP_Topological_Sorter {
 	 */
 	protected $last_post_id = 0;
 
-	public function map_term( $upstream, $data ) {
+	public function map_category( $byte_offset, $data ) {
 		if ( empty( $data ) ) {
 			return false;
 		}
 
-		$this->terms[ $data['slug'] ] = array(
-			'upstream' => $upstream,
-			'visited'  => false,
+		$this->unsorted_categories[ $data['slug'] ] = array(
+			'byte_offset' => $byte_offset,
+			'parent'      => $data['parent'],
+			'visited'     => false,
 		);
 	}
 
-	public function map_post( $upstream, $data ) {
+	public function map_post( $byte_offset, $data ) {
 		if ( empty( $data ) ) {
 			return false;
 		}
@@ -55,9 +57,9 @@ class WP_Topological_Sorter {
 			}
 
 			$this->unsorted_posts[ $data['post_id'] ] = array(
-				'upstream' => $upstream,
-				'parent'   => $data['post_parent'],
-				'visited'  => false,
+				'byte_offset' => $byte_offset,
+				'parent'      => $data['post_parent'],
+				'visited'     => false,
 			);
 		}
 	}
@@ -70,9 +72,13 @@ class WP_Topological_Sorter {
 	 *
 	 * Sorted posts will be stored as attachments and posts/pages separately.
 	 */
-	public function sort_posts_topologically() {
+	public function sort_topologically() {
+		foreach ( $this->unsorted_categories as $slug => $category ) {
+			$this->topological_category_sort( $slug, $category );
+		}
+
 		foreach ( $this->unsorted_posts as $id => $post ) {
-			$this->topological_sort( $id, $post );
+			$this->topological_post_sort( $id, $post );
 		}
 
 		// Empty the unsorted posts
@@ -80,24 +86,46 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Recursive topological sorting.
+	 * Recursive posts topological sorting.
 	 *
 	 * @param int $id     The id of the post to sort.
 	 * @param array $post The post to sort.
 	 *
 	 * @todo Check for circular dependencies.
 	 */
-	private function topological_sort( $id, $post ) {
-		if ( isset( $this->posts[ $id ]['visited'] ) ) {
+	private function topological_post_sort( $id, $post ) {
+		if ( isset( $this->unsorted_posts[ $id ]['visited'] ) ) {
 			return;
 		}
 
 		$this->unsorted_posts[ $id ]['visited'] = true;
 
-		if ( isset( $this->posts[ $post['parent'] ] ) ) {
-			$this->topological_sort( $post['parent'], $this->unsorted_posts[ $post['parent'] ] );
+		if ( isset( $this->unsorted_posts[ $post['parent'] ] ) ) {
+			$this->topological_post_sort( $post['parent'], $this->unsorted_posts[ $post['parent'] ] );
 		}
 
-		$this->index[] = $post['upstream'];
+		$this->post_index[] = $post['byte_offset'];
+	}
+
+	/**
+	 * Recursive categories topological sorting.
+	 *
+	 * @param int $slug       The slug of the category to sort.
+	 * @param array $category The category to sort.
+	 *
+	 * @todo Check for circular dependencies.
+	 */
+	private function topological_category_sort( $slug, $category ) {
+		if ( isset( $this->unsorted_categories[ $slug ]['visited'] ) ) {
+			return;
+		}
+
+		$this->unsorted_categories[ $slug ]['visited'] = true;
+
+		if ( isset( $this->unsorted_categories[ $category['parent'] ] ) ) {
+			$this->topological_category_sort( $category['parent'], $this->unsorted_categories[ $category['parent'] ] );
+		}
+
+		$this->category_index[] = $category['byte_offset'];
 	}
 }
