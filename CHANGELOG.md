@@ -4,15 +4,55 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
-## [v1.0.12] (2024-11-18) 
+## [v1.0.13] (2024-11-25)
+
+### Enhancements
+
+-   E2E: Disable a flaky deployment test. ([#2016](https://github.com/WordPress/wordpress-playground/pull/2016))
+-   [Data Liberation] Add WXR import CLI script. ([#2012](https://github.com/WordPress/wordpress-playground/pull/2012))
+-   [Data Liberation] Re-entrant WP_Stream_Importer. ([#2004](https://github.com/WordPress/wordpress-playground/pull/2004))
+-   [Data Liberation] wp-admin importer page. ([#2003](https://github.com/WordPress/wordpress-playground/pull/2003))
+
+### Blueprints
+
+-   SetSiteLanguage step – download the latest RC translations for Nightly and Beta builds of WordPress. ([#1987](https://github.com/WordPress/wordpress-playground/pull/1987))
+-   Use the major WordPress version to download RC/beta translations. ([#2017](https://github.com/WordPress/wordpress-playground/pull/2017))
+
+### Tools
+
+#### Pull Request Previewer
+
+-   Fix path of PR preview URL in production. ([#2014](https://github.com/WordPress/wordpress-playground/pull/2014))
+-   Support submitting PR preview modal with ENTER key. ([#2015](https://github.com/WordPress/wordpress-playground/pull/2015))
 
 ### Website
 
-- [Service Worker] Support redirects to relative URLs in Safari. ([#1978](https://github.com/WordPress/wordpress-playground/pull/1978))
+-   Move WordPress & Gutenberg PR Preview to Playground website. ([#1938](https://github.com/WordPress/wordpress-playground/pull/1938))
+-   Restore basic element styles for modal dialog content. ([#2021](https://github.com/WordPress/wordpress-playground/pull/2021))
+
+### Bug Fixes
+
+-   Fix test.md link. ([#2005](https://github.com/WordPress/wordpress-playground/pull/2005))
+
+### Various
+
+-   [Data Liberation] WP_Stream_Importer with support for WXR and Markdown files. ([#1982](https://github.com/WordPress/wordpress-playground/pull/1982))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @bgrgicak @brandonpayton @StevenDufresne @zaerl
+
+## [v1.0.12] (2024-11-18)
+
+### Website
+
+-   [Service Worker] Support redirects to relative URLs in Safari. ([#1978](https://github.com/WordPress/wordpress-playground/pull/1978))
 
 #### Blueprints
 
-- [Query API] Use the exact redirect URL provided in the ?url= query param. ([#1945](https://github.com/WordPress/wordpress-playground/pull/1945))
+-   [Query API] Use the exact redirect URL provided in the ?url= query param. ([#1945](https://github.com/WordPress/wordpress-playground/pull/1945))
 
 ### Contributors
 
@@ -20,21 +60,17 @@ The following contributors merged PRs in this release:
 
 @adamziel @bgrgicak
 
+## [v1.0.11] (2024-11-11)
 
-## [v1.0.11] (2024-11-11) 
-
-
-
-
-## [v1.0.10] (2024-11-08) 
+## [v1.0.10] (2024-11-08)
 
 ### Enhancements
 
-- [CLI] Set debug constants during boot. ([#1983](https://github.com/WordPress/wordpress-playground/pull/1983))
+-   [CLI] Set debug constants during boot. ([#1983](https://github.com/WordPress/wordpress-playground/pull/1983))
 
 ### Bug Fixes
 
-- [CLI] Restore the "login" argument handler. ([#1985](https://github.com/WordPress/wordpress-playground/pull/1985))
+-   [CLI] Restore the "login" argument handler. ([#1985](https://github.com/WordPress/wordpress-playground/pull/1985))
 
 ### Contributors
 
@@ -42,34 +78,32 @@ The following contributors merged PRs in this release:
 
 @bgrgicak
 
-
-## [v1.0.9] (2024-11-04) 
+## [v1.0.9] (2024-11-04)
 
 ### Enhancements
 
-- [Data Liberation] Fork humanmade/WordPress-Importer. ([#1968](https://github.com/WordPress/wordpress-playground/pull/1968))
-- [Data Liberation] Merge both XML processors into a single WP_XML_Processor. ([#1960](https://github.com/WordPress/wordpress-playground/pull/1960))
-- [Data liberation] Add blueprints-library as a submodule. ([#1967](https://github.com/WordPress/wordpress-playground/pull/1967))
+-   [Data Liberation] Fork humanmade/WordPress-Importer. ([#1968](https://github.com/WordPress/wordpress-playground/pull/1968))
+-   [Data Liberation] Merge both XML processors into a single WP_XML_Processor. ([#1960](https://github.com/WordPress/wordpress-playground/pull/1960))
+-   [Data liberation] Add blueprints-library as a submodule. ([#1967](https://github.com/WordPress/wordpress-playground/pull/1967))
 
 ### Tools
 
-
 #### Import/Export
 
-- [Data Liberation] WP_WXR_Reader. ([#1972](https://github.com/WordPress/wordpress-playground/pull/1972))
+-   [Data Liberation] WP_WXR_Reader. ([#1972](https://github.com/WordPress/wordpress-playground/pull/1972))
 
 ### Documentation
 
-- Rewrite clone examples to use HTTPS instead of SSH. ([#1963](https://github.com/WordPress/wordpress-playground/pull/1963))
+-   Rewrite clone examples to use HTTPS instead of SSH. ([#1963](https://github.com/WordPress/wordpress-playground/pull/1963))
 
 ### Website
 
-- Consistent width of settings, logs, and blueprint gallery sidebars. ([#1964](https://github.com/WordPress/wordpress-playground/pull/1964))
+-   Consistent width of settings, logs, and blueprint gallery sidebars. ([#1964](https://github.com/WordPress/wordpress-playground/pull/1964))
 
 ### Bug Fixes
 
-- Fix: Import & Export from Github causes reloading the playground even before accept this step. ([#1908](https://github.com/WordPress/wordpress-playground/pull/1908))
-- [WordPress build] Only build the latest patch version of WordPress. ([#1955](https://github.com/WordPress/wordpress-playground/pull/1955))
+-   Fix: Import & Export from Github causes reloading the playground even before accept this step. ([#1908](https://github.com/WordPress/wordpress-playground/pull/1908))
+-   [WordPress build] Only build the latest patch version of WordPress. ([#1955](https://github.com/WordPress/wordpress-playground/pull/1955))
 
 ### Contributors
 
@@ -77,31 +111,29 @@ The following contributors merged PRs in this release:
 
 @adamziel @ajotka @bgrgicak
 
-
-## [v1.0.8] (2024-10-30) 
+## [v1.0.8] (2024-10-30)
 
 ### Enhancements
 
-- [Data liberation] wp_rewrite_urls(). ([#1893](https://github.com/WordPress/wordpress-playground/pull/1893))
+-   [Data liberation] wp_rewrite_urls(). ([#1893](https://github.com/WordPress/wordpress-playground/pull/1893))
 
 ### PHP WebAssembly
 
-- [PHP.wasm for Node] Fix php.js import path in the published npm package. ([#1958](https://github.com/WordPress/wordpress-playground/pull/1958))
+-   [PHP.wasm for Node] Fix php.js import path in the published npm package. ([#1958](https://github.com/WordPress/wordpress-playground/pull/1958))
 
 ### Website
 
-- Restore .d.ts files missing from the published @wp-playground/remote npm package. ([#1949](https://github.com/WordPress/wordpress-playground/pull/1949))
+-   Restore .d.ts files missing from the published @wp-playground/remote npm package. ([#1949](https://github.com/WordPress/wordpress-playground/pull/1949))
 
 ### Various
 
-- [Data Liberation] Add XML API, Stream API, WXR URL Rewriter API. ([#1952](https://github.com/WordPress/wordpress-playground/pull/1952))
+-   [Data Liberation] Add XML API, Stream API, WXR URL Rewriter API. ([#1952](https://github.com/WordPress/wordpress-playground/pull/1952))
 
 ### Contributors
 
 The following contributors merged PRs in this release:
 
 @adamziel @psrpinto
-
 
 ## [v1.0.7] (2024-10-28)
 

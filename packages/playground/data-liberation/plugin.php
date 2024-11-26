@@ -9,11 +9,14 @@ require_once __DIR__ . '/bootstrap.php';
 /**
  * Don't run KSES on the attribute values during the import.
  *
+ *
  * Without this filter, WP_HTML_Tag_Processor::set_attribute() will
  * assume the value is a URL and run KSES on it, which will incorrectly
  * prefix relative paths with http://.
  *
+ *
  * For example:
+ *
  *
  * > $html = new WP_HTML_Tag_Processor( '<img>' );
  * > $html->next_tag();
@@ -23,6 +26,25 @@ require_once __DIR__ . '/bootstrap.php';
  */
 add_filter('wp_kses_uri_attributes', function() {
     return [];
+});
+
+add_action('init', function() {
+    if ( defined( 'WP_CLI' ) && WP_CLI ) {
+        /**
+         * Import a WXR file.
+         *
+         * <file>
+         * : The WXR file to import.
+         */
+        $command = function ( $args, $assoc_args ) {
+            $file = $args[0];
+            data_liberation_import( $file );
+        };
+
+        // Register the WP-CLI import command.
+		// Example usage: wp data-liberation /path/to/file.xml
+        WP_CLI::add_command( 'data-liberation', $command );
+    }
 });
 
 /**
@@ -94,6 +116,7 @@ add_action('init', function() {
 
     die("YAY");
 });
+
 
 // Register admin menu
 add_action('admin_menu', function() {

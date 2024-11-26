@@ -1,10 +1,9 @@
-import Modal, { defaultStyles } from '../../components/modal';
 import GitHubExportForm, { GitHubExportFormProps } from './form';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
 import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
-import { useEffect } from 'react';
+import { Modal } from '../../components/modal';
 
 interface GithubExportModalProps {
 	allowZipExport: GitHubExportFormProps['allowZipExport'];
@@ -21,25 +20,12 @@ export function GithubExportModal({
 	const dispatch: PlaygroundDispatch = useDispatch();
 	const playground = usePlaygroundClient();
 
-	useEffect(() => {
-		const url = new URL(window.location.href);
-		url.searchParams.set('modal', 'github-export');
-		window.history.replaceState({}, '', url.href);
-	}, []);
-
 	const closeModal = () => {
 		dispatch(setActiveModal(null));
-	}
+	};
 
 	return (
-		<Modal
-			style={{
-				...defaultStyles,
-				content: { ...defaultStyles.content, width: 600 },
-			}}
-			isOpen
-			onRequestClose={closeModal}
-		>
+		<Modal title="Export to GitHub" onRequestClose={closeModal}>
 			<GitHubExportForm
 				onClose={closeModal}
 				onExported={onExported}

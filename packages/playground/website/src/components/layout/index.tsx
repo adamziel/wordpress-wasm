@@ -32,7 +32,8 @@ import {
 	setActiveModal,
 	setSiteManagerOpen,
 } from '../../lib/state/redux/slice-ui';
-import { ImportFormModal } from '../import-form/modal';
+import { ImportFormModal } from '../import-form-modal';
+import { PreviewPRModal } from '../../github/preview-pr';
 
 acquireOAuthTokenIfNeeded();
 
@@ -42,8 +43,10 @@ export const modalSlugs = {
 	START_ERROR: 'start-error',
 	IMPORT_FORM: 'import-form',
 	GITHUB_IMPORT: 'github-import',
-	GITHUB_EXPORT: 'github-export'
-}
+	GITHUB_EXPORT: 'github-export',
+	PREVIEW_PR_WP: 'preview-pr-wordpress',
+	PREVIEW_PR_GUTENBERG: 'preview-pr-gutenberg',
+};
 
 const displayMode = getDisplayModeFromQuery();
 function getDisplayModeFromQuery(): DisplayMode {
@@ -178,40 +181,48 @@ function Modals(blueprint: Blueprint) {
 		return <StartErrorModal />;
 	} else if (currentModal === modalSlugs.IMPORT_FORM) {
 		return <ImportFormModal />;
+	} else if (currentModal === modalSlugs.PREVIEW_PR_WP) {
+		return <PreviewPRModal target="wordpress" />;
+	} else if (currentModal === modalSlugs.PREVIEW_PR_GUTENBERG) {
+		return <PreviewPRModal target="gutenberg" />;
 	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
-		return <GithubImportModal
-			onImported={({
-				 url,
-				 path,
-				 files,
-				 pluginOrThemeName,
-				 contentType,
-				 urlInformation: { owner, repo, type, pr },
-			 }) => {
-				setGithubExportValues({
-					repoUrl: url,
-					prNumber: pr?.toString(),
-					toPathInRepo: path,
-					prAction: pr ? 'update' : 'create',
+		return (
+			<GithubImportModal
+				onImported={({
+					url,
+					path,
+					files,
+					pluginOrThemeName,
 					contentType,
-					plugin: pluginOrThemeName,
-					theme: pluginOrThemeName,
-				});
-				setGithubExportFiles(files);
-			}}
-		/>;
+					urlInformation: { owner, repo, type, pr },
+				}) => {
+					setGithubExportValues({
+						repoUrl: url,
+						prNumber: pr?.toString(),
+						toPathInRepo: path,
+						prAction: pr ? 'update' : 'create',
+						contentType,
+						plugin: pluginOrThemeName,
+						theme: pluginOrThemeName,
+					});
+					setGithubExportFiles(files);
+				}}
+			/>
+		);
 	} else if (currentModal === modalSlugs.GITHUB_EXPORT) {
-		return <GithubExportModal
-			allowZipExport={
-				(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
-			}
-			initialValues={githubExportValues}
-			initialFilesBeforeChanges={githubExportFiles}
-			onExported={(prUrl, formValues) => {
-				setGithubExportValues(formValues);
-				setGithubExportFiles(undefined);
-			}}
-		/>;
+		return (
+			<GithubExportModal
+				allowZipExport={
+					(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
+				}
+				initialValues={githubExportValues}
+				initialFilesBeforeChanges={githubExportFiles}
+				onExported={(prUrl, formValues) => {
+					setGithubExportValues(formValues);
+					setGithubExportFiles(undefined);
+				}}
+			/>
+		);
 	}
 
 	if (query.get('gh-ensure-auth') === 'yes') {

@@ -10,6 +10,7 @@
       <file>tests/URLParserWHATWGComplianceTests.php</file>
       <file>tests/WPXMLProcessorTests.php</file>
       <file>tests/UrldecodeNTests.php</file>
+      <file>tests/WPStreamImporterTests.php</file>
     </testsuite>
   </testsuites>
 </phpunit>

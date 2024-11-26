@@ -340,43 +340,6 @@ class WP_WXR_Reader implements Iterator {
 		),
 	);
 
-	public static function create( WP_Byte_Reader $upstream = null, $cursor = null ) {
-		$xml_cursor = null;
-		if ( null !== $cursor ) {
-			$cursor = json_decode( $cursor, true );
-			if ( false === $cursor ) {
-				_doing_it_wrong(
-					__METHOD__,
-					'Invalid cursor provided for WP_WXR_Reader::create().',
-					null
-				);
-				return false;
-			}
-			$xml_cursor = $cursor['xml'];
-		}
-
-		$xml    = WP_XML_Processor::create_for_streaming( '', $xml_cursor );
-		$reader = new WP_WXR_Reader( $xml );
-		if ( null !== $cursor ) {
-			$reader->last_post_id    = $cursor['last_post_id'];
-			$reader->last_comment_id = $cursor['last_comment_id'];
-		}
-		if ( null !== $upstream ) {
-			$reader->connect_upstream( $upstream );
-			if ( null !== $cursor ) {
-				if ( ! isset( $cursor['upstream'] ) ) {
-					// No upstream cursor means we've processed the
-					// entire input stream.
-					$xml->input_finished();
-					$xml->next_token();
-				} else {
-					$upstream->seek( $cursor['upstream'] );
-				}
-			}
-		}
-		return $reader;
-	}
-
 	/**
 	 * Constructor.
 	 *

@@ -11,8 +11,9 @@ import {
 	__experimentalItemGroup as ItemGroup,
 	__experimentalItem as Item,
 	Flex,
+	DropdownMenu,
 } from '@wordpress/components';
-import { page } from '@wordpress/icons';
+import { moreVertical, page } from '@wordpress/icons';
 import { ClockIcon, WordPressIcon } from '@wp-playground/components';
 import {
 	setActiveSite,
@@ -27,6 +28,10 @@ import {
 } from '../../../lib/state/redux/slice-sites';
 import { PlaygroundRoute, redirectTo } from '../../../lib/state/url/router';
 import { setSiteManagerSection } from '../../../lib/state/redux/slice-ui';
+import { WordPressPRMenuItem } from '../../toolbar-buttons/wordpress-pr-menu-item';
+import { GutenbergPRMenuItem } from '../../toolbar-buttons/gutenberg-pr-menu-item';
+import { RestoreFromZipMenuItem } from '../../toolbar-buttons/restore-from-zip';
+import { GithubImportMenuItem } from '../../toolbar-buttons/github-import-menu-item';
 
 export function Sidebar({
 	className,
@@ -35,6 +40,7 @@ export function Sidebar({
 	className?: string;
 	afterSiteClick?: (slug: string) => void;
 }) {
+	const offline = useAppSelector((state) => state.ui.offline);
 	const storedSites = useAppSelector(selectSortedSites).filter(
 		(site) => site.metadata.storage !== 'none'
 	);
@@ -86,11 +92,48 @@ export function Sidebar({
 			role=""
 			aria-orientation={undefined}
 		>
-			<h1 className="sr-only">WordPress Playground</h1>
-			<div className={css.sidebarHeader}>
-				{/* Remove Playground logo because branding isn't finalized. */}
-				{/* <Logo className={css.sidebarLogoButton} /> */}
-			</div>
+			{/* Padding 3px is because of focus on dropdown button */}
+			<Flex
+				justify="space-between"
+				direction="row"
+				style={{ padding: '3px' }}
+			>
+				<h1 className="sr-only">WordPress Playground</h1>
+				<div className={css.sidebarHeader}>
+					{/* Remove Playground logo because branding isn't finalized. */}
+					{/* <Logo className={css.sidebarLogoButton} /> */}
+				</div>
+				<DropdownMenu
+					className={css.componentsDropdown}
+					icon={moreVertical}
+					label="Import actions"
+					popoverProps={{
+						placement: 'bottom-end',
+					}}
+				>
+					{({ onClose }) => (
+						<>
+							<WordPressPRMenuItem
+								onClose={onClose}
+								disabled={offline}
+							/>
+							<GutenbergPRMenuItem
+								onClose={onClose}
+								disabled={offline}
+							/>
+							<GithubImportMenuItem
+								onClose={onClose}
+								disabled={offline}
+							/>
+							<RestoreFromZipMenuItem
+								text="Import from .zip"
+								onClose={onClose}
+								disabled={false}
+							/>
+						</>
+					)}
+				</DropdownMenu>
+			</Flex>
 			<nav className={classNames(css.sidebarSection, css.sidebarContent)}>
 				<MenuGroup className={css.sidebarList}>
 					<MenuItem

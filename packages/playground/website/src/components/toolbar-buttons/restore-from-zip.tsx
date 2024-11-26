@@ -4,8 +4,12 @@ import { PlaygroundDispatch } from '../../lib/state/redux/store';
 import { useDispatch } from 'react-redux';
 import { modalSlugs } from '../layout';
 
-type Props = { onClose: () => void; disabled: boolean };
-export function RestoreFromZipMenuItem({ onClose, disabled }: Props) {
+type Props = { text?: string; onClose: () => void; disabled: boolean };
+export function RestoreFromZipMenuItem({
+	text = 'Restore from .zip',
+	onClose,
+	disabled,
+}: Props) {
 	const dispatch: PlaygroundDispatch = useDispatch();
 
 	return (
@@ -20,7 +24,7 @@ export function RestoreFromZipMenuItem({ onClose, disabled }: Props) {
 			}}
 			disabled={disabled}
 		>
-			Restore from .zip
+			{text}
 		</MenuItem>
 	);
 }

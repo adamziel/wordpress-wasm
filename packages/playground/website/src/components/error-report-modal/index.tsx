@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react';
-import Modal from '../modal';
+import React, { useEffect, useState } from 'react';
 import { logger } from '@php-wasm/logger';
-import { Button, TextareaControl, TextControl } from '@wordpress/components';
-
-import css from './style.module.css';
-
+import { TextareaControl, TextControl } from '@wordpress/components';
 import { Blueprint } from '@wp-playground/blueprints';
 import { useDispatch } from 'react-redux';
 import {
@@ -13,6 +9,8 @@ import {
 	useAppSelector,
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
+import { Modal } from '../../components/modal';
+import ModalButtons from '../modal/modal-buttons';
 
 export function ErrorReportModal(props: { blueprint: Blueprint }) {
 	const activeModal = useAppSelector(
@@ -157,49 +155,32 @@ export function ErrorReportModal(props: { blueprint: Blueprint }) {
 	}
 
 	return (
-		<Modal isOpen={true} onRequestClose={onClose}>
-			<header
-				className={css.errorReportModalHeader}
-				aria-label="Error reporting form header"
-			>
-				<h2>{getTitle()}</h2>
-				<p>{getContent()}</p>
-			</header>
+		<Modal title={getTitle()} onRequestClose={onClose} small>
+			<p>{getContent()}</p>
 			{showForm() && (
 				<>
-					<main>
-						<TextareaControl
-							label="How can we recreate this error?"
-							help="Describe what caused the error and how can we recreate it."
-							value={text}
-							onChange={setText}
-							className={css.errorReportModalTextarea}
-							required={true}
-						/>
-						<TextareaControl
-							label="Logs"
-							value={logs}
-							onChange={setLogs}
-							className={css.errorReportModalTextarea}
-						/>
+					<TextareaControl
+						label="How can we recreate this error?"
+						help="Describe what caused the error and how can we recreate it."
+						value={text}
+						onChange={setText}
+						required={true}
+					/>
+					<TextareaControl
+						label="Logs"
+						value={logs}
+						onChange={setLogs}
+					/>
 
-						<TextControl
-							label="Url"
-							value={url}
-							onChange={setUrl}
-						/>
-					</main>
-					<footer className={css.errorReportModalFooter}>
-						<Button
-							variant="primary"
-							onClick={onSubmit}
-							isBusy={loading}
-							disabled={loading || !text}
-						>
-							Report error
-						</Button>
-						<Button onClick={onClose}>Cancel</Button>
-					</footer>
+					<TextControl label="Url" value={url} onChange={setUrl} />
+
+					<ModalButtons
+						areBusy={loading}
+						areDisabled={loading || !text}
+						onCancel={onClose}
+						onSubmit={onSubmit}
+						submitText="Report error"
+					/>
 				</>
 			)}
 		</Modal>

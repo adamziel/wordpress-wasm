@@ -58,7 +58,13 @@ for (const cachingEnabled of [true, false]) {
 	});
 }
 
-test(
+/**
+ * This test is flaky and often fails on CI even after multiple retries. It
+ * lowers the confidence in the test suite so it's being skipped. It is still
+ * useful for manual testing when updating the service worker and may get
+ * improved the next time we change something in the service worker.
+ */
+test.skip(
 	'When a new website version is deployed while the old version is still loaded, ' +
 		'creating a new site should still work.',
 	async ({ website, page, wordpress }) => {

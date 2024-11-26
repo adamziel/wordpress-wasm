@@ -50,6 +50,16 @@
 				],
 				"parallel": false
 			}
+		},
+		"test:wp-phpunit": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": [
+					"bun ../cli/src/cli.ts run-blueprint --quiet --mount=./:/wordpress/wp-content/plugins/data-liberation --blueprint=./tests/import/blueprint-import.json"
+				],
+				"parallel": false
+			}
 		}
 	}
 }

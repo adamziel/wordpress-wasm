@@ -736,9 +736,11 @@ wp-includes/css/wp-embed-template.css
 wp-includes/css/jquery-ui-dialog.min.css
 wp-includes/css/classic-themes.min.css
 wp-includes/css/media-views.min.css
+wp-includes/css/wp-empty-template-alert.min.css
 wp-includes/css/buttons.min.css
 wp-includes/css/customize-preview.min.css
 wp-includes/css/jquery-ui-dialog.css
+wp-includes/css/wp-empty-template-alert.css
 wp-includes/css/admin-bar.min.css
 wp-includes/css/dashicons.css
 wp-includes/css/wp-auth-check-rtl.css

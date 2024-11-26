@@ -13,7 +13,7 @@ With Playground, you can test any plugin or theme. Use the [Query API](/develope
 
 For example, the following link will load the [“pendant” theme](https://wordpress.org/themes/pendant/) and the[ “gutenberg” plugin](https://wordpress.org/plugins/gutenberg/) on a Playground instance:
 
-[https://playground.wordpress.net/?theme=pendant&plugin=gutenberg](https://playground.wordpress.net/?theme=pendant)
+[https://playground.wordpress.net/?theme=pendant&plugin=gutenberg](https://playground.wordpress.net/?theme=pendant&plugin=gutenberg)
 
 But you can also test [more elaborate configurations using blueprints](https://github.com/WordPress/blueprints/blob/trunk/GALLERY.md), for example testing a plugin’s code from a gist (see [blueprint](https://github.com/wordpress/blueprints/blob/trunk/blueprints/install-plugin-from-gist/blueprint.json) and [live demo](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/wordpress/blueprints/trunk/blueprints/install-plugin-from-gist/blueprint.json))
 
