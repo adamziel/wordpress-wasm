@@ -85,7 +85,7 @@ class WP_Import_Session {
 				),
 				'meta_input' => array(
 					'data_source' => $args['data_source'],
-					'started_at' => current_time( 'timestamp' ),
+					'started_at' => time(),
 					'file_name' => $args['file_name'] ?? null,
 					'source_url' => $args['source_url'] ?? null,
 					'attachment_id' => $args['attachment_id'] ?? null,
@@ -173,8 +173,9 @@ class WP_Import_Session {
 	}
 
 	public function get_metadata() {
+		$cursor = $this->get_reentrancy_cursor();
 		return array(
-			'cursor' => $this->get_reentrancy_cursor() ?: null,
+			'cursor' => $cursor ? $cursor : null,
 			'data_source' => get_post_meta( $this->post_id, 'data_source', true ),
 			'source_url' => get_post_meta( $this->post_id, 'source_url', true ),
 			'attachment_id' => get_post_meta( $this->post_id, 'attachment_id', true ),
@@ -230,7 +231,7 @@ class WP_Import_Session {
 	 */
 	public function bump_imported_entities_counts( $newly_imported_entities ) {
 		foreach ( $newly_imported_entities as $field => $count ) {
-			if ( ! in_array( $field, static::PROGRESS_ENTITIES ) ) {
+			if ( ! in_array( $field, static::PROGRESS_ENTITIES, true ) ) {
 				_doing_it_wrong(
 					__METHOD__,
 					'Cannot bump imported entities count for unknown entity type: ' . $field,
@@ -282,7 +283,7 @@ class WP_Import_Session {
 
 	public function bump_total_number_of_entities( $newly_indexed_entities ) {
 		foreach ( $newly_indexed_entities as $field => $count ) {
-			if ( ! in_array( $field, static::PROGRESS_ENTITIES ) ) {
+			if ( ! in_array( $field, static::PROGRESS_ENTITIES, true ) ) {
 				_doing_it_wrong(
 					__METHOD__,
 					'Cannot set total number of entities for unknown entity type: ' . $field,
@@ -337,8 +338,8 @@ class WP_Import_Session {
 
 	public function is_stage_completed( $stage ) {
 		$current_stage       = $this->get_stage();
-		$stage_index         = array_search( $stage, WP_Stream_Importer::STAGES_IN_ORDER );
-		$current_stage_index = array_search( $current_stage, WP_Stream_Importer::STAGES_IN_ORDER );
+		$stage_index         = array_search( $stage, WP_Stream_Importer::STAGES_IN_ORDER, true );
+		$current_stage_index = array_search( $current_stage, WP_Stream_Importer::STAGES_IN_ORDER, true );
 		return $current_stage_index > $stage_index;
 	}
 
@@ -349,7 +350,8 @@ class WP_Import_Session {
 	 */
 	public function get_stage() {
 		if ( ! isset( $this->cached_stage ) ) {
-			$this->cached_stage = get_post_meta( $this->post_id, 'current_stage', true ) ?: WP_Stream_Importer::STAGE_INITIAL;
+			$meta               = get_post_meta( $this->post_id, 'current_stage', true );
+			$this->cached_stage = $meta ? $meta : WP_Stream_Importer::STAGE_INITIAL;
 		}
 		return $this->cached_stage;
 	}
@@ -364,7 +366,7 @@ class WP_Import_Session {
 			return;
 		}
 		if ( WP_Stream_Importer::STAGE_FINISHED === $stage ) {
-			update_post_meta( $this->post_id, 'finished_at', current_time( 'timestamp' ) );
+			update_post_meta( $this->post_id, 'finished_at', time() );
 		}
 		update_post_meta( $this->post_id, 'current_stage', $stage );
 		$this->cached_stage = $stage;
@@ -372,7 +374,8 @@ class WP_Import_Session {
 
 	public function get_time_taken() {
 		$started_at  = get_post_meta( $this->post_id, 'started_at', true );
-		$finished_at = get_post_meta( $this->post_id, 'finished_at', true ) ?: current_time( 'timestamp' );
+		$finished_at = get_post_meta( $this->post_id, 'finished_at', true );
+		$finished_at = $finished_at ? $finished_at : time();
 		if ( empty( $started_at ) ) {
 			return null;
 		}
