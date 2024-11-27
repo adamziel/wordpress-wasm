@@ -47,77 +47,6 @@ add_action('init', function() {
     }
 });
 
-/**
- * Development debug code to run the import manually.
- * @TODO: Remove this in favor of a CLI command.
- */
-add_action('init', function() {
-    return;
-    // $wxr_path = __DIR__ . '/tests/fixtures/wxr-simple.xml';
-    $wxr_path = __DIR__ . '/tests/wxr/a11y-unit-test-data.xml';
-    $importer = WP_Stream_Importer::create_for_wxr_file(
-        $wxr_path
-    );
-
-    echo '<plaintext>';
-    
-    do {
-        while($importer->next_step()) {
-            switch($importer->get_stage()) {
-                case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
-                    print_r($importer->get_indexed_entities_counts());
-                    print_r($importer->get_indexed_assets_urls());
-                    break;
-                case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
-                    if($importer->get_frontloading_progress()) {
-                        var_dump($importer->get_frontloading_progress());
-                    }
-                    if($importer->get_frontloading_events()) {
-                        var_dump($importer->get_frontloading_events());
-                    }
-                    break;
-            }
-        }
-
-        if($importer->get_stage() === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS) {
-            break;
-        }
-    } while ( $importer->advance_to_next_stage() );
-
-    
-    $importer->next_step();
-    switch($importer->get_stage()) {
-        case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
-            var_dump($importer->get_entities_counts());
-            var_dump($importer->get_found_assets_urls());
-            break;
-    }
-    while($importer->next_step()) {
-        // ...
-    }
-    return;
-    $importer->next_step();
-    $paused_importer_state = $importer->get_reentrancy_cursor();
-
-    echo "\n\n";
-    echo "moving to importer2\n";
-    echo "\n\n";
-
-    $importer2 = WP_Stream_Importer::create_for_wxr_file(
-        $wxr_path,
-        array(),
-        $paused_importer_state
-    );
-    $importer2->next_step();
-    $importer2->next_step();
-    $importer2->next_step();
-    // $importer2->next_step();
-    // var_dump($importer2);
-
-    die("YAY");
-});
-
-
 // Register admin menu
 add_action('admin_menu', function() {
     add_menu_page(
@@ -456,7 +385,7 @@ function data_liberation_admin_page() {
                 <tr>
                     <td><?php echo $import_session_post->post_date; ?></td>
                     <td><?php echo $import_session->get_metadata()['data_source']; ?></td>
-                    <td><?php echo human_time_diff(0, $import_session->get_time_taken()); ?></td>
+                    <td><?php echo human_time_diff($import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time()); ?></td>
                     <td><?php echo array_sum($import_session->count_imported_entities()); ?></td>
                     <td><?php echo array_sum($import_session->get_total_number_of_entities()); ?></td>
                     <td><?php echo $import_session->get_stage(); ?></td>
@@ -640,7 +569,33 @@ function data_liberation_import_step($session) {
     }
     // Move to the next step before saving the cursor so that the next
     // import session resumes from the next step.
-    $importer->next_step();
+    if(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage()) {
+        // Define constraints for this run of the frontloading stage.
+        // @TODO: Support these constraints at the importer level, not here.
+        $min_files_downloaded = 0;
+        $soft_time_limit = 10;
+        $start_time = time();
+        $files_downloaded = 0;
+        while(true) {
+            if(!$importer->next_step()) {
+                break;
+            }
+            $frontloading_events = $importer->get_frontloading_events();
+            foreach($frontloading_events as $event) {
+                if($event->type === WP_Attachment_Downloader_Event::SUCCESS) {
+                    ++$files_downloaded;
+                }
+            }
+            $time_taken = time() - $start_time;
+            if($time_taken > $soft_time_limit) {
+                if($files_downloaded >= $min_files_downloaded) {
+                    break;
+                }
+            }
+        }
+    } else {
+        $importer->next_step();
+    }
     if($importer->advance_to_next_stage()) {
         $session->set_stage($importer->get_stage());
     }

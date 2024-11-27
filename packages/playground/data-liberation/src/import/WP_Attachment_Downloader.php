@@ -36,11 +36,11 @@ class WP_Attachment_Downloader {
 		return count( $this->client->get_active_requests() ) > 0 || count( $this->pending_events ) > 0 || count( $this->progress ) > 0;
 	}
 
-	public function enqueue_if_not_exists( $url, $output_path ) {
+	public function enqueue_if_not_exists( $url, $output_relative_path ) {
 		$this->enqueued_url = $url;
 
-		$output_path = $this->output_root . '/' . ltrim( $output_path, '/' );
-		if ( file_exists( $output_path ) ) {
+		$output_relative_path = $this->output_root . '/' . ltrim( $output_relative_path, '/' );
+		if ( file_exists( $output_relative_path ) ) {
 			$this->pending_events[] = new WP_Attachment_Downloader_Event(
 				$this->enqueued_url,
 				WP_Attachment_Downloader_Event::SUCCESS
@@ -48,7 +48,7 @@ class WP_Attachment_Downloader {
 			return true;
 		}
 
-		$output_dir = dirname( $output_path );
+		$output_dir = dirname( $output_relative_path );
 		if ( ! file_exists( $output_dir ) ) {
 			// @TODO: think through the chmod of the created directory.
 			mkdir( $output_dir, 0777, true );
@@ -69,7 +69,7 @@ class WP_Attachment_Downloader {
 				// Just copy the file over.
 				// @TODO: think through the chmod of the created file.
 
-				$success                = copy( $local_path, $output_path );
+				$success                = copy( $local_path, $output_relative_path );
 				$this->pending_events[] = new WP_Attachment_Downloader_Event(
 					$this->enqueued_url,
 					$success ? WP_Attachment_Downloader_Event::SUCCESS : WP_Attachment_Downloader_Event::FAILURE
@@ -77,13 +77,13 @@ class WP_Attachment_Downloader {
 				return true;
 			case 'http':
 			case 'https':
-				$request                            = new Request( $url );
-				$this->output_paths[ $request->id ] = $output_path;
-				$this->client->enqueue( $request );
-				$this->progress[ $request->url ] = array(
+				$request                               = new Request( $url );
+				$this->output_paths[ $request->id ]    = $output_relative_path;
+				$this->progress[ $this->enqueued_url ] = array(
 					'received' => null,
 					'total' => null,
 				);
+				$this->client->enqueue( $request );
 				return true;
 		}
 		return false;
@@ -151,7 +151,7 @@ class WP_Attachment_Downloader {
 					fclose( $this->fps[ $original_request_id ] );
 				}
 				if ( isset( $this->output_paths[ $original_request_id ] ) ) {
-					$partial_file = $this->output_root . '/' . $this->output_paths[ $original_request_id ] . '.partial';
+					$partial_file = $this->output_paths[ $original_request_id ] . '.partial';
 					if ( file_exists( $partial_file ) ) {
 						unlink( $partial_file );
 					}

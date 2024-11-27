@@ -21,6 +21,18 @@ class WPStreamImporterTests extends TestCase {
 		$this->assertTrue( $import );
 	}
 
+	public function test_frontloading() {
+		$wxr_path = __DIR__ . '/wxr/frontloading-1-attachment.xml';
+		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
+		$this->skip_to_stage( $importer, WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS );
+		while( $importer->next_step() ) {
+			// noop
+		}
+		$files = glob( '/wordpress/wp-content/uploads/*' );
+		$this->assertCount( 1, $files );
+		$this->assertStringEndsWith( '.jpg', $files[0] );
+	}
+
 	public function test_resume_frontloading() {
 		$wxr_path = __DIR__ . '/wxr/frontloading-1-attachment.xml';
 		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );

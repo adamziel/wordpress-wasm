@@ -126,15 +126,6 @@ class WP_Stream_Importer {
 		return $importer;
 	}
 
-	public function get_reentrancy_cursor() {
-		return json_encode(
-			array(
-				'stage' => $this->stage,
-				'resume_at_entity' => $this->resume_at_entity,
-			)
-		);
-	}
-
 	private function initialize_from_cursor( $cursor ) {
 		$cursor = json_decode( $cursor, true );
 		if ( ! is_array( $cursor ) ) {
@@ -146,13 +137,22 @@ class WP_Stream_Importer {
 		return true;
 	}
 
+	public function get_reentrancy_cursor() {
+		return json_encode(
+			array(
+				'stage' => $this->stage,
+				'resume_at_entity' => $this->resume_at_entity,
+			)
+		);
+	}
+
 	private static function parse_options( $options ) {
 		if ( ! isset( $options['new_site_url'] ) ) {
 			$options['new_site_url'] = get_site_url();
 		}
 
 		if ( ! isset( $options['uploads_path'] ) ) {
-			$options['uploads_path'] = WP_CONTENT_DIR . '/uploads';
+			$options['uploads_path'] = wp_get_upload_dir()['basedir'];
 		}
 		// Remove the trailing slash to make concatenation easier later.
 		$options['uploads_path'] = rtrim( $options['uploads_path'], '/' );
@@ -249,8 +249,10 @@ class WP_Stream_Importer {
 		$this->indexed_entities_counts = array();
 		$this->indexed_assets_urls     = array();
 
+		// We're done if all the entities are processed
 		if ( ! $this->entity_iterator->valid() ) {
-			$this->entity_iterator = null;
+			$this->entity_iterator  = null;
+			$this->resume_at_entity = null;
 			return false;
 		}
 
@@ -566,11 +568,11 @@ class WP_Stream_Importer {
 	}
 
 	private function enqueue_attachment_download( string $raw_url, $context_path = null ) {
-		$url            = $this->rewrite_attachment_url( $raw_url, $context_path );
-		$asset_filename = $this->new_asset_filename( $raw_url );
-		$output_path    = $this->options['uploads_path'] . '/' . ltrim( $asset_filename, '/' );
+		$url             = $this->rewrite_attachment_url( $raw_url, $context_path );
+		$asset_filename  = $this->new_asset_filename( $raw_url );
+		$output_filename = ltrim( $asset_filename, '/' );
 
-		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_path );
+		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_filename );
 		if ( false === $enqueued ) {
 			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $url ), '1.0' );
 			return false;

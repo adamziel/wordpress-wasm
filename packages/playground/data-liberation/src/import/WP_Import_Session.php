@@ -372,16 +372,16 @@ class WP_Import_Session {
 		$this->cached_stage = $stage;
 	}
 
-	public function get_time_taken() {
-		$started_at  = get_post_meta( $this->post_id, 'started_at', true );
-		$finished_at = get_post_meta( $this->post_id, 'finished_at', true );
-		$finished_at = $finished_at ? $finished_at : time();
-		if ( empty( $started_at ) ) {
-			return null;
-		}
-		$started_at  = (int) $started_at;
-		$finished_at = (int) $finished_at;
-		return $finished_at - $started_at;
+	public function get_started_at() {
+		return get_post_meta( $this->post_id, 'started_at', true );
+	}
+
+	public function get_finished_at() {
+		return get_post_meta( $this->post_id, 'finished_at', true );
+	}
+
+	public function is_finished() {
+		return ! empty( get_post_meta( $this->post_id, 'finished_at', true ) );
 	}
 
 	/**

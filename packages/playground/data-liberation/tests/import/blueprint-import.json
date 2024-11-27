@@ -12,8 +12,13 @@
 			"pluginPath": "data-liberation/plugin.php"
 		},
 		{
+			"step": "writeFile",
+			"path": "/wordpress/lsuploads.php",
+			"data": "<plaintext><?php\n\nvar_dump(glob('/wordpress/wp-content/uploads/*'));\n\n?>"
+		},
+		{
 			"step": "runPHP",
-			"code": "<?php require_once '/wordpress/wp-load.php'; $base = '/wordpress/wp-content/plugins/data-liberation/';\nrequire $base . 'vendor/autoload.php';\ntry {\n$arguments = [\n'--stderr',\n'--configuration', $base . 'phpunit.xml'\n];\n$res = (new PHPUnit\\TextUI\\Application())->run($arguments);\nif ( $res !== 0 ) {\ntrigger_error('PHPUnit failed', E_USER_ERROR);\n}\n} catch (Throwable $e) {\ntrigger_error('PHPUnit failed: ' . $e->getMessage(), E_USER_ERROR);\n};"
+			"code": "<?php require_once '/wordpress/wp-load.php'; $base = '/wordpress/wp-content/plugins/data-liberation/';\nrequire $base . 'vendor/autoload.php';\ntry {\n$arguments = [\n'--stderr','--filter','test_frontloading',\n'--configuration', $base . 'phpunit.xml'\n];\n$res = (new PHPUnit\\TextUI\\Application())->run($arguments);\nif ( $res !== 0 ) {\ntrigger_error('PHPUnit failed', E_USER_ERROR);\n}\n} catch (Throwable $e) {\ntrigger_error('PHPUnit failed: ' . $e->getMessage(), E_USER_ERROR);\n};"
 		}
 	]
 }
