@@ -19,6 +19,8 @@ export const ResourceTypes = [
 	'wordpress.org/plugins',
 	'url',
 	'git:directory',
+	'blueprint-asset',
+	'blueprint-asset:directory',
 ] as const;
 
 export type VFSReference = {
