@@ -620,7 +620,7 @@ class WP_WXR_Reader implements Iterator {
 
 			if ( count( $breadcrumbs ) <= 2 && $this->xml->is_tag_opener() ) {
 				$this->last_xml_byte_offset_outside_of_entity = $this->xml->get_token_byte_offset_in_the_input_stream();
-				$this->last_xml_cursor_outside_of_entity = $this->xml->get_reentrancy_cursor();
+				$this->last_xml_cursor_outside_of_entity      = $this->xml->get_reentrancy_cursor();
 			}
 
 			$tag = $this->xml->get_tag();
@@ -651,7 +651,7 @@ class WP_WXR_Reader implements Iterator {
 				if ( $this->xml->is_tag_opener() ) {
 					$this->set_entity_tag( $tag );
 					$this->last_xml_byte_offset_outside_of_entity = $this->xml->get_token_byte_offset_in_the_input_stream();
-					$this->last_xml_cursor_outside_of_entity = $this->xml->get_reentrancy_cursor();
+					$this->last_xml_cursor_outside_of_entity      = $this->xml->get_reentrancy_cursor();
 				}
 				continue;
 			}

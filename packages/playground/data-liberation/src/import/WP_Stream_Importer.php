@@ -232,13 +232,13 @@ class WP_Stream_Importer {
 		if ( null === $this->next_stage ) {
 			return false;
 		}
-		$this->stage = $this->next_stage;
+		$this->stage      = $this->next_stage;
 		$this->next_stage = null;
 		return true;
 	}
 
-	private $indexed_entities_counts   = array();
-	private $indexed_assets_urls = array();
+	private $indexed_entities_counts = array();
+	private $indexed_assets_urls     = array();
 
 	private function index_next_entities( $count = 10000 ) {
 		if ( null === $this->entity_iterator ) {
@@ -246,8 +246,8 @@ class WP_Stream_Importer {
 		}
 
 		// Reset the counts and URLs found in the previous pass.
-		$this->indexed_entities_counts   = array();
-		$this->indexed_assets_urls = array();
+		$this->indexed_entities_counts = array();
+		$this->indexed_assets_urls     = array();
 
 		if ( ! $this->entity_iterator->valid() ) {
 			$this->entity_iterator = null;
@@ -283,7 +283,7 @@ class WP_Stream_Importer {
 			 * If we only counted the URLs, the duplicates would inflate the total count.
 			 * Also, distinguishing assets by their URLs is useful for tracking the bytes
 			 * downloaded per file.
-			 * 
+			 *
 			 * @TODO Consider adapting the array size to the available memory. We can hold
 			 * every single post in memory for sure, otherwise WordPress would not
 			 * be able to render it, but can we hold all the URLs from 10k posts at once?
@@ -411,10 +411,10 @@ class WP_Stream_Importer {
 			if ( ! empty( $this->active_downloads ) ) {
 				_doing_it_wrong( __METHOD__, 'Frontloading queue is not empty.', '1.0' );
 			}
-			$this->downloader       = null;
-			$this->active_downloads = array();
-			$this->entity_iterator  = null;
-			$this->resume_at_entity = null;
+			$this->downloader          = null;
+			$this->active_downloads    = array();
+			$this->entity_iterator     = null;
+			$this->resume_at_entity    = null;
 			$this->frontloading_events = array();
 			return false;
 		}
@@ -530,17 +530,17 @@ class WP_Stream_Importer {
 		}
 
 		$post_id = $this->importer->import_entity( $entity );
-		if(false !== $post_id) {
-			$this->count_imported_entity($entity->get_type());
+		if ( false !== $post_id ) {
+			$this->count_imported_entity( $entity->get_type() );
 		} else {
 			// @TODO: Store error.
 		}
 		foreach ( $attachments as $filepath ) {
 			// @TODO: Monitor failures.
 			$attachment_id = $this->importer->import_attachment( $filepath, $post_id );
-			if(false !== $attachment_id) {
+			if ( false !== $attachment_id ) {
 				// @TODO: How to count attachments?
-				$this->count_imported_entity('post');
+				$this->count_imported_entity( 'post' );
 			} else {
 				// @TODO: Store error.
 			}
@@ -555,11 +555,11 @@ class WP_Stream_Importer {
 	}
 
 	private $imported_entities_counts = array();
-	private function count_imported_entity($type) {
-		if(!array_key_exists($type, $this->imported_entities_counts)) {
-			$this->imported_entities_counts[$type] = 0;
+	private function count_imported_entity( $type ) {
+		if ( ! array_key_exists( $type, $this->imported_entities_counts ) ) {
+			$this->imported_entities_counts[ $type ] = 0;
 		}
-		++$this->imported_entities_counts[$type];
+		++$this->imported_entities_counts[ $type ];
 	}
 	public function get_imported_entities_counts() {
 		return $this->imported_entities_counts;
@@ -576,7 +576,7 @@ class WP_Stream_Importer {
 			return false;
 		}
 
-		$entity_cursor = $this->entity_iterator->get_reentrancy_cursor();
+		$entity_cursor                                        = $this->entity_iterator->get_reentrancy_cursor();
 		$this->active_downloads[ $entity_cursor ][ $raw_url ] = true;
 		return true;
 	}

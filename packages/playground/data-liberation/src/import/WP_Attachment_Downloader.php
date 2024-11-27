@@ -10,7 +10,7 @@ class WP_Attachment_Downloader {
 	private $output_paths = array();
 
 	private $current_event;
-	private $pending_events   = array();
+	private $pending_events = array();
 	private $enqueued_url;
 	private $progress = array();
 
@@ -69,8 +69,8 @@ class WP_Attachment_Downloader {
 				// Just copy the file over.
 				// @TODO: think through the chmod of the created file.
 
-				$success                    = copy( $local_path, $output_path );
-				$this->pending_events[]     = new WP_Attachment_Downloader_Event(
+				$success                = copy( $local_path, $output_path );
+				$this->pending_events[] = new WP_Attachment_Downloader_Event(
 					$this->enqueued_url,
 					$success ? WP_Attachment_Downloader_Event::SUCCESS : WP_Attachment_Downloader_Event::FAILURE
 				);
@@ -80,10 +80,10 @@ class WP_Attachment_Downloader {
 				$request                            = new Request( $url );
 				$this->output_paths[ $request->id ] = $output_path;
 				$this->client->enqueue( $request );
-				$this->progress[ $request->url ] = [
+				$this->progress[ $request->url ] = array(
 					'received' => null,
 					'total' => null,
-				];
+				);
 				return true;
 		}
 		return false;
@@ -119,7 +119,7 @@ class WP_Attachment_Downloader {
 		$request = $this->client->get_request();
 		// The request object we get from the client may be a redirect.
 		// Let's keep referring to the original request.
-		$original_url = $request->original_request()->url;
+		$original_url        = $request->original_request()->url;
 		$original_request_id = $request->original_request()->id;
 
 		switch ( $event ) {
@@ -130,10 +130,10 @@ class WP_Attachment_Downloader {
 					}
 					$fp = fopen( $this->output_paths[ $original_request_id ] . '.partial', 'wb' );
 					if ( false !== $fp ) {
-						$this->fps[ $original_request_id ] = $fp;
+						$this->fps[ $original_request_id ]           = $fp;
 						$this->progress[ $original_url ]['received'] = 0;
-						if($request->response->get_header('Content-Length')) {
-							$this->progress[ $original_url ]['total'] = $request->response->get_header('Content-Length');
+						if ( $request->response->get_header( 'Content-Length' ) ) {
+							$this->progress[ $original_url ]['total'] = $request->response->get_header( 'Content-Length' );
 						}
 					}
 				}
