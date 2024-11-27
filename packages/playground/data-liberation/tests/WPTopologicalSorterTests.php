@@ -18,13 +18,13 @@ class WPTopologicalSorterTests extends TestCase {
 	public function test_parent_after_child() {
 		$sorter = new WP_Topological_Sorter();
 
-		$sorter->map_post( 0, $this->generate_post( 1, 2 ) );
-		$sorter->map_post( 1, $this->generate_post( 2, 0 ) );
+		$sorter->map_post( 10, $this->generate_post( 1, 2 ) );
+		$sorter->map_post( 20, $this->generate_post( 2, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 2 => 1 ), $sorter->posts );
+		$this->assertEquals( array( 2 => 20 ), $sorter->posts );
 		$this->assertFalse( $sorter->get_byte_offset( 1 ) );
-		$this->assertEquals( 1, $sorter->get_byte_offset( 2 ) );
+		$this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
 	}
 
 	public function test_child_after_parent() {
@@ -58,7 +58,7 @@ class WPTopologicalSorterTests extends TestCase {
 		$sorter->map_post( 30, $this->generate_post( 3, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 3 => 30 ), $sorter->posts );
+		$this->assertEquals( array( 3 => 30, 2 => 20 ), $sorter->posts );
 	}
 
 	public function test_reverse_order() {
@@ -70,6 +70,22 @@ class WPTopologicalSorterTests extends TestCase {
 		$this->assertEquals( array(), $sorter->posts );
 	}
 
+	public function test_get_byte_offsets_consume_array() {
+		$sorter = new WP_Topological_Sorter();
+
+		$this->multiple_map_posts( $sorter, array( 3, 1, 2 ) );
+		$sorter->sort_topologically();
+
+		$this->assertEquals( array( 3 => 10 ), $sorter->posts );
+
+		// $this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
+		// $this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
+		// $this->assertEquals( 30, $sorter->get_byte_offset( 3 ) );
+
+		$this->assertFalse( $sorter->get_byte_offset( 1 ) );
+		$this->assertFalse( $sorter->is_sorted() );
+	}
+
 	/**
 	 * This map a list of posts [3, 2, 1] of the form:
 	 *   post_id: 1, 2, 3
@@ -79,7 +95,7 @@ class WPTopologicalSorterTests extends TestCase {
 	private function multiple_map_posts( $sorter, $parents ) {
 		foreach ( $parents as $i => $parent ) {
 			$post = $this->generate_post( $i + 1, $parent );
-			$sorter->map_post( 10 * $parent + 10, $post );
+			$sorter->map_post( 10 * $i + 10, $post );
 		}
 	}
 

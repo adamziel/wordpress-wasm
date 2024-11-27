@@ -50,8 +50,8 @@ class WP_Topological_Sorter {
 		}
 
 		$this->categories[ $data['slug'] ] = array(
-			'byte_offset' => $byte_offset,
 			'parent'      => $data['parent'],
+			'byte_offset' => $byte_offset,
 			'visited'     => false,
 		);
 	}
@@ -84,7 +84,7 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Get the byte offset of an element.
+	 * Get the byte offset of an element, and remove it from the list.
 	 */
 	public function get_byte_offset( $id ) {
 		if ( ! $this->sorted ) {
@@ -92,10 +92,24 @@ class WP_Topological_Sorter {
 		}
 
 		if ( isset( $this->posts[ $id ] ) ) {
-			return $this->posts[ $id ];
+			$ret = $this->posts[ $id ];
+
+			// Remove the element from the array.
+			unset( $this->posts[ $id ] );
+
+			if ( 0 === count( $this->posts ) ) {
+				// All posts have been processed.
+				$this->reset();
+			}
+
+			return $ret;
 		}
 
 		return false;
+	}
+
+	public function is_sorted() {
+		return $this->sorted;
 	}
 
 	/**
@@ -106,7 +120,7 @@ class WP_Topological_Sorter {
 	 *
 	 * Sorted posts will be stored as attachments and posts/pages separately.
 	 */
-	public function sort_topologically() {
+	public function sort_topologically( $empty_memory = true ) {
 		foreach ( $this->categories as $slug => $category ) {
 			$this->topological_category_sort( $slug, $category );
 		}
@@ -114,13 +128,15 @@ class WP_Topological_Sorter {
 		$this->sort_parent_child( $this->posts );
 
 		// Empty some memory.
-		foreach ( $this->posts as $id => $element ) {
-			if ( ! $element[2] ) {
-				// The element have not been moved, unset it.
-				unset( $this->posts[ $id ] );
-			} else {
-				// Save only the byte offset.
-				$this->posts[ $id ] = $element[1];
+		if ( $empty_memory ) {
+			foreach ( $this->posts as $id => $element ) {
+				if ( ! $element[2] ) {
+					// The element have not been moved, unset it.
+					unset( $this->posts[ $id ] );
+				} else {
+					// Save only the byte offset.
+					$this->posts[ $id ] = $element[1];
+				}
 			}
 		}
 
@@ -137,8 +153,29 @@ class WP_Topological_Sorter {
 	 */
 	private function sort_parent_child( &$elements ) {
 		// Sort the array in-place.
-		reset( $elements );
-		$position = key( $elements );
+		// reset( $elements );
+		$position = 0; // key( $elements );
+		$length   = count( $elements );
+
+		if ( $length < 2 ) {
+			// No need to sort.
+			return;
+		}
+
+		if ( 2 === $length ) {
+			$keys = array_keys( $elements );
+
+			// First element has a parent and is the second.
+			if ( $elements[ $keys[0] ][0] && $keys[1] === $elements[ $keys[0] ][0] ) {
+				// Swap.
+				$elements = array_reverse( $elements, true );
+
+				// Set the second as 'moved'.
+				$elements[ $keys[1] ][2] = true;
+			}
+
+			return;
+		}
 
 		foreach ( $elements as $id => $element ) {
 			if ( empty( $element[0] ) ) {
@@ -163,7 +200,7 @@ class WP_Topological_Sorter {
 
 		$element = $elements[ $id ];
 
-		if ( $id <= $position ) {
+		if ( $id < $position ) {
 			// Already in the correct position.
 			return;
 		}
