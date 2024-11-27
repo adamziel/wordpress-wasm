@@ -15,6 +15,7 @@
       <file>tests/WPXMLProcessorTests.php</file>
       <file>tests/UrldecodeNTests.php</file>
       <file>tests/WPStreamImporterTests.php</file>
+      <file>tests/WPTopologicalSorterTests.php</file>
     </testsuite>
   </testsuites>
 </phpunit>

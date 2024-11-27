@@ -9,13 +9,12 @@
  */
 class WP_Topological_Sorter {
 
-	public $unsorted_posts      = array();
-	public $unsorted_categories = array();
-	public $category_index      = array();
-	public $post_index          = array();
+	public $posts          = array();
+	public $categories     = array();
+	public $category_index = array();
 
 	/**
-	 * Variable for keeping counts of orphaned posts/attachments, it'll also be assigned as temporarty post ID.
+	 * Variable for keeping counts of orphaned posts/attachments, it'll also be assigned as temporarly post ID.
 	 * To prevent duplicate post ID, we'll use negative number.
 	 *
 	 * @var int
@@ -24,16 +23,25 @@ class WP_Topological_Sorter {
 
 	/**
 	 * Store the ID of the post ID currently being processed.
+	 *
 	 * @var int
 	 */
 	protected $last_post_id = 0;
+
+	public function reset() {
+		$this->posts               = array();
+		$this->categories          = array();
+		$this->category_index      = array();
+		$this->orphan_post_counter = 0;
+		$this->last_post_id        = 0;
+	}
 
 	public function map_category( $byte_offset, $data ) {
 		if ( empty( $data ) ) {
 			return false;
 		}
 
-		$this->unsorted_categories[ $data['slug'] ] = array(
+		$this->categories[ $data['slug'] ] = array(
 			'byte_offset' => $byte_offset,
 			'parent'      => $data['parent'],
 			'visited'     => false,
@@ -56,12 +64,14 @@ class WP_Topological_Sorter {
 				--$this->orphan_post_counter;
 			}
 
-			$this->unsorted_posts[ $data['post_id'] ] = array(
-				'byte_offset' => $byte_offset,
-				'parent'      => $data['post_parent'],
-				'visited'     => false,
+			// This is an array saved as: [ parent, byte_offset ], to save space and not using an associative one.
+			$this->posts[ $data['post_id'] ] = array(
+				$data['post_parent'],
+				$byte_offset,
 			);
 		}
+
+		return true;
 	}
 
 	/**
@@ -73,38 +83,75 @@ class WP_Topological_Sorter {
 	 * Sorted posts will be stored as attachments and posts/pages separately.
 	 */
 	public function sort_topologically() {
-		foreach ( $this->unsorted_categories as $slug => $category ) {
+		foreach ( $this->categories as $slug => $category ) {
 			$this->topological_category_sort( $slug, $category );
 		}
 
-		foreach ( $this->unsorted_posts as $id => $post ) {
-			$this->topological_post_sort( $id, $post );
-		}
+		$this->sort_parent_child( $this->posts );
 
-		// Empty the unsorted posts
-		$this->unsorted_posts = array();
+		// Empty some memory.
+		foreach ( $this->posts as $id => $element ) {
+			// Save only the byte offset.
+			$this->posts[ $id ] = $element[1];
+		}
 	}
 
 	/**
-	 * Recursive posts topological sorting.
-	 *
-	 * @param int $id     The id of the post to sort.
-	 * @param array $post The post to sort.
-	 *
+	 * Recursive topological sorting.
 	 * @todo Check for circular dependencies.
+	 *
+	 * @param array $elements The elements to sort.
+	 *
+	 * @return void
 	 */
-	private function topological_post_sort( $id, $post ) {
-		if ( isset( $this->unsorted_posts[ $id ]['visited'] ) ) {
+	private function sort_parent_child( &$elements ) {
+		// Sort the array in-place.
+		$position = 0;
+
+		foreach ( $elements as $id => $element ) {
+			if ( empty( $element[0] ) ) {
+				$this->move_element( $elements, $id, $position );
+			}
+		}
+	}
+
+	/**
+	 * Move an element to a new position.
+	 *
+	 * @param array $elements The elements to sort.
+	 * @param int $id The ID of the element to move.
+	 * @param int $position The new position of the element.
+	 *
+	 * @return void
+	 */
+	private function move_element( &$elements, $id, &$position ) {
+		if ( ! isset( $elements[ $id ] ) ) {
 			return;
 		}
 
-		$this->unsorted_posts[ $id ]['visited'] = true;
+		$element = $elements[ $id ];
 
-		if ( isset( $this->unsorted_posts[ $post['parent'] ] ) ) {
-			$this->topological_post_sort( $post['parent'], $this->unsorted_posts[ $post['parent'] ] );
+		if ( $id < $position ) {
+			// Already in the correct position.
+			return;
 		}
 
-		$this->post_index[] = $post['byte_offset'];
+		// Move the element to the current position.
+		unset( $elements[ $id ] );
+
+		// Generate the new array.
+		$elements = array_slice( $elements, 0, $position, true ) +
+			array( $id => $element ) +
+			array_slice( $elements, $position, null, true );
+
+		++$position;
+
+		// Move children.
+		foreach ( $elements as $child_id => $child_element ) {
+			if ( $id === $child_element[0] ) {
+				$this->move_element( $elements, $child_id, $position );
+			}
+		}
 	}
 
 	/**
@@ -116,14 +163,14 @@ class WP_Topological_Sorter {
 	 * @todo Check for circular dependencies.
 	 */
 	private function topological_category_sort( $slug, $category ) {
-		if ( isset( $this->unsorted_categories[ $slug ]['visited'] ) ) {
+		if ( isset( $this->categories[ $slug ]['visited'] ) ) {
 			return;
 		}
 
-		$this->unsorted_categories[ $slug ]['visited'] = true;
+		$this->categories[ $slug ]['visited'] = true;
 
-		if ( isset( $this->unsorted_categories[ $category['parent'] ] ) ) {
-			$this->topological_category_sort( $category['parent'], $this->unsorted_categories[ $category['parent'] ] );
+		if ( isset( $this->categories[ $category['parent'] ] ) ) {
+			$this->topological_category_sort( $category['parent'], $this->categories[ $category['parent'] ] );
 		}
 
 		$this->category_index[] = $category['byte_offset'];
