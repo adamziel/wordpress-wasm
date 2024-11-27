@@ -1,11 +1,8 @@
 <?php
 
-<<<<<<< HEAD
-=======
 use WordPress\AsyncHTTP\Client;
 use WordPress\AsyncHTTP\Request;
 
->>>>>>> trunk
 /**
  * Idea:
  * * Stream-process the WXR file.
@@ -49,16 +46,12 @@ class WP_Stream_Importer {
 	private $options;
 
 	const STAGE_INITIAL          = '#initial';
-<<<<<<< HEAD
 	const STAGE_INDEX_ENTITIES   = '#index_entities';
-=======
->>>>>>> trunk
 	const STAGE_TOPOLOGICAL_SORT = '#topological_sort';
 	const STAGE_FRONTLOAD_ASSETS = '#frontload_assets';
 	const STAGE_IMPORT_ENTITIES  = '#import_entities';
 	const STAGE_FINISHED         = '#finished';
 
-<<<<<<< HEAD
 	const STAGES_IN_ORDER = array(
 		self::STAGE_INITIAL,
 		self::STAGE_INDEX_ENTITIES,
@@ -68,14 +61,11 @@ class WP_Stream_Importer {
 		self::STAGE_FINISHED,
 	);
 
-=======
->>>>>>> trunk
 	/**
 	 * The current state of the import process.
 	 * @var string
 	 */
 	private $stage = self::STAGE_INITIAL;
-<<<<<<< HEAD
 	/**
 	 * The next stage of the import process. An explicit call to
 	 * next_stage() is required to advance the importer.
@@ -86,8 +76,6 @@ class WP_Stream_Importer {
 	 * @var string
 	 */
 	private $next_stage;
-=======
->>>>>>> trunk
 
 	/**
 	 * Iterator that streams entities to import.
@@ -141,11 +129,7 @@ class WP_Stream_Importer {
 	public function get_reentrancy_cursor() {
 		return json_encode(
 			array(
-<<<<<<< HEAD
 				'stage' => $this->stage,
-=======
-				'state' => $this->stage,
->>>>>>> trunk
 				'resume_at_entity' => $this->resume_at_entity,
 			)
 		);
@@ -157,11 +141,7 @@ class WP_Stream_Importer {
 			_doing_it_wrong( __METHOD__, 'Cannot resume an importer with a non-array cursor.', '1.0.0' );
 			return false;
 		}
-<<<<<<< HEAD
 		$this->stage            = $cursor['stage'];
-=======
-		$this->stage            = $cursor['state'];
->>>>>>> trunk
 		$this->resume_at_entity = $cursor['resume_at_entity'];
 		return true;
 	}
@@ -206,7 +186,6 @@ class WP_Stream_Importer {
 	private $importer;
 
 	public function next_step() {
-<<<<<<< HEAD
 		if ( null !== $this->next_stage ) {
 			return false;
 		}
@@ -236,28 +215,11 @@ class WP_Stream_Importer {
 				}
 				$this->next_stage = self::STAGE_FINISHED;
 				return false;
-=======
-		switch ( $this->stage ) {
-			case self::STAGE_INITIAL:
-				$this->stage = self::STAGE_TOPOLOGICAL_SORT;
-				return true;
-			case self::STAGE_TOPOLOGICAL_SORT:
-				// @TODO: Topologically sort the entities.
-				$this->stage = self::STAGE_FRONTLOAD_ASSETS;
-				return true;
-			case self::STAGE_FRONTLOAD_ASSETS:
-				$this->next_frontloading_step();
-				return true;
-			case self::STAGE_IMPORT_ENTITIES:
-				$this->import_next_entity();
-				return true;
->>>>>>> trunk
 			case self::STAGE_FINISHED:
 				return false;
 		}
 	}
 
-<<<<<<< HEAD
 	public function get_stage() {
 		return $this->stage;
 	}
@@ -363,20 +325,9 @@ class WP_Stream_Importer {
 		return $this->frontloading_events;
 	}
 	public function get_frontloading_progress() {
-		return $this->downloader->get_progress();
+		return $this->downloader ? $this->downloader->get_progress() : array();
 	}
 
-=======
-	/**
-	 * Get the current stage.
-	 *
-	 * @return string
-	 */
-	public function get_current_stage() {
-		return $this->stage;
-	}
-
->>>>>>> trunk
 	/**
 	 * Advance the cursor to the oldest finished download. For example:
 	 *
@@ -396,10 +347,7 @@ class WP_Stream_Importer {
 			switch ( $event->type ) {
 				case WP_Attachment_Downloader_Event::SUCCESS:
 				case WP_Attachment_Downloader_Event::FAILURE:
-<<<<<<< HEAD
 					$this->frontloading_events[] = $event;
-=======
->>>>>>> trunk
 					foreach ( array_keys( $this->active_downloads ) as $entity_cursor ) {
 						unset( $this->active_downloads[ $entity_cursor ][ $event->resource_id ] );
 					}
@@ -426,7 +374,6 @@ class WP_Stream_Importer {
 	 * before import_entities() so that every inserted post already has
 	 * all its attachments downloaded.
 	 */
-<<<<<<< HEAD
 	private function frontload_next_entity() {
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = $this->create_entity_iterator();
@@ -437,30 +384,6 @@ class WP_Stream_Importer {
 		$this->frontloading_events = array();
 		$this->frontloading_advance_reentrancy_cursor();
 
-=======
-	private function next_frontloading_step() {
-		if ( null === $this->entity_iterator ) {
-			$this->entity_iterator = $this->create_entity_iterator();
-			$this->downloader      = new WP_Attachment_Downloader( $this->options );
-		}
-
-		$this->frontloading_advance_reentrancy_cursor();
-
-		// We're done if all the entities are processed and all the downloads are finished.
-		if ( ! $this->entity_iterator->valid() && ! $this->downloader->has_pending_requests() ) {
-			// This is an assertion to make double sure we're emptying the state queue.
-			if ( ! empty( $this->active_downloads ) ) {
-				_doing_it_wrong( __METHOD__, 'Frontloading queue is not empty.', '1.0' );
-			}
-			$this->stage            = self::STAGE_IMPORT_ENTITIES;
-			$this->downloader       = null;
-			$this->active_downloads = array();
-			$this->entity_iterator  = null;
-			$this->resume_at_entity = null;
-			return false;
-		}
-
->>>>>>> trunk
 		// Poll the bytes between scheduling new downloads.
 		$only_downloader_pending = ! $this->entity_iterator->valid() && $this->downloader->has_pending_requests();
 		if ( $this->downloader->queue_full() || $only_downloader_pending ) {
@@ -477,7 +400,6 @@ class WP_Stream_Importer {
 			 * * After every downloaded file.
 			 * * For large files, every time a full megabyte is downloaded above 10MB.
 			 */
-<<<<<<< HEAD
 			if ( true === $this->downloader->poll() ) {
 				return true;
 			}
@@ -497,11 +419,6 @@ class WP_Stream_Importer {
 			return false;
 		}
 
-=======
-			return $this->downloader->poll();
-		}
-
->>>>>>> trunk
 		/**
 		 * Identify the static assets referenced in the current entity
 		 * and enqueue them for download.
@@ -556,7 +473,6 @@ class WP_Stream_Importer {
 	 *        the API consumer?
 	 */
 	private function import_next_entity() {
-<<<<<<< HEAD
 		$this->imported_entities_counts = array();
 
 		if ( null === $this->entity_iterator ) {
@@ -630,75 +546,11 @@ class WP_Stream_Importer {
 			}
 		}
 
-=======
-		if ( null === $this->entity_iterator ) {
-			$this->entity_iterator = $this->create_entity_iterator();
-			$this->importer        = new WP_Entity_Importer();
-		}
-
-		if ( ! $this->entity_iterator->valid() ) {
-			// We're done.
-			$this->stage           = self::STAGE_FINISHED;
-			$this->entity_iterator = null;
-			$this->importer        = null;
-			return;
-		}
-
-		$entity      = $this->entity_iterator->current();
-		$attachments = array();
-		// Rewrite the URLs in the post.
-		switch ( $entity->get_type() ) {
-			case 'post':
-				$data = $entity->get_data();
-				foreach ( array( 'guid', 'post_content', 'post_excerpt' ) as $key ) {
-					if ( ! isset( $data[ $key ] ) ) {
-						continue;
-					}
-					$p = new WP_Block_Markup_Url_Processor( $data[ $key ], $this->source_site_url );
-					while ( $p->next_url() ) {
-						if ( $this->url_processor_matched_asset_url( $p ) ) {
-							$filename      = $this->new_asset_filename( $p->get_raw_url() );
-							$new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-							$p->replace_base_url( WP_URL::parse( $new_asset_url ) );
-							$attachments[] = $new_asset_url;
-							/**
-							 * @TODO: How would we know a specific image block refers to a specific
-							 *        attachment? We need to cross-correlate that to rewrite the URL.
-							 *        The image block could have query parameters, too, but presumably the
-							 *        path would be the same at least? What if the same file is referred
-							 *        to by two different URLs? e.g. assets.site.com and site.com/assets/ ?
-							 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
-							 *        strategy? And the API consumer would make the decision?
-							 */
-						} elseif ( $this->source_site_url &&
-							$p->get_parsed_url() &&
-							url_matches( $p->get_parsed_url(), $this->source_site_url )
-						) {
-							$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
-						} else {
-							// Ignore other URLs.
-						}
-					}
-					$data[ $key ] = $p->get_updated_html();
-				}
-				$entity->set_data( $data );
-				break;
-		}
-
-		// @TODO: Monitor failures.
-		$post_id = $this->importer->import_entity( $entity );
-		foreach ( $attachments as $filepath ) {
-			// @TODO: Monitor failures.
-			$this->importer->import_attachment( $filepath, $post_id );
-		}
-
->>>>>>> trunk
 		/**
 		 * @TODO: Update the progress information.
 		 */
 		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
 		$this->entity_iterator->next();
-<<<<<<< HEAD
 		return true;
 	}
 
@@ -711,8 +563,6 @@ class WP_Stream_Importer {
 	}
 	public function get_imported_entities_counts() {
 		return $this->imported_entities_counts;
-=======
->>>>>>> trunk
 	}
 
 	private function enqueue_attachment_download( string $raw_url, $context_path = null ) {
@@ -721,7 +571,6 @@ class WP_Stream_Importer {
 		$output_path    = $this->options['uploads_path'] . '/' . ltrim( $asset_filename, '/' );
 
 		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_path );
-<<<<<<< HEAD
 		if ( false === $enqueued ) {
 			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $url ), '1.0' );
 			return false;
@@ -730,14 +579,6 @@ class WP_Stream_Importer {
 		$entity_cursor = $this->entity_iterator->get_reentrancy_cursor();
 		$this->active_downloads[ $entity_cursor ][ $raw_url ] = true;
 		return true;
-=======
-		if ( $enqueued ) {
-			$resource_id   = $this->downloader->get_enqueued_resource_id();
-			$entity_cursor = $this->entity_iterator->get_reentrancy_cursor();
-			$this->active_downloads[ $entity_cursor ][ $resource_id ] = true;
-		}
-		return $enqueued;
->>>>>>> trunk
 	}
 
 	/**
@@ -818,7 +659,6 @@ class WP_Stream_Importer {
 		);
 	}
 
-<<<<<<< HEAD
 	private $first_iterator = true;
 	private function create_entity_iterator() {
 		$factory = $this->entity_iterator_factory;
@@ -831,10 +671,5 @@ class WP_Stream_Importer {
 			return $factory( $this->resume_at_entity );
 		}
 		return $factory();
-=======
-	private function create_entity_iterator() {
-		$factory = $this->entity_iterator_factory;
-		return $factory( $this->resume_at_entity );
->>>>>>> trunk
 	}
 }

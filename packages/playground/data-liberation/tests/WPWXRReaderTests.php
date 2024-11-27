@@ -549,4 +549,70 @@ https://playground.internal/path-not-taken was the second best choice.
         $this->assertEquals( 169, $wxr->get_last_comment_id() );
     }
 
+    public function test_scan_entities_without_reentrancy() {
+        $xml_path = __DIR__ . '/wxr/entities-options-and-posts.xml';
+        $expected_entities = [
+            "site_option",
+            "site_option",
+            "site_option",
+            "user",
+            "category",
+            "category",
+            "category",
+            "user",
+            "post",
+            "post_meta",
+            "post_meta"
+        ];
+
+		$wxr = WP_WXR_Reader::create(
+            new WP_File_Reader( $xml_path )
+        );
+
+        for($i = 0; $i < 11; $i++) {
+            $this->assertTrue( $wxr->next_entity() );
+            $this->assertEquals(
+                $expected_entities[$i],
+                $wxr->get_entity()->get_type()
+            );
+        }
+        $this->assertFalse( $wxr->next_entity() );
+    }
+
+    public function test_scan_entities_with_reentrancy() {
+        $xml_path = __DIR__ . '/wxr/entities-options-and-posts.xml';
+        $expected_entities = [
+            "site_option",
+            "site_option",
+            "site_option",
+            "user",
+            "category",
+            "category",
+            "category",
+            "user",
+            "post",
+            "post_meta",
+            "post_meta"
+        ];
+
+		$wxr = WP_WXR_Reader::create(
+            new WP_File_Reader( $xml_path )
+        );
+
+        for($i = 0; $i < 11; $i++) {
+            $this->assertTrue( $wxr->next_entity() );
+            $this->assertEquals(
+                $expected_entities[$i],
+                $wxr->get_entity()->get_type()
+            );
+            $cursor = $wxr->get_reentrancy_cursor();
+            $wxr = WP_WXR_Reader::create(
+                new WP_File_Reader( $xml_path ),
+                $cursor
+            );
+            $this->assertTrue( $wxr->next_entity() );
+        }
+        $this->assertFalse( $wxr->next_entity() );
+    }
+
 }
