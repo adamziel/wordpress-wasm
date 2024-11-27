@@ -28,12 +28,20 @@ class WP_Topological_Sorter {
 	 */
 	protected $last_post_id = 0;
 
+	/**
+	 * Whether the sort has been done.
+	 *
+	 * @var bool
+	 */
+	protected $sorted = false;
+
 	public function reset() {
 		$this->posts               = array();
 		$this->categories          = array();
 		$this->category_index      = array();
 		$this->orphan_post_counter = 0;
 		$this->last_post_id        = 0;
+		$this->sorted              = false;
 	}
 
 	public function map_category( $byte_offset, $data ) {
@@ -64,14 +72,30 @@ class WP_Topological_Sorter {
 				--$this->orphan_post_counter;
 			}
 
-			// This is an array saved as: [ parent, byte_offset ], to save space and not using an associative one.
+			// This is an array saved as: [ parent, byte_offset, moved ], to save space and not using an associative one.
 			$this->posts[ $data['post_id'] ] = array(
 				$data['post_parent'],
 				$byte_offset,
+				false,
 			);
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get the byte offset of an element.
+	 */
+	public function get_byte_offset( $id ) {
+		if ( ! $this->sorted ) {
+			return false;
+		}
+
+		if ( isset( $this->posts[ $id ] ) ) {
+			return $this->posts[ $id ];
+		}
+
+		return false;
 	}
 
 	/**
@@ -91,9 +115,16 @@ class WP_Topological_Sorter {
 
 		// Empty some memory.
 		foreach ( $this->posts as $id => $element ) {
-			// Save only the byte offset.
-			$this->posts[ $id ] = $element[1];
+			if ( ! $element[2] ) {
+				// The element have not been moved, unset it.
+				unset( $this->posts[ $id ] );
+			} else {
+				// Save only the byte offset.
+				$this->posts[ $id ] = $element[1];
+			}
 		}
+
+		$this->sorted = true;
 	}
 
 	/**
@@ -106,7 +137,8 @@ class WP_Topological_Sorter {
 	 */
 	private function sort_parent_child( &$elements ) {
 		// Sort the array in-place.
-		$position = 0;
+		reset( $elements );
+		$position = key( $elements );
 
 		foreach ( $elements as $id => $element ) {
 			if ( empty( $element[0] ) ) {
@@ -131,13 +163,16 @@ class WP_Topological_Sorter {
 
 		$element = $elements[ $id ];
 
-		if ( $id < $position ) {
+		if ( $id <= $position ) {
 			// Already in the correct position.
 			return;
 		}
 
 		// Move the element to the current position.
 		unset( $elements[ $id ] );
+
+		// Set as 'moved'.
+		$element[2] = true;
 
 		// Generate the new array.
 		$elements = array_slice( $elements, 0, $position, true ) +
