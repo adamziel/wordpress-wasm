@@ -21,24 +21,58 @@ class WPStreamImporterTests extends TestCase {
 		$this->assertTrue( $import );
 	}
 
-	/**
-	 * @wip
-	 */
-	// public function test_resume_frontloading() {
-	// 	$wxr_path = __DIR__ . '/wxr/frontloading-1-attachment.xml';
-	// 	$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
-	//  $this->skip_to_stage( $importer, WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS );
-	// 	$this->assertTrue( $importer->advance_to_next_stage() );
-	// 	for($i = 0; $i < 20; ++$i) {
-	// 		$progress = $importer->get_frontloading_progress();
-	// 		if( count( $progress ) === 0 ) {
-	// 			continue;
-	// 		}
-	// 		var_dump( $importer->get_frontloading_events() );
-	// 		var_dump( $importer->next_step() );
-	// 	}
-	// 	$this->assertFalse( true );
-	// }
+	public function test_resume_frontloading() {
+		$wxr_path = __DIR__ . '/wxr/frontloading-1-attachment.xml';
+		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
+		$this->skip_to_stage( $importer, WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS );
+
+		$progress_url = null;
+		$progress_value = null;
+		for($i = 0; $i < 20; ++$i) {
+			$importer->next_step();
+			$progress = $importer->get_frontloading_progress();
+			if( count( $progress ) === 0 ) {
+				continue;
+			}
+			$progress_url = array_keys( $progress )[0];
+			$progress_value = array_values( $progress )[0];
+			if( null === $progress_value['received'] ) {
+				continue;
+			}
+			break;
+		}
+
+		$this->assertIsInt( $progress_value['received'] );
+		$this->assertEquals( 'https://wpthemetestdata.files.wordpress.com/2008/06/canola2.jpg', $progress_url );
+		$this->assertGreaterThan( 0, $progress_value['total'] );
+
+		$cursor = $importer->get_reentrancy_cursor();
+		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path, [], $cursor );
+		// Rewind back to the entity we were on.
+		$this->assertTrue( $importer->next_step() );
+
+		// Restart the download of the same entity – from scratch.
+		$progress_value = [];
+		for($i = 0; $i < 20; ++$i) {
+			$importer->next_step();
+			$progress = $importer->get_frontloading_progress();
+			var_dump( $progress );
+			if( count( $progress ) === 0 ) {
+				continue;
+			}
+			$progress_url = array_keys( $progress )[0];
+			$progress_value = array_values( $progress )[0];
+			var_dump( $progress_value );
+			if( null === $progress_value['received'] ) {
+				continue;
+			}
+			break;
+		}
+
+		$this->assertIsInt( $progress_value['received'] );
+		$this->assertEquals( 'https://wpthemetestdata.files.wordpress.com/2008/06/canola2.jpg', $progress_url );
+		$this->assertGreaterThan( 0, $progress_value['total'] );
+	}
 
 	/**
 	 *
