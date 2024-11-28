@@ -72,11 +72,11 @@ class WP_Topological_Sorter {
 				--$this->orphan_post_counter;
 			}
 
-			// This is an array saved as: [ parent, byte_offset, moved ], to save space and not using an associative one.
+			// This is an array saved as: [ parent, byte_offset ], to save
+			// space and not using an associative one.
 			$this->posts[ $data['post_id'] ] = array(
 				$data['post_parent'],
 				$byte_offset,
-				false,
 			);
 		}
 
@@ -120,23 +120,21 @@ class WP_Topological_Sorter {
 	 *
 	 * Sorted posts will be stored as attachments and posts/pages separately.
 	 */
-	public function sort_topologically( $empty_memory = true ) {
+	public function sort_topologically( $free_space = true ) {
 		foreach ( $this->categories as $slug => $category ) {
 			$this->topological_category_sort( $slug, $category );
 		}
 
-		$this->sort_parent_child( $this->posts );
+		$this->sort_elements( $this->posts );
 
-		// Empty some memory.
-		if ( $empty_memory ) {
+		// Free some space.
+		if ( $free_space ) {
+			/**
+			 * @TODO: all the elements that have not been moved can be flushed away.
+			 */
 			foreach ( $this->posts as $id => $element ) {
-				if ( ! $element[2] ) {
-					// The element have not been moved, unset it.
-					unset( $this->posts[ $id ] );
-				} else {
-					// Save only the byte offset.
-					$this->posts[ $id ] = $element[1];
-				}
+				// Save only the byte offset.
+				$this->posts[ $id ] = $element[1];
 			}
 		}
 
@@ -144,86 +142,36 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Recursive topological sorting.
-	 * @todo Check for circular dependencies.
+	 * Recursive sort elements. Posts with parents will be moved to the correct position.
 	 *
-	 * @param array $elements The elements to sort.
-	 *
-	 * @return void
+	 * @return true
 	 */
-	private function sort_parent_child( &$elements ) {
-		// Sort the array in-place.
-		// reset( $elements );
-		$position = 0; // key( $elements );
-		$length   = count( $elements );
+	private function sort_elements( &$elements ) {
+		$sort_callback = function ( $a, $b ) use ( &$elements ) {
+			$parent_a = $elements[ $a ][0];
+			$parent_b = $elements[ $b ][0];
 
-		if ( $length < 2 ) {
-			// No need to sort.
-			return;
-		}
-
-		if ( 2 === $length ) {
-			$keys = array_keys( $elements );
-
-			// First element has a parent and is the second.
-			if ( $elements[ $keys[0] ][0] && $keys[1] === $elements[ $keys[0] ][0] ) {
-				// Swap.
-				$elements = array_reverse( $elements, true );
-
-				// Set the second as 'moved'.
-				$elements[ $keys[1] ][2] = true;
+			if ( ! $parent_a && ! $parent_b ) {
+				// No parents.
+				return 0;
+			} elseif ( $a === $parent_b ) {
+				// A is the parent of B.
+				return -1;
+			} elseif ( $b === $parent_a ) {
+				// B is the parent of A.
+				return 1;
 			}
 
-			return;
-		}
+			return 0;
+		};
 
-		foreach ( $elements as $id => $element ) {
-			if ( empty( $element[0] ) ) {
-				$this->move_element( $elements, $id, $position );
-			}
-		}
-	}
-
-	/**
-	 * Move an element to a new position.
-	 *
-	 * @param array $elements The elements to sort.
-	 * @param int $id The ID of the element to move.
-	 * @param int $position The new position of the element.
-	 *
-	 * @return void
-	 */
-	private function move_element( &$elements, $id, &$position ) {
-		if ( ! isset( $elements[ $id ] ) ) {
-			return;
-		}
-
-		$element = $elements[ $id ];
-
-		if ( $id < $position ) {
-			// Already in the correct position.
-			return;
-		}
-
-		// Move the element to the current position.
-		unset( $elements[ $id ] );
-
-		// Set as 'moved'.
-		$element[2] = true;
-
-		// Generate the new array.
-		$elements = array_slice( $elements, 0, $position, true ) +
-			array( $id => $element ) +
-			array_slice( $elements, $position, null, true );
-
-		++$position;
-
-		// Move children.
-		foreach ( $elements as $child_id => $child_element ) {
-			if ( $id === $child_element[0] ) {
-				$this->move_element( $elements, $child_id, $position );
-			}
-		}
+		/**
+		 * @TODO: PHP uses quicksort: https://github.com/php/php-src/blob/master/Zend/zend_sort.c
+		 * WordPress export posts by ID and so are likely to be already in order.
+		 * Quicksort performs badly on already sorted arrays, O(n^2) is the worst case.
+		 * Let's consider using a different sorting algorithm.
+		 */
+		uksort( $elements, $sort_callback );
 	}
 
 	/**

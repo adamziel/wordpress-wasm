@@ -22,9 +22,10 @@ class WPTopologicalSorterTests extends TestCase {
 		$sorter->map_post( 20, $this->generate_post( 2, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 2 => 20 ), $sorter->posts );
-		$this->assertFalse( $sorter->get_byte_offset( 1 ) );
+		$this->assertEquals( array( 2 => 20, 1 => 10 ), $sorter->posts );
+		$this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
 		$this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
+		$this->assertFalse( $sorter->is_sorted() );
 	}
 
 	public function test_child_after_parent() {
@@ -35,8 +36,8 @@ class WPTopologicalSorterTests extends TestCase {
 		$sorter->map_post( 30, $this->generate_post( 3, 2 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array(), $sorter->posts );
-		$this->assertFalse( $sorter->get_byte_offset( 1 ) );
+		$this->assertEquals( array( 1 => 10, 2 => 20, 3 => 30 ), $sorter->posts );
+		$this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
 	}
 
 	public function test_orphaned_post() {
@@ -46,7 +47,8 @@ class WPTopologicalSorterTests extends TestCase {
 		$sorter->map_post( 20, $this->generate_post( 2, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 2 => 20 ), $sorter->posts );
+		$this->assertEquals( array( 1 => 10, 2 => 20 ), $sorter->posts );
+		$this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
 		$this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
 	}
 
@@ -58,7 +60,7 @@ class WPTopologicalSorterTests extends TestCase {
 		$sorter->map_post( 30, $this->generate_post( 3, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 3 => 30, 2 => 20 ), $sorter->posts );
+		$this->assertEquals( array( 3 => 30, 2 => 20, 1 => 10 ), $sorter->posts );
 	}
 
 	public function test_reverse_order() {
@@ -67,23 +69,21 @@ class WPTopologicalSorterTests extends TestCase {
 		$this->multiple_map_posts( $sorter, array( 3, 2, 1 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array(), $sorter->posts );
+		$this->assertEquals( array( 1 => 10, 2 => 20, 3 => 30 ), $sorter->posts );
 	}
 
 	public function test_get_byte_offsets_consume_array() {
 		$sorter = new WP_Topological_Sorter();
 
-		$this->multiple_map_posts( $sorter, array( 3, 1, 2 ) );
+		$this->multiple_map_posts( $sorter, array( 2, 3, 0 ) );
 		$sorter->sort_topologically();
 
-		$this->assertEquals( array( 3 => 10 ), $sorter->posts );
+		$this->assertEquals( array( 3 => 30, 2 => 20, 1 => 10 ), $sorter->posts );
 
-		// $this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
-		// $this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
-		// $this->assertEquals( 30, $sorter->get_byte_offset( 3 ) );
-
-		$this->assertFalse( $sorter->get_byte_offset( 1 ) );
-		$this->assertFalse( $sorter->is_sorted() );
+		$this->assertEquals( 10, $sorter->get_byte_offset( 1 ) );
+		$this->assertEquals( 20, $sorter->get_byte_offset( 2 ) );
+		$this->assertEquals( 30, $sorter->get_byte_offset( 3 ) );
+		$this->assertCount( 0, $sorter->posts );
 	}
 
 	/**
