@@ -68,6 +68,7 @@ describe('Blueprint step installPlugin', () => {
 	let php: PHP;
 	// Create plugins folder
 	let rootPath = '';
+	let pluginsPath = '';
 	let installedPluginPath = '';
 	const pluginName = 'test-plugin';
 	const zipFileName = `${pluginName}-0.0.1.zip`;
@@ -80,8 +81,9 @@ describe('Blueprint step installPlugin', () => {
 		php = await handler.getPrimaryPhp();
 
 		rootPath = php.documentRoot;
-		php.mkdir(`${rootPath}/wp-content/plugins`);
-		installedPluginPath = `${rootPath}/wp-content/plugins/${pluginName}`;
+		pluginsPath = `${rootPath}/wp-content/plugins`;
+		php.mkdir(pluginsPath);
+		installedPluginPath = `${pluginsPath}/${pluginName}`;
 	});
 
 	it('should install a plugin', async () => {
@@ -95,6 +97,23 @@ describe('Blueprint step installPlugin', () => {
 			},
 		});
 		expect(php.fileExists(installedPluginPath)).toBe(true);
+	});
+
+	it('should install a single PHP file as a plugin', async () => {
+		const rawPluginContent = `<?php\n/**\n * Plugin Name: Test Plugin`;
+		await installPlugin(php, {
+			pluginData: new File(
+				[new TextEncoder().encode(rawPluginContent)],
+				'test-plugin.php'
+			),
+			ifAlreadyInstalled: 'overwrite',
+			options: {
+				activate: false,
+			},
+		});
+		const pluginFilePath = `${pluginsPath}/test-plugin.php`;
+		expect(php.fileExists(pluginFilePath)).toBe(true);
+		expect(php.readFileAsText(pluginFilePath)).toBe(rawPluginContent);
 	});
 
 	it('should install a plugin using the deprecated pluginZipFile option', async () => {

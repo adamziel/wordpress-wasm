@@ -1,6 +1,7 @@
 import { StepHandler } from '.';
 import { InstallAssetOptions, installAsset } from './install-asset';
 import { activatePlugin } from './activate-plugin';
+import { writeFile } from './write-file';
 import { zipNameToHumanName } from '../utils/zip-name-to-human-name';
 import { Directory } from '../resources';
 import { joinPaths } from '@php-wasm/util';
@@ -99,31 +100,52 @@ export const installPlugin: StepHandler<
 		);
 	}
 
-	const targetFolderName = 'targetFolderName' in options ? options.targetFolderName : '';
+	const pluginsDirectoryPath = joinPaths(
+		await playground.documentRoot,
+		'wp-content',
+		'plugins'
+	);
+	const targetFolderName =
+		'targetFolderName' in options ? options.targetFolderName : '';
 	let assetFolderPath = '';
 	let assetNiceName = '';
 	if (pluginData instanceof File) {
-		// @TODO: Consider validating whether this is a zip file?
-		const zipFileName = pluginData.name.split('/').pop() || 'plugin.zip';
-		assetNiceName = zipNameToHumanName(zipFileName);
+		if (pluginData.name.endsWith('.php')) {
+			const destinationFilePath = joinPaths(
+				pluginsDirectoryPath,
+				pluginData.name
+			);
+			await writeFile(playground, {
+				path: destinationFilePath,
+				data: pluginData,
+			});
+			assetFolderPath = pluginsDirectoryPath;
+			assetNiceName = pluginData.name;
+		} else {
+			// Assume any other file is a zip file
+			// @TODO: Consider validating whether this is a zip file?
+			const zipFileName =
+				pluginData.name.split('/').pop() || 'plugin.zip';
+			assetNiceName = zipNameToHumanName(zipFileName);
 
-		progress?.tracker.setCaption(`Installing the ${assetNiceName} plugin`);
-		const assetResult = await installAsset(playground, {
-			ifAlreadyInstalled,
-			zipFile: pluginData,
-			targetPath: `${await playground.documentRoot}/wp-content/plugins`,
-			targetFolderName: targetFolderName
-		});
-		assetFolderPath = assetResult.assetFolderPath;
-		assetNiceName = assetResult.assetFolderName;
+			progress?.tracker.setCaption(
+				`Installing the ${assetNiceName} plugin`
+			);
+			const assetResult = await installAsset(playground, {
+				ifAlreadyInstalled,
+				zipFile: pluginData,
+				targetPath: `${await playground.documentRoot}/wp-content/plugins`,
+				targetFolderName: targetFolderName,
+			});
+			assetFolderPath = assetResult.assetFolderPath;
+			assetNiceName = assetResult.assetFolderName;
+		}
 	} else if (pluginData) {
 		assetNiceName = pluginData.name;
 		progress?.tracker.setCaption(`Installing the ${assetNiceName} plugin`);
 
 		const pluginDirectoryPath = joinPaths(
-			await playground.documentRoot,
-			'wp-content',
-			'plugins',
+			pluginsDirectoryPath,
 			targetFolderName || pluginData.name
 		);
 		await writeFiles(playground, pluginDirectoryPath, pluginData.files, {
