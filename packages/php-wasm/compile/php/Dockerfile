@@ -263,7 +263,10 @@ RUN cd /root && \
 	git apply --no-index /root/php${PHP_VERSION:0:3}*.patch -v && \
 	( [[ "${PHP_VERSION:0:3}" == '8.3' ]] && \
 		git apply --no-index /root/php-chunk-alloc-zend-assert-8.3.patch -v || \
-		git apply --no-index /root/php-chunk-alloc-zend-assert.patch -v \
+		( [[ "${PHP_VERSION:0:3}" == '8.4' ]] && \
+			git apply --no-index /root/php-chunk-alloc-zend-assert-8.4.patch -v || \
+			git apply --no-index /root/php-chunk-alloc-zend-assert.patch -v \
+		) \
 	) && \
 	touch php-src/patched
 

@@ -12,6 +12,12 @@
  */
 export const phpVersions = [
 	{
+		version: '8.4',
+		loaderFilename: 'php_8_4.js',
+		wasmFilename: 'php_8_4.wasm',
+		lastRelease: '8.4.0',
+	},
+	{
 		version: '8.3',
 		loaderFilename: 'php_8_3.js',
 		wasmFilename: 'php_8_3.wasm',
