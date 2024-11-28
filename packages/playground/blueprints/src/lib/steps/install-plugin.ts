@@ -52,8 +52,8 @@ export interface InstallPluginStep<FileResource, DirectoryResource>
 	 */
 	step: 'installPlugin';
 	/**
-	 * The plugin files to install. It can be either a plugin zip file, or a
-	 * directory containing all the plugin files at its root.
+	 * The plugin files to install. It can be a plugin zip file, a single PHP
+	 * file, or a directory containing all the plugin files at its root.
 	 */
 	pluginData: FileResource | DirectoryResource;
 
