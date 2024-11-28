@@ -1,3 +1,4 @@
+
 // @ts-ignore
 import url from './sqlite-database-integration.zip?url';
 
@@ -9,3 +10,4 @@ import url from './sqlite-database-integration.zip?url';
  */
 export const size = 86695;
 export { url };
+

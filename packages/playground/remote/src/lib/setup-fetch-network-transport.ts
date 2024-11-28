@@ -74,7 +74,7 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 		const fetchHeaders = data.headers || {};
 
 		const hasContentTypeHeader = Object.keys(fetchHeaders).some(
-			(name) => name.toLowerCase() === 'content-type'
+			(name) => name.toLowerCase() === "content-type"
 		);
 
 		if (fetchMethod == 'POST' && !hasContentTypeHeader) {

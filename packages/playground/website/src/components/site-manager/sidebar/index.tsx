@@ -93,11 +93,7 @@ export function Sidebar({
 			aria-orientation={undefined}
 		>
 			{/* Padding 3px is because of focus on dropdown button */}
-			<Flex
-				justify="space-between"
-				direction="row"
-				style={{ padding: '3px' }}
-			>
+			<Flex justify="space-between" direction="row" style={{ padding: '3px'}}>
 				<h1 className="sr-only">WordPress Playground</h1>
 				<div className={css.sidebarHeader}>
 					{/* Remove Playground logo because branding isn't finalized. */}
@@ -115,15 +111,21 @@ export function Sidebar({
 						<>
 							<WordPressPRMenuItem
 								onClose={onClose}
-								disabled={offline}
+								disabled={
+									offline
+								}
 							/>
 							<GutenbergPRMenuItem
 								onClose={onClose}
-								disabled={offline}
+								disabled={
+									offline
+								}
 							/>
 							<GithubImportMenuItem
 								onClose={onClose}
-								disabled={offline}
+								disabled={
+									offline
+								}
 							/>
 							<RestoreFromZipMenuItem
 								text="Import from .zip"
