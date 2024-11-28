@@ -45,7 +45,10 @@ export async function writeFiles(
 			await php.rmdir(root, { recursive: true });
 		}
 	}
-	for (const [relativePath, content] of Object.entries(newFiles)) {
+	newFiles = await newFiles;
+	for (const relativePath of Object.keys(newFiles)) {
+		const content = await newFiles[relativePath];
+
 		const filePath = joinPaths(root, relativePath);
 		if (!(await php.fileExists(dirname(filePath)))) {
 			await php.mkdir(dirname(filePath));
@@ -53,8 +56,7 @@ export async function writeFiles(
 		if (content instanceof Uint8Array || typeof content === 'string') {
 			await php.writeFile(filePath, content);
 		} else {
-			const fileTreeContent = content as MaybePromise<FileTree>;
-			await writeFiles(php, filePath, fileTreeContent);
+			await writeFiles(php, filePath, content);
 		}
 	}
 }

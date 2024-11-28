@@ -353,21 +353,20 @@ export class BlueprintAssetDirectoryResource extends VFSDirectoryResource {
 async function createLazyVFSFileTree(
 	path: string,
 	playground: UniversalPHP
-): Promise<FileTree> {
-	const keys = await playground.listFiles(path);
-	const keySet = new Set(keys);
+): Promise<FileTreeAsync> {
+	const lazyFileTree: FileTreeAsync = {};
 
-	return new Proxy<FileTree>(
-		{},
-		{
-			ownKeys() {
-				return keys;
-			},
-			async get(target, prop: string) {
-				if (!keySet.has(prop)) {
-					return undefined;
-				}
-				const fullPath = joinPaths(path, prop);
+	if (!(await playground.isDir(path))) {
+		throw new Error(`Path "${path}" is not a directory`);
+	}
+
+	for (const fileName of await playground.listFiles(path)) {
+		Object.defineProperty(lazyFileTree, fileName, {
+			configurable: false,
+			enumerable: true,
+			async get() {
+				const fullPath = joinPaths(path, fileName);
+
 				if (!(await playground.fileExists(fullPath))) {
 					return undefined;
 				}
@@ -375,11 +374,13 @@ async function createLazyVFSFileTree(
 				if (await playground.isDir(fullPath)) {
 					return createLazyVFSFileTree(fullPath, playground);
 				} else {
-					return playground.readFileAsBuffer(joinPaths(path, prop));
+					return playground.readFileAsBuffer(fullPath);
 				}
 			},
-		}
-	);
+		});
+	}
+
+	return lazyFileTree;
 }
 
 /**
