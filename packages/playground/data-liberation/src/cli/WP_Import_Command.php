@@ -29,6 +29,9 @@ class WP_Import_Command {
 	 */
 	private $importer = null;
 
+	/**
+	 * @var string $wxr_path The path to the WXR file.
+	 */
 	private $wxr_path = '';
 
 	/**
@@ -129,6 +132,7 @@ class WP_Import_Command {
 		WP_CLI::line( "Importing {$this->wxr_path}" );
 
 		if ( $this->dry_run ) {
+			// @TODO: do something with the dry run.
 			WP_CLI::line( 'Dry run enabled.' );
 		} else {
 			while ( $this->importer->next_step() ) {
