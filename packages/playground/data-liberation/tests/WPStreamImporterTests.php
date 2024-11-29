@@ -15,6 +15,25 @@ class WPStreamImporterTests extends TestCase {
 		}
 	}
 
+    /**
+     * @before
+	 *
+	 * TODO: Run each test in a fresh Playground instance instead of sharing the global
+	 * state like this.
+     */
+    public function clean_up_uploads(): void
+    {
+        $files = glob( '/wordpress/wp-content/uploads/*' );
+        foreach( $files as $file ) {
+            if( is_dir( $file ) ) {
+                array_map( 'unlink', glob( "$file/*.*" ) );
+                rmdir( $file );
+            } else {
+                unlink( $file );
+            }
+        }
+    }
+
 	public function test_import_simple_wxr() {
 		$import = data_liberation_import( __DIR__ . '/wxr/small-export.xml' );
 
@@ -54,6 +73,7 @@ class WPStreamImporterTests extends TestCase {
 			break;
 		}
 
+		$this->assertIsArray( $progress_value );
 		$this->assertIsInt( $progress_value['received'] );
 		$this->assertEquals( 'https://wpthemetestdata.files.wordpress.com/2008/06/canola2.jpg', $progress_url );
 		$this->assertGreaterThan( 0, $progress_value['total'] );

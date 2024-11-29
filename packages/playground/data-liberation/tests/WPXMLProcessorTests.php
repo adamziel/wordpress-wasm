@@ -561,7 +561,7 @@ class WPXMLProcessorTests extends TestCase {
 	public function test_token_bookmark_span( string $xml, int $match_nth_token, string $expected_match ) {
 		$processor = new class( $xml ) extends WP_XML_Processor {
 			public function __construct( $xml ) {
-				parent::__construct( $xml );
+				parent::__construct( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
 			}
 			
 			/**
@@ -1408,7 +1408,7 @@ class WPXMLProcessorTests extends TestCase {
 
 		$subclass = new class( $xml ) extends WP_XML_Processor {
 			public function __construct( $xml ) {
-				parent::__construct( $xml );
+				parent::__construct( $xml, self::CONSTRUCTOR_UNLOCK_CODE );
 			}
 
 			/**

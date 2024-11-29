@@ -752,7 +752,9 @@ class WP_WXR_Reader implements Iterator {
 			 */
 			if (
 				$this->entity_type === 'post' &&
-				$tag === 'category'
+				$tag === 'category' &&
+				array_key_exists( 'domain', $this->last_opener_attributes ) &&
+				array_key_exists( 'nicename', $this->last_opener_attributes )
 			) {
 				$this->entity_data['terms'][] = array(
 					'taxonomy' => $this->last_opener_attributes['domain'],
