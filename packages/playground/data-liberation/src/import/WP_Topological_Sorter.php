@@ -9,9 +9,8 @@
  */
 class WP_Topological_Sorter {
 
-	public $posts          = array();
-	public $categories     = array();
-	public $category_index = array();
+	public $posts      = array();
+	public $categories = array();
 
 	/**
 	 * Variable for keeping counts of orphaned posts/attachments, it'll also be assigned as temporarly post ID.
@@ -50,9 +49,8 @@ class WP_Topological_Sorter {
 		}
 
 		$this->categories[ $data['slug'] ] = array(
-			'parent'      => $data['parent'],
-			'byte_offset' => $byte_offset,
-			'visited'     => false,
+			array_key_exists( 'parent', $data ) ? $data['parent'] : '',
+			$byte_offset,
 		);
 	}
 
@@ -85,8 +83,12 @@ class WP_Topological_Sorter {
 
 	/**
 	 * Get the byte offset of an element, and remove it from the list.
+	 *
+	 * @param int $id The ID of the post to get the byte offset.
+	 *
+	 * @return int|bool The byte offset of the post, or false if the post is not found.
 	 */
-	public function get_byte_offset( $id ) {
+	public function get_post_byte_offset( $id ) {
 		if ( ! $this->sorted ) {
 			return false;
 		}
@@ -97,8 +99,37 @@ class WP_Topological_Sorter {
 			// Remove the element from the array.
 			unset( $this->posts[ $id ] );
 
-			if ( 0 === count( $this->posts ) ) {
+			if ( 0 === count( $this->categories ) && 0 === count( $this->posts ) ) {
 				// All posts have been processed.
+				$this->reset();
+			}
+
+			return $ret;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the byte offset of an element, and remove it from the list.
+	 *
+	 * @param string $slug The slug of the category to get the byte offset.
+	 *
+	 * @return int|bool The byte offset of the category, or false if the category is not found.
+	 */
+	public function get_category_byte_offset( $slug ) {
+		if ( ! $this->sorted ) {
+			return false;
+		}
+
+		if ( isset( $this->categories[ $slug ] ) ) {
+			$ret = $this->categories[ $slug ];
+
+			// Remove the element from the array.
+			unset( $this->categories[ $slug ] );
+
+			if ( 0 === count( $this->categories ) && 0 === count( $this->posts ) ) {
+				// All categories have been processed.
 				$this->reset();
 			}
 
@@ -113,12 +144,10 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Sort posts topologically.
+	 * Sort elements topologically.
 	 *
-	 * Children posts should not be processed before their parent has been processed.
-	 * This method sorts the posts in the order they should be processed.
-	 *
-	 * Sorted posts will be stored as attachments and posts/pages separately.
+	 * Elements should not be processed before their parent has been processed.
+	 * This method sorts the elements in the order they should be processed.
 	 */
 	public function sort_topologically( $free_space = true ) {
 		foreach ( $this->categories as $slug => $category ) {
@@ -126,6 +155,7 @@ class WP_Topological_Sorter {
 		}
 
 		$this->sort_elements( $this->posts );
+		$this->sort_elements( $this->categories );
 
 		// Free some space.
 		if ( $free_space ) {
@@ -135,6 +165,14 @@ class WP_Topological_Sorter {
 			foreach ( $this->posts as $id => $element ) {
 				// Save only the byte offset.
 				$this->posts[ $id ] = $element[1];
+			}
+
+			/**
+			 * @TODO: all the elements that have not been moved can be flushed away.
+			 */
+			foreach ( $this->categories as $slug => $element ) {
+				// Save only the byte offset.
+				$this->categories[ $slug ] = $element[1];
 			}
 		}
 
