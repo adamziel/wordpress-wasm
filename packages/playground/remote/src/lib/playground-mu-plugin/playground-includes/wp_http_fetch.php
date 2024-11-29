@@ -38,12 +38,6 @@ class Wp_Http_Fetch_Base
 	 */
 	public function request($url, $headers = array(), $data = array(), $options = array())
 	{
-		// Disable wp-cron requests that are extremely slow in node.js runtime environment.
-		// @TODO: Make wp-cron requests faster.
-		if (str_contains($url, '/wp-cron.php')) {
-			return false;
-		}
-
 		if (!empty($data)) {
 			$data_format = $options['data_format'];
 			if ($data_format === 'query') {

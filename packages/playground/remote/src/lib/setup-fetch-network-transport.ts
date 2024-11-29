@@ -74,7 +74,7 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 		const fetchHeaders = data.headers || {};
 
 		const hasContentTypeHeader = Object.keys(fetchHeaders).some(
-			(name) => name.toLowerCase() === "content-type"
+			(name) => name.toLowerCase() === 'content-type'
 		);
 
 		if (fetchMethod == 'POST' && !hasContentTypeHeader) {
@@ -84,7 +84,7 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 		response = await fetchFn(fetchUrl, {
 			method: fetchMethod,
 			headers: fetchHeaders,
-			body: data.data,
+			body: fetchMethod === 'GET' ? undefined : data.data,
 			credentials: 'omit',
 		});
 	} catch (e) {
