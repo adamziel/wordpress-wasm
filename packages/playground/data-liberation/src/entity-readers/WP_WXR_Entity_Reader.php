@@ -343,6 +343,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		'wp:category' => array(
 			'type' => 'category',
 			'fields' => array(
+				'wp:term_id' => 'term_id',
 				'wp:category_nicename' => 'slug',
 				'wp:category_parent' => 'parent',
 				'wp:cat_name' => 'name',
@@ -399,8 +400,8 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		$this->xml = $xml;
 	}
 
-	public function get_entity_byte_offset() {
-		return $this->entity_byte_offset;
+	public function get_last_xml_byte_offset_outside_of_entity() {
+		return $this->last_xml_byte_offset_outside_of_entity;
 	}
 
 	public function get_reentrancy_cursor() {

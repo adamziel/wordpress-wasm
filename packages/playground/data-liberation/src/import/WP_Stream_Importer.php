@@ -288,6 +288,12 @@ class WP_Stream_Importer {
 	protected $importer;
 
 	public function next_step() {
+		if ( null !== $this->next_stage ) {
+			return false;
+		}
+
+		do_action( 'wp_stream_importer_next_stage', $this );
+
 		switch ( $this->stage ) {
 			case self::STAGE_INITIAL:
 				$this->next_stage = self::STAGE_INDEX_ENTITIES;
@@ -529,10 +535,11 @@ class WP_Stream_Importer {
 		// $cursor = $this->entity_iterator->get_reentrancy_cursor();
 		$entity = $this->entity_iterator->current();
 		$data   = $entity->get_data();
-		$offset = $this->entity_iterator->get_entity_byte_offset();
+		$offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
 
 		switch ( $entity->get_type() ) {
 			case 'category':
+				file_put_contents( 'php://stderr', print_r( $data, true ) );
 				$this->topological_sorter->map_category( $offset, $data );
 				break;
 			case 'post':
