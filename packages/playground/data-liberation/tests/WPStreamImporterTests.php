@@ -88,13 +88,11 @@ class WPStreamImporterTests extends TestCase {
 		for($i = 0; $i < 20; ++$i) {
 			$importer->next_step();
 			$progress = $importer->get_frontloading_progress();
-			var_dump( $progress );
 			if( count( $progress ) === 0 ) {
 				continue;
 			}
 			$progress_url = array_keys( $progress )[0];
 			$progress_value = array_values( $progress )[0];
-			var_dump( $progress_value );
 			if( null === $progress_value['received'] ) {
 				continue;
 			}
