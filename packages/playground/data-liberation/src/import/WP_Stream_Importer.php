@@ -299,7 +299,10 @@ class WP_Stream_Importer {
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				$this->next_topological_sort_step();
+				if ( true === $this->topological_sort_next_entity() ) {
+					return true;
+				}
+				$this->stage = self::STAGE_FRONTLOAD_ASSETS;
 				return true;
 			case self::STAGE_FRONTLOAD_ASSETS:
 				if ( true === $this->frontload_next_entity() ) {
@@ -510,20 +513,17 @@ class WP_Stream_Importer {
 		}
 	}
 
-	private function next_topological_sort_step() {
+	private function topological_sort_next_entity() {
 		if ( null === $this->entity_iterator ) {
-			$this->downloader         = new WP_Attachment_Downloader( $this->options );
 			$this->entity_iterator    = $this->create_entity_iterator();
 			$this->topological_sorter = new WP_Topological_Sorter();
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
-			$this->stage              = self::STAGE_FRONTLOAD_ASSETS;
 			$this->topological_sorter = null;
-			$this->downloader         = null;
 			$this->entity_iterator    = null;
 			$this->resume_at_entity   = null;
-			return;
+			return false;
 		}
 
 		// $cursor = $this->entity_iterator->get_reentrancy_cursor();
