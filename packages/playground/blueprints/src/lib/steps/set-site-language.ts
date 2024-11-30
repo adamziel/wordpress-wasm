@@ -54,7 +54,7 @@ export const getWordPressTranslationUrl = async (
 	if (wpVersion.match(/^(\d+\.\d+)(?:\.\d+)?$/)) {
 		// Use the version directly if it's a major.minor or major.minor.patch.
 		resolvedVersion = wpVersion;
-	} else if (wpVersion.match(/^(\d.\d(.\d)?)-(beta|rc).*$/i)) {
+	} else if (wpVersion.match(/^(\d.\d(.\d)?)-(beta|rc|alpha|nightly).*$/i)) {
 		// Translate "6.4-alpha", "6.5-beta", "6.6-nightly", "6.6-RC" etc.
 		// to "6.6-RC"
 		if (latestBetaWordPressVersion) {
@@ -77,11 +77,11 @@ export const getWordPressTranslationUrl = async (
 		/**
 		 * Use the latest stable version otherwise.
 		 *
-		 * The requested version is either nightly alpha or a custom string.
-		 * We could actually fail at this point, but it seems more useful to
-		 * download translations from the last official WordPress version.
-		 * If that assumption is wrong, let's reconsider this whenever someone
-		 * reports a related issue.
+		 * The requested version is neither stable, nor beta/RC, nor alpha/nightly.
+		 * It must be a custom version string. We could actually fail at this point,
+		 * but it seems more useful to* download translations from the last official
+		 * WordPress version. If that assumption is wrong, let's reconsider this whenever
+		 * someone reports a related issue.
 		 */
 		if (latestStableWordPressVersion) {
 			resolvedVersion = latestStableWordPressVersion;
