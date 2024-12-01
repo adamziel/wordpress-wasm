@@ -43,7 +43,7 @@ class WP_Attachment_Downloader {
 		if ( file_exists( $output_relative_path ) ) {
 			$this->pending_events[] = new WP_Attachment_Downloader_Event(
 				$this->enqueued_url,
-				WP_Attachment_Downloader_Event::SUCCESS
+				WP_Attachment_Downloader_Event::SKIPPED
 			);
 			return true;
 		}

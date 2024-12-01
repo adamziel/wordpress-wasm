@@ -417,11 +417,14 @@ class WP_Import_Session {
 
 		$successes = 0;
 		foreach ( $events as $event ) {
-			if ( $event->type === WP_Attachment_Downloader_Event::SUCCESS ) {
-				++$successes;
-				$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
-			} else {
-				$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error);
+			switch ( $event->type ) {
+				case WP_Attachment_Downloader_Event::SUCCESS:
+					++$successes;
+					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
+					break;
+				case WP_Attachment_Downloader_Event::FAILURE:
+					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error);
+					break;
 			}
 		}
 		if ( $successes > 0 ) {

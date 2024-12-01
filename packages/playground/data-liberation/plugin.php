@@ -261,6 +261,8 @@ function data_liberation_admin_page() {
                                     <th>File</th>
                                     <th>Retries</th>
                                     <th>State</th>
+                                    <th>Details</th>
+                                    <th>Options</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -269,10 +271,24 @@ function data_liberation_admin_page() {
                                         <td data-wp-text="context.item.post_title"></td>
                                         <td data-wp-text="context.item.menu_order"></td>
                                         <td data-wp-text="context.item.post_status"></td>
+                                        <td data-wp-text="context.item.post_content"></td>
+                                        <td>
+                                            <div data-wp-class--hidden="state.frontloadingFailed">
+                                                @TODO: So many buttons! Replace with a dropdown menu?
+                                                <button>Retry</button>
+                                                <button>Ignore</button>
+                                                <button>Use another URL</button>
+                                                <button>Upload manually</button>
+                                                <button>Use an existing attachment</button>
+                                                <button>Remove from the imported content</button>
+                                                <button>Generate a placeholder image</button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </template>
                             </tbody>
                         </table>
+                        <!-- @TODO: Pagination -->
                     <?php endif; ?>
 
                     <?php if(
@@ -579,7 +595,6 @@ function data_liberation_import_step($session) {
                 ]);
                 break;
             case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
-                var_dump($importer->get_imported_entities_counts());
                 $session->bump_imported_entities_counts(
                     $importer->get_imported_entities_counts()
                 );
@@ -596,22 +611,16 @@ function data_liberation_import_step($session) {
         $start_time = time();
         $files_downloaded = 0;
         while(true) {
-            var_dump('Checking for more steps');
             if(!$importer->next_step()) {
-                var_dump('No more steps');
                 break;
             }
             $frontloading_events = $importer->get_frontloading_events();
             foreach($frontloading_events as $event) {
-                var_dump($event);
                 if($event->type === WP_Attachment_Downloader_Event::SUCCESS) {
                     ++$files_downloaded;
                 }
             }
 
-            if(count($importer->get_frontloading_progress())) {
-                var_dump($importer->get_frontloading_progress());
-            }
             $session->bump_frontloading_progress(
                 $importer->get_frontloading_progress(),
                 $importer->get_frontloading_events()

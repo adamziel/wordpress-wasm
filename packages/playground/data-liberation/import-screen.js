@@ -5,6 +5,11 @@ const { state } = store('dataLiberation', {
 		get isImportTypeSelected() {
 			return getContext().importType === state.selectedImportType;
 		},
+		get frontloadingFailed() {
+			return getContext().frontloadingPlaceholders.some(
+				(placeholder) => placeholder.post_status === 'error'
+			);
+		},
 	},
 	actions: {
 		setImportType: () => {
