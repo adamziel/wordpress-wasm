@@ -22,8 +22,11 @@ class WP_Import_Session {
 		'post_meta',
 		'comment',
 		'comment_meta',
-		'file',
+		'download',
 	);
+	const FRONTLOAD_STATUS_AWAITING_DOWNLOAD = 'awaiting_download';
+	const FRONTLOAD_STATUS_ERROR = 'error';
+	const FRONTLOAD_STATUS_SUCCEEDED = 'succeeded';
 	private $post_id;
 	private $cached_stage;
 
@@ -267,13 +270,111 @@ class WP_Import_Session {
 		}
 	}
 
+	public function set_frontloading_status( $url, $status, $error = null ) {
+		// @TODO: What if the placeholder is not found?
+		$placeholder = $this->get_frontloading_placeholder( $url );
+		if ( ! $placeholder ) {
+			return false;
+		}
+		return wp_update_post(array(
+			'ID' => $placeholder->ID,
+			'post_status' => $status,
+			// Abuse the menu_order field to store the number of retries.
+			// This avoids additional database queries.
+			'menu_order' => $placeholder->menu_order + 1,
+			'post_content' => $error,
+		));
+	}
+
+	public function get_frontloading_placeholders( $options = array() ) {
+		$query = new WP_Query(array(
+			'post_type' => 'frontloading_placeholder',
+			'post_parent' => $this->post_id,
+			'posts_per_page' => $options['per_page'] ?? 25,
+			'paged' => $options['page'] ?? 1,
+			'post_status' => self::FRONTLOAD_STATUS_ERROR,
+			'orderby' => 'post_status',
+			'order' => 'ASC',
+		));
+
+		if (!$query->have_posts()) {
+			return array();
+		}
+
+		return $query->posts;
+	}
+
 	public function get_total_number_of_entities() {
 		$totals = array();
 		foreach ( static::PROGRESS_ENTITIES as $field ) {
 			$totals[ $field ] = (int) get_post_meta( $this->post_id, 'total_' . $field, true );
 		}
+		$totals['download'] = $this->get_total_number_of_assets();
 		return $totals;
 	}
+
+	public function get_total_number_of_assets() {
+		global $wpdb;
+		return (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM $wpdb->posts 
+			WHERE post_type = 'frontloading_placeholder' 
+			AND post_parent = %d",
+			$this->post_id
+		) );
+	}
+
+	public function get_frontloading_placeholder( $url ) {
+		global $wpdb;
+		return get_post( $wpdb->get_var( $wpdb->prepare(
+			"SELECT ID FROM $wpdb->posts WHERE post_type = 'frontloading_placeholder' AND post_parent = %d AND guid = %s LIMIT 1",
+			$this->post_id, $url
+		) ) );
+	}
+
+	/**
+	 * Creates placeholder attachments for the assets to be downloaded in the
+	 * frontloading stage.
+	 */
+	public function store_indexed_assets_urls( $urls ) {
+		global $wpdb;
+
+		foreach ( $urls as $url => $_ ) {
+			/**
+			 * Check if placeholder with this URL already exists
+			 * There's a race condition here – another insert may happen
+			 * between the check and the insert.
+			 * @TODO: Explore solutions. A custom table with a UNIQUE constraint
+			 * may or may not be an option, depending on the performance impact
+			 * on 100GB+ VIP databases.
+			 */
+			$exists = $wpdb->get_var( $wpdb->prepare(
+				"SELECT ID FROM $wpdb->posts 
+				WHERE post_type = 'frontloading_placeholder' 
+				AND post_parent = %d
+				AND guid = %s
+				LIMIT 1",
+				$this->post_id,
+				$url
+			));
+
+			if ( $exists ) {
+				continue;
+			}
+
+			$post_data = array(
+				'post_type' => 'frontloading_placeholder',
+				'post_parent' => $this->post_id,
+				'post_title' => basename( $url ),
+				'post_status' => self::FRONTLOAD_STATUS_AWAITING_DOWNLOAD,
+				'guid' => $url
+			);
+			if ( is_wp_error( wp_insert_post( $post_data ) ) ) {
+				// @TODO: How to handle an insertion failure?
+				return false;
+			}
+		}
+	}
+
 	/**
 	 * Sets the total number of entities to import for each type.
 	 *
@@ -318,15 +419,16 @@ class WP_Import_Session {
 		foreach ( $events as $event ) {
 			if ( $event->type === WP_Attachment_Downloader_Event::SUCCESS ) {
 				++$successes;
+				$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
 			} else {
-				// @TODO: Store error.
+				$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error);
 			}
 		}
 		if ( $successes > 0 ) {
 			// @TODO: Consider not treating files as a special case.
 			$this->bump_imported_entities_counts(
 				array(
-					'file' => $successes,
+					'download' => $successes,
 				)
 			);
 		}

@@ -147,46 +147,63 @@ class WP_Attachment_Downloader {
 				$this->progress[ $original_url ]['received'] += strlen( $chunk );
 				break;
 			case Client::EVENT_FAILED:
-				if ( isset( $this->fps[ $original_request_id ] ) ) {
-					fclose( $this->fps[ $original_request_id ] );
-				}
-				if ( isset( $this->output_paths[ $original_request_id ] ) ) {
-					$partial_file = $this->output_paths[ $original_request_id ] . '.partial';
-					if ( file_exists( $partial_file ) ) {
-						unlink( $partial_file );
-					}
-				}
-				$this->pending_events[] = new WP_Attachment_Downloader_Event(
-					$original_url,
-					WP_Attachment_Downloader_Event::FAILURE
-				);
-				unset( $this->progress[ $original_url ] );
-				unset( $this->output_paths[ $original_request_id ] );
+				$this->on_failure( $original_url, $original_request_id );
 				break;
 			case Client::EVENT_FINISHED:
 				if ( ! $request->is_redirected() ) {
-					// Only clean up if this was the last request in the chain.
-					if ( isset( $this->fps[ $original_request_id ] ) ) {
-						fclose( $this->fps[ $original_request_id ] );
-					}
-					if ( isset( $this->output_paths[ $original_request_id ] ) ) {
-						if ( false === rename(
-							$this->output_paths[ $original_request_id ] . '.partial',
-							$this->output_paths[ $original_request_id ]
-						) ) {
-							// @TODO: Log an error.
-						}
-					}
-					$this->pending_events[] = new WP_Attachment_Downloader_Event(
-						$original_url,
-						WP_Attachment_Downloader_Event::SUCCESS
+					// Only process if this was the last request in the chain.
+					$is_success = (
+						$request->response->status_code >= 200 &&
+						$request->response->status_code <= 299
 					);
-					unset( $this->progress[ $original_url ] );
-					unset( $this->output_paths[ $original_request_id ] );
+					if ( $is_success ) {
+						$this->on_success( $original_url, $original_request_id );
+					} else {
+						$this->on_failure( $original_url, $original_request_id );
+					}
 				}
 				break;
 		}
 
 		return true;
+	}
+
+	private function on_failure( $original_url, $original_request_id ) {
+		if ( isset( $this->fps[ $original_request_id ] ) ) {
+			fclose( $this->fps[ $original_request_id ] );
+		}
+		if ( isset( $this->output_paths[ $original_request_id ] ) ) {
+			$partial_file = $this->output_paths[ $original_request_id ] . '.partial';
+			if ( file_exists( $partial_file ) ) {
+				unlink( $partial_file );
+			}
+		}
+		$this->pending_events[] = new WP_Attachment_Downloader_Event(
+			$original_url,
+			WP_Attachment_Downloader_Event::FAILURE
+		);
+		unset( $this->progress[ $original_url ] );
+		unset( $this->output_paths[ $original_request_id ] );
+	}
+
+	private function on_success( $original_url, $original_request_id ) {
+		// Only clean up if this was the last request in the chain.
+		if ( isset( $this->fps[ $original_request_id ] ) ) {
+			fclose( $this->fps[ $original_request_id ] );
+		}
+		if ( isset( $this->output_paths[ $original_request_id ] ) ) {
+			if ( false === rename(
+				$this->output_paths[ $original_request_id ] . '.partial',
+				$this->output_paths[ $original_request_id ]
+			) ) {
+				// @TODO: Log an error.
+			}
+		}
+		$this->pending_events[] = new WP_Attachment_Downloader_Event(
+			$original_url,
+			WP_Attachment_Downloader_Event::SUCCESS
+		);
+		unset( $this->progress[ $original_url ] );
+		unset( $this->output_paths[ $original_request_id ] );
 	}
 }
