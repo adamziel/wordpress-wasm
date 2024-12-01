@@ -105,6 +105,10 @@ function data_liberation_admin_page() {
 
     // Populates the initial global state values.
     wp_interactivity_state( 'dataLiberation', array(
+        'importedEntities' => $import_session ? $import_session->count_imported_entities() : [],
+        'totalEntities' => $import_session ? $import_session->get_total_number_of_entities() : [],
+        'frontloadingPlaceholders' => $import_session ? $import_session->get_frontloading_placeholders() : [],
+
         'selectedImportType' => 'wxr_file',
         'isImportTypeSelected' => function() {
             // @TODO Figure out why this function is not hiding the form rows
@@ -142,7 +146,7 @@ function data_liberation_admin_page() {
             }
         }
     </style>
-    <div class="wrap">
+    <div class="wrap" data-wp-interactive="dataLiberation">
         <h1>Data Liberation</h1>
         <?php if ($import_session): ?>
             <?php // Show import status if one is active ?>
@@ -216,8 +220,8 @@ function data_liberation_admin_page() {
                             
                             <?php $frontloading_progress = $import_session->get_frontloading_progress();
                             if (!empty($frontloading_progress)): ?>
-                                <progress value="<?php echo $imported['file'] ?? 0; ?>" max="<?php echo $totals['file'] ?? 0; ?>">
-                                    <?php echo $imported['file'] ?? 0; ?> / <?php echo $totals['file'] ?? 0; ?> Files Downloaded
+                                <progress value="<?php echo $imported['download'] ?? 0; ?>" max="<?php echo $totals['download'] ?? 0; ?>">
+                                    <?php echo $imported['download'] ?? 0; ?> / <?php echo $totals['download'] ?? 0; ?> Files Downloaded
                                 </progress>
                                 <h4>Downloads in progress:</h4>
                                 <table>
@@ -245,9 +249,34 @@ function data_liberation_admin_page() {
                         <?php break; ?>
                     <?php endswitch; ?>
 
+                    <?php if( $stage === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ): ?>
+                        <h3>Downloaded Assets:</h3>
+                        <div>
+                            <progress data-wp-bind--value="state.importedEntities.download" data-wp-bind--max="state.totalEntities.download"></progress>
+                            <span data-wp-text="state.importedEntities.download"></span> / <span data-wp-text="state.totalEntities.download"></span> Files Downloaded
+                        </div>
+                        <table data-wp-class--hidden="!state.frontloadingPlaceholders.length">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Retries</th>
+                                    <th>State</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template data-wp-each--item="state.frontloadingPlaceholders">
+                                    <tr>
+                                        <td data-wp-text="context.item.post_title"></td>
+                                        <td data-wp-text="context.item.menu_order"></td>
+                                        <td data-wp-text="context.item.post_status"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+
                     <?php if(
-                        $stage === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ||
-                        $import_session->is_stage_completed(WP_Stream_Importer::STAGE_IMPORT_ENTITIES)
+                        $import_session->is_stage_completed(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS)
                     ): ?>
                         <table>
                             <thead>
@@ -293,7 +322,6 @@ function data_liberation_admin_page() {
                 method="post"
                 enctype="multipart/form-data"
                 action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
-                data-wp-interactive="dataLiberation"
             >
                 <?php wp_nonce_field('data_liberation_import'); ?>
                 <input type="hidden" name="action" value="data_liberation_import">
@@ -545,19 +573,10 @@ function data_liberation_import_step($session) {
         switch($importer->get_stage()) {
             case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
                 // Bump the total number of entities to import.
-                var_dump($importer->get_indexed_entities_counts());
+                $session->store_indexed_assets_urls($importer->get_indexed_assets_urls());
                 $session->bump_total_number_of_entities([
                     ...$importer->get_indexed_entities_counts(),
-                    'file' => count($importer->get_indexed_assets_urls())
                 ]);
-                break;
-            case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
-                var_dump($importer->get_frontloading_progress());
-                var_dump($importer->get_frontloading_events());
-                $session->bump_frontloading_progress(
-                    $importer->get_frontloading_progress(),
-                    $importer->get_frontloading_events()
-                );
                 break;
             case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
                 var_dump($importer->get_imported_entities_counts());
@@ -572,20 +591,32 @@ function data_liberation_import_step($session) {
     if(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage()) {
         // Define constraints for this run of the frontloading stage.
         // @TODO: Support these constraints at the importer level, not here.
-        $min_files_downloaded = 0;
+        $min_files_downloaded = 3;
         $soft_time_limit = 10;
         $start_time = time();
         $files_downloaded = 0;
         while(true) {
+            var_dump('Checking for more steps');
             if(!$importer->next_step()) {
+                var_dump('No more steps');
                 break;
             }
             $frontloading_events = $importer->get_frontloading_events();
             foreach($frontloading_events as $event) {
+                var_dump($event);
                 if($event->type === WP_Attachment_Downloader_Event::SUCCESS) {
                     ++$files_downloaded;
                 }
             }
+
+            if(count($importer->get_frontloading_progress())) {
+                var_dump($importer->get_frontloading_progress());
+            }
+            $session->bump_frontloading_progress(
+                $importer->get_frontloading_progress(),
+                $importer->get_frontloading_events()
+            );
+
             $time_taken = time() - $start_time;
             if($time_taken > $soft_time_limit) {
                 if($files_downloaded >= $min_files_downloaded) {
