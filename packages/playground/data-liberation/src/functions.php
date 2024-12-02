@@ -225,3 +225,9 @@ function data_liberation_import( $path ): bool {
 
 	return true;
 }
+
+function get_all_post_meta_flat( $post_id ) {
+	return array_map( function( $value ) {
+		return $value[0];
+	}, get_post_meta( $post_id ) );
+}

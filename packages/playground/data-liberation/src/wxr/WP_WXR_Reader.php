@@ -925,6 +925,10 @@ class WP_WXR_Reader implements Iterator {
 	}
 
 	public function rewind(): void {
+		// Haven't started yet.
+		if( null === $this->last_next_result ) {
+			return;
+		}
 		_doing_it_wrong(
 			__METHOD__,
 			'WP_WXR_Reader does not support rewinding.',

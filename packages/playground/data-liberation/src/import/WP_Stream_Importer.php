@@ -95,8 +95,11 @@ class WP_Stream_Importer {
 
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
-			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Reader::create( new WP_File_Reader( $wxr_path ), $cursor );
+			function ( $cursor = null ) use ( $wxr_path, $options ) {
+				$chain = new WP_Entity_Iterator_Chain();
+				$chain->append(new WP_Retry_Frontloading_Iterator($options['import_post_id']));
+				$chain->append(WP_WXR_Reader::create( new WP_File_Reader( $wxr_path ), $cursor ));
+				return $chain;
 			},
 			$options,
 			$cursor
@@ -347,6 +350,7 @@ class WP_Stream_Importer {
 		while ( $this->downloader->next_event() ) {
 			$event = $this->downloader->get_event();
 			switch ( $event->type ) {
+				case WP_Attachment_Downloader_Event::SKIPPED:
 				case WP_Attachment_Downloader_Event::SUCCESS:
 				case WP_Attachment_Downloader_Event::FAILURE:
 					$this->frontloading_events[] = $event;
@@ -403,6 +407,7 @@ class WP_Stream_Importer {
 			 * * For large files, every time a full megabyte is downloaded above 10MB.
 			 */
 			if ( true === $this->downloader->poll() ) {
+				$this->frontloading_advance_reentrancy_cursor();
 				return true;
 			}
 		}
@@ -431,6 +436,9 @@ class WP_Stream_Importer {
 
 		$data = $entity->get_data();
 		switch ( $entity->get_type() ) {
+			case 'asset_retry':
+				$this->enqueue_attachment_download( $data['url'], null );
+				break;
 			case 'site_option':
 				if ( $data['option_name'] === 'home' ) {
 					$this->source_site_url = $data['option_value'];

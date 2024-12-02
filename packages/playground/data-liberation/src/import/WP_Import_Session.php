@@ -178,6 +178,7 @@ class WP_Import_Session {
 	public function get_metadata() {
 		$cursor = $this->get_reentrancy_cursor();
 		return array(
+			'import_post_id' => $this->post_id,
 			'cursor' => $cursor ? $cursor : null,
 			'data_source' => get_post_meta( $this->post_id, 'data_source', true ),
 			'source_url' => get_post_meta( $this->post_id, 'source_url', true ),
@@ -276,13 +277,15 @@ class WP_Import_Session {
 		if ( ! $placeholder ) {
 			return false;
 		}
+		$meta = get_post_meta( $placeholder->ID );
 		return wp_update_post(array(
 			'ID' => $placeholder->ID,
 			'post_status' => $status,
-			// Abuse the menu_order field to store the number of retries.
-			// This avoids additional database queries.
-			'menu_order' => $placeholder->menu_order + 1,
 			'post_content' => $error,
+			'meta_input' => array(
+				'retries' => $meta['retries'][0] + 1,
+				'last_error' => $error,
+			)
 		));
 	}
 
@@ -297,11 +300,20 @@ class WP_Import_Session {
 			'order' => 'ASC',
 		));
 
-		if (!$query->have_posts()) {
+		if ( ! $query->have_posts() ) {
 			return array();
 		}
 
-		return $query->posts;
+		$posts = $query->posts;
+		$ids = array_map( function( $post ) {
+			return $post->ID;
+		}, $posts );
+		update_meta_cache( 'post', $ids );
+		foreach ( $posts as $post ) {
+			$post->meta = get_all_post_meta_flat( $post->ID );
+		}
+
+		return $posts;
 	}
 
 	public function get_total_number_of_entities() {
@@ -366,7 +378,14 @@ class WP_Import_Session {
 				'post_parent' => $this->post_id,
 				'post_title' => basename( $url ),
 				'post_status' => self::FRONTLOAD_STATUS_AWAITING_DOWNLOAD,
-				'guid' => $url
+				'guid' => $url,
+				'meta_input' => array(
+					'original_url' => $url,
+					'current_url' => $url,
+					'retries' => 0,
+					'last_error' => null,
+					'target_path' => '',
+				)
 			);
 			if ( is_wp_error( wp_insert_post( $post_data ) ) ) {
 				// @TODO: How to handle an insertion failure?

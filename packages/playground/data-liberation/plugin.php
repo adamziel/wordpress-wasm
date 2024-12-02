@@ -45,6 +45,15 @@ add_action('init', function() {
 		// Example usage: wp data-liberation /path/to/file.xml
         WP_CLI::add_command( 'data-liberation', $command );
     }
+
+    register_post_status('error', array(
+        'label' => _x('Error', 'post'), // Label name
+        'public' => false,
+        'exclude_from_search' => false,
+        'show_in_admin_all_list' => false,
+        'show_in_admin_status_list' => false,
+        'label_count' => _n_noop('Error <span class="count">(%s)</span>', 'Error <span class="count">(%s)</span>')
+    ));
 });
 
 // Register admin menu
@@ -269,17 +278,17 @@ function data_liberation_admin_page() {
                                 <template data-wp-each--item="state.frontloadingPlaceholders">
                                     <tr>
                                         <td data-wp-text="context.item.post_title"></td>
-                                        <td data-wp-text="context.item.menu_order"></td>
+                                        <td data-wp-text="context.item.meta.retries"></td>
                                         <td data-wp-text="context.item.post_status"></td>
-                                        <td data-wp-text="context.item.post_content"></td>
+                                        <td data-wp-text="context.item.meta.last_error"></td>
                                         <td>
                                             <div data-wp-class--hidden="state.frontloadingFailed">
                                                 @TODO: So many buttons! Replace with a dropdown menu?
                                                 <button>Retry</button>
                                                 <button>Ignore</button>
                                                 <button>Use another URL</button>
-                                                <button>Upload manually</button>
-                                                <button>Use an existing attachment</button>
+                                                <!-- <button>Upload manually</button> -->
+                                                <!-- <button>Use an existing attachment</button> -->
                                                 <button>Remove from the imported content</button>
                                                 <button>Generate a placeholder image</button>
                                             </div>
@@ -628,13 +637,21 @@ function data_liberation_import_step($session) {
 
             $time_taken = time() - $start_time;
             if($time_taken > $soft_time_limit) {
+                break;
                 if($files_downloaded >= $min_files_downloaded) {
-                    break;
+                    // break;
                 }
             }
         }
     } else {
         $importer->next_step();
+    }
+    if($importer->get_next_stage() === WP_Stream_Importer::STAGE_IMPORT_ENTITIES) {
+        $cursor = $importer->get_reentrancy_cursor();
+        if($cursor) {
+            $session->set_reentrancy_cursor($cursor);
+        }
+        return;
     }
     if($importer->advance_to_next_stage()) {
         $session->set_stage($importer->get_stage());
@@ -653,18 +670,22 @@ function data_liberation_create_importer($import) {
                 // @TODO: Save the error, report it to the user.
                 return;
             }
-            return WP_Stream_Importer::create_for_wxr_file(
+            $importer = WP_Stream_Importer::create_for_wxr_file(
                 $wxr_path,
-                [],
+                [
+                    'import_post_id' => $import['import_post_id'],
+                ],
                 $import['cursor'] ?? null
             );
+            break;
 
         case 'wxr_url':
-            return WP_Stream_Importer::create_for_wxr_url(
+            $importer = WP_Stream_Importer::create_for_wxr_url(
                 $import['wxr_url'],
                 [],
                 $import['cursor'] ?? null
             );
+            break;
 
         case 'markdown_zip':
             // @TODO: Don't unzip. Stream data directly from the ZIP file.
@@ -682,7 +703,7 @@ function data_liberation_create_importer($import) {
                 }
             }
             $markdown_root = $temp_dir;
-            return WP_Markdown_Importer::create_for_markdown_directory(
+            $importer = WP_Markdown_Importer::create_for_markdown_directory(
                 $markdown_root,
                 [
                     'source_site_url' => 'file://' . $markdown_root,
@@ -691,5 +712,7 @@ function data_liberation_create_importer($import) {
                 ],
                 $import['cursor'] ?? null
             );
+            break;
     }
+    return $importer;
 }

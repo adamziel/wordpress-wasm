@@ -5,7 +5,7 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 	public static function create_for_markdown_directory( $markdown_directory, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $markdown_directory ) {
-				return WP_Markdown_Importer::create( $markdown_directory, $cursor );
+				return new WP_Markdown_Directory_Tree_Reader( $markdown_directory, $cursor );
 			},
 			$options,
 			$cursor

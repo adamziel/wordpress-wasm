@@ -70,10 +70,16 @@ class WP_Attachment_Downloader {
 				// @TODO: think through the chmod of the created file.
 
 				$success                = copy( $local_path, $output_relative_path );
-				$this->pending_events[] = new WP_Attachment_Downloader_Event(
-					$this->enqueued_url,
-					$success ? WP_Attachment_Downloader_Event::SUCCESS : WP_Attachment_Downloader_Event::FAILURE
-				);
+				$this->pending_events[] = $success
+					? new WP_Attachment_Downloader_Event(
+						$this->enqueued_url,
+						WP_Attachment_Downloader_Event::SUCCESS
+					)
+					: new WP_Attachment_Downloader_Event(
+						$this->enqueued_url,
+						WP_Attachment_Downloader_Event::FAILURE,
+						'copy_failed'
+					);
 				return true;
 			case 'http':
 			case 'https':
@@ -147,7 +153,7 @@ class WP_Attachment_Downloader {
 				$this->progress[ $original_url ]['received'] += strlen( $chunk );
 				break;
 			case Client::EVENT_FAILED:
-				$this->on_failure( $original_url, $original_request_id );
+				$this->on_failure( $original_url, $original_request_id, $request->error );
 				break;
 			case Client::EVENT_FINISHED:
 				if ( ! $request->is_redirected() ) {
@@ -159,7 +165,7 @@ class WP_Attachment_Downloader {
 					if ( $is_success ) {
 						$this->on_success( $original_url, $original_request_id );
 					} else {
-						$this->on_failure( $original_url, $original_request_id );
+						$this->on_failure( $original_url, $original_request_id, 'http_error_' . $request->response->status_code );
 					}
 				}
 				break;
@@ -168,7 +174,7 @@ class WP_Attachment_Downloader {
 		return true;
 	}
 
-	private function on_failure( $original_url, $original_request_id ) {
+	private function on_failure( $original_url, $original_request_id, $error = null ) {
 		if ( isset( $this->fps[ $original_request_id ] ) ) {
 			fclose( $this->fps[ $original_request_id ] );
 		}
@@ -180,7 +186,8 @@ class WP_Attachment_Downloader {
 		}
 		$this->pending_events[] = new WP_Attachment_Downloader_Event(
 			$original_url,
-			WP_Attachment_Downloader_Event::FAILURE
+			WP_Attachment_Downloader_Event::FAILURE,
+			$error
 		);
 		unset( $this->progress[ $original_url ] );
 		unset( $this->output_paths[ $original_request_id ] );

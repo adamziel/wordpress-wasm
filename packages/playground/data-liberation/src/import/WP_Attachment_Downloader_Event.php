@@ -8,9 +8,11 @@ class WP_Attachment_Downloader_Event {
 
 	public $type;
 	public $resource_id;
+	public $error;
 
-	public function __construct( $resource_id, $type ) {
+	public function __construct( $resource_id, $type, $error = null ) {
 		$this->resource_id = $resource_id;
 		$this->type        = $type;
+		$this->error       = $error;
 	}
 }

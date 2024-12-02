@@ -569,6 +569,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "_php_stream_fill_read_buffer",\
 "_php_stream_read",\
 "php_stream_read_to_str",\
+"php_userstreamop_read",\
 "zif_fread",\
 "wasm_read",\
 "php_stdiop_read",\
