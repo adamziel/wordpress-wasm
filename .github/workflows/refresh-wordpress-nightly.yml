@@ -8,7 +8,7 @@ on:
 
 jobs:
     build_and_deploy:
-        # Only run this workflow from the trunk branch and when it's triggered by dmsnell OR adamziel
+        # Only run this workflow from the trunk branch and when it's triggered by a Playground maintainer
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.actor == 'adamziel' ||

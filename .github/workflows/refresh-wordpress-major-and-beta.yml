@@ -13,7 +13,7 @@ on:
 
 jobs:
     build_wordpress_major_and_beta_push_to_github_and_deploy_website:
-        # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
+        # Only run this workflow from the trunk branch and when it's triggered by a Playground maintainer
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.actor == 'adamziel' ||
