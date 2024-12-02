@@ -9,6 +9,38 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.14] (2024-12-02) 
+
+### Blueprints
+
+- Resolve the latest WordPress version from the API instead of assuming it's the same as the last minified build. ([#2027](https://github.com/WordPress/wordpress-playground/pull/2027))
+
+### Tools
+
+
+#### Blueprints Builder
+
+- Add installPlugin support for single plugin files. ([#2033](https://github.com/WordPress/wordpress-playground/pull/2033))
+
+### PHP WebAssembly
+
+- Networking: Preserve the content-type header when fetch()-ing. ([#2028](https://github.com/WordPress/wordpress-playground/pull/2028))
+
+### Website
+
+- [Web] Re-enable wp-cron. ([#2039](https://github.com/WordPress/wordpress-playground/pull/2039))
+
+### Various
+
+- [Data Liberation] WP_Stream_Importer: User-driven incremental import. ([#2013](https://github.com/WordPress/wordpress-playground/pull/2013))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @brandonpayton
+
+
 ## [v1.0.13] (2024-11-25)
 
 ### Enhancements
