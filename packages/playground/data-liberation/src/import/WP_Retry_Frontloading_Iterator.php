@@ -21,7 +21,6 @@ class WP_Retry_Frontloading_Iterator implements Iterator {
 			array(
 				'current_url' => $this->current->meta['current_url'],
 				'original_url' => $this->current->meta['original_url'],
-				// @TODO: expose the target download path
 			)
 		);
 	}
@@ -62,7 +61,7 @@ class WP_Retry_Frontloading_Iterator implements Iterator {
 			$wpdb->prepare( 'post_parent = %d', $this->import_post_id ),
 			$wpdb->prepare( 'post_status = %s', WP_Import_Session::FRONTLOAD_STATUS_ERROR ),
 			"pm.meta_key = 'attempts'",
-			"pm.meta_value < (SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = p.ID AND meta_key = 'attempts_limit')",
+			'pm.meta_value < 3',
 		);
 
 		if ( null !== $this->last_id_on_page ) {

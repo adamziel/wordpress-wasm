@@ -14,8 +14,10 @@ use WordPress\AsyncHTTP\Request;
  *
  * @TODO:
  * ✅ Re-entrant import
- * * Log errors for the user to decide what to do.
- * * Log progress information.
+ * * Log progress and errors for the user to decide what to do.
+ *   * Indexing
+ *   * ✅ Frontloading
+ *   * Entity import
  * * Error out if `source_site_url` is not set by the time we're processing
  *   the first encountered URL.
  * * Disable anything remotely related to KSES during the import. KSES
@@ -306,22 +308,29 @@ class WP_Stream_Importer {
 			 * every single post in memory for sure, otherwise WordPress would not
 			 * be able to render it, but can we hold all the URLs from 10k posts at once?
 			 */
-			if ( 'post' === $type ) {
-				$data = $entity->get_data();
-				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
-					// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
-					$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
-				} elseif ( isset( $data['post_content'] ) ) {
-					$post = $data;
-					$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
-					while ( $p->next_url() ) {
-						if ( ! $this->url_processor_matched_asset_url( $p ) ) {
-							continue;
-						}
-						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
-						$this->indexed_assets_urls[ $p->get_raw_url() ] = true;
+			$data = $entity->get_data();
+			switch ( $type ) {
+				case 'site_option':
+					if ( $data['option_name'] === 'home' ) {
+						$this->source_site_url = $data['option_value'];
 					}
-				}
+					break;
+				case 'post':
+					if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
+						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
+						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
+					} elseif ( isset( $data['post_content'] ) ) {
+						$post = $data;
+						$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
+						while ( $p->next_url() ) {
+							if ( ! $this->url_processor_matched_asset_url( $p ) ) {
+								continue;
+							}
+							// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
+							$this->indexed_assets_urls[ $p->get_raw_url() ] = true;
+						}
+					}
+					break;
 			}
 
 			$this->entity_iterator->next();
@@ -463,11 +472,6 @@ class WP_Stream_Importer {
 					)
 				);
 				break;
-			case 'site_option':
-				if ( $data['option_name'] === 'home' ) {
-					$this->source_site_url = $data['option_value'];
-				}
-				break;
 			case 'post':
 				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
 					$this->enqueue_attachment_download( $data['attachment_url'] );
@@ -488,11 +492,6 @@ class WP_Stream_Importer {
 				}
 				break;
 		}
-
-		/**
-		 * @TODO: Update the progress information.
-		 * @TODO: Save the freshly requested URLs to the cursor.
-		 */
 
 		// Move on to the next entity.
 		$this->entity_iterator->next();

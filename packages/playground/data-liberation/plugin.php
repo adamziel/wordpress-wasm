@@ -342,20 +342,41 @@ function data_liberation_import_step( $session ) {
 	if ( ! $importer ) {
 		return;
 	}
+
 	/**
 	 * @TODO: Fix this error we get after a few steps:
 	 * Notice:  Function WP_XML_Processor::step_in_element was called incorrectly. A tag was not closed. Please see Debugging in WordPress for more information. (This message was added in version WP_VERSION.) in /wordpress/wp-includes/functions.php on line 6114
 	 */
-
-	$soft_time_limit_seconds = 4;
+	$soft_time_limit_seconds = 5;
+	$hard_time_limit_seconds = 25;
 	$start_time              = microtime( true );
+	$fetched_files           = 0;
 	while ( true ) {
 		$time_taken = microtime( true ) - $start_time;
 		if ( $time_taken >= $soft_time_limit_seconds ) {
+			// If we're frontloading and don't have any files fetched yet,
+			// we need to give it more time. Otherwise every time we retry,
+			// we'll start from the beginning and never advance past the
+			// frontloading stage.
+			if ( $importer->get_stage() === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ) {
+				if ( $fetched_files > 0 ) {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+		if ( $time_taken >= $hard_time_limit_seconds ) {
+			// No negotiation, we're done.
+			// @TODO: Make it easily configurable
+			// @TODO: Bump the number of download attempts for the placeholders,
+			//        set the status to `error` in each interrupted download.
 			break;
 		}
 
 		if ( true !== $importer->next_step() ) {
+			$session->set_reentrancy_cursor( $importer->get_reentrancy_cursor() );
+
 			$should_advance_to_next_stage = null !== $importer->get_next_stage();
 			if ( $should_advance_to_next_stage ) {
 				if ( WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage() ) {
@@ -376,20 +397,20 @@ function data_liberation_import_step( $session ) {
 		switch ( $importer->get_stage() ) {
 			case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
 				// Bump the total number of entities to import.
-				$session->store_indexed_assets_urls( $importer->get_indexed_assets_urls() );
+				$session->create_frontloading_placeholders( $importer->get_indexed_assets_urls() );
 				$session->bump_total_number_of_entities(
 					$importer->get_indexed_entities_counts()
-				);
-				break;
-			case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
-				$session->bump_imported_entities_counts(
-					$importer->get_imported_entities_counts()
 				);
 				break;
 			case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
 				$session->bump_frontloading_progress(
 					$importer->get_frontloading_progress(),
 					$importer->get_frontloading_events()
+				);
+				break;
+			case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
+				$session->bump_imported_entities_counts(
+					$importer->get_imported_entities_counts()
 				);
 				break;
 		}
