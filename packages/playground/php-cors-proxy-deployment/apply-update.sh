@@ -19,6 +19,6 @@ curl -sS -X POST -H "Auth: $ATOMIC_SITE_API_KEY" "$SITE_API_BASE/edge-cache/$ATO
 echo Applying latest CORS proxy rate-limiting schema
 # NOTE: This will reset rate-limiting token buckets, but that should be tolerable
 # as long as we're generally discouraging abuse of the proxy.
-cat ~/website-deployment/cors-proxy-rate-limiting-table.sql | mysql --database="$DB_NAME"
+cat ~/cors-proxy-deployment/cors-proxy-rate-limiting-table.sql | mysql --database="$DB_NAME"
 
 echo Done!
