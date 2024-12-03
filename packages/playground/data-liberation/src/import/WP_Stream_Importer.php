@@ -363,8 +363,8 @@ class WP_Stream_Importer {
 		while ( $this->downloader->next_event() ) {
 			$event = $this->downloader->get_event();
 			switch ( $event->type ) {
-				case WP_Attachment_Downloader_Event::SUCCESS:
 				case WP_Attachment_Downloader_Event::FAILURE:
+				case WP_Attachment_Downloader_Event::SUCCESS:
 				case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
 					$this->frontloading_events[] = $event;
 					foreach ( array_keys( $this->active_downloads ) as $entity_cursor ) {
@@ -396,7 +396,9 @@ class WP_Stream_Importer {
 	private function frontload_next_entity() {
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = new WP_Entity_Iterator_Chain();
-			$this->entity_iterator->set_assets_attempts_iterator($this->frontloading_retries_iterator);
+			if (null !== $this->frontloading_retries_iterator) {
+				$this->entity_iterator->set_assets_attempts_iterator($this->frontloading_retries_iterator);
+			}
 			if (null === $this->next_stage) {
 				$this->entity_iterator->set_entities_iterator($this->create_entity_iterator());
 			}
@@ -494,6 +496,10 @@ class WP_Stream_Importer {
 
 		$this->frontloading_advance_reentrancy_cursor();
 		return true;
+	}
+
+	private function is_frontloading_finished() {
+		return $this->had_frontloading_failures;
 	}
 
 	/**

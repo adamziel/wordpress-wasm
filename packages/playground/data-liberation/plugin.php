@@ -114,364 +114,102 @@ function data_liberation_admin_page() {
     }
 
     // Populates the initial global state values.
-    wp_interactivity_state( 'dataLiberation', array(
-        'importedEntities' => $import_session ? $import_session->count_imported_entities() : [],
-        'totalEntities' => $import_session ? $import_session->get_total_number_of_entities() : [],
-        'frontloadingPlaceholders' => $import_session ? $import_session->get_frontloading_placeholders() : [],
+    $import_history = array_map(function($post) {
+        $import_session = new WP_Import_Session($post->ID);
+        return array(
+            'date' => $post->post_date,
+            'dataSource' => $import_session->get_data_source(),
+            'timeTaken' => human_time_diff($import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time()),
+            'entitiesImported' => array_sum(array_column($import_session->count_imported_entities(), 'imported')),
+            'totalEntities' => array_sum(array_column($import_session->count_imported_entities(), 'total')),
+            'status' => $import_session->get_stage(),
+        );
+    }, get_posts(array(
+        'post_type' => WP_Import_Session::POST_TYPE,
+        'post_status' => array('archived'),
+        'posts_per_page' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    )));
 
+    $stages =  [];
+    foreach(WP_Stream_Importer::STAGES_IN_ORDER as $stage) {
+        $stages[] = [
+            'id' => $stage,
+            'label' => ucfirst(str_replace('_', ' ', $stage)),
+            'completed' => $import_session ? $import_session->is_stage_completed($stage) : false,
+        ];
+    }
+
+    $frontloading_progress = array_map(function($progress, $url) {
+        $progress['url'] = $url;
+        return $progress;
+    }, $import_session ? $import_session->get_frontloading_progress() : [], array_keys($import_session ? $import_session->get_frontloading_progress() : []));
+    $frontloading_placeholders = $import_session ? $import_session->get_frontloading_placeholders() : [];
+    wp_interactivity_state('dataLiberation', array(
+        // Current import state:
+        'currentImport' => $import_session 
+            ? array(
+                'active' => true,
+                'stage' => $import_session->get_stage(),
+                'dataSource' => $import_session->get_data_source(),
+                'fileReference' => $import_session->get_human_readable_file_reference(),
+                'entityCounts' => $import_session->count_imported_entities(),
+                'frontloadingProgress' => $frontloading_progress,
+                'hasFrontloadingProgress' => count($frontloading_progress) > 0,
+                'frontloadingPlaceholders' => $frontloading_placeholders,
+                'hasFrontloadingPlaceholders' => count($frontloading_placeholders) > 0,
+            ) 
+            /**
+             * We need an empty default state that still has all the right data types
+             * to avoid "undefined index" errors in PHP and ".map is not a function"
+             * errors in JS.
+             */
+            : array(
+                'active' => false,
+                'stage' => null,
+                'dataSource' => null,
+                'fileReference' => null,
+                'entityCounts' => [],
+                'frontloadingProgress' => [],
+                'hasFrontloadingProgress' => false,
+                'frontloadingPlaceholders' => [],
+                'hasFrontloadingPlaceholders' => false,
+            ),
+
+        'frontloadingFailed' => function() {
+            $context = wp_interactivity_get_context();
+            return $context['item']->post_status === 'error';
+        },
+
+        'isCurrentImportAtStage' => function() {
+            $context = wp_interactivity_get_context();
+            $state = wp_interactivity_state('dataLiberation');
+            return $context['stage']['id'] === $state['currentImport']['stage'];
+        },
+
+        'stages' => $stages,
+
+        // Import form state:
         'selectedImportType' => 'wxr_file',
         'isImportTypeSelected' => function() {
-            // @TODO Figure out why this function is not hiding the form rows
-            $state   = wp_interactivity_state();
             $context = wp_interactivity_get_context();
+            $state = wp_interactivity_state('dataLiberation');
             return $context['importType'] === $state['selectedImportType'];
         },
+
+        // Past imports table:
+        'importHistory' => array(
+            'entities' => $import_history,
+            'numEntities' => count($import_history),
+            'page' => 1,
+        ),
     ));
-    ?>
-    <style>
-        .import-stages-list li.current {
-            font-weight: bold;
-        }
-
-        .current-import {
-            display: flex;
-            flex-direction: row;
-            gap: 20px;
-            margin: 20px 0 40px 0;
-
-            .import-stages-list {
-                margin: 0;
-            }
-
-            .import-stage-details {
-                flex-grow: 1;
-                h1:first-child,
-                h2:first-child,
-                h3:first-child,
-                h4:first-child,
-                h5:first-child,
-                h6:first-child {
-                    margin-top: 0;
-                }
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .hidden.show {
-            display: block;
-        }
-    </style>
-    <div class="wrap" data-wp-interactive="dataLiberation">
-        <h1>Data Liberation</h1>
-        <?php if ($import_session): ?>
-            <?php // Show import status if one is active ?>
-            <?php
-            $stage = $import_session->get_stage();
-            $totals = $import_session->get_total_number_of_entities();
-            $imported = $import_session->count_imported_entities();
-            ?>
-            <h2>Current Import</h2>
-            <b><?php echo $import_session->get_data_source(); ?>:</b>
-            <?php echo $import_session->get_human_readable_file_reference(); ?>
-            <div class="current-import">
-                <div class="import-stages">
-                    <ul class="import-stages-list">
-                        <li class="<?php echo $stage === WP_Stream_Importer::STAGE_INITIAL ? 'current' : ''; ?>">
-                            <?php if ($import_session->is_stage_completed(WP_Stream_Importer::STAGE_INITIAL)): ?>
-                                ☑
-                            <?php else: ?>
-                                ☐
-                            <?php endif ?>
-                            New Import Created
-                        </li>
-                        <li class="<?php echo $stage === WP_Stream_Importer::STAGE_INDEX_ENTITIES ? 'current' : ''; ?>">
-                            <?php if ($import_session->is_stage_completed(WP_Stream_Importer::STAGE_INDEX_ENTITIES)): ?>
-                                ☑
-                            <?php else: ?>
-                                ☐
-                            <?php endif ?>
-                            Index Entities
-                        </li>
-                        <li class="<?php echo $stage === WP_Stream_Importer::STAGE_TOPOLOGICAL_SORT ? 'current' : ''; ?>">
-                            <?php if ($import_session->is_stage_completed(WP_Stream_Importer::STAGE_TOPOLOGICAL_SORT)): ?>
-                                ☑
-                            <?php else: ?>
-                                ☐
-                            <?php endif ?>
-                            Sort Entities
-                        </li>
-                        <li class="<?php echo $stage === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ? 'current' : ''; ?>">
-                            <?php if ($import_session->is_stage_completed(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS)): ?>
-                                ☑
-                            <?php else: ?>
-                                ☐
-                            <?php endif ?>
-                            Assets Download
-                        </li>
-                        <li class="<?php echo $stage === WP_Stream_Importer::STAGE_IMPORT_ENTITIES ? 'current' : ''; ?>">
-                            <?php if ($import_session->is_stage_completed(WP_Stream_Importer::STAGE_IMPORT_ENTITIES)): ?>
-                                ☑
-                            <?php else: ?>
-                                ☐
-                            <?php endif ?>
-                            Content Import
-                        </li>
-                    </ul>
-                </div>
-                <div class="import-stage-details">
-                    <?php switch($stage): 
-                        case WP_Stream_Importer::STAGE_INITIAL: ?>
-                            <h3>New Import Created</h3>
-                        <?php break; ?>
-                        <?php case WP_Stream_Importer::STAGE_INDEX_ENTITIES: ?>
-                            <h3>Indexing Entities</h3>
-                        <?php break; ?>
-                        <?php case WP_Stream_Importer::STAGE_TOPOLOGICAL_SORT: ?>
-                            <h3>Sorting Entities</h3>
-                            <p>Determining optimal import order...</p>
-                        <?php break; ?>
-                        <?php case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS: ?>
-                            <h3>Downloading Assets</h3>
-                            
-                            <?php $frontloading_progress = $import_session->get_frontloading_progress();
-                            if (!empty($frontloading_progress)): ?>
-                                <progress value="<?php echo $imported['download'] ?? 0; ?>" max="<?php echo $totals['download'] ?? 0; ?>">
-                                    <?php echo $imported['download'] ?? 0; ?> / <?php echo $totals['download'] ?? 0; ?> Files Downloaded
-                                </progress>
-                                <h4>Downloads in progress:</h4>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>File</th>
-                                            <th>Progress</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($frontloading_progress as $url => $progress): ?>
-                                            <tr>
-                                                <td><small><?php echo esc_html(basename($url)); ?></small></td>
-                                                <td><progress value="<?php echo $progress['received']; ?>" max="<?php echo $progress['total'] ?? 100; ?>"></progress></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            <?php else: ?>
-                                <p>Preparing to download assets...</p>
-                            <?php endif; ?>
-                        <?php break; ?>
-                        <?php case WP_Stream_Importer::STAGE_IMPORT_ENTITIES: ?>
-                            <h2>Importing Content</h2>
-                        <?php break; ?>
-                    <?php endswitch; ?>
-
-                    <?php if( $stage === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ): ?>
-                        <h3>Downloaded Assets:</h3>
-                        <div>
-                            <progress data-wp-bind--value="state.importedEntities.download" data-wp-bind--max="state.totalEntities.download"></progress>
-                            <span data-wp-text="state.importedEntities.download"></span> / <span data-wp-text="state.totalEntities.download"></span> Files Downloaded
-                        </div>
-                        <table data-wp-class--hidden="!state.frontloadingPlaceholders.length">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>File</th>
-                                    <th>Retries</th>
-                                    <th>State</th>
-                                    <th>Details</th>
-                                    <th>Options</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template data-wp-each--item="state.frontloadingPlaceholders">
-                                    <tr>
-                                        <td data-wp-text="context.item.ID"></td>
-                                        <td data-wp-text="context.item.meta.current_url"></td>
-                                        <td data-wp-text="context.item.meta.attempts"></td>
-                                        <td data-wp-text="context.item.post_status"></td>
-                                        <td data-wp-text="context.item.meta.last_error"></td>
-                                        <td>
-                                            <!-- <div data-wp-class--hidden="!state.frontloadingFailed"> -->
-                                            <div
-                                                class="hidden"
-                                                data-wp-class--show="state.frontloadingFailed"
-                                            >
-                                                <button 
-                                                    data-wp-on--click="actions.retryDownload"
-                                                    data-wp-bind--data-post-id="context.item.ID">
-                                                    Retry
-                                                </button>
-                                                <button 
-                                                    data-wp-on--click="actions.ignoreDownload"
-                                                    data-wp-bind--data-post-id="context.item.ID">
-                                                    Ignore
-                                                </button>
-                                                <button 
-                                                    data-wp-on--click="actions.changeDownloadUrl"
-                                                    data-wp-bind--data-post-id="context.item.ID">
-                                                    Use another URL
-                                                </button>
-                                                <!-- @TODO -->
-                                                <!-- <button>Remove from the imported content</button> -->
-                                                <!-- <button>Generate a placeholder image</button> -->
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                        <!-- @TODO: Pagination -->
-                    <?php endif; ?>
-
-                    <?php if(
-                        $import_session->is_stage_completed(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS)
-                    ): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Entity</th>
-                                    <th>Imported</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($imported as $field => $count): ?>
-                                    <tr>
-                                        <td><?php echo ucfirst($field); ?></td>
-                                        <td><?php echo $count; ?></td>
-                                        <td><?php echo $totals[$field] ?? 0; ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                    <?php if($stage === WP_Stream_Importer::STAGE_FINISHED): ?>
-                        <p>
-                            Import finished!
-                        </p>
-                        <a href="<?php echo esc_url(add_query_arg('archive', 'true', admin_url('admin.php?page=data-liberation'))); ?>" class="button">
-                            Archive the importing session
-                        </a>
-                    <?php else: ?>
-                        <a href="<?php echo esc_url(add_query_arg('continue', 'true', admin_url('admin.php?page=data-liberation'))); ?>" class="button">
-                            Continue importing
-                        </a>
-                        <a href="<?php echo esc_url(add_query_arg('archive', 'true', admin_url('admin.php?page=data-liberation'))); ?>" class="button">
-                            Stop importing and archive the session
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <div class="new-import-form">
-            <h2>Start a new import session</h2>
-            <form
-                method="post"
-                enctype="multipart/form-data"
-                action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
-            >
-                <?php wp_nonce_field('data_liberation_import'); ?>
-                <input type="hidden" name="action" value="data_liberation_import">
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">Import Type</th>
-                        <td>
-                            <label data-wp-context='{ "importType": "wxr_file" }'>
-                                <input type="radio" name="data_source" value="wxr_file" checked
-                                    data-wp-bind--checked="state.isImportTypeSelected"
-                                    data-wp-on--change="actions.setImportType">
-                                Upload WXR File
-                            </label><br>
-                            <label data-wp-context='{ "importType": "wxr_url" }'>
-                                <input type="radio" name="data_source" value="wxr_url"
-                                    data-wp-bind--checked="state.isImportTypeSelected"
-                                    data-wp-on--change="actions.setImportType">
-                                WXR File URL
-                            </label><br>
-                            <label data-wp-context='{ "importType": "markdown_zip" }'>
-                                <input type="radio" name="data_source" value="markdown_zip"
-                                    data-wp-bind--checked="state.isImportTypeSelected"
-                                    data-wp-on--change="actions.setImportType">
-                                Markdown ZIP Archive
-                            </label>
-                        </td>
-                    </tr>
-
-                    <tr data-wp-context='{ "importType": "wxr_file" }'
-                        data-wp-class--hidden="!state.isImportTypeSelected">
-                        <th scope="row">WXR File</th>
-                        <td>
-                            <input type="file" name="wxr_file" accept=".xml">
-                            <p class="description">Upload a WordPress eXtended RSS (WXR) file</p>
-                        </td>
-                    </tr>
-
-                    <tr data-wp-context='{ "importType": "wxr_url" }'
-                    data-wp-class--hidden="!state.isImportTypeSelected">
-                        <th scope="row">WXR URL</th>
-                        <td>
-                            <input type="url" name="wxr_url" class="regular-text">
-                            <p class="description">Enter the URL of a WXR file</p>
-                        </td>
-                    </tr>
-
-                    <tr data-wp-context='{ "importType": "markdown_zip" }'
-                        data-wp-class--hidden="!state.isImportTypeSelected">
-                        <th scope="row">Markdown ZIP</th>
-                        <td>
-                            <input type="file" name="markdown_zip" accept=".zip">
-                            <p class="description">Upload a ZIP file containing markdown files</p>
-                        </td>
-                    </tr>
-                </table>
-
-                <?php submit_button('Start Import'); ?>
-            </form>
-        </div>
-
-        <h2>Previous Import Sessions</h2>
-
-        <table class="form-table">
-            <tr>
-                <th scope="row">Date</th>
-                <th scope="row">Data source</th>
-                <th scope="row">Time taken</th>
-                <th scope="row">Entities imported</th>
-                <th scope="row">Total entities</th>
-                <th scope="row">Status</th>
-            </tr>
-            <?php
-            // @TODO: Paginate.
-            $import_session_posts = get_posts(array(
-                'post_type' => WP_Import_Session::POST_TYPE,
-                'post_status' => array('archived'),
-                'posts_per_page' => -1,
-                'orderby' => 'date',
-                'order' => 'DESC',
-            ));
-            ?>
-            <?php if(empty($import_session_posts)): ?>
-                <tr>
-                    <td colspan="6">No import sessions found</td>
-                </tr>
-            <?php endif; ?>
-            <?php foreach($import_session_posts as $import_session_post): ?>
-                <?php $import_session = new WP_Import_Session($import_session_post->ID); ?>
-                <tr>
-                    <td><?php echo $import_session_post->post_date; ?></td>
-                    <td><?php echo $import_session->get_metadata()['data_source']; ?></td>
-                    <td><?php echo human_time_diff($import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time()); ?></td>
-                    <td><?php echo array_sum($import_session->count_imported_entities()); ?></td>
-                    <td><?php echo array_sum($import_session->get_total_number_of_entities()); ?></td>
-                    <td><?php echo $import_session->get_stage(); ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </table>
-    </div>
-    <?php
+    
+    ob_start();
+    include __DIR__ . '/data-liberation-page.php';
+    $html = ob_get_clean();
+    echo wp_interactivity_process_directives($html);
 }
 
 // Handle form submission
@@ -673,18 +411,20 @@ function data_liberation_import_step($session) {
     } else {
         $importer->next_step();
     }
-    // if($importer->get_next_stage() === WP_Stream_Importer::STAGE_IMPORT_ENTITIES) {
-    //     var_dump('importing entities');
-    //     $cursor = $importer->get_reentrancy_cursor();
-    //     var_dump($importer->get_next_stage());
-    //     var_dump($cursor);
-    //     if($cursor) {
-    //         $session->set_reentrancy_cursor($cursor);
-    //     }
-    //     return;
-    // }
-    if($importer->advance_to_next_stage()) {
-        $session->set_stage($importer->get_stage());
+
+    $should_advance_to_next_stage = null !== $importer->get_next_stage();
+    if ( $should_advance_to_next_stage ) {
+        if ( WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage() ) {
+            $resolved_all_failures = $session->count_unfinished_frontloading_placeholders() === 0;
+            if(!$resolved_all_failures) {
+                $should_advance_to_next_stage = false;
+            }
+        }
+    }
+    if($should_advance_to_next_stage) {
+        if($importer->advance_to_next_stage()) {
+            $session->set_stage($importer->get_stage());
+        }
     }
     $cursor = $importer->get_reentrancy_cursor();
     if($cursor) {

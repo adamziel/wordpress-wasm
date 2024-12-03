@@ -24,7 +24,6 @@ class WP_Import_Session {
 		'post_meta',
 		'comment',
 		'comment_meta',
-		'download',
 	);
 	const FRONTLOAD_STATUS_AWAITING_DOWNLOAD = 'awaiting_download';
 	const FRONTLOAD_STATUS_IGNORED = 'ignored';
@@ -221,7 +220,11 @@ class WP_Import_Session {
 	public function count_imported_entities() {
 		$progress = array();
 		foreach ( self::PROGRESS_ENTITIES as $entity ) {
-			$progress[ $entity ] = (int) get_post_meta( $this->post_id, 'imported_' . $entity, true );
+			$progress[] = [
+				'label' => $entity,
+				'imported' => (int) get_post_meta( $this->post_id, 'imported_' . $entity, true ),
+				'total' => (int) get_post_meta( $this->post_id, 'total_' . $entity, true ),
+			];
 		}
 		return $progress;
 	}
@@ -302,6 +305,20 @@ class WP_Import_Session {
 		return $result;
 	}
 
+	public function count_unfinished_frontloading_placeholders() {
+		global $wpdb;
+		return (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM $wpdb->posts 
+			WHERE post_type = 'frontloading_placeholder' 
+			AND post_parent = %d
+			AND post_status != %s
+			AND post_status != %s",
+			$this->post_id,
+			self::FRONTLOAD_STATUS_SUCCEEDED,
+			self::FRONTLOAD_STATUS_IGNORED,
+		) );
+	}
+
 	public function get_frontloading_placeholders( $options = array() ) {
 		$query = new WP_Query(array(
 			'post_type' => 'frontloading_placeholder',
@@ -335,7 +352,6 @@ class WP_Import_Session {
 		foreach ( static::PROGRESS_ENTITIES as $field ) {
 			$totals[ $field ] = (int) get_post_meta( $this->post_id, 'total_' . $field, true );
 		}
-		$totals['download'] = $this->get_total_number_of_assets();
 		return $totals;
 	}
 
@@ -479,18 +495,10 @@ class WP_Import_Session {
 					break;
 			}
 		}
-		if ( $successes > 0 ) {
-			// @TODO: Consider not treating files as a special case of entities.
-			$this->bump_imported_entities_counts(
-				array(
-					'download' => $successes,
-				)
-			);
-		}
 	}
 
 	public function get_frontloading_progress() {
-		return get_post_meta( $this->post_id, 'frontloading_progress', true ) ?? array();
+		return get_post_meta( $this->post_id, 'frontloading_progress', true ) ?: array();
 	}
 
 	public function is_stage_completed( $stage ) {
