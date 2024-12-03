@@ -40,7 +40,6 @@ jobs:
               run: |
                   pwd
                   ls -laR
-                  exit 1
 
             - name: Deploy to CORS proxy server
               shell: bash
