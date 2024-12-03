@@ -35,6 +35,13 @@ jobs:
                       packages/playground/php-cors-proxy-deployment
                   sparse-checkout-cone-mode: false
 
+            - name: Observe working directory contents
+              shell: bash
+              run: |
+                  pwd
+                  ls -laR
+                  exit 1
+
             - name: Deploy to CORS proxy server
               shell: bash
               # TODO: Use completely separate environments for website and CORS proxy deployments
