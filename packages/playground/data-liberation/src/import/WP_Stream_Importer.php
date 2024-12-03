@@ -188,7 +188,7 @@ class WP_Stream_Importer {
 	}
 
 	private $frontloading_retries_iterator;
-	public function set_frontloading_retries_iterator($frontloading_retries_iterator) {
+	public function set_frontloading_retries_iterator( $frontloading_retries_iterator ) {
 		$this->frontloading_retries_iterator = $frontloading_retries_iterator;
 	}
 
@@ -396,13 +396,13 @@ class WP_Stream_Importer {
 	private function frontload_next_entity() {
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = new WP_Entity_Iterator_Chain();
-			if (null !== $this->frontloading_retries_iterator) {
-				$this->entity_iterator->set_assets_attempts_iterator($this->frontloading_retries_iterator);
+			if ( null !== $this->frontloading_retries_iterator ) {
+				$this->entity_iterator->set_assets_attempts_iterator( $this->frontloading_retries_iterator );
 			}
-			if (null === $this->next_stage) {
-				$this->entity_iterator->set_entities_iterator($this->create_entity_iterator());
+			if ( null === $this->next_stage ) {
+				$this->entity_iterator->set_entities_iterator( $this->create_entity_iterator() );
 			}
-			$this->downloader      = new WP_Attachment_Downloader( $this->options['uploads_path'] );
+			$this->downloader = new WP_Attachment_Downloader( $this->options['uploads_path'] );
 		}
 
 		// Clear the frontloading events from the previous pass.
@@ -456,9 +456,12 @@ class WP_Stream_Importer {
 		$data = $entity->get_data();
 		switch ( $entity->get_type() ) {
 			case 'asset_retry':
-				$this->enqueue_attachment_download( $data['current_url'], array( 
-					'original_url' => $data['original_url']
-				) );
+				$this->enqueue_attachment_download(
+					$data['current_url'],
+					array(
+						'original_url' => $data['original_url'],
+					)
+				);
 				break;
 			case 'site_option':
 				if ( $data['option_name'] === 'home' ) {
@@ -607,9 +610,9 @@ class WP_Stream_Importer {
 	}
 
 	private function enqueue_attachment_download( string $raw_url, $options = array() ) {
-		$context_path = $options['context_path'] ?? null;
-		$original_url = $options['original_url'] ?? $raw_url;
-		$url          = $this->rewrite_attachment_url( $raw_url, $context_path );
+		$context_path    = $options['context_path'] ?? null;
+		$original_url    = $options['original_url'] ?? $raw_url;
+		$url             = $this->rewrite_attachment_url( $raw_url, $context_path );
 		$asset_filename  = $this->new_asset_filename( $original_url );
 		$output_filename = ltrim( $asset_filename, '/' );
 

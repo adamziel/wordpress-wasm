@@ -17,7 +17,7 @@
 			"options": {
 				"cwd": "packages/playground/data-liberation",
 				"commands": [
-					"./vendor/bin/phpcs --standard=./phpcs.xml -s ./src"
+					"./vendor/bin/phpcs --standard=./phpcs.xml -s ./src ./*.php"
 				],
 				"parallel": false
 			}
@@ -27,7 +27,7 @@
 			"options": {
 				"cwd": "packages/playground/data-liberation",
 				"commands": [
-					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src"
+					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src ./*.php"
 				],
 				"parallel": false
 			}

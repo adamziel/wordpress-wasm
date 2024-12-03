@@ -17,25 +17,25 @@ require_once __DIR__ . '/src/byte-readers/WP_GZ_File_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
 
-if(!class_exists('WP_HTML_Tag_Processor')) {
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-token.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-span.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-text-replacement.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-decoder.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-attribute-token.php";
+if ( ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-span.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-text-replacement.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-decoder.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-attribute-token.php';
 
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-decoder.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-tag-processor.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-open-elements.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-token-map.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/html5-named-character-references.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-active-formatting-elements.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-processor-state.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-unsupported-exception.php";
-	require_once __DIR__ . "/src/wordpress-core-html-api/class-wp-html-processor.php";
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-decoder.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-tag-processor.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-open-elements.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-token-map.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-active-formatting-elements.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-processor-state.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-unsupported-exception.php';
+	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-processor.php';
 }
-if (!isset($html5_named_character_references)) {
-	require_once __DIR__ . "/src/wordpress-core-html-api/html5-named-character-references.php";
+if ( ! isset( $html5_named_character_references ) ) {
+	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
@@ -67,50 +67,50 @@ require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Polyfill WordPress core functions
-if (!function_exists('_doing_it_wrong')) {
-	$GLOBALS['_doing_it_wrong_messages'] = [];
-	function _doing_it_wrong($method, $message, $version) {
+if ( ! function_exists( '_doing_it_wrong' ) ) {
+	$GLOBALS['_doing_it_wrong_messages'] = array();
+	function _doing_it_wrong( $method, $message, $version ) {
 		$GLOBALS['_doing_it_wrong_messages'][] = $message;
 	}
 }
 
-if(!function_exists('wp_kses_uri_attributes')) {
-	function wp_kses_uri_attributes() {
-		return [];
-	}
-}
-
-if (!function_exists('__')) {
-	function __($input) {
-		return $input;
-	}
-}
-
-if (!function_exists('esc_attr')) {
-	function esc_attr($input) {
-		return htmlspecialchars($input);
-	}
-}
-
-if (!function_exists('esc_html')) {
-	function esc_html($input) {
-		return htmlspecialchars($input);
-	}
-}
-
-if (!function_exists('esc_url')) {
-	function esc_url($url) {
-		return htmlspecialchars($url);
-	}
-}
-
-if (!function_exists('wp_kses_uri_attributes')) {
+if ( ! function_exists( 'wp_kses_uri_attributes' ) ) {
 	function wp_kses_uri_attributes() {
 		return array();
 	}
 }
 
-if (!function_exists('mbstring_binary_safe_encoding')) {
+if ( ! function_exists( '__' ) ) {
+	function __( $input ) {
+		return $input;
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	function esc_attr( $input ) {
+		return htmlspecialchars( $input );
+	}
+}
+
+if ( ! function_exists( 'esc_html' ) ) {
+	function esc_html( $input ) {
+		return htmlspecialchars( $input );
+	}
+}
+
+if ( ! function_exists( 'esc_url' ) ) {
+	function esc_url( $url ) {
+		return htmlspecialchars( $url );
+	}
+}
+
+if ( ! function_exists( 'wp_kses_uri_attributes' ) ) {
+	function wp_kses_uri_attributes() {
+		return array();
+	}
+}
+
+if ( ! function_exists( 'mbstring_binary_safe_encoding' ) ) {
 	function mbstring_binary_safe_encoding( $reset = false ) {
 		static $encodings  = array();
 		static $overloaded = null;
@@ -142,7 +142,7 @@ if (!function_exists('mbstring_binary_safe_encoding')) {
 	}
 }
 
-if (!function_exists('reset_mbstring_encoding')) {
+if ( ! function_exists( 'reset_mbstring_encoding' ) ) {
 	function reset_mbstring_encoding() {
 		mbstring_binary_safe_encoding( true );
 	}

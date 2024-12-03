@@ -2,8 +2,8 @@
 
 class WP_Attachment_Downloader_Event {
 
-	const SUCCESS = '#success';
-	const FAILURE = '#failure';
+	const SUCCESS        = '#success';
+	const FAILURE        = '#failure';
 	const ALREADY_EXISTS = '#already_exists';
 
 	public $type;

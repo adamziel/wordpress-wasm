@@ -7,14 +7,14 @@
  * Progress, stage, and other metadata are stored as post meta.
  */
 class WP_Import_Session {
-	const POST_TYPE = 'import_session';
+	const POST_TYPE   = 'import_session';
 	const MAX_RETRIES = 3;
 
 	/**
 	 * @TODO: Make it extendable
 	 * @TODO: Reuse the same entities list as WP_Stream_Importer
 	 */
-	const PROGRESS_ENTITIES = array(
+	const PROGRESS_ENTITIES                  = array(
 		'site_option',
 		'user',
 		'category',
@@ -26,9 +26,9 @@ class WP_Import_Session {
 		'comment_meta',
 	);
 	const FRONTLOAD_STATUS_AWAITING_DOWNLOAD = 'awaiting_download';
-	const FRONTLOAD_STATUS_IGNORED = 'ignored';
-	const FRONTLOAD_STATUS_ERROR = 'error';
-	const FRONTLOAD_STATUS_SUCCEEDED = 'succeeded';
+	const FRONTLOAD_STATUS_IGNORED           = 'ignored';
+	const FRONTLOAD_STATUS_ERROR             = 'error';
+	const FRONTLOAD_STATUS_SUCCEEDED         = 'succeeded';
 	private $post_id;
 	private $cached_stage;
 
@@ -220,11 +220,11 @@ class WP_Import_Session {
 	public function count_imported_entities() {
 		$progress = array();
 		foreach ( self::PROGRESS_ENTITIES as $entity ) {
-			$progress[] = [
+			$progress[] = array(
 				'label' => $entity,
 				'imported' => (int) get_post_meta( $this->post_id, 'imported_' . $entity, true ),
 				'total' => (int) get_post_meta( $this->post_id, 'total_' . $entity, true ),
-			];
+			);
 		}
 		return $progress;
 	}
@@ -299,46 +299,53 @@ class WP_Import_Session {
 			'meta_input' => array(
 				'attempts' => $meta['attempts'][0] + 1,
 				'last_error' => $error,
-			)
+			),
 		);
-		$result = wp_update_post($post_data);
+		$result    = wp_update_post( $post_data );
 		return $result;
 	}
 
 	public function count_unfinished_frontloading_placeholders() {
 		global $wpdb;
-		return (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $wpdb->posts 
-			WHERE post_type = 'frontloading_placeholder' 
-			AND post_parent = %d
-			AND post_status != %s
-			AND post_status != %s",
-			$this->post_id,
-			self::FRONTLOAD_STATUS_SUCCEEDED,
-			self::FRONTLOAD_STATUS_IGNORED,
-		) );
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $wpdb->posts 
+				 WHERE post_type = 'frontloading_placeholder' 
+				 AND post_parent = %d
+				 AND post_status != %s
+				 AND post_status != %s",
+				$this->post_id,
+				self::FRONTLOAD_STATUS_SUCCEEDED,
+				self::FRONTLOAD_STATUS_IGNORED
+			)
+		);
 	}
 
 	public function get_frontloading_placeholders( $options = array() ) {
-		$query = new WP_Query(array(
-			'post_type' => 'frontloading_placeholder',
-			'post_status' => 'any',
-			// 'post_status' => self::FRONTLOAD_STATUS_ERROR,
-			'post_parent' => $this->post_id,
-			'posts_per_page' => $options['per_page'] ?? 25,
-			'paged' => $options['page'] ?? 1,
-			'orderby' => 'post_status',
-			'order' => 'ASC',
-		));
+		$query = new WP_Query(
+			array(
+				'post_type' => 'frontloading_placeholder',
+				'post_status' => 'any',
+				// 'post_status' => self::FRONTLOAD_STATUS_ERROR,
+				'post_parent' => $this->post_id,
+				'posts_per_page' => $options['per_page'] ?? 25,
+				'paged' => $options['page'] ?? 1,
+				'orderby' => 'post_status',
+				'order' => 'ASC',
+			)
+		);
 
 		if ( ! $query->have_posts() ) {
 			return array();
 		}
 
 		$posts = $query->posts;
-		$ids = array_map( function( $post ) {
-			return $post->ID;
-		}, $posts );
+		$ids   = array_map(
+			function ( $post ) {
+				return $post->ID;
+			},
+			$posts
+		);
 		update_meta_cache( 'post', $ids );
 		foreach ( $posts as $post ) {
 			$post->meta = get_all_post_meta_flat( $post->ID );
@@ -357,12 +364,14 @@ class WP_Import_Session {
 
 	public function get_total_number_of_assets() {
 		global $wpdb;
-		return (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $wpdb->posts 
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $wpdb->posts 
 			WHERE post_type = 'frontloading_placeholder' 
 			AND post_parent = %d",
-			$this->post_id
-		) );
+				$this->post_id
+			)
+		);
 	}
 
 	public function get_frontloading_placeholder( $url ) {
@@ -373,16 +382,19 @@ class WP_Import_Session {
 
 	public function get_frontloading_placeholder_id( $url ) {
 		global $wpdb;
-		return $wpdb->get_var( $wpdb->prepare(
-			"SELECT p.ID FROM $wpdb->posts p
+		return $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT p.ID FROM $wpdb->posts p
 			INNER JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
 			WHERE p.post_type = 'frontloading_placeholder'
 			AND p.post_parent = %d
 			AND pm.meta_key = 'current_url'
 			AND pm.meta_value = %s
 			LIMIT 1",
-			$this->post_id, $url
-		) );
+				$this->post_id,
+				$url
+			)
+		);
 	}
 
 	/**
@@ -401,21 +413,23 @@ class WP_Import_Session {
 			 * may or may not be an option, depending on the performance impact
 			 * on 100GB+ VIP databases.
 			 */
-			$exists = $wpdb->get_var( $wpdb->prepare(
-				"SELECT ID FROM $wpdb->posts 
+			$exists = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT ID FROM $wpdb->posts 
 				WHERE post_type = 'frontloading_placeholder' 
 				AND post_parent = %d
 				AND guid = %s
 				LIMIT 1",
-				$this->post_id,
-				$url
-			));
+					$this->post_id,
+					$url
+				)
+			);
 
 			if ( $exists ) {
 				continue;
 			}
 
-			$post_data = array(
+			$post_data        = array(
 				'post_type' => 'frontloading_placeholder',
 				'post_parent' => $this->post_id,
 				'post_title' => basename( $url ),
@@ -428,12 +442,12 @@ class WP_Import_Session {
 					'attempts_limit' => static::MAX_RETRIES,
 					'last_error' => null,
 					'target_path' => '',
-				)
+				),
 			);
 			$insertion_result = wp_insert_post( $post_data );
 			if ( is_wp_error( $insertion_result ) ) {
 				// @TODO: How to handle an insertion failure?
-				throw new Exception('Failed to insert frontloading placeholder');
+				throw new Exception( 'Failed to insert frontloading placeholder' );
 				return false;
 			}
 		}
@@ -484,20 +498,21 @@ class WP_Import_Session {
 			switch ( $event->type ) {
 				case WP_Attachment_Downloader_Event::SUCCESS:
 					++$successes;
-					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
+					$this->set_frontloading_status( $event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED );
 					break;
 				case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
-					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
+					$this->set_frontloading_status( $event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED );
 					break;
 				case WP_Attachment_Downloader_Event::FAILURE:
-					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error);
+					$this->set_frontloading_status( $event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error );
 					break;
 			}
 		}
 	}
 
 	public function get_frontloading_progress() {
-		return get_post_meta( $this->post_id, 'frontloading_progress', true ) ?: array();
+		$meta = get_post_meta( $this->post_id, 'frontloading_progress', true );
+		return $meta ? $meta : array();
 	}
 
 	public function is_stage_completed( $stage ) {
