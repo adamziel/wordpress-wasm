@@ -8,6 +8,8 @@
  * - Visually appealing UI with smooth transitions between state updates. Right
  *   now the UI is jerky. We could have beautiful CSS transitions that would
  *   make the import process feel much smoother.
+ * - Delete frontloading placeholders that have been successfully downloaded.
+ *   Still keep track of the number of total and successful downloads.
  */
 
 require_once __DIR__ . '/bootstrap.php';
