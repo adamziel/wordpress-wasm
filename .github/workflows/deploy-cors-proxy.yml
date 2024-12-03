@@ -8,8 +8,8 @@ concurrency:
 
 jobs:
     build_and_deploy:
-        # Only run this workflow from the trunk branch and when it's triggered by another workflow OR dmsnell OR adamziel
-        # TODO: Can we check for group membership
+        # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
+        # TODO: Can we check for group membership?
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.event_name == 'workflow_run' ||
