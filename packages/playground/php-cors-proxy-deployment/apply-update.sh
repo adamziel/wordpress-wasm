@@ -7,6 +7,9 @@ set -euo pipefail
 SITE_PHP="/usr/local/php${PHP_VERSION}/bin/php"
 SITE_API_BASE="$( "$SITE_PHP" -r 'require "/scripts/env.php"; echo SITE_API_BASE;')"
 
+echo Adding config file to updated proxy files
+cp ~/cors-proxy-deployment/cors-proxy-config.php ~/updated-proxy-files/
+
 echo Syncing staged files to production
 rsync -av --delete --no-perms --omit-dir-times ~/updated-proxy-files/ /srv/htdocs/
 
