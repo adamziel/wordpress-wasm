@@ -500,10 +500,6 @@ class WP_Stream_Importer {
 		return true;
 	}
 
-	private function is_frontloading_finished() {
-		return $this->had_frontloading_failures;
-	}
-
 	/**
 	 * @TODO: Explore a way of making this idempotent. Maybe
 	 *        use GUIDs to detect whether a post or an attachment
