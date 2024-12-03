@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Explicitly use the site's declared PHP version.
+# Otherwise, we've seen this defaulting to older versions which can break our scripts.
+SITE_PHP="/usr/local/php${PHP_VERSION}/bin/php"
 SITE_API_BASE="$( "$SITE_PHP" -r 'require "/scripts/env.php"; echo SITE_API_BASE;')"
 
 echo Syncing staged files to production
