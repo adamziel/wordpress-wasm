@@ -74,20 +74,20 @@ function enqueue_data_liberation_scripts() {
     wp_register_script_module(
         '@data-liberation/import-screen',
         plugin_dir_url( __FILE__ ) . 'import-screen.js',
-        array( '@wordpress/interactivity', 'wp-api-fetch' )
+        array( '@wordpress/interactivity', '@wordpress/interactivity-router', 'wp-api-fetch' )
     );
     wp_enqueue_script('wp-api-fetch');
     wp_enqueue_script_module(
         '@data-liberation/import-screen',
         plugin_dir_url( __FILE__ ) . 'import-screen.js',
-        array( '@wordpress/interactivity' )
+        array( '@wordpress/interactivity', '@wordpress/interactivity-router' )
     );
 }
 function data_liberation_add_minute_schedule( $schedules ) {
     // add a 'weekly' schedule to the existing set
     $schedules['data_liberation_minute'] = array(
-        'interval' => 60,
-        'display' => __('Once a Minute')
+        'interval' => 30,
+        'display' => __('Twice a Minute')
     );
     return $schedules;
 }
@@ -96,116 +96,73 @@ add_filter( 'cron_schedules', 'data_liberation_add_minute_schedule' );
 // Render admin page
 function data_liberation_admin_page() {
     $import_session = WP_Import_Session::get_active();
+    ?>
+    <script>
+        (function() {
+            const originalUrl = new URL(window.location.href);
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete("continue");
+            if(currentUrl.searchParams.size !== originalUrl.searchParams.size) {
+                history.replaceState({}, "", currentUrl.toString());
+            }
+        })();
+    </script>
+    <style>
+        #import-output:has(> h2) {
+            height: 250px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+    </style>
+    <div id="import-output">
+    <?php
     if($import_session) {
         if(isset($_GET['archive'])) {
             $import_session->archive();
-            echo '<script>
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.delete("archive");
-                window.location.href = currentUrl.toString();
-            </script>';
+            ?>
+            <script>
+                (function() {
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete("archive");
+                    window.location.href = currentUrl.toString();
+                })();
+            </script>
+            <?php
             exit;
         } elseif(isset($_GET['continue'])) {
-            echo '<h2>Next import step stdout output:</h2>';
-            echo '<pre>';
-            data_liberation_process_import();
-            echo '</pre>';
+            ?>
+            <h2>Last importer output (for debugging):</h2>
+            <pre><?php data_liberation_process_import(); ?></pre>
+            <?php
         }
     }
+    ?>
+    </div>
+    <?php
 
-    // Populates the initial global state values.
-    $import_history = array_map(function($post) {
-        $import_session = new WP_Import_Session($post->ID);
-        return array(
-            'date' => $post->post_date,
-            'dataSource' => $import_session->get_data_source(),
-            'timeTaken' => human_time_diff($import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time()),
-            'entitiesImported' => array_sum(array_column($import_session->count_imported_entities(), 'imported')),
-            'totalEntities' => array_sum(array_column($import_session->count_imported_entities(), 'total')),
-            'status' => $import_session->get_stage(),
-        );
-    }, get_posts(array(
-        'post_type' => WP_Import_Session::POST_TYPE,
-        'post_status' => array('archived'),
-        'posts_per_page' => -1,
-        'orderby' => 'date',
-        'order' => 'DESC',
-    )));
-
-    $stages =  [];
-    foreach(WP_Stream_Importer::STAGES_IN_ORDER as $stage) {
-        $stages[] = [
-            'id' => $stage,
-            'label' => ucfirst(str_replace('_', ' ', $stage)),
-            'completed' => $import_session ? $import_session->is_stage_completed($stage) : false,
-        ];
-    }
-
-    $frontloading_progress = array_map(function($progress, $url) {
-        $progress['url'] = $url;
-        return $progress;
-    }, $import_session ? $import_session->get_frontloading_progress() : [], array_keys($import_session ? $import_session->get_frontloading_progress() : []));
-    $frontloading_placeholders = $import_session ? $import_session->get_frontloading_placeholders() : [];
-    wp_interactivity_state('dataLiberation', array(
-        // Current import state:
-        'currentImport' => $import_session 
-            ? array(
-                'active' => true,
-                'stage' => $import_session->get_stage(),
-                'dataSource' => $import_session->get_data_source(),
-                'fileReference' => $import_session->get_human_readable_file_reference(),
-                'entityCounts' => $import_session->count_imported_entities(),
-                'frontloadingProgress' => $frontloading_progress,
-                'hasFrontloadingProgress' => count($frontloading_progress) > 0,
-                'frontloadingPlaceholders' => $frontloading_placeholders,
-                'hasFrontloadingPlaceholders' => count($frontloading_placeholders) > 0,
-            ) 
-            /**
-             * We need an empty default state that still has all the right data types
-             * to avoid "undefined index" errors in PHP and ".map is not a function"
-             * errors in JS.
-             */
-            : array(
-                'active' => false,
-                'stage' => null,
-                'dataSource' => null,
-                'fileReference' => null,
-                'entityCounts' => [],
-                'frontloadingProgress' => [],
-                'hasFrontloadingProgress' => false,
-                'frontloadingPlaceholders' => [],
-                'hasFrontloadingPlaceholders' => false,
-            ),
-
-        'frontloadingFailed' => function() {
-            $context = wp_interactivity_get_context();
-            return $context['item']->post_status === 'error';
-        },
-
-        'isCurrentImportAtStage' => function() {
-            $context = wp_interactivity_get_context();
-            $state = wp_interactivity_state('dataLiberation');
-            return $context['stage']['id'] === $state['currentImport']['stage'];
-        },
-
-        'stages' => $stages,
-
-        // Import form state:
-        'selectedImportType' => 'wxr_file',
-        'isImportTypeSelected' => function() {
-            $context = wp_interactivity_get_context();
-            $state = wp_interactivity_state('dataLiberation');
-            return $context['importType'] === $state['selectedImportType'];
-        },
-
-        // Past imports table:
-        'importHistory' => array(
-            'entities' => $import_history,
-            'numEntities' => count($import_history),
-            'page' => 1,
-        ),
-    ));
+    wp_interactivity_state('dataLiberation', array_merge(
+        data_liberation_get_interactivity_state(),
+        array(
+            'frontloadingFailed' => function() {
+                $context = wp_interactivity_get_context();
+                return $context['item']->post_status === 'error';
+            },
     
+            'isCurrentImportAtStage' => function() {
+                $context = wp_interactivity_get_context();
+                $state = wp_interactivity_state('dataLiberation');
+                return $context['stage']['id'] === $state['currentImport']['stage'];
+            },
+            'isImportTypeSelected' => function() {
+                $context = wp_interactivity_get_context();
+                $state = wp_interactivity_state('dataLiberation');
+                return $context['importType'] === $state['selectedImportType'];
+            },
+        )
+    ));
+
     ob_start();
     include __DIR__ . '/data-liberation-page.php';
     $html = ob_get_clean();
@@ -357,7 +314,6 @@ function data_liberation_import_step($session) {
     // it hasn't actually pulled the first entity from the stream yet.
     // So let's do that now.
     if($importer->next_step()) {
-        // var_dump("Stage: " . $importer->get_stage());
         switch($importer->get_stage()) {
             case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
                 // Bump the total number of entities to import.
@@ -488,6 +444,87 @@ function data_liberation_create_importer($import) {
     return $importer;
 }
 
+function data_liberation_get_interactivity_state() {
+    // Populates the initial global state values.
+    $import_history = array_map(function($post) {
+        $import_session = new WP_Import_Session($post->ID);
+        return array(
+            'date' => $post->post_date,
+            'dataSource' => $import_session->get_data_source(),
+            'timeTaken' => human_time_diff($import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time()),
+            'entitiesImported' => array_sum(array_column($import_session->count_imported_entities(), 'imported')),
+            'totalEntities' => array_sum(array_column($import_session->count_imported_entities(), 'total')),
+            'status' => $import_session->get_stage(),
+        );
+    }, get_posts(array(
+        'post_type' => WP_Import_Session::POST_TYPE,
+        'post_status' => array('archived'),
+        'posts_per_page' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    )));
+
+    $import_session = WP_Import_Session::get_active();
+
+    $stages =  [];
+    foreach(WP_Stream_Importer::STAGES_IN_ORDER as $stage) {
+        $stages[] = [
+            'id' => $stage,
+            'label' => ucfirst(str_replace('_', ' ', $stage)),
+            'completed' => $import_session ? $import_session->is_stage_completed($stage) : false,
+        ];
+    }
+
+    $frontloading_progress = array_map(function($progress, $url) {
+        $progress['url'] = $url;
+        return $progress;
+    }, $import_session ? $import_session->get_frontloading_progress() : [], array_keys($import_session ? $import_session->get_frontloading_progress() : []));
+    $frontloading_placeholders = $import_session ? $import_session->get_frontloading_placeholders() : [];
+    return array(
+        // Current import state:
+        'currentImport' => $import_session 
+            ? array(
+                'active' => true,
+                'stage' => $import_session->get_stage(),
+                'dataSource' => $import_session->get_data_source(),
+                'fileReference' => $import_session->get_human_readable_file_reference(),
+                'entityCounts' => $import_session->count_imported_entities(),
+                'frontloadingProgress' => $frontloading_progress,
+                'hasFrontloadingProgress' => count($frontloading_progress) > 0,
+                'frontloadingPlaceholders' => $frontloading_placeholders,
+                'hasFrontloadingPlaceholders' => count($frontloading_placeholders) > 0,
+            ) 
+            /**
+             * We need an empty default state that still has all the right data types
+             * to avoid "undefined index" errors in PHP and ".map is not a function"
+             * errors in JS.
+             */
+            : array(
+                'active' => false,
+                'stage' => null,
+                'dataSource' => null,
+                'fileReference' => null,
+                'entityCounts' => [],
+                'frontloadingProgress' => [],
+                'hasFrontloadingProgress' => false,
+                'frontloadingPlaceholders' => [],
+                'hasFrontloadingPlaceholders' => false,
+            ),
+
+        'stages' => $stages,
+
+        // Import form state:
+        'selectedImportType' => 'wxr_file',
+
+        // Past imports table:
+        'importHistory' => array(
+            'entities' => $import_history,
+            'numEntities' => count($import_history),
+            'page' => 1,
+        ),
+    );
+}
+
 add_action('rest_api_init', function() {
     register_rest_route('data-liberation/v1', '/retry-download', [
         'methods' => 'POST',
@@ -530,6 +567,16 @@ add_action('rest_api_init', function() {
             update_post_meta($post_id, 'retry_limit', 3);
             
             return new WP_REST_Response(['success' => true], 200);
+        },
+        'permission_callback' => function() {
+            return current_user_can('manage_options');
+        }
+    ]);
+
+    register_rest_route('data-liberation/v1', '/interactivity-state', [
+        'methods' => 'GET',
+        'callback' => function() {
+            return new WP_REST_Response(data_liberation_get_interactivity_state(), 200);
         },
         'permission_callback' => function() {
             return current_user_can('manage_options');

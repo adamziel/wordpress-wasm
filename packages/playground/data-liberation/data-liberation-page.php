@@ -34,10 +34,18 @@
         display: block;
     }
 </style>
-<div class="wrap" data-wp-interactive="dataLiberation">
+<div 
+    class="wrap"
+    data-wp-interactive="dataLiberation"
+    data-wp-init--refresh="callbacks.startRefreshingProgress"
+    data-wp-init--import-loop="callbacks.startImportLoop"
+>
     <h1>Data Liberation</h1>
 
-    <div data-wp-class--hidden="!state.currentImport.active">
+    <div
+        data-wp-class--hidden="!state.currentImport.active"
+        data-wp-router-region="current-import-details"
+    >
         <h2>Current Import</h2>
         <b data-wp-text="state.currentImport.dataSource"></b>:
         <span data-wp-text="state.currentImport.fileReference"></span>
@@ -217,11 +225,6 @@
                 <div data-wp-context='{ "stage": { "id": "#finished" } }'
                     data-wp-class--hidden="state.isCurrentImportAtStage"
                 >
-                    <a href="#" 
-                        class="button"
-                        data-wp-on--click="actions.continueImport">
-                        Continue importing
-                    </a>
                     <a href="#" 
                         class="button"
                         data-wp-on--click="actions.archiveImport">

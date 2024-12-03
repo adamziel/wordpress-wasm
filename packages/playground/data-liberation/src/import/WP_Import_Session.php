@@ -412,7 +412,6 @@ class WP_Import_Session {
 			));
 
 			if ( $exists ) {
-				var_dump('exists');
 				continue;
 			}
 

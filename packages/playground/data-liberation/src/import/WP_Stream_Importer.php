@@ -612,9 +612,6 @@ class WP_Stream_Importer {
 		$url          = $this->rewrite_attachment_url( $raw_url, $context_path );
 		$asset_filename  = $this->new_asset_filename( $original_url );
 		$output_filename = ltrim( $asset_filename, '/' );
-		var_dump([
-			$raw_url => $output_filename
-		]);
 
 		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_filename );
 		if ( false === $enqueued ) {
