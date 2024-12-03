@@ -131,7 +131,10 @@ function data_liberation_admin_page() {
             </script>
             <?php
             exit;
-        } elseif(isset($_GET['continue'])) {
+        } elseif(
+            isset($_GET['continue']) && 
+            WP_Stream_Importer::STAGE_FINISHED !== $import_session->get_stage()
+        ) {
             ?>
             <h2>Last importer output (for debugging):</h2>
             <pre><?php data_liberation_process_import(); ?></pre>
@@ -310,10 +313,32 @@ function data_liberation_import_step($session) {
      * Notice:  Function WP_XML_Processor::step_in_element was called incorrectly. A tag was not closed. Please see Debugging in WordPress for more information. (This message was added in version WP_VERSION.) in /wordpress/wp-includes/functions.php on line 6114
      */
 
-    // At this moment, the importer knows where to resume from but
-    // it hasn't actually pulled the first entity from the stream yet.
-    // So let's do that now.
-    if($importer->next_step()) {
+    $soft_time_limit_seconds = 4;
+    $start_time = microtime(true);
+    while(true) {
+        $time_taken = microtime(true) - $start_time;
+        if($time_taken >= $soft_time_limit_seconds) {
+            break;
+        }
+
+        if(true !== $importer->next_step()) {
+            $should_advance_to_next_stage = null !== $importer->get_next_stage();
+            if ( $should_advance_to_next_stage ) {
+                if ( WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage() ) {
+                    $resolved_all_failures = $session->count_unfinished_frontloading_placeholders() === 0;
+                    if(!$resolved_all_failures) {
+                        break;
+                    }
+                }
+            }
+            if(! $importer->advance_to_next_stage()) {
+                break;
+            }
+            $session->set_stage($importer->get_stage());
+            $session->set_reentrancy_cursor($importer->get_reentrancy_cursor());
+            continue;
+        }
+
         switch($importer->get_stage()) {
             case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
                 // Bump the total number of entities to import.
@@ -327,64 +352,15 @@ function data_liberation_import_step($session) {
                     $importer->get_imported_entities_counts()
                 );
                 break;
-        }
-    }
-    // Move to the next step before saving the cursor so that the next
-    // import session resumes from the next step.
-    if(WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage()) {
-        // Define constraints for this run of the frontloading stage.
-        // @TODO: Support these constraints at the importer level, not here.
-        $min_files_downloaded = 3;
-        $soft_time_limit = 10;
-        $start_time = time();
-        $files_downloaded = 0;
-        while(true) {
-            if(!$importer->next_step()) {
+            case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
+                $session->bump_frontloading_progress(
+                    $importer->get_frontloading_progress(),
+                    $importer->get_frontloading_events()
+                );
                 break;
-            }
-            $frontloading_events = $importer->get_frontloading_events();
-            foreach($frontloading_events as $event) {
-                switch($event->type) {
-                    case WP_Attachment_Downloader_Event::SUCCESS:
-                    case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
-                        ++$files_downloaded;
-                        break;
-                }
-            }
-
-            $session->bump_frontloading_progress(
-                $importer->get_frontloading_progress(),
-                $importer->get_frontloading_events()
-            );
-
-            $time_taken = time() - $start_time;
-            if($time_taken > $soft_time_limit) {
-                if($files_downloaded >= $min_files_downloaded) {
-                    break;
-                }
-            }
         }
-    } else {
-        $importer->next_step();
-    }
 
-    $should_advance_to_next_stage = null !== $importer->get_next_stage();
-    if ( $should_advance_to_next_stage ) {
-        if ( WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage() ) {
-            $resolved_all_failures = $session->count_unfinished_frontloading_placeholders() === 0;
-            if(!$resolved_all_failures) {
-                $should_advance_to_next_stage = false;
-            }
-        }
-    }
-    if($should_advance_to_next_stage) {
-        if($importer->advance_to_next_stage()) {
-            $session->set_stage($importer->get_stage());
-        }
-    }
-    $cursor = $importer->get_reentrancy_cursor();
-    if($cursor) {
-        $session->set_reentrancy_cursor($cursor);
+        $session->set_reentrancy_cursor($importer->get_reentrancy_cursor());
     }
 }
 
