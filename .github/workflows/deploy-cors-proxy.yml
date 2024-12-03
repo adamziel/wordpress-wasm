@@ -10,8 +10,9 @@ jobs:
     build_and_deploy:
         # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
         # TODO: Can we check for group membership?
+        # TODO: Restore trunk branch check before merge
         if: >
-            github.ref == 'refs/heads/trunk' && (
+            github.ref == 'refs/heads/fix-cors-proxy-deploy-workflow' && (
                 github.event_name == 'workflow_run' ||
                 github.event_name == 'workflow_dispatch' ||
                 github.actor == 'adamziel' ||
@@ -29,8 +30,10 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                  sparse-checkout: packages/playground/php-cors-proxy
+                  sparse-checkout: |
+                      packages/playground/php-cors-proxy
                       packages/playground/php-cors-proxy-deployment
+                  sparse-checkout-cone-mode: false
 
             - name: Deploy to CORS proxy server
               shell: bash
