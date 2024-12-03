@@ -34,6 +34,7 @@ jobs:
 
             - name: Deploy to CORS proxy server
               shell: bash
+              # TODO: Use completely separate environments for website and CORS proxy deployments
               run: |
                   mkdir -p ~/.ssh
                   echo "${{ secrets.DEPLOY_WEBSITE_TARGET_HOST_KEY }}" >> ~/.ssh/known_hosts
@@ -41,16 +42,18 @@ jobs:
                   chmod 0600 ~/.ssh/*
 
                   # CORS proxy files
-                  rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete \
+                  rsync --verbose --archive --compress -e "ssh -i ~/.ssh/id_ed25519" \
+                    --include '*/' --include '*.php' --exclude '*' \
+                    --delete --prune-empty-dirs \
                     packages/playground/php-cors-proxy/ \
                     ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/updated-proxy-files'
 
                   # Host-specific deployment scripts and server config
-                  rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete \
+                  rsync --verbose --archive --compress -e "ssh -i ~/.ssh/id_ed25519" --delete \
                     packages/playground/php-cors-proxy-deployment/ \
-                    ${{ secrets.DEPLOY_WEBSITE_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/cors-proxy-deployment'
+                    ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/cors-proxy-deployment'
 
                   # Apply update
                   ssh -i ~/.ssh/id_ed25519 \
-                    ${{ secrets.DEPLOY_WEBSITE_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }} \
+                    ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }} \
                     -tt -C '~/cors-proxy-deployment/apply-update.sh'
