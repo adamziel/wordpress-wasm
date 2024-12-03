@@ -27,9 +27,8 @@ import {
 	fetchSqliteIntegration,
 	fetchWordPress,
 	readAsFile,
-	resolveWPRelease,
 } from './download';
-
+import { resolveWordPressRelease } from '@wp-playground/wordpress';
 export interface Mount {
 	hostPath: string;
 	vfsPath: string;
@@ -281,7 +280,7 @@ async function run() {
 					}
 				}) as any);
 
-				wpDetails = await resolveWPRelease(args.wp);
+				wpDetails = await resolveWordPressRelease(args.wp);
 			}
 
 			const preinstalledWpContentPath =

@@ -20,7 +20,7 @@ describe('getTranslationUrl()', () => {
 		},
 		{
 			versionString: '6.6-RC1',
-			latestBetaVersion: '6.6-RC',
+			latestBetaVersion: '6.6-RC1',
 			latestMinifiedVersion: '6.5.2',
 			expectedUrl: `https://downloads.wordpress.org/translation/core/6.6-RC/en_US.zip`,
 			description:
@@ -66,7 +66,7 @@ describe('getTranslationUrl()', () => {
 						latestBetaVersion,
 						latestMinifiedVersion
 					)
-				).toBe(expectedUrl);
+				).resolves.toBe(expectedUrl);
 			});
 		}
 	);

@@ -335,6 +335,7 @@ class WP_Import_Session {
 		foreach ( static::PROGRESS_ENTITIES as $field ) {
 			$totals[ $field ] = (int) get_post_meta( $this->post_id, 'total_' . $field, true );
 		}
+		$totals['download'] = $this->get_total_number_of_assets();
 		return $totals;
 	}
 

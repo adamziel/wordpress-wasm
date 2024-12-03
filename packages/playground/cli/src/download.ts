@@ -1,5 +1,5 @@
 import { EmscriptenDownloadMonitor } from '@php-wasm/progress';
-import { createHash } from 'crypto';
+import { resolveWordPressRelease } from '@wp-playground/wordpress';
 import fs from 'fs-extra';
 import os from 'os';
 import path, { basename } from 'path';
@@ -16,9 +16,9 @@ export async function fetchWordPress(
 	wpVersion = 'latest',
 	monitor: EmscriptenDownloadMonitor
 ) {
-	const wpDetails = await resolveWPRelease(wpVersion);
+	const wpDetails = await resolveWordPressRelease(wpVersion);
 	const wpZip = await cachedDownload(
-		wpDetails.url,
+		wpDetails.releaseUrl,
 		`${wpDetails.version}.zip`,
 		monitor
 	);
@@ -87,58 +87,4 @@ async function downloadTo(
 
 export function readAsFile(path: string, fileName?: string): File {
 	return new File([fs.readFileSync(path)], fileName ?? basename(path));
-}
-
-export async function resolveWPRelease(version = 'latest') {
-	// Support custom URLs
-	if (version.startsWith('https://') || version.startsWith('http://')) {
-		const shasum = createHash('sha1');
-		shasum.update(version);
-		const sha1 = shasum.digest('hex');
-		return {
-			url: version,
-			version: 'custom-' + sha1.substring(0, 8),
-		};
-	}
-
-	if (version === 'trunk' || version === 'nightly') {
-		return {
-			url: 'https://wordpress.org/nightly-builds/wordpress-latest.zip',
-			version: 'nightly-' + new Date().toISOString().split('T')[0],
-		};
-	}
-
-	let latestVersions = await fetch(
-		'https://api.wordpress.org/core/version-check/1.7/?channel=beta'
-	).then((res) => res.json());
-
-	latestVersions = latestVersions.offers.filter(
-		(v: any) => v.response === 'autoupdate'
-	);
-
-	for (const apiVersion of latestVersions) {
-		if (version === 'beta' && apiVersion.version.includes('beta')) {
-			return {
-				url: apiVersion.download,
-				version: apiVersion.version,
-			};
-		} else if (version === 'latest') {
-			return {
-				url: apiVersion.download,
-				version: apiVersion.version,
-			};
-		} else if (
-			apiVersion.version.substring(0, version.length) === version
-		) {
-			return {
-				url: apiVersion.download,
-				version: apiVersion.version,
-			};
-		}
-	}
-
-	return {
-		url: `https://wordpress.org/wordpress-${version}.zip`,
-		version: version,
-	};
 }

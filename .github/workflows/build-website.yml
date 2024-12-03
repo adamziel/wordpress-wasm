@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
     build_and_deploy:
-        # Only run this workflow from the trunk branch and when it's triggered by another workflow OR dmsnell OR adamziel
+        # Only run this workflow from the trunk branch and when it's triggered by another workflow OR a Playground maintainer
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.event_name == 'workflow_run' ||
@@ -21,7 +21,8 @@ jobs:
                 github.actor == 'adamziel' ||
                 github.actor == 'dmsnell' ||
                 github.actor == 'bgrgicak' ||
-                github.actor == 'brandonpayton'
+                github.actor == 'brandonpayton' ||
+                github.actor == 'zaerl'
             )
 
         # Specify runner + deployment step

@@ -442,7 +442,7 @@ test('should correctly redirect to a multisite wp-admin url', async ({
 		const blueprint: Blueprint = {
 			landingPage: '/wp-admin/',
 			preferredVersions: {
-				wp: version,
+				wp: 'nightly',
 			},
 			steps: [{ step: 'setSiteLanguage', language: 'es_ES' }],
 		};
