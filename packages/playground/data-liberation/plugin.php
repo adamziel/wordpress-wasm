@@ -129,11 +129,11 @@ function data_liberation_admin_page() {
 		})();
 	</script>
 	<style>
-        /**
-         * Hide the output.
-         */
-        <?php if ( ! WP_DEBUG ) : ?>
-        #import-output {
+		/**
+		 * Hide the output.
+		 */
+		<?php if ( ! WP_DEBUG ) : ?>
+		#import-output {
 			display: none;
 		}
 		<?php endif; ?>
