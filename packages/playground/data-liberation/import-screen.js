@@ -1,3 +1,8 @@
+/**
+ * @TODO
+ * - Replace window.prompt() calls with a pretty UI-based dialog or
+ *   an inline form or something.
+ */
 import { store, getContext, getServerContext } from '@wordpress/interactivity';
 
 const apiFetch = window.wp.apiFetch;

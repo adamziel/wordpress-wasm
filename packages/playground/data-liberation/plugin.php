@@ -2,6 +2,12 @@
 /**
  * Plugin Name: Data Liberation
  * Description: Data parsing and importing primitives.
+ *
+ * @TODO
+ * - Get nonces to work
+ * - Visually appealing UI with smooth transitions between state updates. Right
+ *   now the UI is jerky. We could have beautiful CSS transitions that would
+ *   make the import process feel much smoother.
  */
 
 require_once __DIR__ . '/bootstrap.php';
