@@ -1,7 +1,7 @@
 {
 	"root": true,
 	"ignorePatterns": ["**/*"],
-	"plugins": ["@nx"],
+	"plugins": ["@nx", "playground-dev"],
 	"overrides": [
 		{
 			"files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
@@ -73,7 +73,8 @@
 				"@typescript-eslint/no-empty-interface": 0,
 				"@typescript-eslint/no-empty-function": 0,
 				"@typescript-eslint/no-unused-vars": "error",
-				"no-constant-condition": 0
+				"no-constant-condition": 0,
+				"playground-dev/avoid-wordpress-builds-dependency": "error"
 			}
 		},
 		{

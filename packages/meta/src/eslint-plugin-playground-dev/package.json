@@ -1,0 +1,11 @@
+{
+	"private": true,
+	"name": "eslint-plugin-playground-dev",
+	"version": "0.0.1",
+	"description": "ESLint rules for developing WordPress Playground packages",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"TODO: Use ESLint rule tester if tests are needed.\" && exit 1"
+	},
+	"license": "GPL-2.0-or-later"
+}
