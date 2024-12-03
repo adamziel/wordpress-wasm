@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+SITE_API_BASE="$( "$SITE_PHP" -r 'require "/scripts/env.php"; echo SITE_API_BASE;')"
+
 echo Syncing staged files to production
 rsync -av --delete --no-perms --omit-dir-times ~/updated-proxy-files/ /srv/htdocs/
 
