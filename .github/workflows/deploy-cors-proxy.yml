@@ -52,7 +52,7 @@ jobs:
 
                   # CORS proxy files
                   rsync --verbose --archive --compress -e "ssh -i ~/.ssh/id_ed25519" \
-                    --include '*/' --include '*.php' --exclude '*' \
+                    --include '*/' --exclude 'tests/' --include '*.php' --exclude '*' \
                     --delete --prune-empty-dirs \
                     packages/playground/php-cors-proxy/ \
                     ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/updated-proxy-files'
