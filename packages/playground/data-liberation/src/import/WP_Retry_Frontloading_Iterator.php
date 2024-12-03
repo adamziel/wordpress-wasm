@@ -18,7 +18,8 @@ class WP_Retry_Frontloading_Iterator implements Iterator {
         return new WP_Imported_Entity(
 			'asset_retry',
 			array(
-				'url' => $this->current->meta['current_url'],
+				'current_url' => $this->current->meta['current_url'],
+				'original_url' => $this->current->meta['original_url'],
                 // @TODO: expose the target download path
 			)
 		);
@@ -58,19 +59,22 @@ class WP_Retry_Frontloading_Iterator implements Iterator {
         $where_clauses = array(
             $wpdb->prepare("post_type = %s", 'frontloading_placeholder'),
             $wpdb->prepare("post_parent = %d", $this->import_post_id),
-            $wpdb->prepare("post_status = %s", WP_Import_Session::FRONTLOAD_STATUS_ERROR)
+            $wpdb->prepare("post_status = %s", WP_Import_Session::FRONTLOAD_STATUS_ERROR),
+            "pm.meta_key = 'attempts'",
+            "pm.meta_value < (SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = p.ID AND meta_key = 'attempts_limit')"
         );
 
         if ( null !== $this->last_id_on_page ) {
-            $where_clauses[] = $wpdb->prepare("ID > %d", $this->last_id_on_page);
+            $where_clauses[] = $wpdb->prepare("p.ID > %d", $this->last_id_on_page);
         }
 
         $where = implode(' AND ', $where_clauses);
 
         $this->placeholders = $wpdb->get_results(
-            "SELECT * FROM {$wpdb->posts} 
+            "SELECT p.* FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
             WHERE {$where}
-            ORDER BY ID ASC 
+            ORDER BY p.ID ASC 
             LIMIT 100"
         );
         $last_placeholder = end($this->placeholders);

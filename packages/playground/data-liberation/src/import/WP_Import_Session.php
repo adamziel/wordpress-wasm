@@ -8,6 +8,8 @@
  */
 class WP_Import_Session {
 	const POST_TYPE = 'import_session';
+	const MAX_RETRIES = 3;
+
 	/**
 	 * @TODO: Make it extendable
 	 * @TODO: Reuse the same entities list as WP_Stream_Importer
@@ -25,6 +27,7 @@ class WP_Import_Session {
 		'download',
 	);
 	const FRONTLOAD_STATUS_AWAITING_DOWNLOAD = 'awaiting_download';
+	const FRONTLOAD_STATUS_IGNORED = 'ignored';
 	const FRONTLOAD_STATUS_ERROR = 'error';
 	const FRONTLOAD_STATUS_SUCCEEDED = 'succeeded';
 	private $post_id;
@@ -178,7 +181,7 @@ class WP_Import_Session {
 	public function get_metadata() {
 		$cursor = $this->get_reentrancy_cursor();
 		return array(
-			'import_post_id' => $this->post_id,
+			'post_id' => $this->post_id,
 			'cursor' => $cursor ? $cursor : null,
 			'data_source' => get_post_meta( $this->post_id, 'data_source', true ),
 			'source_url' => get_post_meta( $this->post_id, 'source_url', true ),
@@ -272,30 +275,41 @@ class WP_Import_Session {
 	}
 
 	public function set_frontloading_status( $url, $status, $error = null ) {
-		// @TODO: What if the placeholder is not found?
+		// @TODO: is $url original URL or current URL?
 		$placeholder = $this->get_frontloading_placeholder( $url );
 		if ( ! $placeholder ) {
+			_doing_it_wrong(
+				__METHOD__,
+				'Frontloading placeholder post not found for URL: ' . $url,
+				'1.0.0'
+			);
 			return false;
 		}
 		$meta = get_post_meta( $placeholder->ID );
-		return wp_update_post(array(
-			'ID' => $placeholder->ID,
+		// @TODO: What if there are multiple placeholders with the same URL?
+		//        What if there are more images with that URL later in the entity stream?
+		$placeholder_id = $placeholder->ID;
+
+		$post_data = array(
+			'ID' => $placeholder_id,
 			'post_status' => $status,
-			'post_content' => $error,
 			'meta_input' => array(
-				'retries' => $meta['retries'][0] + 1,
+				'attempts' => $meta['attempts'][0] + 1,
 				'last_error' => $error,
 			)
-		));
+		);
+		$result = wp_update_post($post_data);
+		return $result;
 	}
 
 	public function get_frontloading_placeholders( $options = array() ) {
 		$query = new WP_Query(array(
 			'post_type' => 'frontloading_placeholder',
+			'post_status' => 'any',
+			// 'post_status' => self::FRONTLOAD_STATUS_ERROR,
 			'post_parent' => $this->post_id,
 			'posts_per_page' => $options['per_page'] ?? 25,
 			'paged' => $options['page'] ?? 1,
-			'post_status' => self::FRONTLOAD_STATUS_ERROR,
 			'orderby' => 'post_status',
 			'order' => 'ASC',
 		));
@@ -336,11 +350,23 @@ class WP_Import_Session {
 	}
 
 	public function get_frontloading_placeholder( $url ) {
+		return get_post(
+			$this->get_frontloading_placeholder_id( $url )
+		);
+	}
+
+	public function get_frontloading_placeholder_id( $url ) {
 		global $wpdb;
-		return get_post( $wpdb->get_var( $wpdb->prepare(
-			"SELECT ID FROM $wpdb->posts WHERE post_type = 'frontloading_placeholder' AND post_parent = %d AND guid = %s LIMIT 1",
+		return $wpdb->get_var( $wpdb->prepare(
+			"SELECT p.ID FROM $wpdb->posts p
+			INNER JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
+			WHERE p.post_type = 'frontloading_placeholder'
+			AND p.post_parent = %d
+			AND pm.meta_key = 'current_url'
+			AND pm.meta_value = %s
+			LIMIT 1",
 			$this->post_id, $url
-		) ) );
+		) );
 	}
 
 	/**
@@ -370,6 +396,7 @@ class WP_Import_Session {
 			));
 
 			if ( $exists ) {
+				var_dump('exists');
 				continue;
 			}
 
@@ -382,13 +409,16 @@ class WP_Import_Session {
 				'meta_input' => array(
 					'original_url' => $url,
 					'current_url' => $url,
-					'retries' => 0,
+					'attempts' => 0,
+					'attempts_limit' => static::MAX_RETRIES,
 					'last_error' => null,
 					'target_path' => '',
 				)
 			);
-			if ( is_wp_error( wp_insert_post( $post_data ) ) ) {
+			$insertion_result = wp_insert_post( $post_data );
+			if ( is_wp_error( $insertion_result ) ) {
 				// @TODO: How to handle an insertion failure?
+				throw new Exception('Failed to insert frontloading placeholder');
 				return false;
 			}
 		}
@@ -441,13 +471,16 @@ class WP_Import_Session {
 					++$successes;
 					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
 					break;
+				case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
+					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_SUCCEEDED);
+					break;
 				case WP_Attachment_Downloader_Event::FAILURE:
 					$this->set_frontloading_status($event->resource_id, self::FRONTLOAD_STATUS_ERROR, $event->error);
 					break;
 			}
 		}
 		if ( $successes > 0 ) {
-			// @TODO: Consider not treating files as a special case.
+			// @TODO: Consider not treating files as a special case of entities.
 			$this->bump_imported_entities_counts(
 				array(
 					'download' => $successes,

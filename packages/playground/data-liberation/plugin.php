@@ -74,8 +74,9 @@ function enqueue_data_liberation_scripts() {
     wp_register_script_module(
         '@data-liberation/import-screen',
         plugin_dir_url( __FILE__ ) . 'import-screen.js',
-        array( '@wordpress/interactivity' )
+        array( '@wordpress/interactivity', 'wp-api-fetch' )
     );
+    wp_enqueue_script('wp-api-fetch');
     wp_enqueue_script_module(
         '@data-liberation/import-screen',
         plugin_dir_url( __FILE__ ) . 'import-screen.js',
@@ -153,6 +154,14 @@ function data_liberation_admin_page() {
                     margin-top: 0;
                 }
             }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .hidden.show {
+            display: block;
         }
     </style>
     <div class="wrap" data-wp-interactive="dataLiberation">
@@ -267,6 +276,7 @@ function data_liberation_admin_page() {
                         <table data-wp-class--hidden="!state.frontloadingPlaceholders.length">
                             <thead>
                                 <tr>
+                                    <th>ID</th>
                                     <th>File</th>
                                     <th>Retries</th>
                                     <th>State</th>
@@ -277,20 +287,35 @@ function data_liberation_admin_page() {
                             <tbody>
                                 <template data-wp-each--item="state.frontloadingPlaceholders">
                                     <tr>
-                                        <td data-wp-text="context.item.post_title"></td>
-                                        <td data-wp-text="context.item.meta.retries"></td>
+                                        <td data-wp-text="context.item.ID"></td>
+                                        <td data-wp-text="context.item.meta.current_url"></td>
+                                        <td data-wp-text="context.item.meta.attempts"></td>
                                         <td data-wp-text="context.item.post_status"></td>
                                         <td data-wp-text="context.item.meta.last_error"></td>
                                         <td>
-                                            <div data-wp-class--hidden="state.frontloadingFailed">
-                                                @TODO: So many buttons! Replace with a dropdown menu?
-                                                <button>Retry</button>
-                                                <button>Ignore</button>
-                                                <button>Use another URL</button>
-                                                <!-- <button>Upload manually</button> -->
-                                                <!-- <button>Use an existing attachment</button> -->
-                                                <button>Remove from the imported content</button>
-                                                <button>Generate a placeholder image</button>
+                                            <!-- <div data-wp-class--hidden="!state.frontloadingFailed"> -->
+                                            <div
+                                                class="hidden"
+                                                data-wp-class--show="state.frontloadingFailed"
+                                            >
+                                                <button 
+                                                    data-wp-on--click="actions.retryDownload"
+                                                    data-wp-bind--data-post-id="context.item.ID">
+                                                    Retry
+                                                </button>
+                                                <button 
+                                                    data-wp-on--click="actions.ignoreDownload"
+                                                    data-wp-bind--data-post-id="context.item.ID">
+                                                    Ignore
+                                                </button>
+                                                <button 
+                                                    data-wp-on--click="actions.changeDownloadUrl"
+                                                    data-wp-bind--data-post-id="context.item.ID">
+                                                    Use another URL
+                                                </button>
+                                                <!-- @TODO -->
+                                                <!-- <button>Remove from the imported content</button> -->
+                                                <!-- <button>Generate a placeholder image</button> -->
                                             </div>
                                         </td>
                                     </tr>
@@ -625,8 +650,11 @@ function data_liberation_import_step($session) {
             }
             $frontloading_events = $importer->get_frontloading_events();
             foreach($frontloading_events as $event) {
-                if($event->type === WP_Attachment_Downloader_Event::SUCCESS) {
-                    ++$files_downloaded;
+                switch($event->type) {
+                    case WP_Attachment_Downloader_Event::SUCCESS:
+                    case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
+                        ++$files_downloaded;
+                        break;
                 }
             }
 
@@ -637,22 +665,24 @@ function data_liberation_import_step($session) {
 
             $time_taken = time() - $start_time;
             if($time_taken > $soft_time_limit) {
-                break;
                 if($files_downloaded >= $min_files_downloaded) {
-                    // break;
+                    break;
                 }
             }
         }
     } else {
         $importer->next_step();
     }
-    if($importer->get_next_stage() === WP_Stream_Importer::STAGE_IMPORT_ENTITIES) {
-        $cursor = $importer->get_reentrancy_cursor();
-        if($cursor) {
-            $session->set_reentrancy_cursor($cursor);
-        }
-        return;
-    }
+    // if($importer->get_next_stage() === WP_Stream_Importer::STAGE_IMPORT_ENTITIES) {
+    //     var_dump('importing entities');
+    //     $cursor = $importer->get_reentrancy_cursor();
+    //     var_dump($importer->get_next_stage());
+    //     var_dump($cursor);
+    //     if($cursor) {
+    //         $session->set_reentrancy_cursor($cursor);
+    //     }
+    //     return;
+    // }
     if($importer->advance_to_next_stage()) {
         $session->set_stage($importer->get_stage());
     }
@@ -672,9 +702,7 @@ function data_liberation_create_importer($import) {
             }
             $importer = WP_Stream_Importer::create_for_wxr_file(
                 $wxr_path,
-                [
-                    'import_post_id' => $import['import_post_id'],
-                ],
+                [],
                 $import['cursor'] ?? null
             );
             break;
@@ -706,7 +734,7 @@ function data_liberation_create_importer($import) {
             $importer = WP_Markdown_Importer::create_for_markdown_directory(
                 $markdown_root,
                 [
-                    'source_site_url' => 'file://' . $markdown_root,
+                    'default_source_site_url' => 'file://' . $markdown_root,
                     'local_markdown_assets_root' => $markdown_root,
                     'local_markdown_assets_url_prefix' => '@site/',
                 ],
@@ -714,5 +742,57 @@ function data_liberation_create_importer($import) {
             );
             break;
     }
+    // @TODO: Consider moving this to the importer constructor.
+    $retries_iterator = new WP_Retry_Frontloading_Iterator($import['post_id']);
+    $importer->set_frontloading_retries_iterator($retries_iterator);
     return $importer;
 }
+
+add_action('rest_api_init', function() {
+    register_rest_route('data-liberation/v1', '/retry-download', [
+        'methods' => 'POST',
+        'callback' => function($request) {
+            $post_id = intval($request->get_param('post_id'));
+            $retry_limit = get_post_meta($post_id, 'retry_limit', true) ?: 3;
+            update_post_meta($post_id, 'retry_limit', $retry_limit + 1);
+            
+            return new WP_REST_Response(['success' => true], 200);
+        },
+        'permission_callback' => function() {
+            return current_user_can('manage_options');
+        }
+    ]);
+
+    register_rest_route('data-liberation/v1', '/ignore-download', [
+        'methods' => 'POST', 
+        'callback' => function($request) {
+            $post_id = intval($request->get_param('post_id'));
+            wp_update_post([
+                'ID' => $post_id,
+                'post_status' => WP_Import_Session::FRONTLOAD_STATUS_IGNORED
+            ]);
+            
+            return new WP_REST_Response(['success' => true], 200);
+        },
+        'permission_callback' => function() {
+            return current_user_can('manage_options');
+        }
+    ]);
+
+    register_rest_route('data-liberation/v1', '/change-download-url', [
+        'methods' => 'POST',
+        'callback' => function($request) {
+            $post_id = intval($request->get_param('post_id')); 
+            $new_url = esc_url_raw($request->get_param('new_url'));
+            
+            update_post_meta($post_id, 'current_url', $new_url);
+            update_post_meta($post_id, 'attempts', 0);
+            update_post_meta($post_id, 'retry_limit', 3);
+            
+            return new WP_REST_Response(['success' => true], 200);
+        },
+        'permission_callback' => function() {
+            return current_user_can('manage_options');
+        }
+    ]);
+});
