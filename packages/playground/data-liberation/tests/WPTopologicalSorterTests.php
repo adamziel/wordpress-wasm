@@ -7,6 +7,14 @@ use PHPUnit\Framework\TestCase;
  */
 class WPTopologicalSorterTests extends TestCase {
 
+	protected function setUp(): void {
+		parent::setUp();
+
+		if ( ! isset( $_SERVER['SERVER_SOFTWARE'] ) || $_SERVER['SERVER_SOFTWARE'] !== 'PHP.wasm' ) {
+			$this->markTestSkipped( 'Test only runs in Playground' );
+		}
+	}
+
 	public function test_import_one_post() {
 		$sorter = new WP_Topological_Sorter();
 
