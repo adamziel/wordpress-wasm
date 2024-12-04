@@ -167,7 +167,7 @@ function wp_visit_file_tree( $dir ) {
 		if ( '.' === $file || '..' === $file ) {
 			continue;
 		}
-		$file_path = $dir . '/' . $file;
+		$file_path = rtrim( $dir, '/' ) . '/' . $file;
 		if ( is_dir( $file_path ) ) {
 			$directories[] = $file_path;
 			continue;
