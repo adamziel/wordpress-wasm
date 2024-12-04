@@ -288,12 +288,6 @@ class WP_Stream_Importer {
 	protected $importer;
 
 	public function next_step() {
-		if ( null !== $this->next_stage ) {
-			return false;
-		}
-
-		do_action( 'wp_stream_importer_next_stage', $this );
-
 		switch ( $this->stage ) {
 			case self::STAGE_INITIAL:
 				$this->next_stage = self::STAGE_INDEX_ENTITIES;
