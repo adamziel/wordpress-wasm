@@ -115,10 +115,12 @@ $strictly_disallowed_headers = [
     'Cookie',
     'Host'
 ];
-$curlHeaders = filter_headers_strings(
-    kv_headers_to_curl_format(getallheaders()),
-    $default_allowed_headers,
-    $strictly_disallowed_headers
+$curlHeaders = kv_headers_to_curl_format(
+    filter_headers_strings(
+        getallheaders(),
+        $default_allowed_headers,
+        $strictly_disallowed_headers
+    )
 );
 curl_setopt(
     $ch,

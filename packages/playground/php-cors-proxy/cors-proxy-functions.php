@@ -301,6 +301,9 @@ class IpUtils
 
 
 function filter_headers_strings($php_headers, $allowed_headers, $remove_headers) {
+    $allowed_headers = $allowed_headers ?? [];
+    $remove_headers = $remove_headers ?? [];
+
     $allowed_request_headers_header = strtolower('X-Cors-Proxy-Allowed-Request-Headers');
 
     // Add any additional allowed headers from X-Cors-Proxy-Allowed-Request-Headers
@@ -323,17 +326,15 @@ function filter_headers_strings($php_headers, $allowed_headers, $remove_headers)
     });
 
     $remove_headers = array_map('strtolower', $remove_headers);
-    $headers = [];
-    foreach ($php_headers as $header) {
-        $lower_header = strtolower($header);
-        foreach($remove_headers as $remove_header) {
-            if (strpos($lower_header, $remove_header) === 0) {
-                continue 2;
-            }
-        }
-        $headers[] = $header;
-    }
-    return $headers;
+
+    // Remove strictly disallowed headers
+    return array_filter(
+        $php_headers,
+        function($key) use ($remove_headers) {
+            return !in_array(strtolower($key), $remove_headers);
+        },
+        ARRAY_FILTER_USE_KEY
+    );
 }
 
 function kv_headers_to_curl_format($headers) {
