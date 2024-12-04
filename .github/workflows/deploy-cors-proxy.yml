@@ -10,8 +10,9 @@ jobs:
     build_and_deploy:
         # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
         # TODO: Can we check for group membership?
+        # TODO: Restore trunk branch check before merging
         if: >
-            github.ref == 'refs/heads/trunk' && (
+            github.ref == 'refs/heads/restore-cors-support-to-cors-proxy' && (
                 github.event_name == 'workflow_run' ||
                 github.event_name == 'workflow_dispatch' ||
                 github.actor == 'adamziel' ||
