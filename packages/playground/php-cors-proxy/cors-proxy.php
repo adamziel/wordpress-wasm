@@ -101,13 +101,24 @@ curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:443:$resolvedIp"
 ]);
 
-// Explicitly remove 'Cookie' and 'Host' headers even if they are present in X-Cors-Proxy-Allowed-Request-Headers
+$default_allowed_headers = [
+    'Accept',
+    'Accept-Language',
+    'Content-Language',
+    'Content-Type',
+    'DNT',
+    'Origin',
+    'Range',
+    'User-Agent'
+];
+$strictly_disallowed_headers = [
+    'Cookie',
+    'Host'
+];
 $curlHeaders = filter_headers_strings(
     kv_headers_to_curl_format(getallheaders()),
-    [
-        'Cookie',
-        'Host'
-    ]
+    $default_allowed_headers,
+    $strictly_disallowed_headers
 );
 curl_setopt(
     $ch,

@@ -300,18 +300,7 @@ class IpUtils
 }
 
 
-function filter_headers_strings($php_headers, $remove_headers) {
-    // Default allowed headers to be extended by X-Cors-Proxy-Allowed-Request-Headers
-    $allowed_headers = [
-        'accept',
-        'accept-language',
-        'content-language',
-        'content-type',
-        'dnt',
-        'origin',
-        'range',
-        'user-agent'
-    ];
+function filter_headers_strings($php_headers, $allowed_headers, $remove_headers) {
     $allowed_request_headers_header = strtolower('X-Cors-Proxy-Allowed-Request-Headers');
 
     // Add any additional allowed headers from X-Cors-Proxy-Allowed-Request-Headers
@@ -324,6 +313,8 @@ function filter_headers_strings($php_headers, $remove_headers) {
         );
         $allowed_headers = array_merge($allowed_headers, $additional_headers);
     }
+
+    $allowed_headers = array_map('strtolower', $allowed_headers);
 
     // Only keep headers that are in the allowed list
     $php_headers = array_filter($php_headers, function($header) use ($allowed_headers) {
