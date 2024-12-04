@@ -101,7 +101,7 @@ curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:443:$resolvedIp"
 ]);
 
-// Pass all incoming headers except cookies and host
+// Explicitly remove 'Cookie' and 'Host' headers even if they are present in X-Cors-Proxy-Allowed-Request-Headers
 $curlHeaders = filter_headers_strings(
     kv_headers_to_curl_format(getallheaders()),
     [
