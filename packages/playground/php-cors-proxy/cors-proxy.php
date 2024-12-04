@@ -101,15 +101,9 @@ curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:443:$resolvedIp"
 ]);
 
-$default_allowed_headers = [
-    'Accept',
-    'Accept-Language',
-    'Content-Language',
-    'Content-Type',
-    'DNT',
-    'Origin',
-    'Range',
-    'User-Agent'
+// Pass all incoming headers except cookies and authorization
+$headers_requiring_opt_in = [
+    'Authorization'
 ];
 $strictly_disallowed_headers = [
     'Cookie',
@@ -118,7 +112,7 @@ $strictly_disallowed_headers = [
 $curlHeaders = kv_headers_to_curl_format(
     filter_headers_strings(
         getallheaders(),
-        $default_allowed_headers,
+        $headers_requiring_opt_in,
         $strictly_disallowed_headers
     )
 );
