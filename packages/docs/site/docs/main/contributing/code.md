@@ -83,4 +83,18 @@ Playground logs PHP errors in the browser console after every PHP request.
 
 ## Publishing packages
 
+Playground consists of a number of packages, some of which are published to npmjs.com, under the `@wp-playground/` _organization_. While packages are normally automatically published through a [GitHub Action](https://github.com/WordPress/wordpress-playground/actions/workflows/publish-npm-packages.yml), it's also possible to do so from a local machine by running the same script that the GitHub Action runs.
+
+Additionally, it's also possible to test-publish packages to a local registry, so that changes can be tested without publishing the package to npmjs.com.
+
+### How it works
+
+TODO
+
+### Publishing to npmjs.com
+
+TODO
+
+### Publishing to a local registry
+
 TODO
