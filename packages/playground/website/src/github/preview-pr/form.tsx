@@ -13,7 +13,8 @@ interface PreviewPRFormProps {
 
 const urlParams = new URLSearchParams(window.location.search);
 
-// This structure is from plugin-proxy.php where we set allowed inputs for WordPress and Gutenberg repositories
+// This structure is from plugin-proxy.php
+// where we set allowed inputs for WordPress and Gutenberg repositories
 export const targetParams = {
 	wordpress: {
 		repo: 'wordpress-develop',
