@@ -39,30 +39,54 @@ add_filter(
 	}
 );
 
-add_action(
-	'init',
-	function () {
-		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			require_once __DIR__ . '/src/cli/WP_Import_Command.php';
+function data_liberation_init() {
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		require_once __DIR__ . '/src/cli/WP_Import_Command.php';
 
-			// Register the WP-CLI import command.
-			WP_CLI::add_command( 'data-liberation', WP_Import_Command::class );
-		}
-
-		register_post_status(
-			'error',
-			array(
-				'label' => _x( 'Error', 'post' ), // Label name
-				'public' => false,
-				'exclude_from_search' => false,
-				'show_in_admin_all_list' => false,
-				'show_in_admin_status_list' => false,
-				// translators: %s is the number of errors
-				'label_count' => _n_noop( 'Error <span class="count">(%s)</span>', 'Error <span class="count">(%s)</span>' ),
-			)
-		);
+		// Register the WP-CLI import command.
+		WP_CLI::add_command( 'data-liberation', WP_Import_Command::class );
 	}
-);
+
+	register_post_status(
+		'error',
+		array(
+			'label' => _x( 'Error', 'post' ), // Label name
+			'public' => false,
+			'exclude_from_search' => false,
+			'show_in_admin_all_list' => false,
+			'show_in_admin_status_list' => false,
+			// translators: %s is the number of errors
+			'label_count' => _n_noop( 'Error <span class="count">(%s)</span>', 'Error <span class="count">(%s)</span>' ),
+		)
+	);
+}
+
+add_action( 'init', 'data_liberation_init' );
+
+function data_liberation_activate() {
+	// Activate the topological sorter. Create tables and options.
+	WP_Topological_Sorter::activate();
+}
+
+// Run when the plugin is activated.
+register_activation_hook( __FILE__, 'data_liberation_activate' );
+
+function data_liberation_deactivate() {
+	// Deactivate the topological sorter. Flush away all data.
+	WP_Topological_Sorter::deactivate();
+
+	// @TODO: Cancel any active import sessions and cleanup other data.
+}
+
+// Run when the plugin is deactivated.
+register_deactivation_hook( __FILE__, 'data_liberation_deactivate' );
+
+function data_liberation_load() {
+	WP_Topological_Sorter::load();
+}
+
+// Run when the plugin is loaded.
+add_action( 'plugins_loaded', 'data_liberation_load' );
 
 // Register admin menu
 add_action(
