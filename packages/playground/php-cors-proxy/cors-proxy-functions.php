@@ -359,6 +359,10 @@ function rewrite_relative_redirect(
  * Answers whether CORS is allowed for the specified origin.
  */
 function should_respond_with_cors_headers($host, $origin) {
+    if (empty($origin)) {
+        return false;
+    }
+
     $is_request_from_playground_web_app = $origin === 'https://playground.wordpress.net';
     $not_hosted_with_playground_web_app = $host !== 'playground.wordpress.net';
     if (
@@ -368,7 +372,7 @@ function should_respond_with_cors_headers($host, $origin) {
         return true;
     }
 
-    $origin_host = parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST);
+    $origin_host = parse_url($origin, PHP_URL_HOST);
     $is_local_origin = in_array(
         $origin_host,
         array('localhost', '127.0.0.1'),
