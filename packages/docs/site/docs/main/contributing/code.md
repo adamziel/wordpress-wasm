@@ -80,3 +80,7 @@ If you're using VS Code and have Chrome installed, you can debug Playground in t
 ### Debugging PHP
 
 Playground logs PHP errors in the browser console after every PHP request.
+
+## Publishing packages
+
+TODO
