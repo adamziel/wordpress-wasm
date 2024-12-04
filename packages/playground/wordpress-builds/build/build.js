@@ -153,7 +153,6 @@ try {
 	}
 	await fs.mkdir(wordpressDir);
 	// Install WordPress in a local directory
-	console.log('Installing WordPress... from ', versionInfo.url);
 	await asyncSpawn(
 		'bun',
 		[
