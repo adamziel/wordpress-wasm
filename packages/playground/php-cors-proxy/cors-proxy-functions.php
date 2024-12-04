@@ -359,9 +359,11 @@ function rewrite_relative_redirect(
  * Answers whether CORS is allowed for the specified origin.
  */
 function should_respond_with_cors_headers($host, $origin) {
+    $is_request_from_playground_web_app = $origin === 'https://playground.wordpress.net';
+    $not_hosted_with_playground_web_app = $host !== 'playground.wordpress.net';
     if (
-        $host !== 'playground.wordpress.net' &&
-        $origin === 'https://playground.wordpress.net'
+        $is_request_from_playground_web_app &&
+        $not_hosted_with_playground_web_app
     ) {
         return true;
     }
