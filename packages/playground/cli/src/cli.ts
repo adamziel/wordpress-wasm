@@ -26,7 +26,6 @@ import {
 	CACHE_FOLDER,
 	cachedDownload,
 	fetchSqliteIntegration,
-	fetchWordPress,
 	readAsFile,
 } from './download';
 import { resolveWordPressRelease } from '@wp-playground/wordpress';
