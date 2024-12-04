@@ -1,29 +1,9 @@
 import { EmscriptenDownloadMonitor } from '@php-wasm/progress';
-import { resolveWordPressRelease } from '@wp-playground/wordpress';
 import fs from 'fs-extra';
 import os from 'os';
 import path, { basename } from 'path';
 
 export const CACHE_FOLDER = path.join(os.homedir(), '.wordpress-playground');
-
-/**
- * @TODO: Look for a common abstraction with the downloads done by the website setup.
- * 		  These downloads look similar to what the website does to setup WordPress.
- *        The website could also use service worker caching to speed up the
- *        process.
- */
-export async function fetchWordPress(
-	wpVersion = 'latest',
-	monitor: EmscriptenDownloadMonitor
-) {
-	const wpDetails = await resolveWordPressRelease(wpVersion);
-	const wpZip = await cachedDownload(
-		wpDetails.releaseUrl,
-		`${wpDetails.version}.zip`,
-		monitor
-	);
-	return wpZip;
-}
 
 export async function fetchSqliteIntegration(
 	monitor: EmscriptenDownloadMonitor

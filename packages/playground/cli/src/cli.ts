@@ -24,6 +24,7 @@ import { bootWordPress } from '@wp-playground/wordpress';
 import { rootCertificates } from 'tls';
 import {
 	CACHE_FOLDER,
+	cachedDownload,
 	fetchSqliteIntegration,
 	fetchWordPress,
 	readAsFile,
@@ -282,6 +283,9 @@ async function run() {
 
 				wpDetails = await resolveWordPressRelease(args.wp);
 			}
+			logger.log(
+				`Resolved WordPress release URL: ${wpDetails?.releaseUrl}`
+			);
 
 			const preinstalledWpContentPath =
 				wpDetails &&
@@ -293,7 +297,11 @@ async function run() {
 				? undefined
 				: fs.existsSync(preinstalledWpContentPath)
 				? readAsFile(preinstalledWpContentPath)
-				: fetchWordPress(wpDetails.url, monitor);
+				: await cachedDownload(
+						wpDetails.releaseUrl,
+						`${wpDetails.version}.zip`,
+						monitor
+				  );
 
 			const constants: Record<string, string | number | boolean | null> =
 				{
