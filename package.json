@@ -196,6 +196,7 @@
 		"tslib": "^2.3.0",
 		"typedoc": "0.23.27",
 		"typescript": "5.4.5",
+		"verdaccio": "^6.0.2",
 		"vite": "4.5.0",
 		"vite-plugin-dts": "3.6.3",
 		"vite-plugin-eslint": "^1.8.1",
@@ -214,6 +215,7 @@
 		"react-dom": "^18.2.25",
 		"typescript": "5.4.5",
 		"typedoc": "0.23.27",
+		"verdaccio": "^6.0.2",
 		"ws": "^8.18.0"
 	},
 	"workspaces": [
