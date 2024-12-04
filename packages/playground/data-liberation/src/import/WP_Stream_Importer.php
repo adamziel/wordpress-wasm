@@ -533,7 +533,6 @@ class WP_Stream_Importer {
 
 		switch ( $entity->get_type() ) {
 			case 'category':
-				file_put_contents( 'php://stderr', print_r( $data, true ) );
 				$this->topological_sorter->map_category( $offset, $data );
 				break;
 			case 'post':
