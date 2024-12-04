@@ -622,15 +622,6 @@ class WP_Stream_Importer {
 					)
 				);
 				break;
-			case 'category':
-			case 'term':
-				$this->topological_sorter->map_term( $upstream, $data );
-				break;
-			case 'site_option':
-				if ( $data['option_name'] === 'home' ) {
-					$this->source_site_url = $data['option_value'];
-				}
-				break;
 			case 'post':
 				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
 					$this->enqueue_attachment_download( $data['attachment_url'] );
