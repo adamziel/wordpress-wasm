@@ -98,6 +98,12 @@ export const getSitesLoadingState = (state: {
 export function deriveSlugFromSiteName(name: string) {
 	return name.toLowerCase().replaceAll(' ', '-');
 }
+export function deriveSiteNameFromSlug(slug: string) {
+	return slug
+		.replaceAll('-', ' ')
+		.replaceAll(/\b\w/g, (c) => c.toUpperCase())
+		.replaceAll(/WordPress/gi, 'WordPress');
+}
 
 /**
  * Updates the site metadata in the OPFS and in the redux state.
