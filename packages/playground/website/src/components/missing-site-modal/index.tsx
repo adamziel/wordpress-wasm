@@ -7,22 +7,18 @@ import {
 	selectActiveSite,
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
-import { usePlaygroundClient } from '../../lib/use-playground-client';
-import { useEffect, useState } from 'react';
+import { selectClientInfoBySiteSlug } from '../../lib/state/redux/slice-clients';
 
 export function MissingSiteModal() {
 	const dispatch = useAppDispatch();
 	const closeModal = () => dispatch(setActiveModal(null));
 
 	const activeSite = useAppSelector((state) => selectActiveSite(state));
-	const playgroundClient = usePlaygroundClient(activeSite?.slug);
-
-	const [playgroundReady, setPlaygroundReady] = useState(false);
-	useEffect(() => {
-		if (playgroundClient) {
-			playgroundClient.isReady().then(() => setPlaygroundReady(true));
-		}
-	}, [playgroundClient]);
+	const clientInfo = useAppSelector(
+		(state) =>
+			activeSite?.slug &&
+			selectClientInfoBySiteSlug(state, activeSite?.slug)
+	);
 
 	if (!activeSite) {
 		return null;
@@ -52,7 +48,10 @@ export function MissingSiteModal() {
 				<FlexItem>
 					<Button
 						variant="secondary"
-						disabled={!playgroundReady}
+						disabled={
+							!!clientInfo &&
+							clientInfo?.opfsSync?.status === 'syncing'
+						}
 						onClick={(e: React.MouseEvent) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -66,7 +65,6 @@ export function MissingSiteModal() {
 					<SitePersistButton siteSlug={activeSite.slug}>
 						<Button
 							variant="primary"
-							disabled={!playgroundReady}
 							aria-label="Save site locally"
 						>
 							Save Playground to browser storage
