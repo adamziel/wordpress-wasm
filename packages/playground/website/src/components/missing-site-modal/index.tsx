@@ -35,10 +35,16 @@ export function MissingSiteModal() {
 		<Modal
 			title="Save to browser storage?"
 			contentLabel="This is a dialog window which overlays the main content of the
-				page. The modal begins with a heading 2 called ... TODO"
+				page. It offers the user a choice between using a temporary Playground
+				and a persistent Playground that is saved to browser storage."
 			onRequestClose={closeModal}
 		>
-			<p>What do you want to do?</p>
+			<p>
+				WordPress Playground tried to load a Playground that does not
+				exist, so we loaded a temporary Playground instead. Your changes
+				will be lost on page refresh.
+			</p>
+			<p>Would you like to save this Playground to browser storage?</p>
 			<Flex direction="column" gap={2} expanded={true}>
 				<FlexItem>
 					<Button
@@ -50,7 +56,7 @@ export function MissingSiteModal() {
 							closeModal();
 						}}
 					>
-						Use a temporary Playground
+						Keep using a temporary Playground
 					</Button>
 				</FlexItem>
 				<FlexItem>
