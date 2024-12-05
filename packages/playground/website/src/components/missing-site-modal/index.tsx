@@ -55,7 +55,7 @@ export function MissingSiteModal() {
 			*/}
 			<Flex
 				direction="row-reverse"
-				gap={2}
+				gap={5}
 				expanded={true}
 				wrap={true}
 				justify="flex-start"
