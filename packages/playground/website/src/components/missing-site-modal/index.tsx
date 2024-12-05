@@ -8,13 +8,24 @@ import {
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
+import { useState } from 'react';
 
 export function MissingSiteModal() {
 	const dispatch = useAppDispatch();
 	const closeModal = () => dispatch(setActiveModal(null));
 
 	const activeSite = useAppSelector((state) => selectActiveSite(state));
-	const playground = usePlaygroundClient(activeSite?.slug);
+	const playgroundClient = usePlaygroundClient(activeSite?.slug);
+
+	const [playgroundReady, setPlaygroundReady] = useState<
+		boolean | Promise<void>
+	>(false);
+
+	if (playgroundClient && playgroundReady === false) {
+		const promiseToBeReady = playgroundClient.isReady();
+		setPlaygroundReady(promiseToBeReady);
+		promiseToBeReady.then(() => setPlaygroundReady(true));
+	}
 
 	if (!activeSite) {
 		return null;
@@ -32,27 +43,28 @@ export function MissingSiteModal() {
 			onRequestClose={closeModal}
 		>
 			<p>What do you want to do?</p>
-			<Flex direction="column" gap={5} expanded={true}>
+			<Flex direction="column" gap={2} expanded={true}>
 				<FlexItem>
 					<Button
 						variant="secondary"
+						disabled={!playgroundReady}
 						onClick={(e: React.MouseEvent) => {
 							e.preventDefault();
 							e.stopPropagation();
 							closeModal();
 						}}
 					>
-						Continue with Temporary Site
+						Use a temporary Playground
 					</Button>
 				</FlexItem>
 				<FlexItem>
 					<SitePersistButton siteSlug={activeSite.slug}>
 						<Button
 							variant="primary"
-							disabled={!playground}
+							disabled={!playgroundReady}
 							aria-label="Save site locally"
 						>
-							Save
+							Save Playground to browser storage
 						</Button>
 					</SitePersistButton>
 				</FlexItem>
