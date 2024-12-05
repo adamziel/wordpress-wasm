@@ -88,6 +88,7 @@ export function EnsurePlaygroundSiteIsSelected({
 							requestedSiteSlug
 						);
 
+						// TODO: Wait for Playground to load before showing the modal which would otherwise obscure the progress indicator
 						dispatch(
 							setActiveModal(modalSlugs.MISSING_SITE_PROMPT)
 						);
