@@ -61,7 +61,10 @@ export function MissingSiteModal() {
 				justify="flex-start"
 			>
 				<FlexItem>
-					<SitePersistButton siteSlug={activeSite.slug}>
+					<SitePersistButton
+						siteSlug={activeSite.slug}
+						storage="opfs"
+					>
 						<Button
 							variant="primary"
 							aria-label="Save site locally"
