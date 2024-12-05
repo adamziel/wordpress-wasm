@@ -39,8 +39,8 @@ export function MissingSiteModal() {
 			onRequestClose={closeModal}
 		>
 			<p>
-				The {activeSite.metadata.name} Playground does not exist, so we
-				loaded a temporary Playground instead.
+				The <b>{activeSite.metadata.name}</b> Playground does not exist,
+				so we loaded a temporary Playground instead.
 			</p>
 			<p>
 				If you want to preserve your changes, you can save the
