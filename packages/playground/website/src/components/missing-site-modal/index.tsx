@@ -39,11 +39,13 @@ export function MissingSiteModal() {
 			onRequestClose={closeModal}
 		>
 			<p>
-				WordPress Playground tried to load a Playground that does not
-				exist, so we loaded a temporary Playground instead. Any changes
-				to temporary Playgrounds are lost on page refresh.
+				The {activeSite.metadata.name} Playground does not exist, so we
+				loaded a temporary Playground instead.
 			</p>
-			<p>Would you like to save this Playground to browser storage?</p>
+			<p>
+				If you want to preserve your changes, you can save the
+				Playground to browser storage.
+			</p>
 			<Flex direction="row" gap={4} justify="end">
 				<FlexItem>
 					<Button
