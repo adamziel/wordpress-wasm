@@ -11,13 +11,16 @@ import { persistTemporarySite } from '../../../lib/state/redux/persist-temporary
 import { selectClientInfoBySiteSlug } from '../../../lib/state/redux/slice-clients';
 import { useLocalFsAvailability } from '../../../lib/hooks/use-local-fs-availability';
 import { isOpfsAvailable } from '../../../lib/state/opfs/opfs-site-storage';
+import { SiteStorageType } from '../../../lib/site-metadata';
 
 export function SitePersistButton({
 	siteSlug,
 	children,
+	storage = null,
 }: {
 	siteSlug: string;
 	children: React.ReactNode;
+	storage?: Extract<SiteStorageType, 'opfs' | 'local-fs'> | null;
 }) {
 	const clientInfo = useAppSelector((state) =>
 		selectClientInfoBySiteSlug(state, siteSlug)
@@ -26,8 +29,19 @@ export function SitePersistButton({
 	const dispatch = useAppDispatch();
 
 	if (!clientInfo?.opfsSync || clientInfo.opfsSync?.status === 'error') {
-		return (
-			<>
+		let button = null;
+		if (storage) {
+			button = (
+				<div
+					onClick={() =>
+						dispatch(persistTemporarySite(siteSlug, storage))
+					}
+				>
+					{children}
+				</div>
+			);
+		} else {
+			button = (
 				<DropdownMenu trigger={children}>
 					<DropdownMenuItem
 						disabled={!isOpfsAvailable}
@@ -64,6 +78,12 @@ export function SitePersistButton({
 						)}
 					</DropdownMenuItem>
 				</DropdownMenu>
+			);
+		}
+
+		return (
+			<>
+				{button}
 				{clientInfo?.opfsSync?.status === 'error' && (
 					<div className={css.error}>
 						There has been an error. Please try again.
