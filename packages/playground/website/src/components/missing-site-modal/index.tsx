@@ -44,10 +44,10 @@ export function MissingSiteModal() {
 				to temporary Playgrounds are lost on page refresh.
 			</p>
 			<p>Would you like to save this Playground to browser storage?</p>
-			<Flex direction="column" gap={2} expanded={true}>
+			<Flex direction="row" gap={4} justify="end">
 				<FlexItem>
 					<Button
-						variant="secondary"
+						variant="link"
 						disabled={
 							!!clientInfo &&
 							clientInfo?.opfsSync?.status === 'syncing'
