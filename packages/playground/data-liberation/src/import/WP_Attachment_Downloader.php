@@ -38,12 +38,18 @@ class WP_Attachment_Downloader {
 
 	public function enqueue_if_not_exists( $url, $output_relative_path ) {
 		$this->enqueued_url = $url;
-
 		$output_relative_path = $this->output_root . '/' . ltrim( $output_relative_path, '/' );
 		if ( file_exists( $output_relative_path ) ) {
 			$this->pending_events[] = new WP_Attachment_Downloader_Event(
 				$this->enqueued_url,
 				WP_Attachment_Downloader_Event::ALREADY_EXISTS
+			);
+			return true;
+		}
+		if ( file_exists( $output_relative_path . '.partial' ) ) {
+			$this->pending_events[] = new WP_Attachment_Downloader_Event(
+				$this->enqueued_url,
+				WP_Attachment_Downloader_Event::IN_PROGRESS
 			);
 			return true;
 		}
@@ -83,6 +89,8 @@ class WP_Attachment_Downloader {
 				return true;
 			case 'http':
 			case 'https':
+				// Create a placeholder file to indicate that the download is in progress.
+				touch( $output_relative_path . '.partial' );
 				$request                               = new Request( $url );
 				$this->output_paths[ $request->id ]    = $output_relative_path;
 				$this->progress[ $this->enqueued_url ] = array(
@@ -127,6 +135,11 @@ class WP_Attachment_Downloader {
 		// Let's keep referring to the original request.
 		$original_url        = $request->original_request()->url;
 		$original_request_id = $request->original_request()->id;
+
+		/**
+		 * @TODO: Whenever we get a redirect to a URL we've already processed,
+		 *        stop and emit a success event.
+		 */
 
 		switch ( $event ) {
 			case Client::EVENT_GOT_HEADERS:

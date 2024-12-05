@@ -5,7 +5,8 @@ class WP_Attachment_Downloader_Event {
 	const SUCCESS        = '#success';
 	const FAILURE        = '#failure';
 	const ALREADY_EXISTS = '#already_exists';
-
+	const IN_PROGRESS    = '#in_progress';
+	
 	public $type;
 	public $resource_id;
 	public $error;

@@ -41,6 +41,31 @@ class WP_Stream_Importer {
 	 * in the imported content.
 	 */
 	private $site_url_mapping = array();
+	/**
+	 * A list of candidate base URLs that have been spotted in the WXR file.
+	 *
+	 * For example, the theme unit test data refers to a site with a base
+	 * URL https://wpthemetestdata.wordpress.com/, but it contains attachments
+	 * from https://wpthemetestdata.files.wordpress.com/.
+	 *
+	 * Every time the importer encounters a previously unseen attachment domain,
+	 * it needs more information to map it. We can't just guess. Assuming we're
+	 * importing into https://example.com/, we could guess that
+	 * https://wpthemetestdata.files.wordpress.com/ maps to:
+	 *
+	 * * https://example.com/
+	 * * https://example.com/wp-content/
+	 * * https://example.com/wp-content/uploads/
+	 * * ...a completely different path.
+	 *
+	 * There's no reliable way to guess the correct mapping. Instead of trying,
+	 * we're exposing the external domain to the API consumer, who can then
+	 * gather additional information from the user and decide whether to map
+	 * it and how.
+	 *
+	 * Once the API consumer decides on the mapping, it can call
+	 * add_site_url_mapping() to tell the importer what to map that domain to.
+	 */
 	private $site_url_mapping_candidates = array();
 	private $entity_iterator_factory;
 	/**
@@ -159,6 +184,9 @@ class WP_Stream_Importer {
 
 	private function set_source_site_url( $source_site_url ) {
 		$this->source_site_url = $source_site_url;
+		// -1 is a well-known index for the source site URL.
+		// Every subsequent call to set_source_site_url() will
+		// override that mapping.
 		$this->site_url_mapping[-1] = array(
 			WP_URL::parse( $source_site_url ),
 			WP_URL::parse( $this->options['new_site_url'] )
@@ -453,6 +481,7 @@ class WP_Stream_Importer {
 			switch ( $event->type ) {
 				case WP_Attachment_Downloader_Event::FAILURE:
 				case WP_Attachment_Downloader_Event::SUCCESS:
+				case WP_Attachment_Downloader_Event::IN_PROGRESS:
 				case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
 					$this->frontloading_events[] = $event;
 					foreach ( array_keys( $this->active_downloads ) as $entity_cursor ) {
@@ -618,11 +647,22 @@ class WP_Stream_Importer {
 					}
 					$p = new WP_Block_Markup_Url_Processor( $data[ $key ], $this->source_site_url );
 					while ( $p->next_url() ) {
-						if ( $this->url_processor_matched_asset_url( $p ) ) {
-							$filename      = $this->new_asset_filename( $p->get_raw_url() );
-							$new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-							$p->set_raw_url( WP_URL::parse( $new_asset_url ) );
-							$attachments[] = $new_asset_url;
+						// Relative URLs are okay at this stage.
+						if ( ! $p->get_raw_url() ) {
+							continue;
+						}
+
+						/**
+						 * Any URL that has a corresponding frontloaded file is an asset URL.
+						 */
+						$asset_filename = $this->new_asset_filename(
+							$p->get_raw_url(),
+							$data['source_path'] ?? $data['slug'] ?? null
+						);
+						if ( file_exists( $this->options['uploads_path'] . '/' . $asset_filename ) ) {
+							$p->set_raw_url(
+								$this->options['uploads_url'] . '/' . $asset_filename
+							);
 							/**
 							 * @TODO: How would we know a specific image block refers to a specific
 							 *        attachment? We need to cross-correlate that to rewrite the URL.
@@ -632,27 +672,18 @@ class WP_Stream_Importer {
 							 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
 							 *        strategy? And the API consumer would make the decision?
 							 */
-						} elseif (
-							$this->source_site_url &&
-							$p->get_parsed_url() &&
-							$this->is_child_of_a_mapped_url( $p->get_parsed_url() )
-						) {
-							$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
-						} else {
-							/**
-							 * @TODO: how to handle links to external assets domains? e.g. this one
-							 * found in the theme unit test data:
-							 * 
-							 * <a href="https://wpthemetestdata.files.wordpress.com/2008/06/originaldixielandjazzbandwithalbernard-stlouisblues.mp3">St. Louis Blues</a>
-							 * 
-							 * We'd need to know `https://wpthemetestdata.files.wordpress.com/` maps to
-							 * `https://wpthemetestdata.wordpress.com/wp-content/uploads/` so we can rewrite
-							 * the link. Otherwise, the best we can do is a lousy guess I'd rather avoid.
-							 *
-							 * WP_Stream_Importer may need to accept an additional mapping option
-							 * to resolve scenarios like this.
-							 */
-							// Ignore other URLs.
+							continue;
+						}
+
+						// Absolute URLs are required at this stage.
+						if ( ! $p->get_parsed_url() ) {
+							continue;
+						}
+
+						$target_base_url = $this->get_url_mapping_target( $p->get_parsed_url() );
+						if ( false !== $target_base_url ) {
+							$p->replace_base_url( $target_base_url );
+							continue;
 						}
 					}
 					$data[ $key ] = $p->get_updated_html();
@@ -698,15 +729,15 @@ class WP_Stream_Importer {
 	}
 
 	private function enqueue_attachment_download( string $raw_url, $options = array() ) {
-		$context_path    = $options['context_path'] ?? null;
-		$original_url    = $options['original_url'] ?? $raw_url;
-		$url             = $this->rewrite_attachment_url( $raw_url, $context_path );
-		$asset_filename  = $this->new_asset_filename( $original_url );
-		$output_filename = ltrim( $asset_filename, '/' );
+		$output_filename = $this->new_asset_filename(
+			$options['original_url'] ?? $raw_url,
+			$options['context_path'] ?? null
+		);
 
-		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_filename );
+		$download_url = $this->rewrite_attachment_url( $raw_url, $options['context_path'] ?? null );
+		$enqueued = $this->downloader->enqueue_if_not_exists( $download_url, $output_filename );
 		if ( false === $enqueued ) {
-			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $url ), '1.0' );
+			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $raw_url ), '1.0' );
 			return false;
 		}
 
@@ -745,7 +776,12 @@ class WP_Stream_Importer {
 	 *   different permissions. Just because Bob deletes his copy, doesn't
 	 *   mean we should delete Alice's copy.
 	 */
-	private function new_asset_filename( string $raw_asset_url ) {
+	private function new_asset_filename( string $raw_asset_url, $context_path = null ) {
+		$raw_asset_url = $this->rewrite_attachment_url(
+			$raw_asset_url,
+			$context_path
+		);
+
 		$filename   = md5( $raw_asset_url );
 		$parsed_url = WP_URL::parse( $raw_asset_url );
 		if ( false !== $parsed_url ) {
@@ -794,11 +830,15 @@ class WP_Stream_Importer {
 	}
 
 	private function is_child_of_a_mapped_url( $url ) {
-		$url = WP_URL::parse( $url );
+		return $this->get_url_mapping_target( $url ) !== false;
+	}
+
+	private function get_url_mapping_target( $source_url ) {
+		$url = WP_URL::parse( $source_url );
 		foreach ( $this->site_url_mapping as $pair ) {
 			$parsed_base_url = $pair[0];
 			if ( is_child_url_of( $parsed_base_url, $url ) ) {
-				return true;
+				return $pair[1];
 			}
 		}
 		return false;
