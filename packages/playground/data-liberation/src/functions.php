@@ -42,7 +42,7 @@ function wp_rewrite_urls( $options ) {
 	while ( $p->next_url() ) {
 		$parsed_url = $p->get_parsed_url();
 		foreach ( $url_mapping as $mapping ) {
-			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
+			if ( is_child_url_of( $parsed_url, $mapping['from_url'] ) ) {
 				$p->replace_base_url( $mapping['to_url'] );
 				break;
 			}
@@ -54,25 +54,26 @@ function wp_rewrite_urls( $options ) {
 /**
  * Check if a given URL matches the current site URL.
  *
- * @param URL $subject The URL to check.
- * @param string $from_url_no_trailing_slash The current site URL to compare against.
+ * @param URL $parent The URL to check.
+ * @param string $child The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function url_matches( URL $subject, $from_url ) {
-	$parsed_from_url                    = is_string( $from_url ) ? WP_URL::parse( $from_url ) : $from_url;
-	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
+function is_child_url_of( $child, $parent ) {
+	$parent = is_string( $parent ) ? WP_URL::parse( $parent ) : $parent;
+	$child  = is_string( $child ) ? WP_URL::parse( $child ) : $child;
+	$child_pathname_no_trailing_slash = rtrim( urldecode( $child->pathname ), '/' );
 
-	if ( $subject->hostname !== $parsed_from_url->hostname ) {
+	if ( $parent->hostname !== $child->hostname ) {
 		return false;
 	}
 
-	$matched_pathname_decoded = urldecode( $subject->pathname );
+	$parent_pathname = urldecode( $parent->pathname );
 	return (
 		// Direct match
-		$matched_pathname_decoded === $current_pathname_no_trailing_slash ||
-		$matched_pathname_decoded === $current_pathname_no_trailing_slash . '/' ||
+		$parent_pathname === $child_pathname_no_trailing_slash ||
+		$parent_pathname === $child_pathname_no_trailing_slash . '/' ||
 		// Path prefix
-		str_starts_with( $matched_pathname_decoded, $current_pathname_no_trailing_slash . '/' )
+		str_starts_with( $parent_pathname, $child_pathname_no_trailing_slash . '/' )
 	);
 }
 

@@ -36,6 +36,10 @@ class WP_Stream_Importer {
 	 * Populated from the WXR file's <wp:base_blog_url> tag.
 	 */
 	private $source_site_url;
+	/**
+	 * Base URLs seen in the attachments URLs.
+	 */
+	private $attachments_base_urls = [];
 	private $entity_iterator_factory;
 	/**
 	 * @param array|string|null $query {
@@ -140,6 +144,9 @@ class WP_Stream_Importer {
 		if ( ! empty( $cursor['source_site_url'] ) ) {
 			$this->source_site_url = $cursor['source_site_url'];
 		}
+		if ( ! empty( $cursor['attachments_base_urls'] ) ) {
+			$this->attachments_base_urls = $cursor['attachments_base_urls'];
+		}
 		return true;
 	}
 
@@ -154,6 +161,7 @@ class WP_Stream_Importer {
 				'next_stage' => $this->next_stage,
 				'resume_at_entity' => $this->resume_at_entity,
 				'source_site_url' => $this->source_site_url,
+				'attachments_base_urls' => $this->attachments_base_urls,
 			)
 		);
 	}
@@ -317,6 +325,18 @@ class WP_Stream_Importer {
 					break;
 				case 'post':
 					if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
+						/**
+						 * Keep track of alternative domains used to reference attachments,
+						 * e.g. Theme Unit Test Data site lives at https://wpthemetestdata.wordpress.com/
+						 * but all the attachments are served from https://wpthemetestdata.files.wordpress.com/
+						 */
+						$parsed_url = WP_URL::parse( $data['attachment_url'] );
+						if ( $parsed_url && ! is_child_url_of( $this->source_site_url, $parsed_url ) ) {
+							$parsed_url->pathname = '';
+							$parsed_url->search   = '';
+							$parsed_url->hash     = '';
+							$this->attachments_base_urls[ $parsed_url->toString() ] = true;
+						}
 						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
 						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
 					} elseif ( isset( $data['post_content'] ) ) {
@@ -542,7 +562,7 @@ class WP_Stream_Importer {
 						if ( $this->url_processor_matched_asset_url( $p ) ) {
 							$filename      = $this->new_asset_filename( $p->get_raw_url() );
 							$new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-							$p->replace_base_url( WP_URL::parse( $new_asset_url ) );
+							$p->set_raw_url( WP_URL::parse( $new_asset_url ) );
 							$attachments[] = $new_asset_url;
 							/**
 							 * @TODO: How would we know a specific image block refers to a specific
@@ -553,12 +573,26 @@ class WP_Stream_Importer {
 							 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
 							 *        strategy? And the API consumer would make the decision?
 							 */
-						} elseif ( $this->source_site_url &&
+						} elseif (
+							$this->source_site_url &&
 							$p->get_parsed_url() &&
-							url_matches( $p->get_parsed_url(), $this->source_site_url )
+							is_child_url_of( $p->get_parsed_url(), $this->source_site_url )
 						) {
 							$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
 						} else {
+							/**
+							 * @TODO: how to handle links to external assets domains? e.g. this one
+							 * found in the theme unit test data:
+							 * 
+							 * <a href="https://wpthemetestdata.files.wordpress.com/2008/06/originaldixielandjazzbandwithalbernard-stlouisblues.mp3">St. Louis Blues</a>
+							 * 
+							 * We'd need to know `https://wpthemetestdata.files.wordpress.com/` maps to
+							 * `https://wpthemetestdata.wordpress.com/wp-content/uploads/` so we can rewrite
+							 * the link. Otherwise, the best we can do is a lousy guess I'd rather avoid.
+							 *
+							 * WP_Stream_Importer may need to accept an additional mapping option
+							 * to resolve scenarios like this.
+							 */
 							// Ignore other URLs.
 						}
 					}
@@ -696,8 +730,22 @@ class WP_Stream_Importer {
 		return (
 			$p->get_tag() === 'IMG' &&
 			$p->get_inspected_attribute_name() === 'src' &&
-			( ! $this->source_site_url || url_matches( $p->get_parsed_url(), $this->source_site_url ) )
+			$this->is_child_url_of_migrated_site_urls( $p->get_parsed_url() )
 		);
+	}
+
+	private function is_child_url_of_migrated_site_urls( $url ) {
+		$url = is_string( $url ) ? WP_URL::parse( $url ) : $url;
+		if ( $this->source_site_url && is_child_url_of( $url, $this->source_site_url ) ) {
+			return true;
+		}
+		foreach ( $this->attachments_base_urls as $base_url => $true ) {
+			$parsed_base_url = WP_URL::parse( $base_url );
+			if ( is_child_url_of( $parsed_base_url, $url ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private $first_iterator = true;

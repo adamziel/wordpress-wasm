@@ -208,8 +208,11 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	 *        relative URLs in text nodes. On the other hand, the detection is performed
 	 *        by this WP_URL_In_Text_Processor class so maybe the two do go hand in hand?
 	 */
-	public function replace_base_url( URL $to_url ) {
-		$updated_url = clone $this->get_parsed_url();
+	public function replace_base_url( URL $to_url, $from_base_url = null ) {
+		$base_url_object = $from_base_url ?
+			( is_string( $from_base_url ) ? WP_URL::parse( $from_base_url ) : $from_base_url ) :
+			$this->base_url_object;
+		$updated_url     = clone $this->get_parsed_url();
 
 		$updated_url->hostname = $to_url->hostname;
 		$updated_url->protocol = $to_url->protocol;
@@ -219,8 +222,8 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 		$from_url      = $this->get_parsed_url();
 		$from_pathname = $from_url->pathname;
 		$to_pathname   = $to_url->pathname;
-		if ( $this->base_url_object->pathname !== $to_pathname ) {
-			$base_pathname_with_trailing_slash = rtrim( $this->base_url_object->pathname, '/' ) . '/';
+		if ( $base_url_object->pathname !== $to_pathname ) {
+			$base_pathname_with_trailing_slash = rtrim( $base_url_object->pathname, '/' ) . '/';
 			$decoded_matched_pathname          = urldecode_n(
 				$from_pathname,
 				strlen( $base_pathname_with_trailing_slash )
