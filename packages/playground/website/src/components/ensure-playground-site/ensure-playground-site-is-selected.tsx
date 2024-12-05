@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { resolveBlueprintFromURL } from '../../lib/state/url/resolve-blueprint-from-url';
 import { useCurrentUrl } from '../../lib/state/url/router-hooks';
 import { opfsSiteStorage } from '../../lib/state/opfs/opfs-site-storage';
@@ -20,6 +20,7 @@ import { Blueprint } from '@wp-playground/blueprints';
 import { usePrevious } from '../../lib/hooks/use-previous';
 import { modalSlugs } from '../layout';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
+import { selectClientBySiteSlug } from '../../lib/state/redux/slice-clients';
 
 /**
  * Ensures the redux store always has an activeSite value.
@@ -44,6 +45,14 @@ export function EnsurePlaygroundSiteIsSelected({
 	const requestedSiteObject = useAppSelector((state) =>
 		selectSiteBySlug(state, requestedSiteSlug!)
 	);
+	const requestedClientInfo = useAppSelector(
+		(state) =>
+			requestedSiteSlug &&
+			selectClientBySiteSlug(state, requestedSiteSlug)
+	);
+	const [needMissingSitePromptForSlug, setNeedMissingSitePromptForSlug] =
+		useState<false | string>(false);
+
 	const promptIfSiteMissing =
 		url.searchParams.get('if-stored-site-missing') === 'prompt';
 	const prevUrl = usePrevious(url);
@@ -87,11 +96,7 @@ export function EnsurePlaygroundSiteIsSelected({
 							dispatch,
 							requestedSiteSlug
 						);
-
-						// TODO: Wait for Playground to load before showing the modal which would otherwise obscure the progress indicator
-						dispatch(
-							setActiveModal(modalSlugs.MISSING_SITE_PROMPT)
-						);
+						setNeedMissingSitePromptForSlug(requestedSiteSlug);
 						return;
 					} else {
 						// @TODO: Notification: 'The requested site was not found. Redirecting to a new temporary site.'
@@ -127,6 +132,22 @@ export function EnsurePlaygroundSiteIsSelected({
 		ensureSiteIsSelected();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [url.href, requestedSiteSlug, siteListingStatus]);
+
+	useEffect(() => {
+		if (
+			needMissingSitePromptForSlug &&
+			needMissingSitePromptForSlug === requestedSiteSlug &&
+			requestedClientInfo
+		) {
+			dispatch(setActiveModal(modalSlugs.MISSING_SITE_PROMPT));
+			setNeedMissingSitePromptForSlug(false);
+		}
+	}, [
+		needMissingSitePromptForSlug,
+		requestedSiteSlug,
+		requestedClientInfo,
+		dispatch,
+	]);
 
 	return children;
 }
