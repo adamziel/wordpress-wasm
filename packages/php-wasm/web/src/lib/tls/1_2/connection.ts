@@ -38,7 +38,6 @@ import {
 	HelloRequest,
 	ECCurveTypes,
 	ECNamedCurves,
-	AlertLevels,
 } from './types';
 
 class TLSConnectionClosed extends Error {}
