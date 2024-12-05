@@ -65,10 +65,7 @@ export function MissingSiteModal() {
 						siteSlug={activeSite.slug}
 						storage="opfs"
 					>
-						<Button
-							variant="primary"
-							aria-label="Save site locally"
-						>
+						<Button variant="primary">
 							Save Playground to browser storage
 						</Button>
 					</SitePersistButton>
