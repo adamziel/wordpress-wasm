@@ -45,7 +45,7 @@ export function EnsurePlaygroundSiteIsSelected({
 		selectSiteBySlug(state, requestedSiteSlug!)
 	);
 	const promptIfSiteMissing =
-		url.searchParams.get('if-site-slug-missing') === 'prompt';
+		url.searchParams.get('if-stored-site-missing') === 'prompt';
 	const prevUrl = usePrevious(url);
 
 	useEffect(() => {
