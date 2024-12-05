@@ -87,7 +87,6 @@ export function EnsurePlaygroundSiteIsSelected({
 				// If the site does not exist, redirect to a new temporary site.
 				if (!requestedSiteObject) {
 					if (promptIfSiteMissing) {
-						// @TODO: Notification: 'The requested site was not found. Redirecting to a new temporary site.'
 						logger.log(
 							'The requested site was not found. Creating a new temporary site.'
 						);
