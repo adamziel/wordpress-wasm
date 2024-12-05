@@ -8,7 +8,7 @@ import {
 } from '../../lib/state/redux/store';
 import { setActiveModal } from '../../lib/state/redux/slice-ui';
 import { usePlaygroundClient } from '../../lib/use-playground-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function MissingSiteModal() {
 	const dispatch = useAppDispatch();
@@ -17,16 +17,12 @@ export function MissingSiteModal() {
 	const activeSite = useAppSelector((state) => selectActiveSite(state));
 	const playgroundClient = usePlaygroundClient(activeSite?.slug);
 
-	const [playgroundReady, setPlaygroundReady] = useState<
-		boolean | Promise<void>
-	>(false);
-
-	if (playgroundClient && playgroundReady === false) {
-		const promiseToBeReady = playgroundClient.isReady();
-		setPlaygroundReady(promiseToBeReady);
-		promiseToBeReady.then(() => setPlaygroundReady(true));
-	}
-
+	const [playgroundReady, setPlaygroundReady] = useState(false);
+	useEffect(() => {
+		if (playgroundClient) {
+			playgroundClient.isReady().then(() => setPlaygroundReady(true));
+		}
+	}, [playgroundClient]);
 	if (!activeSite) {
 		return null;
 	}
