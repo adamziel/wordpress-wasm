@@ -44,8 +44,8 @@ export function MissingSiteModal() {
 		>
 			<p>
 				WordPress Playground tried to load a Playground that does not
-				exist, so we loaded a temporary Playground instead. Your changes
-				will be lost on page refresh.
+				exist, so we loaded a temporary Playground instead. Any changes
+				to temporary Playgrounds are lost on page refresh.
 			</p>
 			<p>Would you like to save this Playground to browser storage?</p>
 			<Flex direction="column" gap={2} expanded={true}>
