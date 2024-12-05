@@ -23,6 +23,7 @@ export function MissingSiteModal() {
 			playgroundClient.isReady().then(() => setPlaygroundReady(true));
 		}
 	}, [playgroundClient]);
+
 	if (!activeSite) {
 		return null;
 	}
@@ -37,6 +38,8 @@ export function MissingSiteModal() {
 			contentLabel="This is a dialog window which overlays the main content of the
 				page. It offers the user a choice between using a temporary Playground
 				and a persistent Playground that is saved to browser storage."
+			isDismissible={false}
+			shouldCloseOnClickOutside={false}
 			onRequestClose={closeModal}
 		>
 			<p>
