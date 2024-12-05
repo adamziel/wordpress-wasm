@@ -12,6 +12,14 @@
 				"parallel": false
 			}
 		},
+		"build": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["bash ./bin/build.sh"],
+				"parallel": false
+			}
+		},
 		"lint:php": {
 			"executor": "nx:run-commands",
 			"options": {

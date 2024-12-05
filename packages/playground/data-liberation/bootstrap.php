@@ -64,6 +64,19 @@ require_once __DIR__ . '/src/utf8_decoder.php';
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
 require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
+
+// When running in Playground, the composer autoloader script sees CLI SAPI and
+// tries to use the STDERR, STDIN, and STDOUT constants.
+// @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
+if(!defined('STDERR')) {
+	define('STDERR', fopen('php://stderr', 'w'));
+}
+if(!defined('STDIN')) {
+	define('STDIN', fopen('php://stdin', 'r'));
+}
+if(!defined('STDOUT')) {
+	define('STDOUT', fopen('php://stdout', 'w'));
+}
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Polyfill WordPress core functions

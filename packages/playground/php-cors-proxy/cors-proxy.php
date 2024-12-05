@@ -20,7 +20,7 @@ if (should_respond_with_cors_headers($server_host, $origin)) {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Authorization, Content-Type');
+    header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -46,8 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['CONTENT_LENGTH'] >= MAX_RE
 if (function_exists('playground_cors_proxy_maybe_rate_limit')) {
     playground_cors_proxy_maybe_rate_limit();
 } else if (
-    !defined('PLAYGROUND_CORS_PROXY_DISABLE_RATE_LIMIT') ||
-    !PLAYGROUND_CORS_PROXY_DISABLE_RATE_LIMIT
+    !getenv('PLAYGROUND_CORS_PROXY_DISABLE_RATE_LIMIT') && (
+        !defined('PLAYGROUND_CORS_PROXY_DISABLE_RATE_LIMIT') ||
+        !PLAYGROUND_CORS_PROXY_DISABLE_RATE_LIMIT
+    )
 ) {
     http_response_code(503);
     echo "Server needs to configure rate-limiting.";

@@ -227,6 +227,17 @@ class WP_Import_Session {
 		}
 		return $progress;
 	}
+
+	public function count_all_imported_entities() {
+		$counts = $this->count_imported_entities();
+		return array_sum( array_column( $counts, 'imported' ) );
+	}
+
+	public function count_all_total_entities() {
+		$counts = $this->count_imported_entities();
+		return array_sum( array_column( $counts, 'total' ) );
+	}
+
 	/**
 	 * Cache of imported entity counts to avoid repeated database queries
 	 * @var array

@@ -38,10 +38,13 @@
  * From there, the plaintext data is treated by the same HTTP<->fetch() machinery as
  * described in the previous paragraph.
  */
+// @ts-ignore
+// import { corsProxyUrl } from 'virtual:cors-proxy-url';
 import { TLS_1_2_Connection } from './tls/1_2/connection';
 import { generateCertificate, GeneratedCertificate } from './tls/certificates';
 import { concatUint8Arrays } from './tls/utils';
 import { ContentTypes } from './tls/1_2/types';
+const corsProxyUrl = 'http://127.0.0.1:5263/cors-proxy.php';
 
 export type TCPOverFetchOptions = {
 	CAroot: GeneratedCertificate;
@@ -420,12 +423,33 @@ class RawBytesFetch {
 				let response: Response;
 				try {
 					response = await fetch(request);
-					controller.enqueue(RawBytesFetch.headersAsBytes(response));
 				} catch (error) {
+					/**
+					 * Pretend we've got a 400 Bad Request response whenever
+					 * the fetch() call fails.
+					 *
+					 * Just propagating an error and closing a WebSocket does
+					 * not make PHP aware the socket closed abruptly. This means
+					 * the AsyncHttp\Client will keep polling the socket indefinitely
+					 * until the request times out. This isn't perfect, as we want
+					 * to close the socket as soon as possible to avoid, e.g., 10 seconds
+					 * of unnecessary waitin for the timeout
+					 *
+					 * The root cause is unknown and likely related to the low-level
+					 * implementation of polling file descriptors. The following
+					 * workaround is far from ideal, but it must suffice until we
+					 * have a platform-level resolution.
+					 */
+					controller.enqueue(
+						new TextEncoder().encode(
+							'HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n'
+						)
+					);
 					controller.error(error);
 					return;
 				}
 
+				controller.enqueue(RawBytesFetch.headersAsBytes(response));
 				const reader = response.body?.getReader();
 				if (!reader) {
 					controller.close();
@@ -596,7 +620,8 @@ class RawBytesFetch {
 		const url = new URL(parsedHeaders.path, protocol + '://' + hostname);
 		url.pathname = parsedHeaders.path;
 
-		return new Request(url.toString(), {
+		// @TOOD: somehow handle the CORS proxy logic in the client, not here
+		return new Request(`${corsProxyUrl}?${url}`, {
 			method: parsedHeaders.method,
 			headers: parsedHeaders.headers,
 			body: outboundBodyStream,

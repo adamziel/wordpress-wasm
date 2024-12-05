@@ -494,8 +494,8 @@ function data_liberation_get_interactivity_state() {
 				'date' => $post->post_date,
 				'dataSource' => $import_session->get_data_source(),
 				'timeTaken' => human_time_diff( $import_session->get_started_at(), $import_session->is_finished() ? $import_session->get_finished_at() : time() ),
-				'entitiesImported' => array_sum( array_column( $import_session->count_imported_entities(), 'imported' ) ),
-				'totalEntities' => array_sum( array_column( $import_session->count_imported_entities(), 'total' ) ),
+				'entitiesImported' => $import_session->count_all_imported_entities(),
+				'totalEntities' => $import_session->count_all_total_entities(),
 				'status' => $import_session->get_stage(),
 			);
 		},
