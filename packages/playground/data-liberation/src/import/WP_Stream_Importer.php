@@ -37,9 +37,11 @@ class WP_Stream_Importer {
 	 */
 	private $source_site_url;
 	/**
-	 * Base URLs seen in the attachments URLs.
+	 * A list of [original_url, migrated_url] pairs for rewriting the URLs
+	 * in the imported content.
 	 */
-	private $attachments_base_urls = [];
+	private $site_url_mapping = array();
+	private $site_url_mapping_candidates = array();
 	private $entity_iterator_factory;
 	/**
 	 * @param array|string|null $query {
@@ -142,15 +144,53 @@ class WP_Stream_Importer {
 		$this->next_stage       = $cursor['next_stage'];
 		$this->resume_at_entity = $cursor['resume_at_entity'];
 		if ( ! empty( $cursor['source_site_url'] ) ) {
-			$this->source_site_url = $cursor['source_site_url'];
+			$this->set_source_site_url( $cursor['source_site_url'] );
 		}
-		if ( ! empty( $cursor['attachments_base_urls'] ) ) {
-			$this->attachments_base_urls = $cursor['attachments_base_urls'];
+		if ( ! empty( $cursor['site_url_mapping'] ) ) {
+			foreach ( $cursor['site_url_mapping'] as $pair ) {
+				$this->add_site_url_mapping( $pair[0], $pair[1] );
+			}
+		}
+		if ( ! empty( $cursor['site_url_mapping_candidates'] ) ) {
+			$this->site_url_mapping_candidates = $cursor['site_url_mapping_candidates'];
 		}
 		return true;
 	}
 
+	private function set_source_site_url( $source_site_url ) {
+		$this->source_site_url = $source_site_url;
+		$this->site_url_mapping[-1] = array(
+			WP_URL::parse( $source_site_url ),
+			WP_URL::parse( $this->options['new_site_url'] )
+		);
+	}
+
+	public function get_site_url_mapping_candidates() {
+		// Only return the candidates that have been spotted in the last index_entities() call.
+		if(self::STAGE_INDEX_ENTITIES !== $this->stage) {
+			return array();
+		}
+		$new_candidates = array();
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			if ( false === $status ) {
+				$new_candidates[] = $base_url;
+			}
+		}
+		return $new_candidates;
+	}
+
+	public function add_site_url_mapping( $from, $to ) {
+		$this->site_url_mapping[] = array( WP_URL::parse( $from ), WP_URL::parse( $to ) );
+	}
+
 	public function get_reentrancy_cursor() {
+		$serialized_site_url_mapping = array();
+		foreach ( $this->site_url_mapping as $pair ) {
+			$serialized_site_url_mapping[] = array(
+				(string) $pair[0],
+				(string) $pair[1],
+			);
+		}
 		return json_encode(
 			array(
 				'stage' => $this->stage,
@@ -161,7 +201,8 @@ class WP_Stream_Importer {
 				'next_stage' => $this->next_stage,
 				'resume_at_entity' => $this->resume_at_entity,
 				'source_site_url' => $this->source_site_url,
-				'attachments_base_urls' => $this->attachments_base_urls,
+				'site_url_mapping' => $serialized_site_url_mapping,
+				'site_url_mapping_candidates' => $this->site_url_mapping_candidates,
 			)
 		);
 	}
@@ -193,7 +234,7 @@ class WP_Stream_Importer {
 		$this->entity_iterator_factory = $entity_iterator_factory;
 		$this->options                 = $options;
 		if ( isset( $options['default_source_site_url'] ) ) {
-			$this->source_site_url = $options['default_source_site_url'];
+			$this->set_source_site_url( $options['default_source_site_url'] );
 		}
 	}
 
@@ -271,6 +312,11 @@ class WP_Stream_Importer {
 			$this->entity_iterator = $this->create_entity_iterator();
 		}
 
+		// Mark all mapping candidates as seen.
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			$this->site_url_mapping_candidates[ $base_url ] = true;
+		}
+
 		// Reset the counts and URLs found in the previous pass.
 		$this->indexed_entities_counts = array();
 		$this->indexed_assets_urls     = array();
@@ -320,7 +366,7 @@ class WP_Stream_Importer {
 			switch ( $type ) {
 				case 'site_option':
 					if ( $data['option_name'] === 'home' ) {
-						$this->source_site_url = $data['option_value'];
+						$this->set_source_site_url( $data['option_value'] );
 					}
 					break;
 				case 'post':
@@ -328,14 +374,17 @@ class WP_Stream_Importer {
 						/**
 						 * Keep track of alternative domains used to reference attachments,
 						 * e.g. Theme Unit Test Data site lives at https://wpthemetestdata.wordpress.com/
-						 * but all the attachments are served from https://wpthemetestdata.files.wordpress.com/
+						 * but many attachments are served from https://wpthemetestdata.files.wordpress.com/
 						 */
 						$parsed_url = WP_URL::parse( $data['attachment_url'] );
-						if ( $parsed_url && ! is_child_url_of( $this->source_site_url, $parsed_url ) ) {
+						if ( $parsed_url ) {
 							$parsed_url->pathname = '';
 							$parsed_url->search   = '';
 							$parsed_url->hash     = '';
-							$this->attachments_base_urls[ $parsed_url->toString() ] = true;
+							$base_url = $parsed_url->toString();
+							if ( ! array_key_exists( $base_url, $this->site_url_mapping_candidates ) ) {
+								$this->site_url_mapping_candidates[ $base_url ] = false;
+							}
 						}
 						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
 						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
@@ -357,6 +406,16 @@ class WP_Stream_Importer {
 		}
 		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
 		return true;
+	}
+
+	public function get_new_site_url_mapping_candidates() {
+		$candidates = array();
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			if ( false === $status ) {
+				$candidates[] = $base_url;
+			}
+		}
+		return $candidates;
 	}
 
 	public function get_indexed_entities_counts() {
@@ -576,7 +635,7 @@ class WP_Stream_Importer {
 						} elseif (
 							$this->source_site_url &&
 							$p->get_parsed_url() &&
-							is_child_url_of( $p->get_parsed_url(), $this->source_site_url )
+							$this->is_child_of_a_mapped_url( $p->get_parsed_url() )
 						) {
 							$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
 						} else {
@@ -730,17 +789,14 @@ class WP_Stream_Importer {
 		return (
 			$p->get_tag() === 'IMG' &&
 			$p->get_inspected_attribute_name() === 'src' &&
-			$this->is_child_url_of_migrated_site_urls( $p->get_parsed_url() )
+			$this->is_child_of_a_mapped_url( $p->get_parsed_url() )
 		);
 	}
 
-	private function is_child_url_of_migrated_site_urls( $url ) {
-		$url = is_string( $url ) ? WP_URL::parse( $url ) : $url;
-		if ( $this->source_site_url && is_child_url_of( $url, $this->source_site_url ) ) {
-			return true;
-		}
-		foreach ( $this->attachments_base_urls as $base_url => $true ) {
-			$parsed_base_url = WP_URL::parse( $base_url );
+	private function is_child_of_a_mapped_url( $url ) {
+		$url = WP_URL::parse( $url );
+		foreach ( $this->site_url_mapping as $pair ) {
+			$parsed_base_url = $pair[0];
 			if ( is_child_url_of( $parsed_base_url, $url ) ) {
 				return true;
 			}

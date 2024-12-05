@@ -77,18 +77,38 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
         wp_set_current_user( $admin_id );
 
+		$new_site_url = get_site_url();
 		$importer = WP_Stream_Importer::create_for_wxr_file(
-			'/tmp/import.wxr'
+			'/tmp/import.wxr',
+			array(
+				'new_site_url' => $new_site_url,
+			)
 		);
 		while ( true ) {
 			if ( true === $importer->next_step() ) {
+				$mapping_candidates = $importer->get_site_url_mapping_candidates();
+				if (count($mapping_candidates) > 0) {
+					/**
+					 * Auto-maps the theme unit test attachments domain
+					 * to the wp-content/uploads directory on the current site.
+					 * @TODO: remove it before merging.
+					 */
+					$importer->add_site_url_mapping(
+						$mapping_candidates[0],
+						$new_site_url . '/wp-content/uploads'
+					);
+					post_message_to_js(json_encode([
+						'type' => 'console.log',
+						'data' => $importer->get_site_url_mapping_candidates(),
+					]));
+				}
 				// Note we're simply ignoring any frontloading errors.
 				switch($importer->get_stage()) {
 					case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
-						$message = 'Frontloading assets... ';
+						$message = 'Frontloading assets';
 						break;
 					case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
-						$message = 'Importing entities... ';
+						$message = 'Importing entities';
 						break;
 					default:
 						$message = 'Stage: ' . $importer->get_stage();
