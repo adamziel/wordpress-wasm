@@ -413,6 +413,12 @@ class RawBytesFetch {
 	 * Streams a HTTP response including the status line and headers.
 	 */
 	static fetchRawResponseBytes(request: Request) {
+		const requestClone = new Request(
+			// @TOOD: somehow handle the CORS proxy logic in the client, not
+			`${corsProxyUrl}?${request.url}`,
+			request
+		);
+
 		// This initially used a TransformStream and piped the response
 		// body to the writable side of the TransformStream.
 		//
@@ -422,7 +428,7 @@ class RawBytesFetch {
 			async start(controller) {
 				let response: Response;
 				try {
-					response = await fetch(request);
+					response = await fetch(requestClone);
 				} catch (error) {
 					/**
 					 * Pretend we've got a 400 Bad Request response whenever
@@ -620,8 +626,7 @@ class RawBytesFetch {
 		const url = new URL(parsedHeaders.path, protocol + '://' + hostname);
 		url.pathname = parsedHeaders.path;
 
-		// @TOOD: somehow handle the CORS proxy logic in the client, not here
-		return new Request(`${corsProxyUrl}?${url}`, {
+		return new Request(url.toString(), {
 			method: parsedHeaders.method,
 			headers: parsedHeaders.headers,
 			body: outboundBodyStream,

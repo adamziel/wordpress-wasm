@@ -69,7 +69,7 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 		}
 	});
 	try {
-		await playground.run({
+		const r = await playground.run({
 			code: `<?php
 		require ${phpVar(docroot)} . '/wp-load.php';
 		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
@@ -112,6 +112,7 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 		}
 		`,
 		});
+		console.log(r.text);
 	} catch (error) {
 		console.dir('PHP error :(');
 		console.error(error);
