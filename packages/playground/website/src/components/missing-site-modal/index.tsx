@@ -46,7 +46,30 @@ export function MissingSiteModal() {
 				If you want to preserve your changes, you can save the
 				Playground to browser storage.
 			</p>
-			<Flex direction="row" gap={4} justify="end">
+			{/* Note: We are using row-reverse direction so the secondary
+				button can display first in row orientation and last when
+				wrapping to vertical orientation.
+				
+				This matches Modal style recommendations here:
+				https://github.com/WordPress/gutenberg/tree/1418350eb5a1f15e109fc96af385bdd029fc7304/packages/components/src/modal#side-by-side-buttons-recommended
+			*/}
+			<Flex
+				direction="row-reverse"
+				gap={2}
+				expanded={true}
+				wrap={true}
+				justify="flex-start"
+			>
+				<FlexItem>
+					<SitePersistButton siteSlug={activeSite.slug}>
+						<Button
+							variant="primary"
+							aria-label="Save site locally"
+						>
+							Save Playground to browser storage
+						</Button>
+					</SitePersistButton>
+				</FlexItem>
 				<FlexItem>
 					<Button
 						variant="link"
@@ -62,16 +85,6 @@ export function MissingSiteModal() {
 					>
 						Keep using a temporary Playground
 					</Button>
-				</FlexItem>
-				<FlexItem>
-					<SitePersistButton siteSlug={activeSite.slug}>
-						<Button
-							variant="primary"
-							aria-label="Save site locally"
-						>
-							Save Playground to browser storage
-						</Button>
-					</SitePersistButton>
 				</FlexItem>
 			</Flex>
 		</Modal>
