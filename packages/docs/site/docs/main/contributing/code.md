@@ -85,7 +85,7 @@ Playground logs PHP errors in the browser console after every PHP request.
 
 Playground consists of a number of packages, some of which are published to npmjs.com, under the `@wp-playground/` _organization_. While packages are normally automatically published through a [GitHub Action](https://github.com/WordPress/wordpress-playground/actions/workflows/publish-npm-packages.yml), it's also possible to do so from a local machine by running the same script that the GitHub Action runs.
 
-Additionally, it's also possible to test-publish packages to a local registry, so that changes can be tested without publishing the package to npmjs.com.
+Additionally, it's possible to test-publish packages to a local registry, so that changes can be tested without publishing the package to npmjs.com.
 
 ### How it works
 
@@ -97,4 +97,32 @@ TODO
 
 ### Publishing to a local registry
 
-TODO
+Instead of publishing to npmjs.com, you can publish packages to a local registry that is running in your machine. This local registry is provided by [verdaccio](https://verdaccio.org).
+
+Start the local registry with:
+
+```shell
+npm run local-registry:start
+```
+
+> You should now be able to access the local registry's UI at [http://localhost:4873](http://localhost:4873)
+
+Now that the local registry is running, we want `npm` commands to go to it instead of npmjs.com. You can switch the target registry of `npm` with the following command:
+
+```shell
+npm run local-registry:enable
+```
+
+At this point, all `npm` commands will target the local registry, so you can publish packages as you would normally, but they will be published to the local registry instead.
+
+To make `npm` talk to npmjs.com again, you need to disable the local-registry:
+
+```shell
+npm run local-registry:disable
+```
+
+To clear all data of the local registry (useful if, for example, you have test-published a package and want to test-publish it again), you can use the following script:
+
+```shell
+npm run local-registry:clear
+```
