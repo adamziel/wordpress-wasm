@@ -91,10 +91,6 @@ Additionally, it's possible to test-publish packages to a local registry, so tha
 
 TODO
 
-### Publishing to npmjs.com
-
-TODO
-
 ### Publishing to a local registry
 
 Instead of publishing to npmjs.com, you can publish packages to a local registry that is running in your machine. This local registry is provided by [verdaccio](https://verdaccio.org).
@@ -126,3 +122,7 @@ To clear all data of the local registry (useful if, for example, you have test-p
 ```shell
 npm run local-registry:clear
 ```
+
+### Publishing to npmjs.com
+
+TODO
