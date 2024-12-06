@@ -84,20 +84,48 @@ class ProxyFunctionsTests extends TestCase
 
     static public function providerGetTargetUrl() {
         return [
-            'Simple request' => [
+            'Request with server-provided PATH_INFO' => [
                 [
-                    'REQUEST_URI' => '/cors-proxy/proxy.php/http://example.com',
-                    'SCRIPT_NAME' => '/cors-proxy/proxy.php',
+                    'PATH_INFO' => '/http://example.com',
                 ],
                 'http://example.com'
             ],
-            'Request with query params' => [
+            'Request with server-provided single-slash PATH_INFO' => [
                 [
-                    'REQUEST_URI' => '/cors-proxy/proxy.php/http://example.com?test=1',
-                    'SCRIPT_NAME' => '/cors-proxy/proxy.php',
+                    'PATH_INFO' => '/',
                 ],
-                'http://example.com?test=1'
-            ]
+                false,
+            ],
+            'Request with server-provided empty PATH_INFO' => [
+                [
+                    'PATH_INFO' => '',
+                ],
+                false,
+            ],
+            'Request with server-provided PATH_INFO and QUERY_STRING' => [
+                [
+                    'PATH_INFO' => '/http://example.com/from-path-info',
+                    'QUERY_STRING' => 'http://example.com/from-query-string',
+                ],
+                'http://example.com/from-path-info'
+            ],
+            'Request with server-provided slash PATH_INFO and QUERY_STRING' => [
+                [
+                    'PATH_INFO' => '/',
+                    'QUERY_STRING' => 'http://example.com/from-query-string',
+                ],
+                'http://example.com/from-query-string'
+            ],
+            'Request with just query params' => [
+                [
+                    'QUERY_STRING' => 'http://example.com/from-query-string',
+                ],
+                'http://example.com/from-query-string'
+            ],
+            'Request with neither PATH_INFO nor QUERY_STRING' => [
+                [],
+                false
+            ],
         ];
     }
     public function testGetCurrentScriptUri()
