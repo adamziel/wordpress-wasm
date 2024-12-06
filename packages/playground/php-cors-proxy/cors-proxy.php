@@ -61,7 +61,15 @@ if(!$targetUrl) {
     echo "Bad Request\n\nNo URL provided";
     exit;
 }
-$resolved = url_validate_and_resolve($targetUrl);
+
+try {
+    $resolved = url_validate_and_resolve($targetUrl);
+} catch (CorsProxyException $e) {
+    http_response_code(400);
+    echo "Bad Request\n\n" . $e->getMessage();
+    exit;
+}
+
 $host = $resolved['host'];
 $resolvedIp = $resolved['ip'];
 
