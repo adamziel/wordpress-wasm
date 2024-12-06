@@ -21,6 +21,7 @@
 		"mindmap": "cd packages/meta/src/mindmap/v2 && php -S 127.0.0.1:5269",
 		"preview": "nx preview playground-website",
 		"release": "lerna publish patch --yes --no-private --loglevel=verbose",
+		"release:no-push": "npm run release -- --no-push --no-git-tag-version",
 		"test": "node --expose-gc node_modules/nx/bin/nx run-many --all --target=test",
 		"fix-asyncify": "node packages/php-wasm/node/bin/rebuild-while-asyncify-functions-missing.mjs",
 		"typecheck": "nx run-many --all --target=typecheck",
