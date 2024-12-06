@@ -112,6 +112,28 @@ class WP_Import_Command {
 		}
 	}
 
+	private function start_session( $args ) {
+		if ( $this->dry_run ) {
+			WP_CLI::line( 'Dry run enabled. No session created.' );
+
+			return;
+		}
+
+		$active_session = WP_Import_Session::get_active();
+
+		if ( $active_session ) {
+			$this->import_session = $active_session;
+
+			$id = $this->import_session->get_id();
+			WP_CLI::line( WP_CLI::colorize( "New session: %g{$id}%n" ) );
+		} else {
+			$this->import_session = WP_Import_Session::create( $args );
+
+			$id = $this->import_session->get_id();
+			WP_CLI::line( WP_CLI::colorize( "Current session: %g{$id}%n" ) );
+		}
+	}
+
 	/**
 	 * Import a WXR file.
 	 *
@@ -119,8 +141,9 @@ class WP_Import_Command {
 	 * @return void
 	 */
 	private function import_wxr_file( $file_path, $options = array() ) {
-		$this->wxr_path       = $file_path;
-		$this->import_session = WP_Import_Session::create(
+		$this->wxr_path = $file_path;
+
+		$this->start_session(
 			array(
 				'data_source' => 'wxr_file',
 				'file_name'   => $file_path,
@@ -138,11 +161,12 @@ class WP_Import_Command {
 	 * @return void
 	 */
 	private function import_wxr_url( $url, $options = array() ) {
-		$this->wxr_path       = $url;
-		$this->import_session = WP_Import_Session::create(
+		$this->wxr_path = $url;
+
+		$this->start_session(
 			array(
 				'data_source' => 'wxr_url',
-				'source_url'   => $url,
+				'file_name'   => $url,
 			)
 		);
 
@@ -156,6 +180,10 @@ class WP_Import_Command {
 	private function import_wxr() {
 		if ( ! $this->importer ) {
 			WP_CLI::error( 'Could not create importer' );
+		}
+
+		if ( ! $this->import_session ) {
+			WP_CLI::error( 'Could not create session' );
 		}
 
 		WP_CLI::line( "Importing {$this->wxr_path}" );
