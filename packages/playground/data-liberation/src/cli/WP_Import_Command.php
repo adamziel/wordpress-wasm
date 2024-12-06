@@ -65,6 +65,9 @@ class WP_Import_Command {
 			$this->register_handlers();
 		}
 
+		// Be sure Data Liberation is activated.
+		data_liberation_activate();
+
 		if ( filter_var( $path, FILTER_VALIDATE_URL ) ) {
 			// Import URL.
 			$this->import_wxr_url( $path, $options );
@@ -83,7 +86,7 @@ class WP_Import_Command {
 			}
 
 			if ( ! $count ) {
-				WP_CLI::error( WP_CLI::colorize( "No WXR files found in the {$path} directory" ) );
+				WP_CLI::error( WP_CLI::colorize( "No WXR files found in the %R{$path}%n directory" ) );
 			}
 		} else {
 			if ( ! is_file( $path ) ) {
@@ -135,10 +138,14 @@ class WP_Import_Command {
 			// @TODO: do something with the dry run.
 			WP_CLI::line( 'Dry run enabled.' );
 		} else {
-			while ( $this->importer->next_step() ) {
-				$current_stage = $this->importer->get_current_stage();
-				// WP_CLI::line( "Stage {$current_stage}" );
-			}
+			do {
+				$current_stage = $this->importer->get_stage();
+				WP_CLI::line( WP_CLI::colorize( "Stage %g{$current_stage}%n" ) );
+
+				while ( $this->importer->next_step() ) {
+					WP_CLI::line( 'Step' );
+				}
+			} while ( $this->importer->advance_to_next_stage() );
 		}
 
 		WP_CLI::success( 'Import finished' );

@@ -63,9 +63,7 @@ class WP_Topological_Sorter {
 	public static function activate() {
 		global $wpdb;
 
-		// See wp_get_db_schema
-		$max_index_length = 191;
-		$table_name       = self::get_table_name();
+		$table_name = self::get_table_name();
 
 		// Create the table if it doesn't exist.
 		// @TODO: remove this custom SQLite declaration after first phase of unit tests is done.
@@ -74,15 +72,15 @@ class WP_Topological_Sorter {
 				'CREATE TABLE IF NOT EXISTS %i (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					element_type INTEGER NOT NULL default %d,
-					element_id INTEGER NOT NULL,
-					parent_id INTEGER,
+					element_id TEXT NOT NULL,
+					parent_id TEXT DEFAULT NULL,
 					parent TEXT NOT NULL default "",
 					byte_offset INTEGER NOT NULL,
-					hierarchy_level INTEGER DEFAULT NULL
+					hierarchy_level TEXT DEFAULT NULL
 				);
 
 				CREATE UNIQUE INDEX IF NOT EXISTS idx_element_id ON %i (element_id);
-				CREATE INDEX IF NOT EXISTS idx_element_parent ON %i (parent);
+				CREATE INDEX IF NOT EXISTS idx_parent_id ON %i (parent_id);
 				CREATE INDEX IF NOT EXISTS idx_byte_offset ON %i (byte_offset);',
 				$table_name,
 				self::ELEMENT_TYPE_POST,
@@ -91,24 +89,26 @@ class WP_Topological_Sorter {
 				$table_name
 			);
 		} else {
+			// See wp_get_db_schema
+			$max_index_length = 191;
+
 			// MySQL, MariaDB.
 			$sql = $wpdb->prepare(
 				'CREATE TABLE IF NOT EXISTS %i (
 					id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 					element_type tinyint(1) NOT NULL default %d,
-					element_id unsigned bigint(20) NOT NULL,
-					parent_id unsigned bigint(20) DEFAULT NULL,
-					parent varchar(200) NOT NULL default "",
+					element_id text NOT NULL,
+					parent_id text DEFAULT NULL,
+					parent varchar(200) NOT NULL default \'\',
 					byte_offset bigint(20) unsigned NOT NULL,
-					hierarchy_level INT DEFAULT NULL,
+					hierarchy_level text DEFAULT NULL,
 					PRIMARY KEY  (id),
-					UNIQUE KEY element_id (element_id(%d))
-					KEY element_parent (element_parent(%d))
-					KEY byte_offset (byte_offset(%d))
+					KEY element_id (element_id(%d)),
+					KEY parent_id (parent_id(%d)),
+					KEY byte_offset (byte_offset)
 				) ' . $wpdb->get_charset_collate(),
 				self::get_table_name(),
 				self::ELEMENT_TYPE_POST,
-				$max_index_length,
 				$max_index_length,
 				$max_index_length
 			);
@@ -121,7 +121,7 @@ class WP_Topological_Sorter {
 	}
 
 	public static function is_sqlite() {
-		return defined( 'DB_ENGINE' ) || 'sqlite' === DB_ENGINE;
+		return defined( 'DB_ENGINE' ) && 'sqlite' === DB_ENGINE;
 	}
 
 	/**
@@ -168,8 +168,8 @@ class WP_Topological_Sorter {
 			self::get_table_name(),
 			array(
 				'element_type' => self::ELEMENT_TYPE_CATEGORY,
-				'element_id'   => $data['term_id'],
-				'parent_id'    => $data['parent_id'],
+				'element_id'   => (string) $data['term_id'],
+				'parent_id'    => array_key_exists( 'parent_id', $data ) ? (string) $data['parent_id'] : null,
 				'parent'       => array_key_exists( 'parent', $data ) ? $data['parent'] : '',
 				'byte_offset'  => $byte_offset,
 			)
@@ -198,8 +198,8 @@ class WP_Topological_Sorter {
 				self::get_table_name(),
 				array(
 					'element_type' => self::ELEMENT_TYPE_POST,
-					'element_id'   => $data['post_id'],
-					'parent_id'    => $data['post_parent'],
+					'element_id'   => (string) $data['post_id'],
+					'parent_id'    => array_key_exists( 'parent_id', $data ) ? (string) $data['parent_id'] : null,
 					'parent'       => '',
 					'byte_offset'  => $byte_offset,
 				)
@@ -310,26 +310,38 @@ class WP_Topological_Sorter {
 		return $wpdb->query(
 			$wpdb->prepare(
 				// Perform a topological sort CTE.
-				'WITH RECURSIVE hierarchy_cte AS (
-					-- Select all root nodes (where parent_id is NULL)
-					SELECT id, parent_id, 1 AS hierarchy_level
-					FROM %i
-					WHERE parent_id IS NULL AND element_type = %d
+				'WITH RECURSIVE recursive_hierarchy AS (
+					-- Anchor member: select root nodes (nodes with no parent)
+					SELECT
+						element_id,
+						parent_id,
+						element_id AS hierarchy_path
+					FROM
+						%i
+					WHERE
+						parent_id IS NULL AND element_type = %d
 
 					UNION ALL
 
-					-- Recursive member: Join the CTE with the table to find children
-					SELECT yt.id, yt.parent_id, hc.hierarchy_level + 1
-					FROM %i yt
-					WHERE element_type = %d
-					INNER JOIN hierarchy_cte hc ON yt.parent_id = hc.id
+					-- Recursive member: join child nodes to their parents
+					SELECT
+						child.element_id,
+						child.parent_id,
+						parent.hierarchy_path || \'.\' || child.element_id AS hierarchy_path
+					FROM
+						%i child
+					JOIN
+						recursive_hierarchy parent ON child.parent_id = parent.element_id
+					WHERE child.element_type = %d
 				)
 
-				-- Update the hierarchy_level based on the computed hierarchy_level
+				-- Update the table with computed hierarchy paths
 				UPDATE %i
-				SET hierarchy_level = hc.hierarchy_level
-				FROM hierarchy_cte hc
-				WHERE %i.id = hc.id;',
+				SET hierarchy_path = (
+					SELECT hierarchy_path
+					FROM recursive_hierarchy
+					WHERE %i.element_id = recursive_hierarchy.element_id
+				);',
 				$table_name,
 				$type,
 				$table_name,
