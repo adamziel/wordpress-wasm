@@ -538,7 +538,11 @@ RUN export ASYNCIFY_IMPORTS=$'["_dlopen_js",\n\
 "dynCall_viiiiiii",\
 "dynCall_viiiiiiii",'; \
 
-export ASYNCIFY_ONLY=$'"rc_dtor_func",\
+export ASYNCIFY_ONLY=$'"zif_phar_fopen",\
+"zif_phar_file_get_contents",\
+"zend_execute_script",\
+"php_execute_script_ex",\
+"rc_dtor_func",\
 "zif_curl_exec",\
 "curl_easy_perform",\
 "Curl_wait_ms",\
