@@ -35,12 +35,20 @@ class WP_Import_Command {
 	private $wxr_path = '';
 
 	/**
+	 * @var int $count The number of items to import in one go.
+	 */
+	private $count;
+
+	/**
 	 * Import a WXR file.
 	 *
 	 * ## OPTIONS
 	 *
 	 * <path>
 	 * : The path to the WXR file. Either a file, a directory or a URL.
+	 *
+	 * [--count=<count>]
+	 * : The number of items to import in one go. Default is 10,000.
 	 *
 	 * [--dry-run]
 	 * : Perform a dry run if set.
@@ -56,6 +64,7 @@ class WP_Import_Command {
 	public function import( $args, $assoc_args ) {
 		$path          = $args[0];
 		$this->dry_run = WP_CLI\Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$this->count   = isset( $assoc_args['count'] ) ? (int) $assoc_args['count'] : 10000;
 		$options       = array(
 			'logger' => new WP_Import_logger(),
 		);
@@ -141,9 +150,11 @@ class WP_Import_Command {
 			do {
 				$current_stage = $this->importer->get_stage();
 				WP_CLI::line( WP_CLI::colorize( "Stage %g{$current_stage}%n" ) );
+				$step_count = 0;
 
-				while ( $this->importer->next_step() ) {
-					WP_CLI::line( 'Step' );
+				while ( $this->importer->next_step( $this->count ) ) {
+					++$step_count;
+					WP_CLI::line( WP_CLI::colorize( "Step %g{$step_count}%n" ) );
 				}
 			} while ( $this->importer->advance_to_next_stage() );
 		}

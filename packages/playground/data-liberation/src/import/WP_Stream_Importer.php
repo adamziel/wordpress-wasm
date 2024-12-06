@@ -287,19 +287,26 @@ class WP_Stream_Importer {
 	 */
 	protected $importer;
 
-	public function next_step() {
+	/**
+	 * Calculate next steps in the import process.
+	 *
+	 * @param int $count The number of entities to process in one go.
+	 *
+	 * @return bool
+	 */
+	public function next_step( $count = 10000 ) {
 		switch ( $this->stage ) {
 			case self::STAGE_INITIAL:
 				$this->next_stage = self::STAGE_INDEX_ENTITIES;
 				return false;
 			case self::STAGE_INDEX_ENTITIES:
-				if ( true === $this->index_next_entities() ) {
+				if ( true === $this->index_next_entities( $count ) ) {
 					return true;
 				}
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				if ( true === $this->topological_sort_next_entity() ) {
+				if ( true === $this->topological_sort_next_entity( $count ) ) {
 					return true;
 				}
 				$this->stage = self::STAGE_FRONTLOAD_ASSETS;
@@ -513,34 +520,54 @@ class WP_Stream_Importer {
 		}
 	}
 
-	private function topological_sort_next_entity() {
+	/**
+	 * Sort the entities topologically.
+	 *
+	 * @param int $count The number of entities to process in one go.
+	 */
+	private function topological_sort_next_entity( $count = 10000 ) {
+		if ( null !== $this->next_stage ) {
+			return false;
+		}
+
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator    = $this->create_entity_iterator();
 			$this->topological_sorter = new WP_Topological_Sorter();
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
-			$this->topological_sorter = null;
 			$this->entity_iterator    = null;
 			$this->resume_at_entity   = null;
+			$this->topological_sorter = null;
 			return false;
 		}
 
-		// $cursor = $this->entity_iterator->get_reentrancy_cursor();
-		$entity = $this->entity_iterator->current();
-		$data   = $entity->get_data();
-		$offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
+		/**
+		 * Internalize the loop to avoid computing the reentrancy cursor
+		 * on every entity in the imported data stream.
+		 */
+		for ( $i = 0; $i < $count; ++$i ) {
+			if ( ! $this->entity_iterator->valid() ) {
+				break;
+			}
 
-		switch ( $entity->get_type() ) {
-			case 'category':
-				$this->topological_sorter->map_category( $offset, $data );
-				break;
-			case 'post':
-				$this->topological_sorter->map_post( $offset, $data );
-				break;
+			$entity = $this->entity_iterator->current();
+			$data   = $entity->get_data();
+			$offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
+
+			switch ( $entity->get_type() ) {
+				case 'category':
+					$this->topological_sorter->map_category( $offset, $data );
+					break;
+				case 'post':
+					$this->topological_sorter->map_post( $offset, $data );
+					break;
+			}
+
+			$this->entity_iterator->next();
 		}
 
-		$this->entity_iterator->next();
+		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
 
 		return true;
 	}
@@ -665,9 +692,8 @@ class WP_Stream_Importer {
 		$this->imported_entities_counts = array();
 
 		if ( null === $this->entity_iterator ) {
-			$this->entity_iterator    = $this->create_entity_iterator();
-			$this->importer           = new WP_Entity_Importer();
-			$this->topological_sorter = new WP_Topological_Sorter();
+			$this->entity_iterator = $this->create_entity_iterator();
+			$this->importer        = new WP_Entity_Importer();
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
