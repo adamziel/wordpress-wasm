@@ -74,7 +74,6 @@ class WP_Topological_Sorter {
 					element_type INTEGER NOT NULL default %d,
 					element_id TEXT NOT NULL,
 					parent_id TEXT DEFAULT NULL,
-					parent TEXT NOT NULL default "",
 					byte_offset INTEGER NOT NULL,
 					hierarchy_level TEXT DEFAULT NULL
 				);
@@ -99,7 +98,6 @@ class WP_Topological_Sorter {
 					element_type tinyint(1) NOT NULL default %d,
 					element_id text NOT NULL,
 					parent_id text DEFAULT NULL,
-					parent varchar(200) NOT NULL default \'\',
 					byte_offset bigint(20) unsigned NOT NULL,
 					hierarchy_level text DEFAULT NULL,
 					PRIMARY KEY  (id),
@@ -164,13 +162,18 @@ class WP_Topological_Sorter {
 			return false;
 		}
 
+		$category_parent = null;
+
+		if ( array_key_exists( 'parent', $data ) && '' !== $data['parent'] ) {
+			$category_parent = $data['parent'];
+		}
+
 		$wpdb->insert(
 			self::get_table_name(),
 			array(
 				'element_type' => self::ELEMENT_TYPE_CATEGORY,
 				'element_id'   => (string) $data['term_id'],
-				'parent_id'    => array_key_exists( 'parent_id', $data ) ? (string) $data['parent_id'] : null,
-				'parent'       => array_key_exists( 'parent', $data ) ? $data['parent'] : '',
+				'parent_id'    => $category_parent,
 				'byte_offset'  => $byte_offset,
 			)
 		);
@@ -194,13 +197,18 @@ class WP_Topological_Sorter {
 				--$this->orphan_post_counter;
 			}
 
+			$post_parent = null;
+
+			if ( array_key_exists( 'post_parent', $data ) && '0' !== $data['post_parent'] ) {
+				$post_parent = $data['post_parent'];
+			}
+
 			$wpdb->insert(
 				self::get_table_name(),
 				array(
 					'element_type' => self::ELEMENT_TYPE_POST,
 					'element_id'   => (string) $data['post_id'],
-					'parent_id'    => array_key_exists( 'parent_id', $data ) ? (string) $data['parent_id'] : null,
-					'parent'       => '',
+					'parent_id'    => $post_parent,
 					'byte_offset'  => $byte_offset,
 				)
 			);

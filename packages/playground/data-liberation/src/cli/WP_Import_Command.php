@@ -40,6 +40,11 @@ class WP_Import_Command {
 	private $count;
 
 	/**
+	 * @var WP_Import_Session $import_session The import session.
+	 */
+	private $import_session;
+
+	/**
 	 * Import a WXR file.
 	 *
 	 * ## OPTIONS
@@ -114,9 +119,15 @@ class WP_Import_Command {
 	 * @return void
 	 */
 	private function import_wxr_file( $file_path, $options = array() ) {
-		$this->wxr_path = $file_path;
-		$this->importer = WP_Stream_Importer::create_for_wxr_file( $file_path, $options );
+		$this->wxr_path       = $file_path;
+		$this->import_session = WP_Import_Session::create(
+			array(
+				'data_source' => 'wxr_file',
+				'file_name'   => $file_path,
+			)
+		);
 
+		$this->importer = WP_Stream_Importer::create_for_wxr_file( $file_path, $options );
 		$this->import_wxr();
 	}
 
@@ -127,9 +138,15 @@ class WP_Import_Command {
 	 * @return void
 	 */
 	private function import_wxr_url( $url, $options = array() ) {
-		$this->wxr_path = $url;
-		$this->importer = WP_Stream_Importer::create_for_wxr_url( $url, $options );
+		$this->wxr_path       = $url;
+		$this->import_session = WP_Import_Session::create(
+			array(
+				'data_source' => 'wxr_url',
+				'source_url'   => $url,
+			)
+		);
 
+		$this->importer = WP_Stream_Importer::create_for_wxr_url( $url, $options );
 		$this->import_wxr();
 	}
 

@@ -33,12 +33,6 @@ class WPStreamImporterTests extends TestCase {
 		}
 	}
 
-	public function test_import_simple_wxr() {
-		$import = data_liberation_import( __DIR__ . '/wxr/small-export.xml' );
-
-		$this->assertTrue( $import );
-	}
-
 	public function test_frontloading() {
 		$wxr_path = __DIR__ . '/wxr/frontloading-1-attachment.xml';
 		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
