@@ -1,0 +1,8 @@
+# For documentation on verdaccio's configuration, see https://verdaccio.org/docs/configuration
+
+# All verdaccio data is stored here.
+# Use the local-registry:clear command to delete all data.
+storage: ./tmp/verdaccio
+
+# Disable registration.
+max_users: -1
