@@ -12,11 +12,19 @@
 				"parallel": false
 			}
 		},
-		"build": {
+		"build:phar": {
 			"executor": "nx:run-commands",
 			"options": {
 				"cwd": "packages/playground/data-liberation",
-				"commands": ["bash ./core-build.sh"],
+				"commands": ["bash ./phar-core-build.sh"],
+				"parallel": false
+			}
+		},
+		"build:plugin": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["bash ./plugin-build.sh"],
 				"parallel": false
 			}
 		},
