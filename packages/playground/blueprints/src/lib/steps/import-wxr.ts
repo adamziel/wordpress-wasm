@@ -36,102 +36,127 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 	{ file },
 	progress?
 ) => {
-	progress?.tracker?.setCaption('Importing content');
+	progress?.tracker?.setCaption('Preparing content import');
 	await writeFile(playground, {
 		path: '/tmp/import.wxr',
 		data: file,
 	});
 	const docroot = await playground.documentRoot;
-	playground.onMessage((messageString) => {
-		const message = JSON.parse(messageString) as any;
-		if (message?.type === 'import-wxr-progress') {
-			progress?.tracker?.setCaption(message.progress);
-		} else if (message?.type === 'console.log') {
-			console.log(message.data);
+	/**
+	 * Surface the import progress information in the Blueprint progress bar.
+	 * This temporary message handler is cleared at the end of this step.
+	 */
+	const clearProgressListener = await playground.onMessage(
+		(messageString) => {
+			const message = JSON.parse(messageString) as any;
+			if (message?.type === 'import-wxr-progress') {
+				progress?.tracker?.setCaption(message.progress);
+			}
 		}
-	});
+	);
 	try {
-		const r = await playground.run({
+		await playground.run({
 			code: `<?php
-		require ${phpVar(docroot)} . '/wp-load.php';
-		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
+	require ${phpVar(docroot)} . '/wp-load.php';
+	require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
 
-		// Defines the constants expected by the Box .phar stub when "cli" is used
-		// as the SAPI name.
-		// @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
-		if(!defined('STDERR')) {
-			define('STDERR', fopen('php://stderr', 'w'));
-		}
-		if(!defined('STDIN')) {
-			define('STDIN', fopen('php://stdin', 'r'));
-		}
-		if(!defined('STDOUT')) {
-			define('STDOUT', fopen('php://stdout', 'w'));
-		}
-		// Preloaded by the Blueprint compile() function
-		require '/internal/shared/data-liberation-core.phar';
+	// Defines the constants expected by the Box .phar stub when "cli" is used
+	// as the SAPI name.
+	// @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
+	if(!defined('STDERR')) define('STDERR', fopen('php://stderr', 'w'));
+	if(!defined('STDIN'))  define('STDIN', fopen('php://stdin', 'r'));
+	if(!defined('STDOUT')) define('STDOUT', fopen('php://stdout', 'w'));
+	
+	// Preloaded by the Blueprint compile() function
+	require '/internal/shared/data-liberation-core.phar';
 
-		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
-        wp_set_current_user( $admin_id );
+	$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
+	wp_set_current_user( $admin_id );
 
-		$new_site_url = get_site_url();
-		$importer = WP_Stream_Importer::create_for_wxr_file(
-			'/tmp/import.wxr',
-			array(
-				'new_site_url' => $new_site_url,
-			)
-		);
-		while ( true ) {
-			if ( true === $importer->next_step() ) {
-				$mapping_candidates = $importer->get_site_url_mapping_candidates();
-				if (count($mapping_candidates) > 0) {
-					/**
-					 * Auto-maps the theme unit test attachments domain
-					 * to the wp-content/uploads directory on the current site.
-					 * @TODO: remove it before merging.
-					 */
-					$importer->add_site_url_mapping(
-						$mapping_candidates[0],
-						$new_site_url . '/wp-content/uploads'
+	$new_site_url = get_site_url();
+	$importer = WP_Stream_Importer::create_for_wxr_file(
+		'/tmp/import.wxr',
+		array(
+			'new_site_url' => $new_site_url,
+		)
+	);
+	$session = WP_Import_Session::create(
+		array(
+			'data_source' => 'wxr_file',
+			'file_name' => '/tmp/import.wxr',
+		)
+	);
+	while ( true ) {
+		if ( true === $importer->next_step() ) {
+			/**
+			 * We're ignoring any importing errors.
+			 * This script is a part of Blueprints and is expected to finish
+			 * without stopping. We won't be gathering additional user input
+			 * along the way. Instead, we'll just decide not to ignore the
+			 * errors.
+			 *
+			 * @TODO: Consider extracting this code into a CLI script and
+			 *        using it here instead of this custom script. Note it's
+			 *        about a simple CLI script, not a WP-CLI command, as the
+			 *        latter would require downloading 5MB of WP-CLI code.
+			 */
+			switch ( $importer->get_stage() ) {
+				case WP_Stream_Importer::STAGE_INITIAL:
+					$message = 'Preparing content import';
+					break;
+		
+				case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
+					// Bump the total number of entities to import.
+					$indexed = $session->count_all_total_entities();
+					$message = 'Content import 1/4: Indexing records (' . $indexed . ' so far)';
+					$session->create_frontloading_placeholders( $importer->get_indexed_assets_urls() );
+					$session->bump_total_number_of_entities(
+						$importer->get_indexed_entities_counts()
 					);
-					post_message_to_js(json_encode([
-						'type' => 'console.log',
-						'data' => $importer->get_site_url_mapping_candidates(),
-					]));
-				}
-				// Note we're simply ignoring any frontloading errors.
-				switch($importer->get_stage()) {
-					case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
-						$message = 'Frontloading assets';
-						break;
-					case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
-						$message = 'Importing entities';
-						break;
-					default:
-						$message = 'Stage: ' . $importer->get_stage();
-						break;
-				}
+					break;
 
-				// Report progress to the UI
-				// @TODO: Use a reporter that can report progress to the UI,
-				//        CLI, wp-admin page, and any other runtime.
-				post_message_to_js(json_encode([
-					'type' => 'import-wxr-progress',
-					'progress' => $message,
-				]));
-				continue;
+				case WP_Stream_Importer::STAGE_TOPOLOGICAL_SORT:
+					$message = 'Content import 2/4: Indexing data';
+					break;
+
+				case WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS:
+					$session->bump_frontloading_progress(
+						$importer->get_frontloading_progress(),
+						$importer->get_frontloading_events()
+					);
+					$nb_media = $session->count_awaiting_frontloading_placeholders();
+					$message = 'Content import 3/4: Downloading media (' . $nb_media . ' remaining)';
+					break;
+
+				case WP_Stream_Importer::STAGE_IMPORT_ENTITIES:
+					$session->bump_imported_entities_counts(
+						$importer->get_imported_entities_counts()
+					);
+					$nb_remaining_entities = $session->count_remaining_entities();
+					$message = 'Content import 4/4: Inserting data (' . $nb_remaining_entities . ' remaining)';
+					break;
+
+				default:
+					$message = 'Importing content';
+					break;
 			}
-			if ( $importer->advance_to_next_stage() ) {
-				continue;
-			}
-			// Import finished
-			break;
+
+			// Report progress to the UI
+			post_message_to_js(json_encode([
+				'type' => 'import-wxr-progress',
+				'progress' => $message,
+			]));
+			continue;
 		}
-		`,
+		if ( $importer->advance_to_next_stage() ) {
+			continue;
+		}
+		// Import finished
+		break;
+	}
+	`,
 		});
-		console.log(r.text);
-	} catch (error) {
-		console.dir('PHP error :(');
-		console.error(error);
+	} finally {
+		await clearProgressListener();
 	}
 };
