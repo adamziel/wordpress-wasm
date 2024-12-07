@@ -11,6 +11,9 @@ import { Step, StepDefinition, WriteFileStep } from './steps';
 import * as allStepHandlers from './steps/handlers';
 import { Blueprint, ExtraLibrary } from './blueprint';
 import { logger } from '@php-wasm/logger';
+/* @ts-ignore */
+// eslint-disable-next-line
+import dataLiberationCoreUrl from '../../../data-liberation/dist/data-liberation-core.phar.gz?url';
 
 // @TODO: Configure this in the `wp-cli` step, not here.
 const { wpCLI, ...otherStepHandlers } = allStepHandlers;
@@ -229,11 +232,12 @@ export function compileBlueprint(
 	);
 	if (importWxrStepIndex !== undefined && importWxrStepIndex > -1) {
 		blueprint.steps?.splice(importWxrStepIndex, 0, {
-			step: 'installPlugin',
-			pluginData: {
+			step: 'writeFile',
+			path: '/internal/shared/data-liberation-core.phar',
+			data: {
 				resource: 'url',
-				url: 'https://playground.wordpress.net/wordpress-importer.zip',
-				caption: 'Downloading the WordPress Importer plugin',
+				url: dataLiberationCoreUrl,
+				caption: 'Downloading the Data Liberation WXR importer',
 			},
 		});
 	}

@@ -37,22 +37,10 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 	progress?
 ) => {
 	progress?.tracker?.setCaption('Importing content');
-	try {
-		const dataLiberationPlugin = await fetch(dataLiberationPluginUrl);
-		await playground.writeFile(
-			'/internal/shared/data-liberation.phar',
-			new Uint8Array(await dataLiberationPlugin.arrayBuffer())
-		);
-		await writeFile(playground, {
-			path: '/tmp/import.wxr',
-			data: file,
-		});
-	} catch (e) {
-		console.log('oops');
-		console.log(e);
-		console.error(e);
-		throw e;
-	}
+	await writeFile(playground, {
+		path: '/tmp/import.wxr',
+		data: file,
+	});
 	const docroot = await playground.documentRoot;
 	playground.onMessage((messageString) => {
 		const message = JSON.parse(messageString) as any;
@@ -68,6 +56,8 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 		require ${phpVar(docroot)} . '/wp-load.php';
 		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
 
+		// Defines the constants expected by the Box .phar stub when "cli" is used
+		// as the SAPI name.
 		// @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
 		if(!defined('STDERR')) {
 			define('STDERR', fopen('php://stderr', 'w'));
@@ -78,7 +68,8 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 		if(!defined('STDOUT')) {
 			define('STDOUT', fopen('php://stdout', 'w'));
 		}
-		require '/internal/shared/data-liberation.phar';
+		// Preloaded by the Blueprint compile() function
+		require '/internal/shared/data-liberation-core.phar';
 
 		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
         wp_set_current_user( $admin_id );
