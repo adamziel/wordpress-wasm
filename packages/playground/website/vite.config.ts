@@ -83,8 +83,8 @@ export default defineConfig(({ command, mode }) => {
 				content: `
 				export const corsProxyUrl = '${
 					mode === 'production'
-						? '/cors-proxy.php'
-						: 'http://127.0.0.1:5263/cors-proxy.php'
+						? '/cors-proxy.php?'
+						: 'http://127.0.0.1:5263/cors-proxy.php?'
 				}';`,
 			}),
 			// GitHub OAuth flow

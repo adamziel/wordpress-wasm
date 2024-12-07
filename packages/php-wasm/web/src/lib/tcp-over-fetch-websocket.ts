@@ -38,16 +38,14 @@
  * From there, the plaintext data is treated by the same HTTP<->fetch() machinery as
  * described in the previous paragraph.
  */
-// @ts-ignore
-// import { corsProxyUrl } from 'virtual:cors-proxy-url';
 import { TLS_1_2_Connection } from './tls/1_2/connection';
 import { generateCertificate, GeneratedCertificate } from './tls/certificates';
 import { concatUint8Arrays } from './tls/utils';
 import { ContentTypes } from './tls/1_2/types';
-const corsProxyUrl = 'http://127.0.0.1:5263/cors-proxy.php';
 
 export type TCPOverFetchOptions = {
 	CAroot: GeneratedCertificate;
+	corsProxyUrl?: string;
 };
 
 /**
@@ -70,6 +68,7 @@ export const tcpOverFetchWebsocket = (tcpOptions: TCPOverFetchOptions) => {
 					constructor(url: string, wsOptions: string[]) {
 						super(url, wsOptions, {
 							CAroot: tcpOptions.CAroot,
+							corsProxyUrl: tcpOptions.corsProxyUrl,
 						});
 					}
 				};
@@ -88,6 +87,7 @@ export interface TCPOverFetchWebsocketOptions {
 	 * clientDownstream stream and tracking the closure of that stream.
 	 */
 	outputType?: 'messages' | 'stream';
+	corsProxyUrl?: string;
 }
 
 export class TCPOverFetchWebsocket {
@@ -104,6 +104,7 @@ export class TCPOverFetchWebsocket {
 	port = 0;
 	listeners = new Map<string, any>();
 	CAroot?: GeneratedCertificate;
+	corsProxyUrl?: string;
 
 	clientUpstream = new TransformStream();
 	clientUpstreamWriter = this.clientUpstream.writable.getWriter();
@@ -114,13 +115,18 @@ export class TCPOverFetchWebsocket {
 	constructor(
 		public url: string,
 		public options: string[],
-		{ CAroot, outputType = 'messages' }: TCPOverFetchWebsocketOptions = {}
+		{
+			CAroot,
+			corsProxyUrl,
+			outputType = 'messages',
+		}: TCPOverFetchWebsocketOptions = {}
 	) {
 		const wsUrl = new URL(url);
 		this.host = wsUrl.searchParams.get('host')!;
 		this.port = parseInt(wsUrl.searchParams.get('port')!, 10);
 		this.binaryType = 'arraybuffer';
 
+		this.corsProxyUrl = corsProxyUrl;
 		this.CAroot = CAroot;
 		if (outputType === 'messages') {
 			this.clientDownstream.readable
@@ -310,9 +316,10 @@ export class TCPOverFetchWebsocket {
 			'https'
 		);
 		try {
-			await RawBytesFetch.fetchRawResponseBytes(request).pipeTo(
-				tlsConnection.serverEnd.downstream.writable
-			);
+			await RawBytesFetch.fetchRawResponseBytes(
+				request,
+				this.corsProxyUrl
+			).pipeTo(tlsConnection.serverEnd.downstream.writable);
 		} catch (e) {
 			// Ignore errors from fetch()
 			// They are handled in the constructor
@@ -330,9 +337,10 @@ export class TCPOverFetchWebsocket {
 			'http'
 		);
 		try {
-			await RawBytesFetch.fetchRawResponseBytes(request).pipeTo(
-				this.clientDownstream.writable
-			);
+			await RawBytesFetch.fetchRawResponseBytes(
+				request,
+				this.corsProxyUrl
+			).pipeTo(this.clientDownstream.writable);
 		} catch (e) {
 			// Ignore errors from fetch()
 			// They are handled in the constructor
@@ -412,12 +420,14 @@ class RawBytesFetch {
 	/**
 	 * Streams a HTTP response including the status line and headers.
 	 */
-	static fetchRawResponseBytes(request: Request) {
-		const requestClone = new Request(
-			// @TOOD: somehow handle the CORS proxy logic in the client, not
-			`${corsProxyUrl}?${request.url}`,
-			request
-		);
+	static fetchRawResponseBytes(request: Request, corsProxyUrl?: string) {
+		const targetRequest = corsProxyUrl
+			? new Request(
+					// @TOOD: somehow handle the CORS proxy logic in the client, not
+					`${corsProxyUrl}${request.url}`,
+					request
+			  )
+			: request;
 
 		// This initially used a TransformStream and piped the response
 		// body to the writable side of the TransformStream.
@@ -428,7 +438,7 @@ class RawBytesFetch {
 			async start(controller) {
 				let response: Response;
 				try {
-					response = await fetch(requestClone);
+					response = await fetch(targetRequest);
 				} catch (error) {
 					/**
 					 * Pretend we've got a 400 Bad Request response whenever

@@ -75,6 +75,7 @@ export type WorkerBootOptions = {
 	withNetworking: boolean;
 	mounts?: Array<MountDescriptor>;
 	shouldInstallWordPress?: boolean;
+	corsProxyUrl?: string;
 };
 
 /** @inheritDoc PHPClient */
@@ -168,6 +169,7 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 		sapiName = 'cli',
 		withNetworking = false,
 		shouldInstallWordPress = true,
+		corsProxyUrl,
 	}: WorkerBootOptions) {
 		if (this.booted) {
 			throw new Error('Playground already booted');
@@ -262,6 +264,7 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 				});
 				tcpOverFetch = {
 					CAroot,
+					corsProxyUrl,
 				};
 			} else {
 				phpIniEntries['allow_url_fopen'] = '0';
