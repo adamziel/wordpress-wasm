@@ -17,7 +17,10 @@ require_once __DIR__ . '/src/byte-readers/WP_GZ_File_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
 
-if ( ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
+if (
+    ! class_exists( 'WP_HTML_Tag_Processor' ) &&
+    file_exists( __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php' )
+) {
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php';
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-span.php';
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-text-replacement.php';
@@ -34,7 +37,10 @@ if ( ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-unsupported-exception.php';
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-processor.php';
 }
-if ( ! isset( $html5_named_character_references ) ) {
+if (
+    ! isset( $html5_named_character_references ) &&
+    file_exists( __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php' )
+) {
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
@@ -55,15 +61,25 @@ require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader_Event.php';
 require_once __DIR__ . '/src/import/WP_Import_Session.php';
 require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
-require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
 require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
+require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 
-require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
-require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
-require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
+/**
+ * Require conditionally – these files are missing from the data-liberation-core.phar
+ * to reduce the bundle size (we'd need to include a large markdown parser and its
+ * dependencies, too).
+ *
+ * @TODO: Build a separate "data-liberation-markdown" phar file plugin with the Markdown
+ *        importing functionality.
+ */
+if ( file_exists( __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php' ) ) {
+    require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
+    require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
+    require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
+}
 
 // When running in Playground, the composer autoloader script sees CLI SAPI and
 // tries to use the STDERR, STDIN, and STDOUT constants.

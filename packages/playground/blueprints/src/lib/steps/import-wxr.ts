@@ -1,13 +1,9 @@
 import { StepHandler } from '.';
 import { writeFile } from './write-file';
 import { phpVar } from '@php-wasm/util';
-
 /* @ts-ignore */
-// Temporary measure to load the data-liberation plugin.
-// @TODO: Find a nicer way that runs fetch during the Blueprint compilation process.
-import dataLiberationPluginUrl from '../../data-liberation-plugin.zip?url';
-import { unzipFile } from '@wp-playground/common';
-import { activatePlugin } from './activate-plugin';
+// eslint-disable-next-line
+import dataLiberationPluginUrl from '../../../../data-liberation/dist/data-liberation-core.phar.gz?url';
 
 /**
  * @inheritDoc importWxr
@@ -41,24 +37,22 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 	progress?
 ) => {
 	progress?.tracker?.setCaption('Importing content');
-	const dataLiberationPlugin = await fetch(dataLiberationPluginUrl).then(
-		(res) => res.arrayBuffer()
-	);
-	await unzipFile(
-		playground,
-		new File(
-			[new Uint8Array(dataLiberationPlugin)],
-			'data-liberation-plugin.zip'
-		),
-		'/wordpress/wp-content/plugins/data-liberation'
-	);
-	await activatePlugin(playground, {
-		pluginPath: 'data-liberation/plugin.php',
-	});
-	await writeFile(playground, {
-		path: '/tmp/import.wxr',
-		data: file,
-	});
+	try {
+		const dataLiberationPlugin = await fetch(dataLiberationPluginUrl);
+		await playground.writeFile(
+			'/internal/shared/data-liberation.phar',
+			new Uint8Array(await dataLiberationPlugin.arrayBuffer())
+		);
+		await writeFile(playground, {
+			path: '/tmp/import.wxr',
+			data: file,
+		});
+	} catch (e) {
+		console.log('oops');
+		console.log(e);
+		console.error(e);
+		throw e;
+	}
 	const docroot = await playground.documentRoot;
 	playground.onMessage((messageString) => {
 		const message = JSON.parse(messageString) as any;
@@ -73,6 +67,18 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 			code: `<?php
 		require ${phpVar(docroot)} . '/wp-load.php';
 		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
+
+		// @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
+		if(!defined('STDERR')) {
+			define('STDERR', fopen('php://stderr', 'w'));
+		}
+		if(!defined('STDIN')) {
+			define('STDIN', fopen('php://stdin', 'r'));
+		}
+		if(!defined('STDOUT')) {
+			define('STDOUT', fopen('php://stdout', 'w'));
+		}
+		require '/internal/shared/data-liberation.phar';
 
 		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
         wp_set_current_user( $admin_id );

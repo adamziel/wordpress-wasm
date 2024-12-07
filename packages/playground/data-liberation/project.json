@@ -16,7 +16,7 @@
 			"executor": "nx:run-commands",
 			"options": {
 				"cwd": "packages/playground/data-liberation",
-				"commands": ["bash ./bin/build.sh"],
+				"commands": ["bash ./core-build.sh"],
 				"parallel": false
 			}
 		},
