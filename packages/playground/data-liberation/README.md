@@ -4,6 +4,12 @@ This project aims to help the Data Liberation project and unlock powerful new
 use cases for WordPress. See [the rationale](RATIONALE.md) and [the plan](PLAN.md)
 for more details.
 
+### Development
+
+Every time you change the core libraries, you need to run one of the build
+commands below before it will have effect in Playground. If you have an idea
+how to automate this, please propose a PR!
+
 ### Building
 
 #### Core libraries (data-liberation-core.phar)
