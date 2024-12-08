@@ -301,7 +301,7 @@ class WP_Import_Session {
 				 AND post_parent = %d
 				 AND post_status = %s",
 				$this->post_id,
-				self::FRONTLOAD_STATUS_AWAITING_DOWNLOAD,
+				self::FRONTLOAD_STATUS_AWAITING_DOWNLOAD
 			)
 		);
 	}
