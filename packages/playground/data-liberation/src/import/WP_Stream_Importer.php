@@ -189,13 +189,13 @@ class WP_Stream_Importer {
 		// override that mapping.
 		$this->site_url_mapping[-1] = array(
 			WP_URL::parse( $source_site_url ),
-			WP_URL::parse( $this->options['new_site_url'] )
+			WP_URL::parse( $this->options['new_site_url'] ),
 		);
 	}
 
 	public function get_site_url_mapping_candidates() {
 		// Only return the candidates that have been spotted in the last index_entities() call.
-		if(self::STAGE_INDEX_ENTITIES !== $this->stage) {
+		if ( self::STAGE_INDEX_ENTITIES !== $this->stage ) {
 			return array();
 		}
 		$new_candidates = array();
@@ -409,7 +409,7 @@ class WP_Stream_Importer {
 							$parsed_url->pathname = '';
 							$parsed_url->search   = '';
 							$parsed_url->hash     = '';
-							$base_url = $parsed_url->toString();
+							$base_url             = $parsed_url->toString();
 							if ( ! array_key_exists( $base_url, $this->site_url_mapping_candidates ) ) {
 								$this->site_url_mapping_candidates[ $base_url ] = false;
 							}
@@ -735,7 +735,7 @@ class WP_Stream_Importer {
 		);
 
 		$download_url = $this->rewrite_attachment_url( $raw_url, $options['context_path'] ?? null );
-		$enqueued = $this->downloader->enqueue_if_not_exists( $download_url, $output_filename );
+		$enqueued     = $this->downloader->enqueue_if_not_exists( $download_url, $output_filename );
 		if ( false === $enqueued ) {
 			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $raw_url ), '1.0' );
 			return false;

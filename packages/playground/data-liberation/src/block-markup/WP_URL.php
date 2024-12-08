@@ -11,7 +11,7 @@ class WP_URL {
 	public static function parse( $url, $base = null ) {
 		if ( is_string( $url ) ) {
 			return URL::parse( $url, $base ) ?? false;
-		} else if ( is_a( $url, 'Rowbot\URL\URL' ) ) {
+		} elseif ( is_a( $url, 'Rowbot\URL\URL' ) ) {
 			return $url;
 		}
 		return false;

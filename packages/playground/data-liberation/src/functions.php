@@ -58,16 +58,16 @@ function wp_rewrite_urls( $options ) {
  * @param string $child The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function is_child_url_of( $child, $parent ) {
-	$parent = is_string( $parent ) ? WP_URL::parse( $parent ) : $parent;
-	$child  = is_string( $child ) ? WP_URL::parse( $child ) : $child;
+function is_child_url_of( $child, $parent_url ) {
+	$parent_url                       = is_string( $parent_url ) ? WP_URL::parse( $parent_url ) : $parent_url;
+	$child                            = is_string( $child ) ? WP_URL::parse( $child ) : $child;
 	$child_pathname_no_trailing_slash = rtrim( urldecode( $child->pathname ), '/' );
 
-	if ( $parent->hostname !== $child->hostname ) {
+	if ( $parent_url->hostname !== $child->hostname ) {
 		return false;
 	}
 
-	$parent_pathname = urldecode( $parent->pathname );
+	$parent_pathname = urldecode( $parent_url->pathname );
 	return (
 		// Direct match
 		$parent_pathname === $child_pathname_no_trailing_slash ||

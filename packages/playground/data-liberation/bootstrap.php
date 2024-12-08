@@ -18,8 +18,8 @@ require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
 
 if (
-    ! class_exists( 'WP_HTML_Tag_Processor' ) &&
-    file_exists( __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php' )
+	! class_exists( 'WP_HTML_Tag_Processor' ) &&
+	file_exists( __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php' )
 ) {
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php';
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-span.php';
@@ -38,8 +38,8 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/class-wp-html-processor.php';
 }
 if (
-    ! isset( $html5_named_character_references ) &&
-    file_exists( __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php' )
+	! isset( $html5_named_character_references ) &&
+	file_exists( __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php' )
 ) {
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
@@ -76,22 +76,22 @@ require_once __DIR__ . '/src/utf8_decoder.php';
  *        importing functionality.
  */
 if ( file_exists( __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php' ) ) {
-    require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
-    require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
-    require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
+	require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
+	require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
+	require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
 }
 
 // When running in Playground, the composer autoloader script sees CLI SAPI and
 // tries to use the STDERR, STDIN, and STDOUT constants.
 // @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
-if(!defined('STDERR')) {
-	define('STDERR', fopen('php://stderr', 'w'));
+if ( ! defined( 'STDERR' ) ) {
+	define( 'STDERR', fopen( 'php://stderr', 'w' ) );
 }
-if(!defined('STDIN')) {
-	define('STDIN', fopen('php://stdin', 'r'));
+if ( ! defined( 'STDIN' ) ) {
+	define( 'STDIN', fopen( 'php://stdin', 'r' ) );
 }
-if(!defined('STDOUT')) {
-	define('STDOUT', fopen('php://stdout', 'w'));
+if ( ! defined( 'STDOUT' ) ) {
+	define( 'STDOUT', fopen( 'php://stdout', 'w' ) );
 }
 require_once __DIR__ . '/vendor/autoload.php';
 

@@ -37,7 +37,7 @@ class WP_Attachment_Downloader {
 	}
 
 	public function enqueue_if_not_exists( $url, $output_relative_path ) {
-		$this->enqueued_url = $url;
+		$this->enqueued_url   = $url;
 		$output_relative_path = $this->output_root . '/' . ltrim( $output_relative_path, '/' );
 		if ( file_exists( $output_relative_path ) ) {
 			$this->pending_events[] = new WP_Attachment_Downloader_Event(
