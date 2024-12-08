@@ -73,7 +73,7 @@ function is_child_url_of( $child, $parent_url ) {
 		$parent_pathname === $child_pathname_no_trailing_slash ||
 		$parent_pathname === $child_pathname_no_trailing_slash . '/' ||
 		// Path prefix
-		str_starts_with( $parent_pathname, $child_pathname_no_trailing_slash . '/' )
+		str_starts_with( $child_pathname_no_trailing_slash . '/', $parent_pathname )
 	);
 }
 
