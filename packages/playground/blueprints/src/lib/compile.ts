@@ -7,7 +7,7 @@ import {
 	UniversalPHP,
 } from '@php-wasm/universal';
 import { FileReference, isResourceReference, Resource } from './resources';
-import { Step, StepDefinition, WriteFileStep } from './steps';
+import { ImportWxrStep, Step, StepDefinition, WriteFileStep } from './steps';
 import * as allStepHandlers from './steps/handlers';
 import { Blueprint, ExtraLibrary } from './blueprint';
 import { logger } from '@php-wasm/logger';
@@ -231,15 +231,29 @@ export function compileBlueprint(
 		(step) => typeof step === 'object' && step?.step === 'importWxr'
 	);
 	if (importWxrStepIndex !== undefined && importWxrStepIndex > -1) {
-		blueprint.steps?.splice(importWxrStepIndex, 0, {
-			step: 'writeFile',
-			path: '/internal/shared/data-liberation-core.phar',
-			data: {
-				resource: 'url',
-				url: dataLiberationCoreUrl,
-				caption: 'Downloading the Data Liberation WXR importer',
-			},
-		});
+		const importWxrStep = blueprint.steps![
+			importWxrStepIndex
+		]! as ImportWxrStep<any>;
+		if (importWxrStep.importer === 'data-liberation') {
+			blueprint.steps?.splice(importWxrStepIndex, 0, {
+				step: 'writeFile',
+				path: '/internal/shared/data-liberation-core.phar',
+				data: {
+					resource: 'url',
+					url: dataLiberationCoreUrl,
+					caption: 'Downloading the Data Liberation WXR importer',
+				},
+			});
+		} else {
+			blueprint.steps?.splice(importWxrStepIndex, 0, {
+				step: 'installPlugin',
+				pluginData: {
+					resource: 'url',
+					url: 'https://playground.wordpress.net/wordpress-importer.zip',
+					caption: 'Downloading the WordPress Importer plugin',
+				},
+			});
+		}
 	}
 
 	const { valid, errors } = validateBlueprint(blueprint);

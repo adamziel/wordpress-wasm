@@ -15,11 +15,9 @@ import { isOpfsAvailable } from '../../../lib/state/opfs/opfs-site-storage';
 export function SitePersistButton({
 	siteSlug,
 	children,
-	storage = null,
 }: {
 	siteSlug: string;
 	children: React.ReactNode;
-	storage?: 'opfs' | 'local-fs' | null;
 }) {
 	const clientInfo = useAppSelector((state) =>
 		selectClientInfoBySiteSlug(state, siteSlug)
@@ -28,29 +26,8 @@ export function SitePersistButton({
 	const dispatch = useAppDispatch();
 
 	if (!clientInfo?.opfsSync || clientInfo.opfsSync?.status === 'error') {
-		let button = null;
-		if (storage === 'opfs') {
-			button = (
-				<div
-					onClick={() =>
-						dispatch(persistTemporarySite(siteSlug, 'opfs'))
-					}
-				>
-					{children}
-				</div>
-			);
-		} else if (storage === 'local-fs') {
-			button = (
-				<div
-					onClick={() =>
-						dispatch(persistTemporarySite(siteSlug, 'local-fs'))
-					}
-				>
-					{children}
-				</div>
-			);
-		} else {
-			button = (
+		return (
+			<>
 				<DropdownMenu trigger={children}>
 					<DropdownMenuItem
 						disabled={!isOpfsAvailable}
@@ -87,12 +64,6 @@ export function SitePersistButton({
 						)}
 					</DropdownMenuItem>
 				</DropdownMenu>
-			);
-		}
-
-		return (
-			<>
-				{button}
 				{clientInfo?.opfsSync?.status === 'error' && (
 					<div className={css.error}>
 						There has been an error. Please try again.

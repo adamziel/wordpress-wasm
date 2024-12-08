@@ -1,9 +1,7 @@
-import { StepHandler } from '.';
+import { StepHandler, StepProgress } from '.';
 import { writeFile } from './write-file';
 import { phpVar } from '@php-wasm/util';
-/* @ts-ignore */
-// eslint-disable-next-line
-import dataLiberationPluginUrl from '../../../../data-liberation/dist/data-liberation-core.phar.gz?url';
+import { UniversalPHP } from '@php-wasm/universal';
 
 /**
  * @inheritDoc importWxr
@@ -23,6 +21,20 @@ export interface ImportWxrStep<ResourceType> {
 	step: 'importWxr';
 	/** The file to import */
 	file: ResourceType;
+	/**
+	 * The importer to use. Possible values:
+	 *
+	 * - `default`: The importer from https://github.com/humanmade/WordPress-Importer
+	 * - `data-liberation`: The experimental Data Liberation WXR importer developed at
+	 *                      https://github.com/WordPress/wordpress-playground/issues/1894
+	 *
+	 * This option is deprecated. The syntax will not be removed, but once the
+	 * Data Liberation importer matures, it will become the only supported
+	 * importer and the `importer` option will be ignored.
+	 *
+	 * @deprecated
+	 */
+	importer?: 'data-liberation' | 'default';
 }
 
 /**
@@ -33,9 +45,60 @@ export interface ImportWxrStep<ResourceType> {
  */
 export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 	playground,
-	{ file },
+	{ file, importer = 'default' },
 	progress?
 ) => {
+	if (importer === 'data-liberation') {
+		await importWithDataLiberationImporter(playground, file, progress);
+	} else {
+		await importWithDefaultImporter(playground, file, progress);
+	}
+};
+
+async function importWithDefaultImporter(
+	playground: UniversalPHP,
+	file: File,
+	progress?: StepProgress | undefined
+) {
+	progress?.tracker?.setCaption('Importing content');
+	await writeFile(playground, {
+		path: '/tmp/import.wxr',
+		data: file,
+	});
+	const docroot = await playground.documentRoot;
+	try {
+		const r = await playground.run({
+			code: `<?php
+		require ${phpVar(docroot)} . '/wp-load.php';
+		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
+  
+		kses_remove_filters();
+		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
+        wp_set_current_user( $admin_id );
+		$importer = new WXR_Importer( array(
+			'fetch_attachments' => true,
+			'default_author' => $admin_id
+		) );
+		$logger = new WP_Importer_Logger_CLI();
+		$importer->set_logger( $logger );
+		// Slashes from the imported content are lost if we don't call wp_slash here.
+		add_action( 'wp_insert_post_data', function( $data ) {
+			return wp_slash($data);
+		});
+		$result = $importer->import( '/tmp/import.wxr' );
+		`,
+		});
+		console.log(r.text);
+	} catch (e) {
+		console.error(e);
+	}
+}
+
+async function importWithDataLiberationImporter(
+	playground: UniversalPHP,
+	file: File,
+	progress?: StepProgress | undefined
+) {
 	progress?.tracker?.setCaption('Preparing content import');
 	await writeFile(playground, {
 		path: '/tmp/import.wxr',
@@ -159,4 +222,4 @@ export const importWxr: StepHandler<ImportWxrStep<File>> = async (
 	} finally {
 		await clearProgressListener();
 	}
-};
+}
