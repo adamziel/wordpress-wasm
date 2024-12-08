@@ -229,7 +229,7 @@ export class PHPWorker implements LimitedPHPApi {
 	}
 
 	/** @inheritDoc @php-wasm/universal!/PHP.onMessage */
-	onMessage(listener: MessageListener): () => void {
+	onMessage(listener: MessageListener) {
 		return _private.get(this)!.php!.onMessage(listener);
 	}
 

@@ -160,7 +160,7 @@ export class PHP implements Disposable {
 	 */
 	onMessage(listener: MessageListener) {
 		this.#messageListeners.push(listener);
-		return () => {
+		return async () => {
 			this.#messageListeners = this.#messageListeners.filter(
 				(l) => l !== listener
 			);
