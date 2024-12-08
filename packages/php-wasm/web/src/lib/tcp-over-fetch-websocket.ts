@@ -422,11 +422,7 @@ class RawBytesFetch {
 	 */
 	static fetchRawResponseBytes(request: Request, corsProxyUrl?: string) {
 		const targetRequest = corsProxyUrl
-			? new Request(
-					// @TOOD: somehow handle the CORS proxy logic in the client, not
-					`${corsProxyUrl}${request.url}`,
-					request
-			  )
+			? new Request(`${corsProxyUrl}${request.url}`, request)
 			: request;
 
 		// This initially used a TransformStream and piped the response
