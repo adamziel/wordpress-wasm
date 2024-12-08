@@ -66,32 +66,27 @@ async function importWithDefaultImporter(
 		data: file,
 	});
 	const docroot = await playground.documentRoot;
-	try {
-		const r = await playground.run({
-			code: `<?php
-		require ${phpVar(docroot)} . '/wp-load.php';
-		require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
-  
-		kses_remove_filters();
-		$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
-        wp_set_current_user( $admin_id );
-		$importer = new WXR_Importer( array(
-			'fetch_attachments' => true,
-			'default_author' => $admin_id
-		) );
-		$logger = new WP_Importer_Logger_CLI();
-		$importer->set_logger( $logger );
-		// Slashes from the imported content are lost if we don't call wp_slash here.
-		add_action( 'wp_insert_post_data', function( $data ) {
-			return wp_slash($data);
-		});
-		$result = $importer->import( '/tmp/import.wxr' );
-		`,
-		});
-		console.log(r.text);
-	} catch (e) {
-		console.error(e);
-	}
+	await playground.run({
+		code: `<?php
+	require ${phpVar(docroot)} . '/wp-load.php';
+	require ${phpVar(docroot)} . '/wp-admin/includes/admin.php';
+
+	kses_remove_filters();
+	$admin_id = get_users(array('role' => 'Administrator') )[0]->ID;
+	wp_set_current_user( $admin_id );
+	$importer = new WXR_Importer( array(
+		'fetch_attachments' => true,
+		'default_author' => $admin_id
+	) );
+	$logger = new WP_Importer_Logger_CLI();
+	$importer->set_logger( $logger );
+	// Slashes from the imported content are lost if we don't call wp_slash here.
+	add_action( 'wp_insert_post_data', function( $data ) {
+		return wp_slash($data);
+	});
+	$result = $importer->import( '/tmp/import.wxr' );
+	`,
+	});
 }
 
 async function importWithDataLiberationImporter(
