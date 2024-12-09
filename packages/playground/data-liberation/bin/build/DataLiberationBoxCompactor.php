@@ -14,11 +14,16 @@ class DataLiberationBoxCompactor implements Compactor
         }
 
         if (
+            str_contains($file, 'platform_check.php') ||
             str_contains($file, '/tests/') ||
             str_contains($file, '/.git/') ||
             str_contains($file, '/.github/') ||
             str_contains($file, '/bin/')
         ) {
+            return '';
+        }
+
+        if( str_contains($contents, 'Your Composer dependencies require ') ) {
             return '';
         }
 

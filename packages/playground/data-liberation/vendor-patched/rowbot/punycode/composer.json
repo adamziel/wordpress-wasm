@@ -1,0 +1,42 @@
+{
+	"name": "rowbot/punycode",
+	"description": "A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA).",
+	"keywords": [
+		"punycode",
+		"rfc3492",
+		"rfc-3492"
+	],
+	"type": "library",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Trevor Rowbotham",
+			"role": "Developer",
+			"homepage": "https://trowbotham.com"
+		}
+	],
+	"config": {
+		"sort-packages": true
+	},
+	"autoload": {
+		"psr-4": {
+			"Rowbot\\Punycode\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Rowbot\\Punycode\\Test\\": "tests/"
+		}
+	},
+	"require": {
+		"php": ">=7.1"
+	},
+	"require-dev": {
+		"ext-mbstring": "*",
+		"phpstan/phpstan": "^1.2",
+		"phpstan/phpstan-deprecation-rules": "^1.0",
+		"phpstan/phpstan-strict-rules": "^1.0",
+		"phpunit/phpunit": "^7.0 || ^8.0 || ^9.0",
+		"squizlabs/php_codesniffer": "^3.5.1"
+	}
+}

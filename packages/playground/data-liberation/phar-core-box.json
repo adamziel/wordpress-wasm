@@ -21,8 +21,8 @@
 		"blueprints-library/src/WordPress/Util",
 		"vendor/brick",
 		"vendor/composer",
-		"vendor/psr",
-		"vendor/rowbot",
-		"vendor/symfony/polyfill-intl-normalizer"
+		"vendor-patched/psr",
+		"vendor-patched/rowbot",
+		"vendor-patched/symfony/polyfill-intl-normalizer"
 	]
 }

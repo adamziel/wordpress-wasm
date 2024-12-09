@@ -1,0 +1,23 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+    level: max
+    treatPhpDocTypesAsCertain: false
+
+    paths:
+        - src
+
+    ignoreErrors:
+        -
+            message: '#Call to function is_object\(\) with object will always evaluate to true\.#'
+            path: src/URLSearchParams.php
+            count: 1
+
+        -
+            message: '#Cannot use array destructuring on Countable&iterable<int\|string, bool\|float\|int\|string\|Stringable>\.#'
+            path: src/URLSearchParams.php
+            count: 1
+
+        # Note to self: You can't escape single quotes in neon. Another possible alternative would be to replace single quotes with \x27.

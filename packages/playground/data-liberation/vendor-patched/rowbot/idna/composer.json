@@ -1,0 +1,49 @@
+{
+	"name": "rowbot/idna",
+	"description": "An implementation of UTS#46 Unicode IDNA Compatibility Processing.",
+	"keywords": [
+		"idna",
+		"unicode",
+		"tr46",
+		"international domain names",
+		"uts46",
+		"iri",
+		"idn"
+	],
+	"type": "library",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Trevor Rowbotham"
+		}
+	],
+	"config": {
+		"sort-packages": true
+	},
+	"autoload": {
+		"psr-4": {
+			"Rowbot\\Idna\\": "src/",
+			"Rowbot\\Idna\\Resource\\": "resources/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Rowbot\\Idna\\Bin\\": "bin/",
+			"Rowbot\\Idna\\Test\\": "tests/"
+		}
+	},
+	"require": {
+		"php": ">=7.1",
+		"rowbot/punycode": "^1.0",
+		"symfony/polyfill-intl-normalizer": "^1.18"
+	},
+	"require-dev": {
+		"guzzlehttp/guzzle": "^6.5 || ^7.0",
+		"phpstan/phpstan": "^1.2",
+		"phpstan/phpstan-deprecation-rules": "^1.0",
+		"phpstan/phpstan-strict-rules": "^1.0",
+		"phpunit/phpunit": "^7.0 || ^8.0 || ^9.0",
+		"squizlabs/php_codesniffer": "^3.5.1",
+		"symfony/cache": "^4.3 || ^5.0"
+	}
+}

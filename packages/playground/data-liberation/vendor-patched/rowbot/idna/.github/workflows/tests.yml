@@ -1,0 +1,272 @@
+name: Tests
+
+on:
+    pull_request:
+    push:
+        paths-ignore:
+            - '**.md'
+
+jobs:
+    tests:
+        name: Tests without intl
+        runs-on: ${{ matrix.operating-system }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - 7.1
+                    - 7.2
+                    - 7.3
+                    - 7.4
+                    - 8.0
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  extensions: :intl
+                  coverage: none
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Cache test data
+              uses: actions/cache@v2
+              env:
+                  test-data-files: tests/data/unicode-idna-test-data
+              with:
+                  path: ${{ env.test-data-files }}
+                  key: unicode-test-data-${{ hashFiles(env.test-data-files) }}
+                  restore-keys: unicode-test-data-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Run PHPStan
+              run: vendor/bin/phpstan analyse
+
+            - name: Run PHPCS
+              run: vendor/bin/phpcs
+
+            - name: Tests
+              run: vendor/bin/phpunit
+
+    tests-intl:
+        name: Tests with intl
+        runs-on: ${{ matrix.operating-system }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - 7.1
+                    - 7.2
+                    - 7.3
+                    - 7.4
+                    - 8.0
+                    - 8.1
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  extensions: intl
+                  coverage: none
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Cache test data
+              uses: actions/cache@v2
+              env:
+                  test-data-files: tests/data/unicode-idna-test-data
+              with:
+                  path: ${{ env.test-data-files }}
+                  key: unicode-test-data-${{ hashFiles(env.test-data-files) }}
+                  restore-keys: unicode-test-data-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Run PHPStan
+              run: vendor/bin/phpstan analyse
+
+            - name: Run PHPCS
+              run: vendor/bin/phpcs
+
+            - name: Tests
+              run: vendor/bin/phpunit
+
+    tests-unstable:
+        name: Test Unstable
+        runs-on: ${{ matrix.operating-system }}
+        continue-on-error: true
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - nightly
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  extensions: :intl
+                  coverage: none
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Cache test data
+              uses: actions/cache@v2
+              env:
+                  test-data-files: tests/data/unicode-idna-test-data
+              with:
+                  path: ${{ env.test-data-files }}
+                  key: unicode-test-data-${{ hashFiles(env.test-data-files) }}
+                  restore-keys: unicode-test-data-
+
+            - name: Install dependencies
+              run: composer install --ignore-platform-reqs
+
+            - name: Tests
+              run: vendor/bin/phpunit
+
+    tests-code-coverage:
+        name: Code Coverage
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 7.4
+                  extensions: :intl
+                  coverage: pcov
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Cache test data
+              uses: actions/cache@v2
+              env:
+                  test-data-files: tests/data/unicode-idna-test-data
+              with:
+                  path: ${{ env.test-data-files }}
+                  key: unicode-test-data-${{ hashFiles(env.test-data-files) }}
+                  restore-keys: unicode-test-data-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Tests with code coverage
+              run: |
+                  mkdir -p ./build/coverage/
+                  vendor/bin/phpunit --coverage-clover ./build/coverage/clover.xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v2
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./build/coverage/clover.xml
+
+    tests-jit:
+        name: Test JIT
+        runs-on: ${{ matrix.operating-system }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - 8.0
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  coverage: none
+                  extensions: :intl
+                  ini-values: opcache.enable_cli=1, opcache.jit=1255, opcache.jit_buffer_size=64M
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Cache test data
+              uses: actions/cache@v2
+              env:
+                  test-data-files: tests/data/unicode-idna-test-data
+              with:
+                  path: ${{ env.test-data-files }}
+                  key: unicode-test-data-${{ hashFiles(env.test-data-files) }}
+                  restore-keys: unicode-test-data-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Tests
+              run: vendor/bin/phpunit

@@ -139,7 +139,11 @@ class WP_Remote_File_Ranged_Reader {
 
 			switch ( $this->client->get_event() ) {
 				case WordPress\AsyncHttp\Client::EVENT_GOT_HEADERS:
-					$response = $this->client->get_request()?->response;
+					$request = $this->client->get_request();
+					if ( ! $request ) {
+						return false;
+					}
+					$response = $request->response;
 					if ( false === $response ) {
 						return false;
 					}

@@ -18,7 +18,9 @@ DIST_DIR=$DATA_LIBERATION_DIR/dist
 rm $DIST_DIR/data-liberation-core.* > /dev/null 2>&1 || true
 export BOX_BASE_PATH=$(type -a box | grep -v 'alias' | awk '{print $3}')
 php $BUILD_DIR/box.php compile -d $DATA_LIBERATION_DIR -c $DATA_LIBERATION_DIR/phar-core-box.json
+php -d 'phar.readonly=0' $BUILD_DIR/truncate-composer-checks.php $DIST_DIR/data-liberation-core.phar
 cd $DIST_DIR
 php $BUILD_DIR/smoke-test.php
+PHP=7.2 bun $DATA_LIBERATION_DIR/../../php-wasm/cli/src/main.ts $BUILD_DIR/smoke-test.php
 gzip data-liberation-core.phar
 ls -sgh $DIST_DIR

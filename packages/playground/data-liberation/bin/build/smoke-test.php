@@ -12,5 +12,7 @@ $c = WP_Stream_Importer::create_for_wxr_file(__DIR__ . '/nosuchfile.xml', [
     'new_site_url' => 'https://smoke-test.org'
 ]);
 
+WP_URL::parse('https://example.com');
+
 echo 'Stream importer created!';
 
