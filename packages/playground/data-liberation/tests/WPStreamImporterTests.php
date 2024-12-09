@@ -130,6 +130,15 @@ class WPStreamImporterTests extends TestCase {
 		}
 	}
 
+	public function test_hierarchical_term_import() {
+		$wxr_path = __DIR__ . '/wxr/small-export.xml';
+		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
+
+		do {
+			while ( $importer->next_step( 1 ) ) {}
+		} while ( $importer->advance_to_next_stage() );
+	}
+
 	private function skip_to_stage( WP_Stream_Importer $importer, string $stage ) {
 		do {
 			while ( $importer->next_step() ) {
