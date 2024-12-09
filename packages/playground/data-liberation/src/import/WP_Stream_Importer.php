@@ -303,6 +303,7 @@ class WP_Stream_Importer {
 				if ( true === $this->index_next_entities( $count ) ) {
 					return true;
 				}
+
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
@@ -314,7 +315,7 @@ class WP_Stream_Importer {
 				$this->topological_sorter->sort_topologically();
 				$this->topological_sorter = null;
 
-				$this->stage = self::STAGE_FRONTLOAD_ASSETS;
+				$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
 				return false;
 			case self::STAGE_FRONTLOAD_ASSETS:
 				if ( true === $this->frontload_next_entity() ) {
