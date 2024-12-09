@@ -260,6 +260,7 @@ class WP_Entity_Importer {
 	}
 
 	public function import_term( $data ) {
+		// print_r( $data );
 		/**
 		 * Pre-process term data.
 		 *
@@ -272,8 +273,7 @@ class WP_Entity_Importer {
 		}
 
 		$original_id = isset( $data['id'] ) ? (int) $data['id'] : 0;
-		$parent_id   = isset( $data['parent'] ) ? (int) $data['parent'] : 0;
-
+		$parent      = isset( $data['parent'] ) ? $data['parent'] : null;
 		$mapping_key = sha1( $data['taxonomy'] . ':' . $data['slug'] );
 		$existing    = $this->term_exists( $data );
 		if ( $existing ) {
@@ -297,15 +297,17 @@ class WP_Entity_Importer {
 
 		$termdata = array();
 		$allowed  = array(
-			'slug' => true,
 			'description' => true,
+			'name'        => true,
+			'slug'        => true,
+			'parent'      => true,
 		);
 
 		// Map the parent comment, or mark it as one we need to fix
-		// TODO: add parent mapping and remapping
-		/*$requires_remapping = false;
-		if ( $parent_id ) {
-			if ( isset( $this->mapping['term'][ $parent_id ] ) ) {
+		if ( $parent ) {
+			// TODO: add parent mapping and remapping
+			// $requires_remapping = false;
+			/*if ( isset( $this->mapping['term'][ $parent_id ] ) ) {
 				$data['parent'] = $this->mapping['term'][ $parent_id ];
 			} else {
 				// Prepare for remapping later
@@ -314,9 +316,30 @@ class WP_Entity_Importer {
 
 				// Wipe the parent for now
 				$data['parent'] = 0;
+			}*/
+			$parent_term = term_exists( $parent, $data['taxonomy'] );
+			
+			if ( $parent_term ) {
+				$data['parent'] = $parent_term['term_id'];
+			} else {
+				// It can happens that the parent term is not imported yet in manually created WXR files.
+				$parent_term = wp_insert_term( $parent, $data['taxonomy'] );
+				
+				if ( is_wp_error( $parent_term ) ) {
+					$this->logger->error(
+						sprintf(
+							/* translators: %s: taxonomy name */
+							__( 'Failed to import parent term for "%s"', 'wordpress-importer' ),
+							$data['taxonomy']
+						)
+					);
+				} else {
+					$data['parent'] = $parent_term['term_id'];
+				}
 			}
-		}*/
+		}
 
+		// Filter the term data to only include allowed keys.
 		foreach ( $data as $key => $value ) {
 			if ( ! isset( $allowed[ $key ] ) ) {
 				continue;
@@ -325,7 +348,17 @@ class WP_Entity_Importer {
 			$termdata[ $key ] = $data[ $key ];
 		}
 
-		$result = wp_insert_term( $data['name'], $data['taxonomy'], $termdata );
+		$term   = term_exists( $data['name'], $data['taxonomy'] );
+		$result = null;
+
+		if ( is_array( $term ) ) {
+			// Update the existing term.
+			$result = wp_update_term( $term['term_id'], $data['taxonomy'], $termdata );
+		} else {
+			// Create a new term.
+			$result = wp_insert_term( $data['name'], $data['taxonomy'], $termdata );
+		}
+
 		if ( is_wp_error( $result ) ) {
 			$this->logger->warning(
 				sprintf(
