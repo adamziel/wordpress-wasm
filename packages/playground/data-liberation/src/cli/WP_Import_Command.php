@@ -125,12 +125,12 @@ class WP_Import_Command {
 			$this->import_session = $active_session;
 
 			$id = $this->import_session->get_id();
-			WP_CLI::line( WP_CLI::colorize( "New session: %g{$id}%n" ) );
+			WP_CLI::line( WP_CLI::colorize( "Current session: %g{$id}%n" ) );
 		} else {
 			$this->import_session = WP_Import_Session::create( $args );
 
 			$id = $this->import_session->get_id();
-			WP_CLI::line( WP_CLI::colorize( "Current session: %g{$id}%n" ) );
+			WP_CLI::line( WP_CLI::colorize( "New session: %g{$id}%n" ) );
 		}
 	}
 
@@ -149,6 +149,9 @@ class WP_Import_Command {
 				'file_name'   => $file_path,
 			)
 		);
+
+		// Pass the session ID.
+		$options['session_id'] = $this->import_session->get_id();
 
 		$this->importer = WP_Stream_Importer::create_for_wxr_file( $file_path, $options );
 		$this->import_wxr();
@@ -169,6 +172,9 @@ class WP_Import_Command {
 				'file_name'   => $url,
 			)
 		);
+
+		// Pass the session ID.
+		$options['session_id'] = $this->import_session->get_id();
 
 		$this->importer = WP_Stream_Importer::create_for_wxr_url( $url, $options );
 		$this->import_wxr();

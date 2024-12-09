@@ -309,8 +309,13 @@ class WP_Stream_Importer {
 				if ( true === $this->topological_sort_next_entity( $count ) ) {
 					return true;
 				}
+
+				// We indexed all the entities. Now sort them topologically.
+				$this->topological_sorter->sort_topologically();
+				$this->topological_sorter = null;
+
 				$this->stage = self::STAGE_FRONTLOAD_ASSETS;
-				return true;
+				return false;
 			case self::STAGE_FRONTLOAD_ASSETS:
 				if ( true === $this->frontload_next_entity() ) {
 					return true;
@@ -532,13 +537,12 @@ class WP_Stream_Importer {
 
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator    = $this->create_entity_iterator();
-			$this->topological_sorter = new WP_Topological_Sorter();
+			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
-			$this->entity_iterator    = null;
-			$this->resume_at_entity   = null;
-			$this->topological_sorter = null;
+			$this->entity_iterator  = null;
+			$this->resume_at_entity = null;
 			return false;
 		}
 
