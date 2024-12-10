@@ -13,7 +13,6 @@ export default defineConfig({
 	webServer: {
 		command: 'npx nx run playground-website:preview:ci',
 		url: 'http://127.0.0.1/',
-		timeout: 120000,
 		reuseExistingServer: false,
 	},
 });
