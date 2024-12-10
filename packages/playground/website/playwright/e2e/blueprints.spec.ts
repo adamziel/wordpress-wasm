@@ -320,7 +320,7 @@ test('HTTPS requests via file_get_contents() to invalid URLs should fail', async
 	);
 });
 
-test('HTTPS requests via file_get_contents() to CORS-disabled URLs should fail', async ({
+test('HTTPS requests via file_get_contents() to CORS-disabled URLs should succeed thanks to the CORS proxy', async ({
 	website,
 	wordpress,
 }) => {
@@ -347,9 +347,7 @@ test('HTTPS requests via file_get_contents() to CORS-disabled URLs should fail',
 		],
 	};
 	await website.goto(`/#${JSON.stringify(blueprint)}`);
-	await expect(wordpress.locator('body')).toContainText(
-		'file_get_contents(https://github.com/WordPress/wordpress-playground/blob/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md): Failed to open stream: HTTP request failed'
-	);
+	await expect(wordpress.locator('body')).toContainText('int(223698)');
 });
 
 test('PHP Shutdown should work', async ({ website, wordpress }) => {
