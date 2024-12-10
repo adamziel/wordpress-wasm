@@ -4,7 +4,7 @@ import { test, expect } from '../playground-fixtures.ts';
 import { startVersionSwitchingServer as startServer } from '../version-switching-server.ts';
 
 const port = 7999;
-const url = `http://localhost:${port}`;
+const url = `http://localhost:${port}/?login=no`;
 
 const maxDiffPixels = 4000;
 
