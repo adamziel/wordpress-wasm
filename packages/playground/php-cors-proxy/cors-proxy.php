@@ -101,7 +101,7 @@ $curlHeaders = filter_headers_strings(
     [
         'Cookie',
         'Authorization',
-        'Host'
+        'Host',
     ]
 );
 curl_setopt(
@@ -162,7 +162,12 @@ curl_setopt(
         } else if (
             stripos($header, 'Set-Cookie:') !== 0 &&
             stripos($header, 'Authorization:') !== 0 &&
-            stripos($header, 'Cache-Control:') !== 0
+            stripos($header, 'Cache-Control:') !== 0 &&
+            // The browser won't accept multiple values for these headers.
+            stripos($header, 'Access-Control-Allow-Origin:') !== 0 &&
+            stripos($header, 'Access-Control-Allow-Credentials:') !== 0 &&
+            stripos($header, 'Access-Control-Allow-Methods:') !== 0 &&
+            stripos($header, 'Access-Control-Allow-Headers:') !== 0
         ) {
             header($header, false);
         }
