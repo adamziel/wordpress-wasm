@@ -28,7 +28,15 @@ const isMobile = window.innerWidth < 875;
 const shouldOpenSiteManagerByDefault = false;
 
 const initialState: UIState = {
-	activeModal: query.get('modal') || null,
+	/**
+	 * Don't show the error report modal after a page refresh.
+	 * There's an action call below to remove the error-report modal attribute
+	 * from the URL.
+	 */
+	activeModal:
+		query.get('modal') === 'error-report'
+			? null
+			: query.get('modal') || null,
 	offline: !navigator.onLine,
 	// NOTE: Please do not eliminate the cases in this siteManagerIsOpen expression,
 	// even if they seem redundant. We may experiment which toggling the manager
@@ -91,15 +99,29 @@ const uiSlice = createSlice({
 
 export const __internal_uiSlice = uiSlice;
 
+let ranOnce = false;
 export const listenToOnlineOfflineEventsMiddleware: Middleware =
 	(store) => (next) => (action) => {
-		if (typeof window !== 'undefined') {
-			window.addEventListener('online', () => {
-				store.dispatch(uiSlice.actions.setOffline(false));
-			});
-			window.addEventListener('offline', () => {
-				store.dispatch(uiSlice.actions.setOffline(true));
-			});
+		if (!ranOnce) {
+			ranOnce = true;
+			if (typeof window !== 'undefined') {
+				window.addEventListener('online', () => {
+					store.dispatch(uiSlice.actions.setOffline(false));
+				});
+				window.addEventListener('offline', () => {
+					store.dispatch(uiSlice.actions.setOffline(true));
+				});
+			}
+			/**
+			 * Hide the error report modal on page load.
+			 * It's too common to refresh the page after an error occurs,
+			 * let's not bother the user with an empty error reporting modal.
+			 */
+			if (query.get('modal') === 'error-report') {
+				setTimeout(() => {
+					store.dispatch(uiSlice.actions.setActiveModal(null));
+				}, 0);
+			}
 		}
 		return next(action);
 	};
