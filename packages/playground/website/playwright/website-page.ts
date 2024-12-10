@@ -36,6 +36,13 @@ export class WebsitePage {
 		return response;
 	}
 
+	async reload(options?: any) {
+		const originalReload = this.page.reload.bind(this.page);
+		const response = await originalReload(options);
+		await this.waitForNestedIframes();
+		return response;
+	}
+
 	async ensureSiteManagerIsOpen() {
 		const siteManagerHeading = this.page.locator('.main-sidebar');
 		if (await siteManagerHeading.isHidden({ timeout: 5000 })) {

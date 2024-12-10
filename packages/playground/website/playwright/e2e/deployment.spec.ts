@@ -67,7 +67,10 @@ for (const cachingEnabled of [true, false]) {
 		});
 
 		server!.switchToNewVersion();
-		await page.goto(url);
+		// Reload the page instead of navigating to the URL again
+		// because it didn't seem to actually cause a reload when
+		// navigating to the same URL containing a hash component.
+		await page.reload();
 		await website.waitForNestedIframes();
 		await expect(
 			website.page.getByLabel('Open Site Manager')
@@ -89,7 +92,9 @@ test.skip(
 		server!.setHttpCacheEnabled(true);
 		server!.switchToMidVersion();
 
-		await page.goto(`${url}/?wp=6.5`);
+		const urlWithWordPress65 = new URL(url);
+		urlWithWordPress65.searchParams.append('wp', '6.5');
+		await page.goto(urlWithWordPress65.href);
 		await website.waitForNestedIframes();
 
 		// Switching to the new app version does not trigger a page reload,
