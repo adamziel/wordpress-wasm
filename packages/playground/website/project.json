@@ -78,6 +78,17 @@
 			}
 		},
 		"preview": {
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": [
+					"nx run playground-php-cors-proxy:start",
+					"sleep 1; nx preview:server playground-website "
+				],
+				"parallel": true,
+				"color": true
+			}
+		},
+		"preview:server": {
 			"executor": "@nx/vite:preview-server",
 			"options": {
 				"buildTarget": "playground-website:build",

@@ -73,9 +73,6 @@ export const playwrightConfig: PlaywrightTestConfig = {
 	/* Run your local dev server before starting the tests */
 	webServer: {
 		command: 'npx nx run playground-website:dev',
-		env: {
-			CORS_PROXY_URL: '',
-		},
 		url: 'http://127.0.0.1:5400/website-server/',
 		reuseExistingServer: !process.env.CI,
 	},
