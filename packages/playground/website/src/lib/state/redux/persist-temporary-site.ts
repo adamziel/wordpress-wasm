@@ -14,10 +14,11 @@ import {
 	updateSiteMetadata,
 } from './slice-sites';
 import { PlaygroundRoute, redirectTo } from '../url/router';
+import { SiteStorageType } from '../../site-metadata';
 
 export function persistTemporarySite(
 	siteSlug: string,
-	storageType: 'opfs' | 'local-fs'
+	storageType: Extract<SiteStorageType, 'opfs' | 'local-fs'>
 ) {
 	// @TODO: Handle errors
 	return async (

@@ -1,23 +1,32 @@
-.btn {
-	cursor: pointer;
-	background: none;
-	border: none;
+.modal {
+	max-width: 600px;
+
+	p {
+		margin-block: 13px;
+
+		&:first-child {
+			margin-block-start: 0;
+		}
+		&:last-child {
+			margin-block-end: 0;
+		}
+	}
+
+	b {
+		font-weight: 700;
+	}
+
+	textarea {
+		resize: vertical;
+		width: 100% !important;
+		min-height: 3lh;
+	}
 }
 
-.btn:hover,
-.btn:active {
-	opacity: 0.8;
+.modal-small {
+	max-width: 350px;
 }
 
-.btn-close {
-	position: absolute;
-	top: -8px;
-	right: -13px;
-}
-
-.modal-inner {
-	position: relative;
-	padding: 15px;
-	text-align: left;
-	max-height: 90vh;
+.modal-buttons {
+	margin-top: 1.5rem;
 }

@@ -13,6 +13,16 @@ if (file_exists($config_file)) {
     require_once $config_file;
 }
 
+$server_host = $_SERVER['HTTP_HOST'] ?? '';
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (should_respond_with_cors_headers($server_host, $origin)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Authorization, Content-Type');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header("Allow: GET, POST, OPTIONS");
     exit;
@@ -51,7 +61,15 @@ if(!$targetUrl) {
     echo "Bad Request\n\nNo URL provided";
     exit;
 }
-$resolved = url_validate_and_resolve($targetUrl);
+
+try {
+    $resolved = url_validate_and_resolve($targetUrl);
+} catch (CorsProxyException $e) {
+    http_response_code(400);
+    echo "Bad Request\n\n" . $e->getMessage();
+    exit;
+}
+
 $host = $resolved['host'];
 $resolvedIp = $resolved['ip'];
 

@@ -24,12 +24,11 @@ import { bootWordPress } from '@wp-playground/wordpress';
 import { rootCertificates } from 'tls';
 import {
 	CACHE_FOLDER,
+	cachedDownload,
 	fetchSqliteIntegration,
-	fetchWordPress,
 	readAsFile,
-	resolveWPRelease,
 } from './download';
-
+import { resolveWordPressRelease } from '@wp-playground/wordpress';
 export interface Mount {
 	hostPath: string;
 	vfsPath: string;
@@ -275,14 +274,17 @@ async function run() {
 						Math.min(100, (100 * e.detail.loaded) / e.detail.total)
 					);
 					if (!args.quiet) {
-						logger.log(
+						process.stdout.write(
 							`\rDownloading WordPress ${percentProgress}%...    `
 						);
 					}
 				}) as any);
 
-				wpDetails = await resolveWPRelease(args.wp);
+				wpDetails = await resolveWordPressRelease(args.wp);
 			}
+			logger.log(
+				`Resolved WordPress release URL: ${wpDetails?.releaseUrl}`
+			);
 
 			const preinstalledWpContentPath =
 				wpDetails &&
@@ -294,7 +296,11 @@ async function run() {
 				? undefined
 				: fs.existsSync(preinstalledWpContentPath)
 				? readAsFile(preinstalledWpContentPath)
-				: fetchWordPress(wpDetails.url, monitor);
+				: await cachedDownload(
+						wpDetails.releaseUrl,
+						`${wpDetails.version}.zip`,
+						monitor
+				  );
 
 			const constants: Record<string, string | number | boolean | null> =
 				{

@@ -64,11 +64,13 @@ const uiSlice = createSlice({
 			}
 		},
 		setActiveModal: (state, action: PayloadAction<string | null>) => {
+			const url = new URL(window.location.href);
 			if (action.payload === null) {
-				const url = new URL(window.location.href);
 				url.searchParams.delete('modal');
-				window.history.replaceState({}, '', url.href);
+			} else {
+				url.searchParams.set('modal', action.payload);
 			}
+			window.history.replaceState({}, '', url.href);
 
 			state.activeModal = action.payload;
 		},

@@ -2,11 +2,6 @@
 	display: none;
 }
 
-.modal-text,
-.modal-text-list {
-	text-align: left;
-}
-
 .modal-text-list {
 	padding-left: 15px;
 }

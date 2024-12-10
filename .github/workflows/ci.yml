@@ -150,6 +150,10 @@ jobs:
                   name: playwright-snapshots-${{ matrix.part }}
                   path: packages/playground/website/playwright/e2e/deployment.spec.ts-snapshots/
                   if-no-files-found: ignore
+            - name: Delete playwright-dist artifact
+              uses: geekyeggo/delete-artifact@v2
+              with:
+                  name: playwright-dist
 
     build:
         runs-on: ubuntu-latest

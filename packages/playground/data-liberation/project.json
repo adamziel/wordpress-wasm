@@ -17,7 +17,7 @@
 			"options": {
 				"cwd": "packages/playground/data-liberation",
 				"commands": [
-					"./vendor/bin/phpcs --standard=./phpcs.xml -s ./src"
+					"./vendor/bin/phpcs --standard=./phpcs.xml -s ./src ./*.php"
 				],
 				"parallel": false
 			}
@@ -27,7 +27,7 @@
 			"options": {
 				"cwd": "packages/playground/data-liberation",
 				"commands": [
-					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src"
+					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src ./*.php"
 				],
 				"parallel": false
 			}
@@ -47,6 +47,16 @@
 				"commands": [
 					"./vendor/bin/phpunit -c ./phpunit.xml",
 					"fswatch -o ./**/*.php | xargs -n1 -I{} ./vendor/bin/phpunit -c ./phpunit.xml"
+				],
+				"parallel": false
+			}
+		},
+		"test:wp-phpunit": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": [
+					"bun ../cli/src/cli.ts run-blueprint --quiet --mount=./:/wordpress/wp-content/plugins/data-liberation --blueprint=./tests/import/blueprint-import.json"
 				],
 				"parallel": false
 			}

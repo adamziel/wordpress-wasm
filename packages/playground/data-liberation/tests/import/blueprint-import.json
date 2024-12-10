@@ -1,0 +1,24 @@
+{
+	"$schema": "../../../blueprints/public/blueprint-schema.json",
+	"constants": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_DISPLAY": true,
+		"WP_DEBUG_LOG": true
+	},
+	"login": true,
+	"steps": [
+		{
+			"step": "activatePlugin",
+			"pluginPath": "data-liberation/plugin.php"
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/lsuploads.php",
+			"data": "<plaintext><?php\n\nvar_dump(glob('/wordpress/wp-content/uploads/*'));\n\n?>"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; $base = '/wordpress/wp-content/plugins/data-liberation/';\nrequire $base . 'vendor/autoload.php';\ntry {\n$arguments = [\n'--stderr','--testdox',\n'--configuration', $base . 'phpunit.xml'\n];\n$res = (new PHPUnit\\TextUI\\Application())->run($arguments);\nif ( $res !== 0 ) {\ntrigger_error('PHPUnit failed', E_USER_ERROR);\n}\n} catch (Throwable $e) {\ntrigger_error('PHPUnit failed: ' . $e->getMessage(), E_USER_ERROR);\n};"
+		}
+	]
+}

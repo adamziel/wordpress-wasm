@@ -8,21 +8,18 @@ function get_target_url($server_data=null) {
     if ($server_data === null) {
         $server_data = $_SERVER;
     }
-    $requestUri = $server_data['REQUEST_URI'];
-    $targetUrl = $requestUri;
 
-    // Remove the current script name from the beginning of $targetUrl
-    if (strpos($targetUrl, $server_data['SCRIPT_NAME']) === 0) {
-        $targetUrl = substr($targetUrl, strlen($server_data['SCRIPT_NAME']));
+    $path_info = $server_data['PATH_INFO'] ?? '';
+    if (str_starts_with($path_info, '/') && strlen($path_info) > 1) {
+        return substr($path_info, 1);
     }
 
-    // Remove the leading slash or question mark, depending on the method
-    // used to access the script
-    if (str_starts_with($targetUrl, '/') || str_starts_with($targetUrl, '?')) {
-        $targetUrl = substr($targetUrl, 1);
+    $query_string = $server_data['QUERY_STRING'] ?? '';
+    if (!empty($server_data['QUERY_STRING'])) {
+        return $query_string;
     }
 
-    return $targetUrl;
+    return false;
 }
 
 function get_current_script_uri($targetUrl, $request_uri)
@@ -353,4 +350,31 @@ function rewrite_relative_redirect(
         $proxy_absolute_url .= '?';
     }
     return $proxy_absolute_url . $redirect_location;
+}
+
+/**
+ * Answers whether CORS is allowed for the specified origin.
+ */
+function should_respond_with_cors_headers($host, $origin) {
+    if (empty($origin)) {
+        return false;
+    }
+
+    $is_request_from_playground_web_app = $origin === 'https://playground.wordpress.net';
+    $not_hosted_with_playground_web_app = $host !== 'playground.wordpress.net';
+    if (
+        $is_request_from_playground_web_app &&
+        $not_hosted_with_playground_web_app
+    ) {
+        return true;
+    }
+
+    $origin_host = parse_url($origin, PHP_URL_HOST);
+    $is_local_origin = in_array(
+        $origin_host,
+        array('localhost', '127.0.0.1'),
+        true
+    );
+
+    return $is_local_origin;
 }

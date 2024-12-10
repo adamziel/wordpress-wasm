@@ -106,9 +106,12 @@ test('should preserve PHP constants when saving a temporary site to OPFS', async
 		// Saving the site takes a while on CI
 		timeout: 90000,
 	});
-	await expect(website.page.getByLabel('Playground title')).not.toContainText(
-		'Temporary Playground'
-	);
+
+	const storedPlaygroundTitleText = await website.page
+		.getByLabel('Playground title')
+		.textContent();
+	await expect(storedPlaygroundTitleText).not.toBeNull();
+	await expect(storedPlaygroundTitleText).not.toMatch('Temporary Playground');
 
 	await website.page
 		.locator('button')
@@ -117,9 +120,8 @@ test('should preserve PHP constants when saving a temporary site to OPFS', async
 
 	// Switch back to the stored site and confirm the PHP constant is still present.
 	await website.page
-		.getByLabel('Saved Playgrounds')
 		.locator('button')
-		.last()
+		.filter({ hasText: storedPlaygroundTitleText! })
 		.click();
 
 	await expect(wordpress.locator('body')).toContainText('E2E_TEST_VALUE');

@@ -4,7 +4,9 @@
 	"require": {
 		"ext-json": "*",
 		"php": ">=7.2",
-		"rowbot/url": "^4.0"
+		"rowbot/url": "^4.0",
+		"league/commonmark": "^2.5",
+		"webuni/front-matter": "^2.0"
 	},
 	"require-dev": {
 		"yoast/phpunit-polyfills": "2.0.0",

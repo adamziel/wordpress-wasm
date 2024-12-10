@@ -507,42 +507,53 @@ export class TLS_1_2_Connection {
 			// First, check if we have a complete record of the requested type.
 			for (let i = 0; i < this.receivedTLSRecords.length; i++) {
 				const record = this.receivedTLSRecords[i];
-				if (record.type === ContentTypes.Alert) {
-					throw new Error(
-						`Alert message received: ${
-							AlertLevelNames[record.fragment[0]]
-						} ${AlertDescriptionNames[record.fragment[1]]}`
-					);
+				if (record.type !== requestedType) {
+					continue;
 				}
-				if (record.type === requestedType) {
-					this.receivedTLSRecords.splice(i, 1);
-					// Decrypt the record if needed
-					if (
-						this.sessionKeys &&
-						record.type !== ContentTypes.ChangeCipherSpec
-					) {
-						record.fragment = await this.decryptData(
-							record.type,
-							record.fragment as Uint8Array
-						);
-					}
-					return record;
-				}
+				this.receivedTLSRecords.splice(i, 1);
+				return record;
 			}
 
 			// We don't have a complete record of the requested type yet.
 			// Let's read the next TLS record, then.
 			const header = await this.pollBytes(5);
 			const length = (header[3] << 8) | header[4];
+			const type = header[0];
+			const fragment = await this.pollBytes(length);
 			const record = {
-				type: header[0],
+				type,
 				version: {
 					major: header[1],
 					minor: header[2],
 				},
 				length,
-				fragment: await this.pollBytes(length),
+				fragment:
+					this.sessionKeys && type !== ContentTypes.ChangeCipherSpec
+						? await this.decryptData(type, fragment)
+						: fragment,
 			} as TLSRecord;
+
+			if (record.type === ContentTypes.Alert) {
+				const severity = AlertLevelNames[record.fragment[0]];
+				const description = AlertDescriptionNames[record.fragment[1]];
+				/**
+				 * @TODO: Handle TLS warnings, e.g. this one:
+				 *
+				 * close_notify
+				 *     Either party may initiate a close by sending a close_notify alert.
+				 *     Any data received after a closure alert is ignored.
+				 *
+				 *     Unless some other fatal alert has been transmitted, each party is
+				 *     required to send a close_notify alert before closing the write side
+				 *     of the connection.  The other party MUST respond with a close_notify
+				 *     alert of its own and close down the connection immediately,
+				 *     discarding any pending writes.
+				 */
+				throw new Error(
+					`TLS non-warning alert received: ${severity} ${description}`
+				);
+			}
+
 			this.receivedTLSRecords.push(record);
 		}
 	}

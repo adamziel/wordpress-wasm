@@ -1,61 +1,24 @@
-import ReactModal from 'react-modal';
+import React from 'react';
+import { Modal as WordPressModal } from '@wordpress/components';
+import type { ModalProps as WordPressModalProps } from '@wordpress/components/build-types/modal/types';
+import classNames from 'classnames';
 import css from './style.module.css';
 
-ReactModal.setAppElement('#root');
-
-interface ModalProps extends ReactModal.Props {
-	styles?: ReactModal.Styles;
+interface ModalProps extends WordPressModalProps {
+	small?: boolean;
 }
-export const defaultStyles: ReactModal.Styles = {
-	content: {
-		top: '50%',
-		left: '50%',
-		right: 'auto',
-		bottom: 'auto',
-		marginRight: '-50%',
-		transform: 'translate(-50%, -50%)',
-		width: 400,
-		maxWidth: '100vw',
-		zIndex: 200,
-		textAlign: 'center',
-		color: '#000',
-		border: '#000 1px solid',
-		borderRadius: '6px',
-		background: '#fff',
-	},
-	overlay: {
-		background: '#1e2327d0',
-		zIndex: 10,
-	},
-};
-export default function Modal(props: ModalProps) {
-	const styles = {
-		overlay: { ...defaultStyles.overlay, ...props.styles?.overlay },
-		content: { ...defaultStyles.content, ...props.styles?.content },
-	};
+export function Modal({ small, className, children, ...rest }: ModalProps) {
+	const modalClass = classNames(
+		css.modal,
+		{
+			[css.modalSmall]: small,
+		},
+		className
+	);
+
 	return (
-		<ReactModal style={styles} {...props}>
-			<div className={css.modalInner} id="modal-content">
-				<button
-					id="import-close-modal--btn"
-					onClick={props.onRequestClose}
-					className={`${css.btn} ${css.btnClose}`}
-					aria-label="Close"
-					title="Close"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
-						width="32"
-						height="32"
-						aria-hidden="true"
-						focusable="false"
-					>
-						<path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path>
-					</svg>
-				</button>
-				{props.children}
-			</div>
-		</ReactModal>
+		<WordPressModal className={modalClass} {...rest}>
+			{children}
+		</WordPressModal>
 	);
 }

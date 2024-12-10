@@ -8,13 +8,14 @@ on:
 
 jobs:
     build_and_deploy:
-        # Only run this workflow from the trunk branch and when it's triggered by dmsnell OR adamziel
+        # Only run this workflow from the trunk branch and when it's triggered by a Playground maintainer
         if: >
             github.ref == 'refs/heads/trunk' && (
                 github.actor == 'adamziel' ||
                 github.actor == 'dmsnell' ||
                 github.actor == 'bgrgicak' ||
-                github.actor == 'brandonpayton'
+                github.actor == 'brandonpayton' ||
+                github.actor == 'zaerl'
             )
 
         runs-on: ubuntu-latest

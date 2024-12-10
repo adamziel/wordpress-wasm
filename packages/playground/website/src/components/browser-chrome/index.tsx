@@ -10,7 +10,8 @@ import {
 	useAppDispatch,
 } from '../../lib/state/redux/store';
 import { SyncLocalFilesButton } from '../sync-local-files-button';
-import { Dropdown, Icon, Modal } from '@wordpress/components';
+import { Dropdown, Icon } from '@wordpress/components';
+import { Modal } from '../../components/modal';
 import { cog } from '@wordpress/icons';
 import Button from '../button';
 import { ActiveSiteSettingsForm } from '../site-manager/site-settings-form';

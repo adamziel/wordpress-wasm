@@ -25,7 +25,7 @@ import {
 	hasCachedStaticFilesRemovedFromMinifiedBuild,
 } from './worker-utils';
 import { EmscriptenDownloadMonitor } from '@php-wasm/progress';
-import { createMemoizedFetch } from './create-memoized-fetch';
+import { createMemoizedFetch } from '@wp-playground/common';
 import {
 	FilesystemOperation,
 	journalFSEvents,

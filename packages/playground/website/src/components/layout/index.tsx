@@ -32,8 +32,10 @@ import {
 	setActiveModal,
 	setSiteManagerOpen,
 } from '../../lib/state/redux/slice-ui';
-import { ImportFormModal } from '../import-form/modal';
 import { logErrorEvent } from '../../lib/tracking';
+import { ImportFormModal } from '../import-form-modal';
+import { PreviewPRModal } from '../../github/preview-pr';
+import { MissingSiteModal } from '../missing-site-modal';
 
 acquireOAuthTokenIfNeeded();
 
@@ -44,6 +46,9 @@ export const modalSlugs = {
 	IMPORT_FORM: 'import-form',
 	GITHUB_IMPORT: 'github-import',
 	GITHUB_EXPORT: 'github-export',
+	PREVIEW_PR_WP: 'preview-pr-wordpress',
+	PREVIEW_PR_GUTENBERG: 'preview-pr-gutenberg',
+	MISSING_SITE_PROMPT: 'missing-site-prompt',
 };
 
 const displayMode = getDisplayModeFromQuery();
@@ -181,6 +186,10 @@ function Modals(blueprint: Blueprint) {
 		return <StartErrorModal />;
 	} else if (currentModal === modalSlugs.IMPORT_FORM) {
 		return <ImportFormModal />;
+	} else if (currentModal === modalSlugs.PREVIEW_PR_WP) {
+		return <PreviewPRModal target="wordpress" />;
+	} else if (currentModal === modalSlugs.PREVIEW_PR_GUTENBERG) {
+		return <PreviewPRModal target="gutenberg" />;
 	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
 		return (
 			<GithubImportModal
@@ -219,6 +228,8 @@ function Modals(blueprint: Blueprint) {
 				}}
 			/>
 		);
+	} else if (currentModal === modalSlugs.MISSING_SITE_PROMPT) {
+		return <MissingSiteModal />;
 	}
 
 	if (query.get('gh-ensure-auth') === 'yes') {

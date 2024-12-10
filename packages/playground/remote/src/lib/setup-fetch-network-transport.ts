@@ -72,14 +72,19 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 	try {
 		const fetchMethod = data.method || 'GET';
 		const fetchHeaders = data.headers || {};
-		if (fetchMethod == 'POST') {
+
+		const hasContentTypeHeader = Object.keys(fetchHeaders).some(
+			(name) => name.toLowerCase() === 'content-type'
+		);
+
+		if (fetchMethod == 'POST' && !hasContentTypeHeader) {
 			fetchHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
 		}
 
 		response = await fetchFn(fetchUrl, {
 			method: fetchMethod,
 			headers: fetchHeaders,
-			body: data.data,
+			body: fetchMethod === 'GET' ? undefined : data.data,
 			credentials: 'omit',
 		});
 	} catch (e) {

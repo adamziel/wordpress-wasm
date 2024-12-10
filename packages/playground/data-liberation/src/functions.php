@@ -8,7 +8,12 @@ use Rowbot\URL\URL;
  * Example:
  *
  * ```php
- * php > wp_rewrite_urls('<!-- wp:image {"src": "http://legacy-blog.com/image.jpg"} -->')
+ * php > wp_rewrite_urls([
+ *   'block_markup' => '<!-- wp:image {"src": "http://legacy-blog.com/image.jpg"} -->',
+ *   'url-mapping' => [
+ *     'http://legacy-blog.com' => 'https://modern-webstore.org'
+ *   ]
+ * ])
  * <!-- wp:image {"src":"https:\/\/modern-webstore.org\/image.jpg"} -->
  * ```
  *
@@ -20,125 +25,44 @@ use Rowbot\URL\URL;
  */
 function wp_rewrite_urls( $options ) {
 	if ( empty( $options['base_url'] ) ) {
-		$options['base_url'] = $options['current-site-url'];
+		// Use first from-url as base_url if not specified
+		$from_urls           = array_keys( $options['url-mapping'] );
+		$options['base_url'] = $from_urls[0];
 	}
 
-	$current_site_url = WP_URL::parse( $options['current-site-url'] );
-	if ( $current_site_url->pathname[ strlen( $current_site_url->pathname ) - 1 ] === '/' ) {
-		$current_site_url->pathname = substr( $current_site_url->pathname, 0, strlen( $current_site_url->pathname ) - 1 );
+	$url_mapping = array();
+	foreach ( $options['url-mapping'] as $from_url_string => $to_url_string ) {
+		$url_mapping[] = array(
+			'from_url' => WP_URL::parse( $from_url_string ),
+			'to_url' => WP_URL::parse( $to_url_string ),
+		);
 	}
-	$current_site_pathname_with_trailing_slash = $current_site_url->pathname === '/' ? $current_site_url->pathname : $current_site_url->pathname . '/';
-	$current_site_url_string                   = $current_site_url->toString();
-
-	$new_site_url = WP_URL::parse( $options['new-site-url'] );
-	if ( $new_site_url->pathname[ strlen( $new_site_url->pathname ) - 1 ] === '/' ) {
-		$new_site_url->pathname = substr( $new_site_url->pathname, 0, strlen( $new_site_url->pathname ) - 1 );
-	}
-	$new_site_pathname_with_trailing_slash =
-		$new_site_url->pathname === '/' ? $new_site_url->pathname : $new_site_url->pathname . '/';
 
 	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
-		if ( ! url_matches( $p->get_parsed_url(), $current_site_url_string ) ) {
-			continue;
-		}
-		$raw_url = $p->get_raw_url();
-
-		$parsed_matched_url           = $p->get_parsed_url();
-		$parsed_matched_url->protocol = $new_site_url->protocol;
-		$parsed_matched_url->hostname = $new_site_url->hostname;
-
-		// Update the pathname if needed.
-		if ( '/' !== $current_site_url->pathname ) {
-			/**
-			 * The matched URL starts with $current_site_name->pathname.
-			 *
-			 * We want to retain the portion of the pathname that comes
-			 * after $current_site_name->pathname. This is not a simple
-			 * substring operation because the matched URL may have
-			 * urlencoded bytes at the beginning. We need to decode
-			 * them before taking the substring.
-			 *
-			 * However, we can't just decode the entire pathname because
-			 * the part after $current_site_name->pathname may itself
-			 * contain urlencoded bytes. If we decode them here, it
-			 * may change a path such as `/%2561/foo`, which decodes
-			 * as `/61/foo`, to `/a/foo`.
-			 *
-			 * Therefore, we're going to decode a part of the string. We'll
-			 * start at the beginning and keep going until we've found
-			 * enough decoded bytes to skip over $current_site_name->pathname.
-			 * Then we'll take the remaining, still encoded bytes as the new pathname.
-			 */
-			$decoded_matched_pathname     = urldecode_n(
-				$parsed_matched_url->pathname,
-				strlen( $current_site_pathname_with_trailing_slash )
-			);
-			$parsed_matched_url->pathname =
-				$new_site_pathname_with_trailing_slash .
-					substr(
-						$decoded_matched_pathname,
-						strlen( $current_site_pathname_with_trailing_slash )
-					);
-		}
-
-		/*
-		 * Stylistic choice – if the matched URL has no trailing slash,
-		 * do not add it to the new URL. The WHATWG URL parser will
-		 * add one automatically if the path is empty, so we have to
-		 * explicitly remove it.
-		 */
-		$new_raw_url     = $parsed_matched_url->toString();
-		$raw_matched_url = $p->get_raw_url();
-		if (
-			$raw_matched_url[ strlen( $raw_matched_url ) - 1 ] !== '/' &&
-			$parsed_matched_url->pathname === '/' &&
-			$parsed_matched_url->search === '' &&
-			$parsed_matched_url->hash === ''
-		) {
-			$new_raw_url = rtrim( $new_raw_url, '/' );
-		}
-		if ( $new_raw_url ) {
-			$is_relative = (
-				// Ensure protocol-less URLs coming from text nodes
-				// are not treated as relative.
-				//
-				// We're only capturing absolute URLs from text nodes,
-				// but some of them may look like relative URLs to the
-				// URL parser. For example, "mysite.com/path" would
-				// be parsed as a relative URL.
-				$p->get_token_type() !== '#text' &&
-				! str_starts_with( $raw_url, 'http://' ) &&
-				! str_starts_with( $raw_url, 'https://' )
-			);
-			if ( $is_relative ) {
-				$new_relative_url = $parsed_matched_url->pathname;
-				if ( $parsed_matched_url->search !== '' ) {
-					$new_relative_url .= $parsed_matched_url->search;
-				}
-				if ( $parsed_matched_url->hash !== '' ) {
-					$new_relative_url .= $parsed_matched_url->hash;
-				}
-				$p->set_raw_url( $new_relative_url );
-			} else {
-				$p->set_raw_url( $new_raw_url );
+		$parsed_url = $p->get_parsed_url();
+		foreach ( $url_mapping as $mapping ) {
+			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
+				$p->replace_base_url( $mapping['to_url'] );
+				break;
 			}
 		}
 	}
 	return $p->get_updated_html();
 }
+
 /**
  * Check if a given URL matches the current site URL.
  *
  * @param URL $subject The URL to check.
- * @param string $current_site_url_no_trailing_slash The current site URL to compare against.
+ * @param string $from_url_no_trailing_slash The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function url_matches( URL $subject, string $current_site_url_no_trailing_slash ) {
-	$parsed_current_site_url            = WP_URL::parse( $current_site_url_no_trailing_slash );
-	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_current_site_url->pathname ), '/' );
+function url_matches( URL $subject, $from_url ) {
+	$parsed_from_url                    = is_string( $from_url ) ? WP_URL::parse( $from_url ) : $from_url;
+	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
 
-	if ( $subject->hostname !== $parsed_current_site_url->hostname ) {
+	if ( $subject->hostname !== $parsed_from_url->hostname ) {
 		return false;
 	}
 
@@ -159,10 +83,10 @@ function url_matches( URL $subject, string $current_site_url_no_trailing_slash )
  * '"is 6 %3C 6?%22 – asked Achilles' because only the first encoded byte is decoded.
  *
  * @param string $string The string to decode.
- * @param int $target_length The maximum length of the resulting string.
+ * @param int $decode_n The number of bytes to decode in $input
  * @return string The decoded string.
  */
-function urldecode_n( $input, $target_length ) {
+function urldecode_n( $input, $decode_n ) {
 	$result = '';
 	$at     = 0;
 	while ( true ) {
@@ -176,26 +100,137 @@ function urldecode_n( $input, $target_length ) {
 		$result .= substr( $input, $last_at, $at - $last_at );
 
 		// If we've already decoded the requested number of bytes, stop.
-		if ( strlen( $result ) >= $target_length ) {
+		if ( strlen( $result ) >= $decode_n ) {
 			break;
 		}
 
 		++$at;
+		if ( $at > strlen( $input ) ) {
+			break;
+		}
+
 		$decodable_length = strspn(
 			$input,
 			'0123456789ABCDEFabcdef',
 			$at,
 			2
 		);
+
 		if ( $decodable_length === 2 ) {
 			// Decode the hex sequence.
 			$result .= chr( hexdec( $input[ $at ] . $input[ $at + 1 ] ) );
 			$at     += 2;
 		} else {
-			// Consume the percent sign and move on.
+			// Consume the next byte and move on.
 			$result .= '%';
 		}
 	}
 	$result .= substr( $input, $at );
 	return $result;
+}
+
+/**
+ * A generator that recursively list files in a directory.
+ *
+ * Example:
+ *
+ * ```php
+ * foreach(wp_list_files_recursive('./docs') as $event) {
+ *
+ *    echo $event->type . " " . ($event->isFile ? 'file' : 'directory') . ' ' . $event->path . "\n";
+ * }
+ * // Output:
+ * // entering directory ./docs
+ * // listing file ./docs/file1.txt
+ * // listing file ./docs/file2.txt
+ * // entering directory ./docs/subdir
+ * // listing file ./docs/subdir/file3.txt
+ * // exiting directory ./docs/subdir
+ * // exiting directory ./docs
+ * ```
+ *
+ * @param string $dir
+ * @param integer $depth
+ * @yield WP_File_Visitor_Event
+ * @return Iterator<WP_File_Visitor_Event>
+ */
+function wp_visit_file_tree( $dir ) {
+	$directories = array();
+	$files       = array();
+	$dh          = opendir( $dir );
+	while ( true ) {
+		$file = readdir( $dh );
+		if ( $file === false ) {
+			break;
+		}
+		if ( '.' === $file || '..' === $file ) {
+			continue;
+		}
+		$file_path = $dir . '/' . $file;
+		if ( is_dir( $file_path ) ) {
+			$directories[] = $file_path;
+			continue;
+		}
+
+		$files[] = new SplFileInfo( $file_path );
+	}
+	closedir( $dh );
+
+	yield new WP_File_Visitor_Event(
+		WP_File_Visitor_Event::EVENT_ENTER,
+		new SplFileInfo( $dir ),
+		$files
+	);
+
+	foreach ( $directories as $directory ) {
+		yield from wp_visit_file_tree( $directory );
+	}
+
+	yield new WP_File_Visitor_Event(
+		WP_File_Visitor_Event::EVENT_EXIT,
+		new SplFileInfo( $dir )
+	);
+}
+
+/**
+ * Import a WXR file. Used by the CLI.
+ *
+ * @param string $path The path to the WXR file.
+ * @return void
+ */
+function data_liberation_import( $path ): bool {
+	$importer = WP_Stream_Importer::create_for_wxr_file( $path );
+
+	if ( ! $importer ) {
+		return false;
+	}
+
+	$is_wp_cli = defined( 'WP_CLI' ) && WP_CLI;
+
+	if ( $is_wp_cli ) {
+		WP_CLI::line( "Importing from {$path}" );
+	}
+
+	while ( $importer->next_step() ) {
+		// Output the current stage if running in WP-CLI.
+		if ( $is_wp_cli ) {
+			$current_stage = $importer->get_current_stage();
+			WP_CLI::line( "Import: stage {$current_stage}" );
+		}
+	}
+
+	if ( $is_wp_cli ) {
+		WP_CLI::success( 'Import ended' );
+	}
+
+	return true;
+}
+
+function get_all_post_meta_flat( $post_id ) {
+	return array_map(
+		function ( $value ) {
+			return $value[0];
+		},
+		get_post_meta( $post_id )
+	);
 }

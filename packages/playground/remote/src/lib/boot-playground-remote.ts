@@ -129,8 +129,35 @@ export async function bootPlaygroundRemote() {
 			// Manage the address bar
 			wpFrame.addEventListener('load', async (e: any) => {
 				try {
+					/**
+					 * When navigating to a page with %0A sequences (encoded newlines)
+					 * in the query string, the `location.href` property of the
+					 * iframe's content window doesn't seem to reflect them. Everything
+					 * else is in place, but not the %0A sequences.
+					 *
+					 * Weirdly, these sequences are available after the next event
+					 * loop tick – hence the `setTimeout(0)`.
+					 *
+					 * The exact cause is unclear at the moment of writing of this
+					 * comment. The WHATWG HTML Standard [1] has a few hints:
+					 *
+					 * * Current and active session history entries may get out of
+					 *   sync for iframes.
+					 * * Documents inside iframes have "is delaying load events" set
+					 *   to true.
+					 *
+					 * But there doesn't seem to be any concrete explanation and no
+					 * recommended remediation. If anyone has a clue, please share it
+					 * in a GitHub issue or start a new PR.
+					 *
+					 * [1] https://html.spec.whatwg.org/multipage/document-sequences.html#nav-active-history-entry
+					 */
+					// Get the content window while e.currentTarget is available.
+					// It will be undefined on the next event loop tick.
+					const contentWindow = e.currentTarget!.contentWindow;
+					await new Promise((resolve) => setTimeout(resolve, 0));
 					const path = await playground.internalUrlToPath(
-						e.currentTarget!.contentWindow.location.href
+						contentWindow.location.href
 					);
 					fn(path);
 				} catch (e) {

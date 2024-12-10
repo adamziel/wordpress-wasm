@@ -1,0 +1,67 @@
+name: Deploy CORS proxy
+
+on:
+    workflow_dispatch:
+
+concurrency:
+    group: cors-proxy-deployment
+
+jobs:
+    build_and_deploy:
+        # Only run this workflow from the trunk branch and when it's triggered by a maintainer listed below
+        # TODO: Can we check for group membership?
+        if: >
+            github.ref == 'refs/heads/trunk' && (
+                github.event_name == 'workflow_run' ||
+                github.event_name == 'workflow_dispatch' ||
+                github.actor == 'adamziel' ||
+                github.actor == 'dmsnell' ||
+                github.actor == 'bgrgicak' ||
+                github.actor == 'brandonpayton' ||
+                github.actor == 'zaerl' ||
+                github.actor == 'akirk'
+            )
+
+        # Specify runner + deployment step
+        runs-on: ubuntu-latest
+        environment:
+            name: playground-wordpress-net-wp-cloud
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  sparse-checkout: |
+                      packages/playground/php-cors-proxy
+                      packages/playground/php-cors-proxy-deployment
+                  sparse-checkout-cone-mode: false
+
+            - name: Observe working directory contents
+              shell: bash
+              run: |
+                  pwd
+                  ls -laR
+
+            - name: Deploy to CORS proxy server
+              shell: bash
+              # TODO: Use completely separate environments for website and CORS proxy deployments
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.DEPLOY_WEBSITE_TARGET_HOST_KEY }}" >> ~/.ssh/known_hosts
+                  echo "${{ secrets.DEPLOY_WEBSITE_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+                  chmod 0600 ~/.ssh/*
+
+                  # CORS proxy files
+                  rsync --verbose --archive --compress -e "ssh -i ~/.ssh/id_ed25519" \
+                    --exclude 'tests/' --include '*/' --include '*.php' --exclude '*' \
+                    --delete --delete-excluded --prune-empty-dirs \
+                    packages/playground/php-cors-proxy/ \
+                    ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/updated-proxy-files'
+
+                  # Host-specific deployment scripts and server config
+                  rsync --verbose --archive --compress -e "ssh -i ~/.ssh/id_ed25519" --delete \
+                    packages/playground/php-cors-proxy-deployment/ \
+                    ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }}:'~/cors-proxy-deployment'
+
+                  # Apply update
+                  ssh -i ~/.ssh/id_ed25519 \
+                    ${{ secrets.DEPLOY_CORS_PROXY_TARGET_USER }}@${{ secrets.DEPLOY_WEBSITE_TARGET_HOST }} \
+                    -tt -C '~/cors-proxy-deployment/apply-update.sh'

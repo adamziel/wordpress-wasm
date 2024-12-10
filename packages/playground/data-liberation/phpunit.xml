@@ -3,7 +3,6 @@
   <testsuites>
     <testsuite name="Application Test Suite">
       <file>tests/WPWXRReaderTests.php</file>
-      <file>tests/WPWXRURLRewriterTests.php</file>
       <file>tests/WPRewriteUrlsTests.php</file>
       <file>tests/WPURLInTextProcessorTests.php</file>
       <file>tests/WPBlockMarkupProcessorTests.php</file>
@@ -11,6 +10,7 @@
       <file>tests/URLParserWHATWGComplianceTests.php</file>
       <file>tests/WPXMLProcessorTests.php</file>
       <file>tests/UrldecodeNTests.php</file>
+      <file>tests/WPStreamImporterTests.php</file>
     </testsuite>
   </testsuites>
 </phpunit>
