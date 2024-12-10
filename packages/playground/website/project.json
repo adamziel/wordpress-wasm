@@ -81,14 +81,22 @@
 			"executor": "nx:run-commands",
 			"options": {
 				"commands": [
-					"nx run playground-php-cors-proxy:start",
-					"sleep 1; nx preview-server playground-website "
+					"sleep 1; nx preview-server playground-website ",
+					"nx run playground-php-cors-proxy:start"
 				],
 				"parallel": true,
 				"color": true
+			},
+			"configurations": {
+				"ci": {
+					"commands": [
+						"sleep 1; nx preview:server:ci playground-website ",
+						"nx run playground-php-cors-proxy:start"
+					]
+				}
 			}
 		},
-		"preview-server": {
+		"preview:server": {
 			"executor": "@nx/vite:preview-server",
 			"options": {
 				"buildTarget": "playground-website:build",
