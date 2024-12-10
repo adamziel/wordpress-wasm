@@ -39,11 +39,9 @@ if (typeof window !== 'undefined') {
  */
 export async function sparseCheckout(
 	repoUrl: string,
-	fullyQualifiedBranchName: string,
+	commitHash: string,
 	filesPaths: string[]
 ) {
-	const refs = await listGitRefs(repoUrl, fullyQualifiedBranchName);
-	const commitHash = refs[fullyQualifiedBranchName];
 	const treesIdx = await fetchWithoutBlobs(repoUrl, commitHash);
 	const objects = await resolveObjects(treesIdx, commitHash, filesPaths);
 
@@ -75,24 +73,24 @@ export type FileTreeFolder = {
 };
 export type FileTree = FileTreeFile | FileTreeFolder;
 
+export type GitRef = {
+	value: string;
+	type?: 'branch' | 'commit' | 'infer';
+};
+
 /**
  * Lists all files in a git repository.
  *
  * See https://git-scm.com/book/en/v2/Git-Internals-Git-Objects for more information.
  *
  * @param repoUrl The URL of the git repository.
- * @param fullyQualifiedBranchName The full name of the branch to fetch from (e.g., 'refs/heads/main').
+ * @param commitHash The commit hash to fetch from.
  * @returns A list of all files in the repository.
  */
 export async function listGitFiles(
 	repoUrl: string,
-	fullyQualifiedBranchName: string
+	commitHash: string
 ): Promise<FileTree[]> {
-	const refs = await listGitRefs(repoUrl, fullyQualifiedBranchName);
-	if (!(fullyQualifiedBranchName in refs)) {
-		throw new Error(`Branch ${fullyQualifiedBranchName} not found`);
-	}
-	const commitHash = refs[fullyQualifiedBranchName];
 	const treesIdx = await fetchWithoutBlobs(repoUrl, commitHash);
 	const rootTree = await resolveAllObjects(treesIdx, commitHash);
 	if (!rootTree?.object) {
@@ -100,6 +98,42 @@ export async function listGitFiles(
 	}
 
 	return gitTreeToFileTree(rootTree);
+}
+
+/**
+ * Resolves a ref description, e.g. a branch name, to a commit hash.
+ *
+ * @param repoUrl The URL of the git repository.
+ * @param ref The branch name or commit hash.
+ * @returns The commit hash.
+ */
+export async function resolveCommitHash(repoUrl: string, ref: GitRef) {
+	if (ref.type === 'infer' || ref.type === undefined) {
+		if (['', 'HEAD'].includes(ref.value)) {
+			ref = {
+				value: ref.value,
+				type: 'branch',
+			};
+		} else if (typeof ref.value === 'string' && ref.value.length === 40) {
+			ref = {
+				value: ref.value,
+				type: 'commit',
+			};
+		} else {
+			ref = {
+				value: `refs/heads/${ref.value}`,
+				type: 'branch',
+			};
+		}
+	}
+	if (ref.type === 'commit') {
+		return ref.value;
+	}
+	const refs = await listGitRefs(repoUrl, ref.value);
+	if (!(ref.value in refs)) {
+		throw new Error(`Branch ${ref.value} not found`);
+	}
+	return refs[ref.value];
 }
 
 function gitTreeToFileTree(tree: GitTree): FileTree[] {
