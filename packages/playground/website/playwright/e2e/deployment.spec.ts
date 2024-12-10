@@ -4,7 +4,25 @@ import { test, expect } from '../playground-fixtures.ts';
 import { startVersionSwitchingServer as startServer } from '../version-switching-server.ts';
 
 const port = 7999;
-const url = `http://localhost:${port}/?login=no`;
+const blueprint = {
+	steps: [
+		{
+			step: 'setSiteOptions',
+			options: {
+				// Set the admin email lifespan to the maximum value to prevent
+				// the admin email from expiring and causing the login step to fail.
+				// https://github.com/WordPress/wordpress-develop/blob/f008049c49195dbfa954631fecc7fbfff0cc8ca2/src/wp-login.php#L1379-L1388
+				admin_email_lifespan: '2147483647',
+			},
+		},
+		{
+			step: 'login',
+			username: 'admin',
+			password: 'password',
+		},
+	],
+};
+const url = `http://localhost:${port}/#${btoa(JSON.stringify(blueprint))}`;
 
 const maxDiffPixels = 4000;
 
