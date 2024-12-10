@@ -1,6 +1,7 @@
 import { phpVar } from '@php-wasm/util';
 import { StepHandler } from '.';
 import { logger } from '@php-wasm/logger';
+import { PHPResponse } from '@php-wasm/universal';
 
 /**
  * @inheritDoc activatePlugin
@@ -74,7 +75,25 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			throw new Exception( 'Unable to activate plugin' );
 		`,
 	});
-	if (result.text !== 'Plugin activated successfully') {
+
+	/**
+	 * A valid plugin activation response is either
+	 * a 200 status code response with the text 'Plugin activated successfully'
+	 * or a redirect status code (300-399) response with the text ''
+	 *
+	 * Some plugins redirect on activation.
+	 */
+	function isValidActivationResponse(result: PHPResponse) {
+		return (
+			(result.httpStatusCode === 200 &&
+				result.text === 'Plugin activated successfully') ||
+			(result.httpStatusCode >= 300 &&
+				result.httpStatusCode < 400 &&
+				result.text === '')
+		);
+	}
+
+	if (!isValidActivationResponse(result)) {
 		logger.debug(result);
 		throw new Error(
 			`Plugin ${pluginPath} could not be activated – WordPress exited with no error. ` +
