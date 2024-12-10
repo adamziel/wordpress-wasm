@@ -14,12 +14,11 @@ import { SiteError } from '../../lib/state/redux/slice-ui';
 import { Button, Spinner } from '@wordpress/components';
 import {
 	removeSite,
-	selectAllSites,
 	selectSiteBySlug,
+	selectSitesLoaded,
 	selectTemporarySites,
 } from '../../lib/state/redux/slice-sites';
 import classNames from 'classnames';
-import { PlaygroundRoute, redirectTo } from '../../lib/state/url/router';
 
 export const supportedDisplayModes = [
 	'browser-full-screen',
@@ -59,8 +58,6 @@ export const PlaygroundViewport = ({
  * as there's no risk of data loss
  */
 export const KeepAliveTemporarySitesViewport = () => {
-	const allSites = useAppSelector(selectAllSites);
-
 	const temporarySites = useAppSelector(selectTemporarySites);
 	const activeSite = useActiveSite();
 	const siteSlugsToRender = useMemo(() => {
@@ -120,9 +117,7 @@ export const KeepAliveTemporarySitesViewport = () => {
 		]);
 	}, [siteSlugsToRender]);
 
-	const sitesFinishedLoading = useAppSelector((state) =>
-		['error', 'loaded'].includes(state.sites.loadingState)
-	);
+	const sitesFinishedLoading = useAppSelector(selectSitesLoaded);
 	if (!sitesFinishedLoading) {
 		return (
 			<div
@@ -134,31 +129,6 @@ export const KeepAliveTemporarySitesViewport = () => {
 				}}
 			>
 				<Spinner style={{ width: '60px', height: '60px' }} />
-			</div>
-		);
-	}
-
-	if (!allSites.length) {
-		// @TODO: Use the dedicated design for this
-		// (the one in Figma with white background and pretty fonts.)
-		return (
-			<div className={css.fullSize}>
-				<div className={css.siteError}>
-					<div
-						className={css.siteErrorContent}
-						style={{ textAlign: 'center' }}
-					>
-						<h2>You don't have any Playgrounds right now</h2>
-						<Button
-							variant="primary"
-							onClick={() => {
-								redirectTo(PlaygroundRoute.newTemporarySite());
-							}}
-						>
-							Create a temporary Playground
-						</Button>
-					</div>
-				</div>
 			</div>
 		);
 	}
