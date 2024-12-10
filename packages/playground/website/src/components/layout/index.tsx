@@ -34,6 +34,7 @@ import {
 } from '../../lib/state/redux/slice-ui';
 import { ImportFormModal } from '../import-form-modal';
 import { PreviewPRModal } from '../../github/preview-pr';
+import { MissingSiteModal } from '../missing-site-modal';
 
 acquireOAuthTokenIfNeeded();
 
@@ -46,7 +47,8 @@ export const modalSlugs = {
 	GITHUB_EXPORT: 'github-export',
 	PREVIEW_PR_WP: 'preview-pr-wordpress',
 	PREVIEW_PR_GUTENBERG: 'preview-pr-gutenberg',
-}
+	MISSING_SITE_PROMPT: 'missing-site-prompt',
+};
 
 const displayMode = getDisplayModeFromQuery();
 function getDisplayModeFromQuery(): DisplayMode {
@@ -186,39 +188,45 @@ function Modals(blueprint: Blueprint) {
 	} else if (currentModal === modalSlugs.PREVIEW_PR_GUTENBERG) {
 		return <PreviewPRModal target="gutenberg" />;
 	} else if (currentModal === modalSlugs.GITHUB_IMPORT) {
-		return <GithubImportModal
-			onImported={({
-				 url,
-				 path,
-				 files,
-				 pluginOrThemeName,
-				 contentType,
-				 urlInformation: { owner, repo, type, pr },
-			 }) => {
-				setGithubExportValues({
-					repoUrl: url,
-					prNumber: pr?.toString(),
-					toPathInRepo: path,
-					prAction: pr ? 'update' : 'create',
+		return (
+			<GithubImportModal
+				onImported={({
+					url,
+					path,
+					files,
+					pluginOrThemeName,
 					contentType,
-					plugin: pluginOrThemeName,
-					theme: pluginOrThemeName,
-				});
-				setGithubExportFiles(files);
-			}}
-		/>;
+					urlInformation: { owner, repo, type, pr },
+				}) => {
+					setGithubExportValues({
+						repoUrl: url,
+						prNumber: pr?.toString(),
+						toPathInRepo: path,
+						prAction: pr ? 'update' : 'create',
+						contentType,
+						plugin: pluginOrThemeName,
+						theme: pluginOrThemeName,
+					});
+					setGithubExportFiles(files);
+				}}
+			/>
+		);
 	} else if (currentModal === modalSlugs.GITHUB_EXPORT) {
-		return <GithubExportModal
-			allowZipExport={
-				(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
-			}
-			initialValues={githubExportValues}
-			initialFilesBeforeChanges={githubExportFiles}
-			onExported={(prUrl, formValues) => {
-				setGithubExportValues(formValues);
-				setGithubExportFiles(undefined);
-			}}
-		/>;
+		return (
+			<GithubExportModal
+				allowZipExport={
+					(query.get('ghexport-allow-include-zip') ?? 'yes') === 'yes'
+				}
+				initialValues={githubExportValues}
+				initialFilesBeforeChanges={githubExportFiles}
+				onExported={(prUrl, formValues) => {
+					setGithubExportValues(formValues);
+					setGithubExportFiles(undefined);
+				}}
+			/>
+		);
+	} else if (currentModal === modalSlugs.MISSING_SITE_PROMPT) {
+		return <MissingSiteModal />;
 	}
 
 	if (query.get('gh-ensure-auth') === 'yes') {

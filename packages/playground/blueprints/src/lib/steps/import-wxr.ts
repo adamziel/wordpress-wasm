@@ -84,6 +84,25 @@ async function importWithDefaultImporter(
 	add_action( 'wp_insert_post_data', function( $data ) {
 		return wp_slash($data);
 	});
+  
+  // Ensure that Site Editor templates are associated with the correct taxonomy.
+  add_filter( 'wp_import_post_terms', function ( $terms, $post_id ) {
+    foreach ( $terms as $post_term ) {
+      if ( 'wp_theme' !== $term['taxonomy'] ) continue;
+      $post_term = get_term_by('slug', $term['slug'], $term['taxonomy'] );
+      if ( ! $post_term ) {
+        $post_term = wp_insert_term(
+          $term['slug'],
+          $term['taxonomy']
+        );
+        $term_id = $post_term['term_id'];
+      } else {
+        $term_id = $post_term->term_id;
+      }
+      wp_set_object_terms( $post_id, $term_id, $term['taxonomy']) ;
+    }
+    return $terms;
+  }, 10, 2 );
 	$result = $importer->import( '/tmp/import.wxr' );
 	`,
 	});

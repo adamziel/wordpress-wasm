@@ -188,4 +188,16 @@ HTML,
 		);
 	}
 
+	public function test_next_url_replace_the_url_for_simple_text() {
+		$p = new WP_Block_Markup_Url_Processor(
+			'https://example.com/test/?page_id=1',
+			'https://example.com/'
+		);
+
+		while ( $p->next_url() ) {
+			$p->replace_base_url( WP_URL::parse( 'https://example.org:8888/' ) );
+		}
+
+		$this->assertEquals( 'https://example.org:8888/test/?page_id=1', $p->get_updated_html() );
+	}
 }
