@@ -130,14 +130,46 @@ class WPStreamImporterTests extends TestCase {
 		}
 	}
 
-	public function test_hierarchical_term_import() {
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/comment-meta.php
+	 */
+	public function test_serialized_comment_meta() {
+		$wxr_path = __DIR__ . '/wxr/test-serialized-comment-meta.xml';
+		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
+
+		do {
+			while ( $importer->next_step( 1 ) ) {
+				// noop
+			}
+		} while ( $importer->advance_to_next_stage() );
+
+		$expected_string = '¯\_(ツ)_/¯';
+		$expected_array  = array( 'key' => '¯\_(ツ)_/¯' );
+
+		$comments_count = wp_count_comments();
+		// Note: using assertEquals() as the return type changes across different WP versions - numeric string vs int.
+		$this->assertEquals( 1, $comments_count->approved );
+
+		$comments = get_comments();
+		$this->assertCount( 1, $comments );
+
+		$comment = $comments[0];
+		$this->assertSame( $expected_string, get_comment_meta( $comment->comment_ID, 'string', true ) );
+		$this->assertSame( $expected_array, get_comment_meta( $comment->comment_ID, 'array', true ) );
+	}
+
+	/*public function test_hierarchical_term_import() {
 		$wxr_path = __DIR__ . '/wxr/small-export.xml';
 		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
 
 		do {
-			while ( $importer->next_step( 1 ) ) {}
+			while ( $importer->next_step( 1 ) ) {
+
+			}
 		} while ( $importer->advance_to_next_stage() );
-	}
+	}*/
 
 	private function skip_to_stage( WP_Stream_Importer $importer, string $stage ) {
 		do {

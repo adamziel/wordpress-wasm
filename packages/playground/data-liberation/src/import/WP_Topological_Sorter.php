@@ -390,8 +390,8 @@ class WP_Topological_Sorter {
 	 * This method sorts the elements in the order they should be processed.
 	 */
 	public function sort_topologically() {
-		$this->sort_elements( self::ELEMENT_TYPE_POST );
-		$this->sort_elements( self::ELEMENT_TYPE_CATEGORY );
+		// $this->sort_elements( self::ELEMENT_TYPE_POST );
+		// $this->sort_elements( self::ELEMENT_TYPE_CATEGORY );
 
 		$this->sorted = true;
 	}
