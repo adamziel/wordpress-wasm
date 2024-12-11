@@ -347,7 +347,7 @@ test('HTTPS requests via file_get_contents() to CORS-disabled URLs should succee
 		],
 	};
 	await website.goto(`/#${JSON.stringify(blueprint)}`);
-	await expect(wordpress.locator('body')).toContainText('int(332)');
+	await expect(wordpress.locator('body')).toContainText('int(340)');
 });
 
 test('PHP Shutdown should work', async ({ website, wordpress }) => {
