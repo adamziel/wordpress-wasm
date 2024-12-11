@@ -10,19 +10,14 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		global $wpdb;
-
-		// Empty the wp_commentmeta table
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->commentmeta}" );
-
-		// Empty the wp_comments table
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->comments}" );
-
+		$this->delete_all_data();
+		wp_cache_flush();
 		WP_Topological_Sorter::activate();
 	}
 
 	protected function tearDown(): void {
 		WP_Topological_Sorter::deactivate();
+
 		parent::tearDown();
 	}
 
@@ -32,14 +27,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/comment-meta.php
 	 */
 	public function test_serialized_comment_meta() {
-		$wxr_path = __DIR__ . '/wxr/test-serialized-comment-meta.xml';
-		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
-
-		do {
-			while ( $importer->next_step( 1 ) ) {
-				// noop
-			}
-		} while ( $importer->advance_to_next_stage() );
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-comment-meta.xml' );
 
 		$expected_string = '¯\_(ツ)_/¯';
 		$expected_array  = array( 'key' => '¯\_(ツ)_/¯' );
@@ -67,7 +55,104 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
 	 */
 	public function test_serialized_postmeta_no_cdata() {
-		$wxr_path = __DIR__ . '/wxr/test-serialized-postmeta-no-cdata.xml';
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-postmeta-no-cdata.xml' );
+
+		$expected = array(
+			'special_post_title' => 'A special title',
+			'is_calendar'        => '',
+		);
+		$this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );
+	}
+
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
+	 */
+	public function test_utw_postmeta() {
+		$this->import_wxr_file( __DIR__ . '/wxr/test-utw-post-meta-import.xml' );
+
+		$tags = array(
+			'album',
+			'apple',
+			'art',
+			'artwork',
+			'dead-tracks',
+			'ipod',
+			'itunes',
+			'javascript',
+			'lyrics',
+			'script',
+			'tracks',
+			'windows-scripting-host',
+			'wscript',
+		);
+
+		$expected = array();
+		foreach ( $tags as $tag ) {
+			$classy      = new StdClass();
+			$classy->tag = $tag;
+			$expected[]  = $classy;
+		}
+
+		$this->assertEquals( $expected, get_post_meta( 150, 'test', true ) );
+	}
+
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
+	 */
+	public function test_serialized_postmeta_with_cdata() {
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml' );
+
+		// HTML in the CDATA should work with old WordPress version.
+		$this->assertSame( '<pre>some html</pre>', get_post_meta( 10, 'contains-html', true ) );
+		// Serialised will only work with 3.0 onwards.
+		$expected = array(
+			'special_post_title' => 'A special title',
+			'is_calendar'        => '',
+		);
+		$this->assertSame( $expected, get_post_meta( 10, 'post-options', true ) );
+	}
+
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
+	 */
+	public function test_serialized_postmeta_with_evil_stuff_in_cdata() {
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml' );
+
+		// Evil content in the CDATA.
+		$this->assertSame( '<wp:meta_value>evil</wp:meta_value>', get_post_meta( 10, 'evil', true ) );
+	}
+
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
+	 */
+	public function test_serialized_postmeta_with_slashes() {
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml' );
+
+		$expected_integer      = '1';
+		$expected_string       = '¯\_(ツ)_/¯';
+		$expected_array        = array( 'key' => '¯\_(ツ)_/¯' );
+		$expected_array_nested = array(
+			'key' => array(
+				'foo' => '¯\_(ツ)_/¯',
+				'bar' => '\o/',
+			),
+		);
+
+		// $this->assertSame( $expected_string, get_post_meta( 10, 'string', true ) );
+		// $this->assertSame( $expected_array, get_post_meta( 10, 'array', true ) );
+		// $this->assertSame( $expected_array_nested, get_post_meta( 10, 'array-nested', true ) );
+		// $this->assertSame( $expected_integer, get_post_meta( 10, 'integer', true ) );
+	}
+
+	private function import_wxr_file( string $wxr_path ) {
 		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
 
 		do {
@@ -75,12 +160,6 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 				// noop
 			}
 		} while ( $importer->advance_to_next_stage() );
-
-		$expected = array(
-			'special_post_title' => 'A special title',
-			'is_calendar'        => '',
-		);
-		$this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );
 	}
 
 	/*public function test_import_one_post() {
