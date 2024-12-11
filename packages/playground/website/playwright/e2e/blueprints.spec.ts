@@ -332,13 +332,13 @@ test('HTTPS requests via file_get_contents() to CORS-disabled URLs should succee
 				step: 'writeFile',
 				path: '/wordpress/https-test.php',
 				/**
-				 * The URL is valid, but the server does not provide the CORS headers required for fetch() to work.
+				 * The URL is valid, but the server does not provide the CORS headers required by fetch().
 				 */
 				data: `<?php
 					var_dump(
 						strlen(
 							file_get_contents(
-								'https://github.com/WordPress/wordpress-playground/blob/5e5ba3e0f5b984ceadd5cbe6e661828c14621d25/README.md'
+								'https://playground.wordpress.net/test-fixtures/cors-file.html'
 							)
 						)
 					);
@@ -347,7 +347,7 @@ test('HTTPS requests via file_get_contents() to CORS-disabled URLs should succee
 		],
 	};
 	await website.goto(`/#${JSON.stringify(blueprint)}`);
-	await expect(wordpress.locator('body')).toContainText('int(223698)');
+	await expect(wordpress.locator('body')).toContainText('int(332)');
 });
 
 test('PHP Shutdown should work', async ({ website, wordpress }) => {
