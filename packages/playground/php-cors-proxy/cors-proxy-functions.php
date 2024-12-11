@@ -300,7 +300,7 @@ class IpUtils
 }
 
 
-function filter_headers_strings($php_headers, $headers_requiring_opt_in, $disallowed_headers) {
+function filter_headers_by_name($php_headers, $headers_requiring_opt_in, $disallowed_headers) {
     $lowercased_php_headers = array_change_key_case($php_headers, CASE_LOWER);
     $headers_requiring_opt_in = array_map('strtolower', $headers_requiring_opt_in);
     $disallowed_headers = array_map('strtolower', $disallowed_headers);

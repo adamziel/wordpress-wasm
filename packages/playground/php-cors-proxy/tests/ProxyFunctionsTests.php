@@ -169,7 +169,7 @@ class ProxyFunctionsTests extends TestCase
         $this->assertEquals([
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
-        ], filter_headers_strings($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
+        ], filter_headers_by_name($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
     }
 
     public function testFilterHeaderStringsWithAdditionalAllowedHeaders()
@@ -199,6 +199,6 @@ class ProxyFunctionsTests extends TestCase
             'Authorization' => 'Bearer 1234567890',
             'X-Authorization' => 'Bearer 1234567890',
             'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
-        ], filter_headers_strings($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
+        ], filter_headers_by_name($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
     }
 }

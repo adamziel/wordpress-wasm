@@ -110,7 +110,7 @@ $strictly_disallowed_headers = [
     'Host'
 ];
 $curlHeaders = kv_headers_to_curl_format(
-    filter_headers_strings(
+    filter_headers_by_name(
         getallheaders(),
         $headers_requiring_opt_in,
         $strictly_disallowed_headers
