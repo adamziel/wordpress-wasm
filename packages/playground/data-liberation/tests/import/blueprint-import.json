@@ -4,7 +4,7 @@
 		"WP_DEBUG": true,
 		"WP_DEBUG_DISPLAY": true,
 		"WP_DEBUG_LOG": true,
-		"PHPUNIT_FILTER": "WPTopologicalSorterTests::test_serialized_term_meta"
+		"PHPUNIT_FILTER": false
 	},
 	"login": true,
 	"steps": [
