@@ -186,6 +186,11 @@ curl_setopt(
             stripos($header, 'HTTP/') !== 0 &&
             stripos($header, 'Set-Cookie:') !== 0 &&
             stripos($header, 'Authorization:') !== 0 &&
+            // The proxy server does not support relaying auth challenges.
+            // Specifically, we want to avoid browsers prompting for basic auth
+            // credentials which they will send to the proxy server for the
+            // remainder of the session.
+            stripos($header, 'WWW-Authenticate:') !== 0 &&
             stripos($header, 'Cache-Control:') !== 0 &&
             // The browser won't accept multiple values for these headers.
             stripos($header, 'Access-Control-Allow-Origin:') !== 0 &&
