@@ -899,7 +899,7 @@ class WP_Entity_Importer {
 	 * @return int|WP_Error Number of meta items imported on success, error otherwise.
 	 */
 	public function import_post_meta( $meta_item, $post_id ) {
-		if ( empty( $meta ) ) {
+		if ( empty( $meta_item ) ) {
 			return true;
 		}
 
@@ -914,12 +914,12 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id, $post );
+		$key   = apply_filters( 'import_post_meta_key', $meta_item['meta_key'], $post_id );
 		$value = false;
 
 		if ( '_edit_last' === $key ) {
-			$value = intval( $meta_item['value'] );
-			if ( ! isset( $this->mapping['user'][ $value ] ) ) {
+			$value = intval( $value );
+			if ( ! isset( $this->mapping['user'][ $meta_item['meta_value'] ] ) ) {
 				// Skip!
 				_doing_it_wrong( __METHOD__, 'User ID not found in mapping', '4.7' );
 				return false;
@@ -931,10 +931,10 @@ class WP_Entity_Importer {
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string
 			if ( ! $value ) {
-				$value = maybe_unserialize( $meta_item['value'] );
+				$value = maybe_unserialize( $meta_item['meta_value'] );
 			}
 
-			add_post_meta( $post_id, $key, $value );
+			add_post_meta( $post_id, wp_slash( $key ), wp_slash_strings_only( $value ) );
 			do_action( 'import_post_meta', $post_id, $key, $value );
 
 			// if the post has a featured image, take note of this in case of remap
