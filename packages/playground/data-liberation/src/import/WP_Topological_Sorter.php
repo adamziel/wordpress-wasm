@@ -362,7 +362,10 @@ class WP_Topological_Sorter {
 				break;
 			case 'term':
 				$element_id = (string) $data['term_id'];
-				$new_element['parent_id']  = $data['parent'];
+
+				if ( array_key_exists( 'parent', $data ) ) {
+					$new_element['parent_id'] = $data['parent'];
+				}
 				break;
 		}
 
