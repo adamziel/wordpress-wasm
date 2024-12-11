@@ -75,7 +75,7 @@ export type FileTree = FileTreeFile | FileTreeFolder;
 
 export type GitRef = {
 	value: string;
-	type?: 'branch' | 'commit' | 'infer';
+	type?: 'branch' | 'commit' | 'refname' | 'infer';
 };
 
 /**
@@ -112,28 +112,34 @@ export async function resolveCommitHash(repoUrl: string, ref: GitRef) {
 		if (['', 'HEAD'].includes(ref.value)) {
 			ref = {
 				value: ref.value,
-				type: 'branch',
+				type: 'refname',
 			};
 		} else if (typeof ref.value === 'string' && ref.value.length === 40) {
 			ref = {
 				value: ref.value,
 				type: 'commit',
 			};
-		} else {
-			ref = {
-				value: `refs/heads/${ref.value}`,
-				type: 'branch',
-			};
 		}
 	}
-	if (ref.type === 'commit') {
-		return ref.value;
+	if (ref.type === 'branch') {
+		ref = {
+			value: `refs/heads/${ref.value}`,
+			type: 'refname',
+		};
 	}
-	const refs = await listGitRefs(repoUrl, ref.value);
-	if (!(ref.value in refs)) {
-		throw new Error(`Branch ${ref.value} not found`);
+	switch (ref.type) {
+		case 'commit':
+			return ref.value;
+		case 'refname': {
+			const refs = await listGitRefs(repoUrl, ref.value);
+			if (!(ref.value in refs)) {
+				throw new Error(`Branch ${ref.value} not found`);
+			}
+			return refs[ref.value];
+		}
+		default:
+			throw new Error(`Invalid ref type: ${ref.type}`);
 	}
-	return refs[ref.value];
 }
 
 function gitTreeToFileTree(tree: GitTree): FileTree[] {
