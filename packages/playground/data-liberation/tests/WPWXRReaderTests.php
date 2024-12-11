@@ -54,7 +54,7 @@ class WPWXRReaderTests extends TestCase {
             [__DIR__ . '/wxr/slashes.xml', 9],
             [__DIR__ . '/wxr/small-export.xml', 68],
             [__DIR__ . '/wxr/test-serialized-postmeta-no-cdata.xml', 5],
-            [__DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml', 7],
+            [__DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml', 11],
             [__DIR__ . '/wxr/test-utw-post-meta-import.xml', 5],
             [__DIR__ . '/wxr/theme-unit-test-data.xml', 1146],
             [__DIR__ . '/wxr/valid-wxr-1.0.xml', 32],
