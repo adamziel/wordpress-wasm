@@ -1,18 +1,14 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
+require_once __DIR__ . '/PlaygroundTestCase.php';
 
 /**
  * Tests for the WPTopologicalSorterTests class.
  */
-class WPTopologicalSorterTests extends TestCase {
+class WPTopologicalSorterTests extends PlaygroundTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-
-		if ( ! isset( $_SERVER['SERVER_SOFTWARE'] ) || $_SERVER['SERVER_SOFTWARE'] !== 'PHP.wasm' ) {
-			$this->markTestSkipped( 'Test only runs in Playground' );
-		}
 
 		global $wpdb;
 
