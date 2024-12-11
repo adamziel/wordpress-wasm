@@ -21,7 +21,6 @@ if (should_respond_with_cors_headers($server_host, $origin)) {
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type');
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header("Allow: GET, POST, OPTIONS");
     exit;
@@ -167,6 +166,11 @@ curl_setopt(
             );
             header('Location: ' . $newLocation, true);
         } else if (
+            // Safari fails with "Cannot connect to the server" if we let
+            // the HTTP/2 line be relayed. This proxy doesn't support HTTP/2,
+            // so let's not allow the HTTP line to explicitly pass through.
+            // PHP already provides the HTTP version in the response code anyway.
+            stripos($header, 'HTTP/') !== 0 &&
             stripos($header, 'Set-Cookie:') !== 0 &&
             stripos($header, 'Authorization:') !== 0 &&
             stripos($header, 'Cache-Control:') !== 0 &&
