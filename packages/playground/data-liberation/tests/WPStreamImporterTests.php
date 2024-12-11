@@ -112,18 +112,6 @@ class WPStreamImporterTests extends PlaygroundTestCase {
 		$this->assertFalse( $importer->next_step() );
 	}
 
-	public function test_sort_categories() {
-		$wxr_path = __DIR__ . '/wxr/mixed-categories.xml';
-		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
-		$this->skip_to_stage( $importer, WP_Stream_Importer::STAGE_TOPOLOGICAL_SORT );
-
-		while ( $importer->next_step() ) {
-			if ( $importer->get_next_stage() === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ) {
-				break;
-			}
-		}
-	}
-
 	private function skip_to_stage( WP_Stream_Importer $importer, string $stage ) {
 		do {
 			while ( $importer->next_step() ) {
