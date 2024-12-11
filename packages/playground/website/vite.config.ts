@@ -37,7 +37,7 @@ export default defineConfig(({ command, mode }) => {
 		'CORS_PROXY_URL' in process.env
 			? process.env.CORS_PROXY_URL
 			: mode === 'production'
-			? '/cors-proxy.php?'
+			? 'https://wordpress-playground-cors-proxy.net/?'
 			: 'http://127.0.0.1:5263/cors-proxy.php?';
 
 	return {
