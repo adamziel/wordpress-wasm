@@ -134,18 +134,6 @@ class WP_Topological_Sorter {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
-
-		update_option( self::OPTION_NAME, self::DB_VERSION );
-	}
-
-	/**
-	 * Run in the 'plugins_loaded' action.
-	 */
-	public static function load() {
-		if ( self::DB_VERSION !== (int) get_site_option( self::OPTION_NAME ) ) {
-			// Used to update the database with dbDelta, if needed in the future.
-			self::activate();
-		}
 	}
 
 	/**

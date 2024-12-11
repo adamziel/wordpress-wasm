@@ -66,6 +66,7 @@ add_action( 'init', 'data_liberation_init' );
 function data_liberation_activate() {
 	// Activate the topological sorter. Create tables and options.
 	WP_Topological_Sorter::activate();
+	update_option( WP_Topological_Sorter::OPTION_NAME, WP_Topological_Sorter::DB_VERSION );
 }
 
 // Run when the plugin is activated.
@@ -82,7 +83,11 @@ function data_liberation_deactivate() {
 register_deactivation_hook( __FILE__, 'data_liberation_deactivate' );
 
 function data_liberation_load() {
-	WP_Topological_Sorter::load();
+	if ( WP_Topological_Sorter::DB_VERSION !== (int) get_site_option( WP_Topological_Sorter::OPTION_NAME ) ) {
+		// Update the database with dbDelta, if needed in the future.
+		WP_Topological_Sorter::activate();
+		update_option( WP_Topological_Sorter::OPTION_NAME, WP_Topological_Sorter::DB_VERSION );
+	}
 }
 
 // Run when the plugin is loaded.
