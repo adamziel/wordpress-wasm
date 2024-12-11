@@ -347,7 +347,7 @@ class WP_Entity_Importer {
 			$termdata[ $key ] = $data[ $key ];
 		}
 
-		$term   = term_exists( $data['name'], $data['taxonomy'] );
+		$term   = term_exists( $data['slug'], $data['taxonomy'] );
 		$result = null;
 
 		if ( is_array( $term ) ) {
