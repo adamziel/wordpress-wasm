@@ -152,6 +152,38 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		// $this->assertSame( $expected_integer, get_post_meta( 10, 'integer', true ) );
 	}
 
+	/**
+	 * This is a WordPress core importer test.
+	 *
+	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/term-meta.php
+	 */
+	public function test_serialized_term_meta() {
+		register_taxonomy( 'custom_taxonomy', array( 'post' ) );
+
+		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-term-meta.xml' );
+
+		$expected_string = '¯\_(ツ)_/¯';
+		$expected_array  = array( 'key' => '¯\_(ツ)_/¯' );
+
+		// $term = get_term_by( 'slug', 'post_tag', 'post_tag' );
+		// $this->assertInstanceOf( 'WP_Term', $term );
+		// $this->assertSame( $expected_string, get_term_meta( $term->term_id, 'string', true ) );
+		// $this->assertSame( $expected_array, get_term_meta( $term->term_id, 'array', true ) );
+
+		// $term = get_term_by( 'slug', 'category', 'category' );
+		// $this->assertInstanceOf( 'WP_Term', $term );
+		// $this->assertSame( $expected_string, get_term_meta( $term->term_id, 'string', true ) );
+		// $this->assertSame( $expected_array, get_term_meta( $term->term_id, 'array', true ) );
+
+		// $term = get_term_by( 'slug', 'custom_taxonomy', 'custom_taxonomy' );
+		// $this->assertInstanceOf( 'WP_Term', $term );
+		// $this->assertSame( $expected_string, get_term_meta( $term->term_id, 'string', true ) );
+		// $this->assertSame( $expected_array, get_term_meta( $term->term_id, 'array', true ) );
+	}
+
+	/**
+	 * Import a WXR file.
+	 */
 	private function import_wxr_file( string $wxr_path ) {
 		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
 
