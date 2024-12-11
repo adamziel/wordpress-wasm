@@ -299,11 +299,29 @@ class IpUtils
 
 }
 
-
-function filter_headers_by_name($php_headers, $headers_requiring_opt_in, $disallowed_headers) {
+/**
+ * Filters headers by name, removing disallowed headers and enforcing opt-in requirements.
+ * 
+ * @param array $php_headers {
+ *  An associative array of headers.
+ *  @type string $key Header name.
+ * }
+ * @param array $disallowed_headers       List of header names that are disallowed.
+ * @param array $headers_requiring_opt_in List of header names that require opt-in
+ *                                        via the X-Cors-Proxy-Allowed-Request-Headers header.
+ * 
+ * @return array {
+ *  Filtered headers.
+ *  @type string $key Header name.
+ */
+function filter_headers_by_name(
+    $php_headers,
+    $disallowed_headers,
+    $headers_requiring_opt_in = [],
+) {
     $lowercased_php_headers = array_change_key_case($php_headers, CASE_LOWER);
-    $headers_requiring_opt_in = array_map('strtolower', $headers_requiring_opt_in);
     $disallowed_headers = array_map('strtolower', $disallowed_headers);
+    $headers_requiring_opt_in = array_map('strtolower', $headers_requiring_opt_in);
 
     // Get explicitly allowed headers from X-Cors-Proxy-Allowed-Request-Headers
     $headers_opt_in_str =

@@ -157,19 +157,25 @@ class ProxyFunctionsTests extends TestCase
             'Host' => 'example.com',
         ];
 
-        $headers_requiring_opt_in = [
-            'Authorization',
-        ];
-
         $strictly_disallowed_headers = [
             'Cookie',
             'Host',
         ];
 
-        $this->assertEquals([
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ], filter_headers_by_name($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
+        $headers_requiring_opt_in = [
+            'Authorization',
+        ];
+
+        $this->assertEquals(
+            [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
+            filter_headers_by_name(
+                $original_headers,
+                $strictly_disallowed_headers,
+                $headers_requiring_opt_in,
+            ));
     }
 
     public function testFilterHeaderStringsWithAdditionalAllowedHeaders()
@@ -184,21 +190,27 @@ class ProxyFunctionsTests extends TestCase
             'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
         ];
 
-        $headers_requiring_opt_in = [
-            'Authorization',
-        ];
-
         $strictly_disallowed_headers = [
             'Cookie',
             'Host',
         ];
 
-        $this->assertEquals([
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer 1234567890',
-            'X-Authorization' => 'Bearer 1234567890',
-            'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
-        ], filter_headers_by_name($original_headers, $headers_requiring_opt_in, $strictly_disallowed_headers));
+        $headers_requiring_opt_in = [
+            'Authorization',
+        ];
+
+        $this->assertEquals(
+            [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer 1234567890',
+                'X-Authorization' => 'Bearer 1234567890',
+                'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
+            ],
+            filter_headers_by_name(
+                $original_headers,
+                $strictly_disallowed_headers,
+                $headers_requiring_opt_in,
+            ));
     }
 }

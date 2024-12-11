@@ -101,19 +101,26 @@ curl_setopt($ch, CURLOPT_RESOLVE, [
     "$host:443:$resolvedIp"
 ]);
 
-// Pass all incoming headers except cookies and authorization
-$headers_requiring_opt_in = [
-    'Authorization'
-];
 $strictly_disallowed_headers = [
+    // Cookies represent a relationship between the proxy server
+    // and the client, so it is inappropriate to forward them.
     'Cookie',
+    // Drop the incoming Host header because it identifies the
+    // proxy server, not the target server.
     'Host'
+];
+$headers_requiring_opt_in = [
+    // Allow Authorization header to be forwarded only if the client
+    // explicitly opts in to avoid undesirable situations such as:
+    // - a browser auto-sending basic auth with every proxy request
+    // - the proxy forwarding the basic auth values to all target servers
+    'Authorization'
 ];
 $curlHeaders = kv_headers_to_curl_format(
     filter_headers_by_name(
         getallheaders(),
+        $strictly_disallowed_headers,
         $headers_requiring_opt_in,
-        $strictly_disallowed_headers
     )
 );
 curl_setopt(
