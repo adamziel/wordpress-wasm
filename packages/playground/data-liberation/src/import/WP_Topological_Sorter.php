@@ -23,36 +23,9 @@ class WP_Topological_Sorter {
 	const DB_VERSION = 1;
 
 	/**
-	 * Variable for keeping counts of orphaned posts/attachments, it'll also be assigned as temporarly post ID.
-	 * To prevent duplicate post ID, we'll use negative number.
-	 *
-	 * @var int
-	 */
-	protected $orphan_post_counter = 0;
-
-	/**
-	 * Store the ID of the post ID currently being processed.
-	 *
-	 * @var int
-	 */
-	protected $last_post_id = 0;
-
-	/**
-	 * Whether the sort has been done.
-	 *
-	 * @var bool
-	 */
-	protected $sorted = false;
-
-	/**
 	 * The current session ID.
 	 */
 	protected $current_session = null;
-
-	/**
-	 * The total number of posts.
-	 */
-	protected $total_posts = 0;
 
 	/**
 	 * The current item being processed.
@@ -85,6 +58,9 @@ class WP_Topological_Sorter {
 		'wxr_importer_processed_term' => 2,
 	);
 
+	/**
+	 * Set the current session ID and add the filters and actions.
+	 */
 	public function __construct( $options = array() ) {
 		if ( array_key_exists( 'session_id', $options ) ) {
 			$this->current_session = $options['session_id'];
@@ -126,7 +102,7 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Run by register_activation_hook.
+	 * Run by register_activation_hook. It creates the table if it doesn't exist.
 	 */
 	public static function activate() {
 		global $wpdb;
@@ -224,12 +200,7 @@ class WP_Topological_Sorter {
 	 * Run by register_uninstall_hook.
 	 */
 	public function reset() {
-		$this->orphan_post_counter = 0;
-		$this->last_post_id        = 0;
-		$this->sorted              = false;
-		$this->current_session     = null;
-		$this->total_posts         = 0;
-		$this->current_item        = 0;
+		$this->current_session = null;
 	}
 
 	/**
@@ -489,145 +460,5 @@ class WP_Topological_Sorter {
 		}
 
 		return null;
-	}
-
-	/**
-	 * Get the byte offset of an element, and remove it from the list.
-	 *
-	 * @param string $slug The slug of the category to get the byte offset.
-	 *
-	 * @return int|bool The byte offset of the category, or false if the category is not found.
-	 */
-	public function get_category_byte_offset( $session_id, $slug ) {
-		global $wpdb;
-
-		if ( ! $this->sorted ) {
-			return false;
-		}
-
-		return $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT byte_offset FROM %i WHERE element_id = %s AND element_type = %d AND session_id = %d LIMIT 1',
-				self::get_table_name(),
-				(string) $slug,
-				self::ELEMENT_TYPE_CATEGORY,
-				(string) $session_id
-			)
-		);
-	}
-
-	/**
-	 * Get the next item to process.
-	 *
-	 * @param int $session_id The session ID to get the next item from.
-	 *
-	 * @return array|bool The next item to process, or false if there are no more items.
-	 */
-	public function next_item( $element_type, $session_id = null ) {
-		global $wpdb;
-
-		if ( ! $this->sorted || ( 0 === $this->total_posts && 0 === $this->total_categories ) ) {
-			return false;
-		}
-
-		if ( null === $session_id ) {
-			$session_id = $this->current_session;
-		}
-
-		$next_item = $wpdb->get_row(
-			$wpdb->prepare(
-				'SELECT * FROM %i WHERE element_type = %d ORDER BY sort_order ASC LIMIT 1 OFFSET %d',
-				self::get_table_name(),
-				$element_type,
-				$this->current_item
-			),
-			ARRAY_A
-		);
-
-		if ( ! $next_item ) {
-			return null;
-		}
-
-		return $next_item;
-	}
-
-	public function is_sorted() {
-		return $this->sorted;
-	}
-
-	/**
-	 * Sort elements topologically.
-	 *
-	 * Elements should not be processed before their parent has been processed.
-	 * This method sorts the elements in the order they should be processed.
-	 */
-	public function sort_topologically() {
-		// $this->sort_elements( self::ELEMENT_TYPE_POST );
-		// $this->sort_elements( self::ELEMENT_TYPE_CATEGORY );
-
-		$this->sorted = true;
-	}
-
-	/**
-	 * Recursive sort elements. Posts with parents will be moved to the correct position.
-	 *
-	 * @param int $type The type of element to sort.
-	 * @return true
-	 */
-	private function sort_elements( $type ) {
-		global $wpdb;
-		$table_name = self::get_table_name();
-
-		if ( self::is_sqlite() ) {
-			// SQLite recursive CTE query to perform topological sort
-			return $wpdb->query(
-				$wpdb->prepare(
-					'WITH RECURSIVE sorted_elements AS (
-						SELECT element_id, parent_id, ROW_NUMBER() OVER () AS sort_order
-						FROM %i
-						WHERE parent_id IS NULL AND element_type = %d
-						UNION ALL
-						SELECT e.element_id, e.parent_id, se.sort_order + 1
-						FROM %i e
-						INNER JOIN sorted_elements se
-						ON e.parent_id = se.element_id AND e.element_type = %d
-					)
-					UPDATE %i SET sort_order = (
-						SELECT sort_order
-						FROM sorted_elements s
-						WHERE s.element_id = %i.element_id
-					)
-					WHERE element_type = %d;',
-					$table_name,
-					$type,
-					$table_name,
-					$type,
-					$table_name,
-					$table_name,
-					$type
-				)
-			);
-		}
-
-		// MySQL version - update sort_order using a subquery
-		return $wpdb->query(
-			$wpdb->prepare(
-				'UPDATE %i t1
-				JOIN (
-					SELECT element_id,
-						   @sort := @sort + 1 AS new_sort_order
-					FROM %i
-					CROSS JOIN (SELECT @sort := 0) AS sort_var
-					WHERE element_type = %d
-					ORDER BY COALESCE(parent_id, "0"), element_id
-				) t2 ON t1.element_id = t2.element_id
-				SET t1.sort_order = t2.new_sort_order
-				WHERE t1.element_type = %d',
-				$table_name,
-				$table_name,
-				$type,
-				$type
-			)
-		);
 	}
 }

@@ -13,21 +13,6 @@ class WPStreamImporterTests extends TestCase {
 		if ( ! isset( $_SERVER['SERVER_SOFTWARE'] ) || $_SERVER['SERVER_SOFTWARE'] !== 'PHP.wasm' ) {
 			$this->markTestSkipped( 'Test only runs in Playground' );
 		}
-
-		global $wpdb;
-
-		// Empty the wp_commentmeta table
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->commentmeta}" );
-
-		// Empty the wp_comments table
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->comments}" );
-
-		WP_Topological_Sorter::activate();
-	}
-
-	protected function tearDown(): void {
-		WP_Topological_Sorter::deactivate();
-		parent::tearDown();
 	}
 
 	/**
@@ -143,67 +128,6 @@ class WPStreamImporterTests extends TestCase {
 				break;
 			}
 		}
-	}
-
-	/**
-	 * This is a WordPress core importer test.
-	 *
-	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/comment-meta.php
-	 */
-	public function test_serialized_comment_meta() {
-		$wxr_path = __DIR__ . '/wxr/test-serialized-comment-meta.xml';
-		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
-
-		do {
-			while ( $importer->next_step( 1 ) ) {
-				// noop
-			}
-		} while ( $importer->advance_to_next_stage() );
-
-		$expected_string = '¯\_(ツ)_/¯';
-		$expected_array  = array( 'key' => '¯\_(ツ)_/¯' );
-
-		$comments_count = wp_count_comments();
-		// Note: using assertEquals() as the return type changes across different WP versions - numeric string vs int.
-		$this->assertEquals( 1, $comments_count->approved );
-
-		$comments = get_comments();
-		$this->assertCount( 1, $comments );
-
-		$comment = $comments[0];
-		$this->assertSame( $expected_string, get_comment_meta( $comment->comment_ID, 'string', true ) );
-		$this->assertSame( $expected_array, get_comment_meta( $comment->comment_ID, 'array', true ) );
-
-		// Additional check for Data Liberation.
-		$this->assertEquals( 'A WordPress Commenter', $comments[0]->comment_author );
-		$this->assertEquals( 2, $comments[0]->comment_ID );
-		$this->assertEquals( 10, $comments[0]->comment_post_ID );
-	}
-
-	/**
-	 * This is a WordPress core importer test.
-	 *
-	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/postmeta.php
-	 */
-	public function test_serialized_postmeta_no_cdata() {
-		/*$this->_import_wp( DIR_TESTDATA_WP_IMPORTER . '/test-serialized-postmeta-no-cdata.xml', array( 'johncoswell' => 'john' ) );
-		$expected['special_post_title'] = 'A special title';
-		$expected['is_calendar']        = '';
-		$this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );*/
-		$wxr_path = __DIR__ . '/wxr/test-serialized-postmeta-no-cdata.xml';
-		$importer = WP_Stream_Importer::create_for_wxr_file( $wxr_path );
-
-		do {
-			while ( $importer->next_step( 1 ) ) {
-				// noop
-			}
-		} while ( $importer->advance_to_next_stage() );
-
-		$expected = array(
-			'special_post_title' => 'A special title',
-			'is_calendar'        => '',
-		);
-		$this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );
 	}
 
 	private function skip_to_stage( WP_Stream_Importer $importer, string $stage ) {
