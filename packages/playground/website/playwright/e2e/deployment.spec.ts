@@ -22,7 +22,12 @@ const blueprint = {
 		},
 	],
 };
-const url = `http://localhost:${port}/#${btoa(JSON.stringify(blueprint))}`;
+const url = new URL(`http://localhost:${port}`);
+// TODO: Say why
+url.searchParams.set(
+	'blueprint-url',
+	`data:application/json;base64,${btoa(JSON.stringify(blueprint))}`
+);
 
 const maxDiffPixels = 4000;
 
@@ -60,7 +65,7 @@ for (const cachingEnabled of [true, false]) {
 	})`, async ({ website, page, wordpress }) => {
 		server!.setHttpCacheEnabled(cachingEnabled);
 
-		await page.goto(url);
+		await page.goto(url.href);
 		await website.waitForNestedIframes();
 		await expect(page).toHaveScreenshot('website-old.png', {
 			maxDiffPixels,
