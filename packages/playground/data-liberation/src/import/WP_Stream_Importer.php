@@ -311,10 +311,6 @@ class WP_Stream_Importer {
 					return true;
 				}
 
-				// We indexed all the entities. Now sort them topologically.
-				$this->topological_sorter->sort_topologically();
-				$this->topological_sorter = null;
-
 				$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
 				return false;
 			case self::STAGE_FRONTLOAD_ASSETS:
@@ -363,10 +359,13 @@ class WP_Stream_Importer {
 			$this->entity_iterator = $this->create_entity_iterator();
 		}
 
+		if ( null === $this->topological_sorter ) {
+			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
+		}
+
 		// Mark all mapping candidates as seen.
 		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
 			$this->site_url_mapping_candidates[ $base_url ] = true;
-		}
 
 		// Reset the counts and URLs found in the previous pass.
 		$this->indexed_entities_counts = array();
@@ -537,7 +536,10 @@ class WP_Stream_Importer {
 		}
 
 		if ( null === $this->entity_iterator ) {
-			$this->entity_iterator    = $this->create_entity_iterator();
+			$this->entity_iterator = $this->create_entity_iterator();
+		}
+
+		if ( null === $this->topological_sorter ) {
 			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
@@ -558,17 +560,8 @@ class WP_Stream_Importer {
 
 			$entity = $this->entity_iterator->current();
 			$data   = $entity->get_data();
-			$offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
-
-			switch ( $entity->get_type() ) {
-				case 'category':
-					$this->topological_sorter->map_category( $offset, $data );
-					break;
-				case 'post':
-					$this->topological_sorter->map_post( $offset, $data );
-					break;
-			}
-
+			// $offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
+			$this->topological_sorter->map_element( $entity->get_type(), $data );
 			$this->entity_iterator->next();
 		}
 
@@ -594,6 +587,10 @@ class WP_Stream_Importer {
 				$this->entity_iterator->set_entities_iterator( $this->create_entity_iterator() );
 			}
 			$this->downloader = new WP_Attachment_Downloader( $this->options['uploads_path'] );
+		}
+
+		if ( null === $this->topological_sorter ) {
+			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
 		// Clear the frontloading events from the previous pass.
@@ -699,6 +696,10 @@ class WP_Stream_Importer {
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = $this->create_entity_iterator();
 			$this->importer        = new WP_Entity_Importer();
+		}
+
+		if ( null === $this->topological_sorter ) {
+			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {

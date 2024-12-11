@@ -260,7 +260,6 @@ class WP_Entity_Importer {
 	}
 
 	public function import_term( $data ) {
-		// print_r( $data );
 		/**
 		 * Pre-process term data.
 		 *
@@ -303,7 +302,7 @@ class WP_Entity_Importer {
 			'parent'      => true,
 		);
 
-		// Map the parent comment, or mark it as one we need to fix
+		// Map the parent term, or mark it as one we need to fix
 		if ( $parent ) {
 			// TODO: add parent mapping and remapping
 			// $requires_remapping = false;
@@ -318,13 +317,13 @@ class WP_Entity_Importer {
 				$data['parent'] = 0;
 			}*/
 			$parent_term = term_exists( $parent, $data['taxonomy'] );
-			
+
 			if ( $parent_term ) {
 				$data['parent'] = $parent_term['term_id'];
 			} else {
 				// It can happens that the parent term is not imported yet in manually created WXR files.
 				$parent_term = wp_insert_term( $parent, $data['taxonomy'] );
-				
+
 				if ( is_wp_error( $parent_term ) ) {
 					$this->logger->error(
 						sprintf(
@@ -472,6 +471,8 @@ class WP_Entity_Importer {
 	 * Note that new/updated terms, comments and meta are imported for the last of the above.
 	 */
 	public function import_post( $data ) {
+		$parent_id = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
+
 		/**
 		 * Pre-process post data.
 		 *
@@ -480,17 +481,16 @@ class WP_Entity_Importer {
 		 * @param array $comments Comments on the post.
 		 * @param array $terms Terms on the post.
 		 */
-		$data = apply_filters( 'wxr_importer_pre_process_post', $data );
+		$data = apply_filters( 'wxr_importer_pre_process_post', $data, $parent_id );
 		if ( empty( $data ) ) {
 			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
 		}
 
 		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
-		$parent_id   = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
 
 		// Have we already processed this?
-		if ( isset( $this->mapping['post'][ $original_id ] ) ) {
+		if ( isset( $element['_already_mapped'] ) ) {
 			$this->logger->debug( 'Skipping post, already processed' );
 			return;
 		}
@@ -677,6 +677,7 @@ class WP_Entity_Importer {
 		 * @param array $terms Raw term data, already processed.
 		 */
 		do_action( 'wxr_importer_processed_post', $post_id, $data );
+
 		return $post_id;
 	}
 
@@ -942,6 +943,8 @@ class WP_Entity_Importer {
 			}
 		}
 
+		do_action( 'wxr_importer_processed_post_meta', $post_id, $meta_item );
+
 		return true;
 	}
 
@@ -1034,7 +1037,10 @@ class WP_Entity_Importer {
 		}
 
 		// Run standard core filters
-		$comment['comment_post_ID'] = $post_id;
+		if ( ! $comment['comment_post_ID'] ) {
+			$comment['comment_post_ID'] = $post_id;
+		}
+
 		// @TODO: How to handle missing fields? Use sensible defaults? What defaults?
 		if ( ! isset( $comment['comment_author_IP'] ) ) {
 			$comment['comment_author_IP'] = '';
@@ -1071,17 +1077,27 @@ class WP_Entity_Importer {
 		/**
 		 * Post processing completed.
 		 *
-		 * @param int $post_id New post ID.
+		 * @param int $comment_id New comment ID.
 		 * @param array $comment Raw data imported for the comment.
-		 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 		 * @param array $post_id Parent post ID.
 		 */
 		do_action( 'wxr_importer_processed_comment', $comment_id, $comment, $post_id );
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
-		$value = maybe_unserialize( $meta_item['value'] );
-		add_comment_meta( $comment_id, wp_slash( $meta_item['key'] ), wp_slash( $value ) );
+		$meta_item = apply_filters( 'wxr_importer_pre_process_comment_meta', $meta_item, $comment_id );
+		if ( empty( $meta_item ) ) {
+			return false;
+		}
+
+		if ( ! isset( $meta_item['comment_id'] ) ) {
+			$meta_item['comment_id'] = $comment_id;
+		}
+
+		$value           = maybe_unserialize( $meta_item['meta_value'] );
+		$comment_meta_id = add_comment_meta( $meta_item['comment_id'], wp_slash( $meta_item['meta_key'] ), wp_slash( $value ) );
+
+		do_action( 'wxr_importer_processed_comment_meta', $comment_meta_id, $meta_item, $comment_id );
 	}
 
 	/**
