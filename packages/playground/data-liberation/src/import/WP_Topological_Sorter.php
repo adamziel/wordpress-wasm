@@ -107,69 +107,35 @@ class WP_Topological_Sorter {
 	public static function activate() {
 		global $wpdb;
 
-		$table_name = self::get_table_name();
+		// See wp_get_db_schema
+		$max_index_length = 191;
 
 		// Create the table if it doesn't exist.
-		// @TODO: remove this custom SQLite declaration after first phase of unit tests is done.
-		if ( self::is_sqlite() ) {
-			$sql = $wpdb->prepare(
-				'CREATE TABLE IF NOT EXISTS %i (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					session_id INTEGER NOT NULL,
-					element_type INTEGER NOT NULL,
-					element_id TEXT NOT NULL,
-					mapped_id TEXT DEFAULT NULL,
-					parent_id TEXT DEFAULT NULL,
-					byte_offset INTEGER NOT NULL,
-					sort_order int DEFAULT 1
-				);
-
-				CREATE UNIQUE INDEX IF NOT EXISTS idx_element_id ON %i (element_id);
-				CREATE INDEX IF NOT EXISTS idx_session_id ON %i (session_id);
-				CREATE INDEX IF NOT EXISTS idx_parent_id ON %i (parent_id);
-				CREATE INDEX IF NOT EXISTS idx_byte_offset ON %i (byte_offset);',
-				$table_name,
-				$table_name,
-				$table_name,
-				$table_name,
-				$table_name
-			);
-		} else {
-			// See wp_get_db_schema
-			$max_index_length = 191;
-
-			// MySQL, MariaDB.
-			$sql = $wpdb->prepare(
-				'CREATE TABLE IF NOT EXISTS %i (
-					id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-					session_id bigint(20) unsigned NOT NULL,
-					element_type tinyint(1) NOT NULL,
-					element_id text NOT NULL,
-					mapped_id text DEFAULT NULL,
-					parent_id text DEFAULT NULL,
-					byte_offset bigint(20) unsigned NOT NULL,
-					sort_order int DEFAULT 1,
-					PRIMARY KEY  (id),
-					KEY session_id (session_id),
-					KEY element_id (element_id(%d)),
-					KEY parent_id (parent_id(%d)),
-					KEY byte_offset (byte_offset)
-				) ' . $wpdb->get_charset_collate(),
-				self::get_table_name(),
-				1,
-				$max_index_length,
-				$max_index_length
-			);
-		}
+		$sql = $wpdb->prepare(
+			'CREATE TABLE IF NOT EXISTS %i (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				session_id bigint(20) unsigned NOT NULL,
+				element_type tinyint(1) NOT NULL,
+				element_id text NOT NULL,
+				mapped_id text DEFAULT NULL,
+				parent_id text DEFAULT NULL,
+				byte_offset bigint(20) unsigned NOT NULL,
+				sort_order int DEFAULT 1,
+				PRIMARY KEY  (id),
+				KEY session_id (session_id),
+				KEY element_id (element_id(%d)),
+				KEY parent_id (parent_id(%d)),
+				KEY byte_offset (byte_offset)
+			) ' . $wpdb->get_charset_collate(),
+			self::get_table_name(),
+			$max_index_length,
+			$max_index_length
+		);
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 
 		update_option( self::OPTION_NAME, self::DB_VERSION );
-	}
-
-	public static function is_sqlite() {
-		return defined( 'DB_ENGINE' ) && 'sqlite' === DB_ENGINE;
 	}
 
 	/**
