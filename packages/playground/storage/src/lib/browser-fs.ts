@@ -23,6 +23,31 @@ export async function opfsPathToDirectoryHandle(
 	return handle;
 }
 
+export async function fileExistsUnderDirectoryHandle(
+	directoryHandle: FileSystemDirectoryHandle,
+	relativePath: string
+): Promise<boolean> {
+	const parts = relativePath.split('/').filter((p) => p.length > 0);
+	const fileName = parts.pop();
+	if (fileName === undefined) {
+		throw new Error('Invalid relative path.');
+	}
+
+	for (const part of parts) {
+		try {
+			directoryHandle = await directoryHandle.getDirectoryHandle(part);
+		} catch (e: any) {
+			return false;
+		}
+	}
+	try {
+		await directoryHandle.getFileHandle(fileName);
+		return true;
+	} catch (e) {
+		return false;
+	}
+}
+
 export async function directoryHandleToOpfsPath(
 	directoryHandle: FileSystemDirectoryHandle
 ): Promise<string> {

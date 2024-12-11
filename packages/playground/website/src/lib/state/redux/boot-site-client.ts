@@ -16,6 +16,8 @@ import { logger } from '@php-wasm/logger';
 import { setupPostMessageRelay } from '@php-wasm/web';
 import { startPlaygroundWeb } from '@wp-playground/client';
 import { PlaygroundClient } from '@wp-playground/remote';
+import { fileExistsUnderDirectoryHandle } from '@wp-playground/storage';
+import { looksLikePlaygroundDirectory } from '@wp-playground/wordpress';
 import { getRemoteUrl } from '../../config';
 import { setActiveModal, setActiveSiteError } from './slice-ui';
 import { PlaygroundDispatch, PlaygroundReduxState } from './store';
@@ -75,8 +77,15 @@ export function bootSiteClient(
 		let isWordPressInstalled = false;
 		if (mountDescriptor) {
 			try {
-				isWordPressInstalled = await playgroundAvailableInOpfs(
-					await directoryHandleFromMountDevice(mountDescriptor.device)
+				const mountDirHandle = await directoryHandleFromMountDevice(
+					mountDescriptor.device
+				);
+				isWordPressInstalled = await looksLikePlaygroundDirectory(
+					(relativePath: string) =>
+						fileExistsUnderDirectoryHandle(
+							mountDirHandle,
+							relativePath
+						)
 				);
 			} catch (e) {
 				logger.error(e);
@@ -210,48 +219,4 @@ export function bootSiteClient(
 
 		signal.onabort = null;
 	};
-}
-
-/**
- * Check if the given directory handle directory is a Playground directory.
- *
- * @TODO: Create a shared package like @wp-playground/wordpress for such utilities
- * and bring in the context detection logic from wp-now – only express it in terms of
- * either abstract FS operations or isomorphic PHP FS operations.
- * (we can't just use Node.js require('fs') in the browser, for example)
- *
- * @TODO: Reuse the "isWordPressInstalled" logic implemented in the boot protocol.
- *        Perhaps mount OPFS first, and only then check for the presence of the
- *        WordPress installation? Or, if not, perhaps implement a shared file access
- * 		  abstraction that can be used both with the PHP module and OPFS directory handles?
- *
- * @param dirHandle
- */
-export async function playgroundAvailableInOpfs(
-	dirHandle: FileSystemDirectoryHandle
-) {
-	// Run this loop just to trigger an exception if the directory handle is no good.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	for await (const _ of dirHandle.keys()) {
-		break;
-	}
-
-	try {
-		/**
-		 * Assume it's a Playground directory if these files exist:
-		 * - wp-config.php
-		 * - wp-content/database/.ht.sqlite
-		 */
-		await dirHandle.getFileHandle('wp-config.php', { create: false });
-		const wpContent = await dirHandle.getDirectoryHandle('wp-content', {
-			create: false,
-		});
-		const database = await wpContent.getDirectoryHandle('database', {
-			create: false,
-		});
-		await database.getFileHandle('.ht.sqlite', { create: false });
-	} catch (e) {
-		return false;
-	}
-	return true;
 }

@@ -66,7 +66,11 @@ export interface StartPlaygroundOptions {
 	 */
 	onBeforeBlueprint?: () => Promise<void>;
 	mounts?: Array<MountDescriptor>;
-	shouldInstallWordPress?: boolean;
+	/**
+	 * Whether to install WordPress. Value may be boolean or 'auto'.
+	 * If 'auto', WordPress will be installed if it is not already installed.
+	 */
+	shouldInstallWordPress?: boolean | 'auto';
 	/**
 	 * The string prefix used in the site URL served by the currently
 	 * running remote.html. E.g. for a prefix like `/scope:playground/`,

@@ -17,7 +17,10 @@ import {
 	sqliteDatabaseIntegrationModuleDetails,
 	MinifiedWordPressVersionsList,
 } from '@wp-playground/wordpress-builds';
-import { directoryHandleFromMountDevice } from '@wp-playground/storage';
+import {
+	directoryHandleFromMountDevice,
+	fileExistsUnderDirectoryHandle,
+} from '@wp-playground/storage';
 import { randomString } from '@php-wasm/util';
 import {
 	spawnHandlerFactory,
@@ -47,6 +50,7 @@ import {
 	bootWordPress,
 	getFileNotFoundActionForWordPress,
 	getLoadedWordPressVersion,
+	looksLikePlaygroundDirectory,
 } from '@wp-playground/wordpress';
 import { wpVersionToStaticAssetsDirectory } from '@wp-playground/wordpress-builds';
 import { logger } from '@php-wasm/logger';
@@ -74,7 +78,7 @@ export type WorkerBootOptions = {
 	scope: string;
 	withNetworking: boolean;
 	mounts?: Array<MountDescriptor>;
-	shouldInstallWordPress?: boolean;
+	shouldInstallWordPress?: boolean | 'auto';
 };
 
 /** @inheritDoc PHPClient */
@@ -190,6 +194,29 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 		}
 
 		try {
+			if (shouldInstallWordPress === 'auto') {
+				// Default to installing WordPress unless we detect
+				// it in one of the mounts.
+				shouldInstallWordPress = true;
+
+				// NOTE: This check is insufficient if a complete WordPress
+				// installation is composed of multiple mounts.
+				for (const mount of mounts) {
+					const dirHandle = await directoryHandleFromMountDevice(
+						mount.device
+					);
+					const fileExistsUnderMount = (relativePath: string) =>
+						fileExistsUnderDirectoryHandle(dirHandle, relativePath);
+
+					if (
+						await looksLikePlaygroundDirectory(fileExistsUnderMount)
+					) {
+						shouldInstallWordPress = false;
+						break;
+					}
+				}
+			}
+
 			// Start downloading WordPress if needed
 			let wordPressRequest = null;
 			if (shouldInstallWordPress) {

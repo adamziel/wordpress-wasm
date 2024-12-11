@@ -529,6 +529,21 @@ export async function unzipWordPress(php: PHP, wpZip: File) {
 	}
 }
 
+/**
+ * Check if the given directory handle directory is a Playground directory.
+ *
+ * @param fileExists Function A function that checks if a file exists relative to an assumed directory.
+ * @returns Promise<boolean> Whether the directory looks like a Playground directory.
+ */
+export async function looksLikePlaygroundDirectory(
+	fileExists: (relativePath: string) => Promise<boolean>
+) {
+	const results = await Promise.all(
+		['wp-config.php', 'wp-content/database/.ht.sqlite'].map(fileExists)
+	);
+	return results.every(Boolean);
+}
+
 function isCleanDirContainingSiteMetadata(path: string, php: PHP) {
 	const files = php.listFiles(path);
 	if (files.length === 0) {
