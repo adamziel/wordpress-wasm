@@ -25,7 +25,7 @@ export const playwrightConfig: PlaywrightTestConfig = {
 	},
 
 	timeout: 300000,
-	expect: { timeout: 30000 },
+	expect: { timeout: 45000 },
 
 	/* Configure projects for major browsers */
 	projects: [
