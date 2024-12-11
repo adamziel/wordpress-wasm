@@ -3,7 +3,7 @@
 require_once __DIR__ . '/PlaygroundTestCase.php';
 
 /**
- * Tests for the WPTopologicalSorterTests class.
+ * Tests for the WP_Topological_Sorter class.
  */
 class WPTopologicalSorterTests extends PlaygroundTestCase {
 
@@ -80,7 +80,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 			'special_post_title' => 'A special title',
 			'is_calendar'        => '',
 		);
-		// $this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );
+		$this->assertSame( $expected, get_post_meta( 122, 'post-options', true ) );
 	}
 
 	/*public function test_import_one_post() {
