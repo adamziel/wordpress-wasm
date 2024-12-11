@@ -1,0 +1,16 @@
+includes:
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+        - bin
+
+    ignoreErrors:
+        # This error can safely be ignored as we do these checks when building the data files.
+        -
+            message: "#Offset 'mapping' does not exist on array{status: string, mapping\\?: string}\\.#"
+            path: src/Idna.php
+            count: 2

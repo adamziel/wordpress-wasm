@@ -13,16 +13,20 @@ interface PreviewPRFormProps {
 
 const urlParams = new URLSearchParams(window.location.search);
 
+// This structure is from plugin-proxy.php
+// where we set allowed inputs for WordPress and Gutenberg repositories
 export const targetParams = {
 	wordpress: {
 		repo: 'wordpress-develop',
 		workflow: 'Test%20Build%20Processes',
 		artifact: 'wordpress-build-',
+		pull: 'github.com/wordpress/wordpress-develop/pull'
 	},
 	gutenberg: {
 		repo: 'gutenberg',
 		workflow: 'Build%20Gutenberg%20Plugin%20Zip',
 		artifact: 'gutenberg-plugin',
+		pull: 'github.com/wordpress/gutenberg/pull'
 	},
 };
 
@@ -73,10 +77,7 @@ export default function PreviewPRForm({
 		if (
 			prNumber
 				.toLowerCase()
-				.includes('github.com/wordpress/wordpress-develop/pull') ||
-			prNumber
-				.toLowerCase()
-				.includes('github.com/wordpress/gutenberg/pull')
+				.includes(targetParams[target].pull)
 		) {
 			prNumber = prNumber.match(/\/pull\/(\d+)/)![1];
 		}

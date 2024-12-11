@@ -9,7 +9,12 @@ use Rowbot\URL\URL;
 class WP_URL {
 
 	public static function parse( $url, $base = null ) {
-		return URL::parse( $url, $base ) ?? false;
+		if ( is_string( $url ) ) {
+			return URL::parse( $url, $base ) ?? false;
+		} elseif ( is_a( $url, 'Rowbot\URL\URL' ) ) {
+			return $url;
+		}
+		return false;
 	}
 
 	public static function can_parse( $url, $base = null ) {

@@ -227,6 +227,22 @@ class WP_Import_Session {
 		}
 		return $progress;
 	}
+
+	public function count_all_imported_entities() {
+		$counts = $this->count_imported_entities();
+		return array_sum( array_column( $counts, 'imported' ) );
+	}
+
+	public function count_all_total_entities() {
+		$counts = $this->count_imported_entities();
+		return array_sum( array_column( $counts, 'total' ) );
+	}
+
+	public function count_remaining_entities() {
+		$counts = $this->count_imported_entities();
+		return array_sum( array_column( $counts, 'total' ) ) - array_sum( array_column( $counts, 'imported' ) );
+	}
+
 	/**
 	 * Cache of imported entity counts to avoid repeated database queries
 	 * @var array
@@ -274,6 +290,20 @@ class WP_Import_Session {
 			$wpdb->query($sql);
 			*/
 		}
+	}
+
+	public function count_awaiting_frontloading_placeholders() {
+		global $wpdb;
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $wpdb->posts 
+				 WHERE post_type = 'frontloading_placeholder' 
+				 AND post_parent = %d
+				 AND post_status = %s",
+				$this->post_id,
+				self::FRONTLOAD_STATUS_AWAITING_DOWNLOAD
+			)
+		);
 	}
 
 	public function count_unfinished_frontloading_placeholders() {

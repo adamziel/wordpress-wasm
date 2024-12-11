@@ -152,6 +152,7 @@ export async function startPlaygroundWeb({
 		phpVersion: compiled.versions.php,
 		wpVersion: compiled.versions.wp,
 		withNetworking: compiled.features.networking,
+		corsProxyUrl: corsProxy,
 	});
 	await playground.isReady();
 	downloadPHPandWP.finish();

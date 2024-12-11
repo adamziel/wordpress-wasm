@@ -103,7 +103,7 @@ jobs:
             - name: Install Playwright Browsers
               run: sudo npx playwright install --with-deps
             - name: Prepare app deploy and offline mode
-              run: npx nx e2e:playwright:prepare-app-deploy-and-offline-mode playground-website
+              run: CORS_PROXY_URL=http://127.0.0.1:5263/cors-proxy.php? npx nx e2e:playwright:prepare-app-deploy-and-offline-mode playground-website
             - name: Zip dist
               run: zip -r dist.zip dist
             - name: Upload dist

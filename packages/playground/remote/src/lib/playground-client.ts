@@ -2,7 +2,7 @@
  * Imports required for the Playground Client.
  */
 import { ProgressReceiver } from '@php-wasm/progress';
-import { UniversalPHP } from '@php-wasm/universal';
+import { MessageListener, UniversalPHP } from '@php-wasm/universal';
 import { RemoteAPI, SyncProgressCallback } from '@php-wasm/web';
 import { ProgressBarOptions } from './progress-bar';
 import type {
@@ -59,7 +59,7 @@ export interface WebClientMixin extends ProgressReceiver {
 	hasCachedStaticFilesRemovedFromMinifiedBuild: PlaygroundWorkerEndpoint['hasCachedStaticFilesRemovedFromMinifiedBuild'];
 
 	/** @inheritDoc @php-wasm/universal!UniversalPHP.onMessage */
-	onMessage: PlaygroundWorkerEndpoint['onMessage'];
+	onMessage(listener: MessageListener): Promise<() => Promise<void>>;
 
 	mountOpfs(
 		options: MountDescriptor,

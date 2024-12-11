@@ -42,7 +42,7 @@ function wp_rewrite_urls( $options ) {
 	while ( $p->next_url() ) {
 		$parsed_url = $p->get_parsed_url();
 		foreach ( $url_mapping as $mapping ) {
-			if ( url_matches( $parsed_url, $mapping['from_url'] ) ) {
+			if ( is_child_url_of( $parsed_url, $mapping['from_url'] ) ) {
 				$p->replace_base_url( $mapping['to_url'] );
 				break;
 			}
@@ -54,25 +54,26 @@ function wp_rewrite_urls( $options ) {
 /**
  * Check if a given URL matches the current site URL.
  *
- * @param URL $subject The URL to check.
- * @param string $from_url_no_trailing_slash The current site URL to compare against.
+ * @param URL $parent The URL to check.
+ * @param string $child The current site URL to compare against.
  * @return bool Whether the URL matches the current site URL.
  */
-function url_matches( URL $subject, $from_url ) {
-	$parsed_from_url                    = is_string( $from_url ) ? WP_URL::parse( $from_url ) : $from_url;
-	$current_pathname_no_trailing_slash = rtrim( urldecode( $parsed_from_url->pathname ), '/' );
+function is_child_url_of( $child, $parent_url ) {
+	$parent_url                       = is_string( $parent_url ) ? WP_URL::parse( $parent_url ) : $parent_url;
+	$child                            = is_string( $child ) ? WP_URL::parse( $child ) : $child;
+	$child_pathname_no_trailing_slash = rtrim( urldecode( $child->pathname ), '/' );
 
-	if ( $subject->hostname !== $parsed_from_url->hostname ) {
+	if ( $parent_url->hostname !== $child->hostname ) {
 		return false;
 	}
 
-	$matched_pathname_decoded = urldecode( $subject->pathname );
+	$parent_pathname = urldecode( $parent_url->pathname );
 	return (
 		// Direct match
-		$matched_pathname_decoded === $current_pathname_no_trailing_slash ||
-		$matched_pathname_decoded === $current_pathname_no_trailing_slash . '/' ||
+		$parent_pathname === $child_pathname_no_trailing_slash ||
+		$parent_pathname === $child_pathname_no_trailing_slash . '/' ||
 		// Path prefix
-		str_starts_with( $matched_pathname_decoded, $current_pathname_no_trailing_slash . '/' )
+		str_starts_with( $child_pathname_no_trailing_slash . '/', $parent_pathname )
 	);
 }
 
@@ -233,4 +234,58 @@ function get_all_post_meta_flat( $post_id ) {
 		},
 		get_post_meta( $post_id )
 	);
+}
+
+/**
+ * Polyfill the mb_str_split function used by Rowbot\URL\URL.
+ *
+ * Source: https://www.php.net/manual/en/function.mb-str-split.php#125429
+ */
+if ( ! function_exists( 'mb_str_split' ) ) {
+	function mb_str_split( $input, $split_length = 1, $encoding = null ) {
+		if ( null !== $input && ! \is_scalar( $input ) && ! ( \is_object( $input ) && \method_exists( $input, '__toString' ) ) ) {
+			trigger_error( 'mb_str_split(): expects parameter 1 to be string, ' . \gettype( $input ) . ' given', E_USER_WARNING );
+			return null;
+		}
+		if ( null !== $split_length && ! \is_bool( $split_length ) && ! \is_numeric( $split_length ) ) {
+			trigger_error( 'mb_str_split(): expects parameter 2 to be int, ' . \gettype( $split_length ) . ' given', E_USER_WARNING );
+			return null;
+		}
+		$split_length = (int) $split_length;
+		if ( 1 > $split_length ) {
+			trigger_error( 'mb_str_split(): The length of each segment must be greater than zero', E_USER_WARNING );
+			return false;
+		}
+		if ( null === $encoding ) {
+			$encoding = mb_internal_encoding();
+		} else {
+			$encoding = (string) $encoding;
+		}
+		$encoding = strtoupper( $encoding );
+		if ( ! in_array( $encoding, mb_list_encodings(), true ) ) {
+			static $aliases;
+			if ( $aliases === null ) {
+				$aliases = array();
+				foreach ( mb_list_encodings() as $encoding ) {
+					$encoding_aliases = mb_encoding_aliases( $encoding );
+					if ( $encoding_aliases ) {
+						foreach ( $encoding_aliases as $alias ) {
+							$aliases[] = $alias;
+						}
+					}
+				}
+			}
+			if ( ! in_array( $encoding, $aliases, true ) ) {
+				trigger_error( 'mb_str_split(): Unknown encoding "' . $encoding . '"', E_USER_WARNING );
+				return null;
+			}
+		}
+
+		$result = array();
+		$length = mb_strlen( $input, $encoding );
+		for ( $i = 0; $i < $length; $i += $split_length ) {
+			$result[] = mb_substr( $input, $i, $split_length, $encoding );
+		}
+		return $result;
+	}
 }

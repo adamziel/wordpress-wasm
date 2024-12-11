@@ -1,0 +1,57 @@
+name: Code Coverage
+on:
+    push:
+        paths-ignore:
+            - '**.md'
+
+    pull_request:
+        paths-ignore:
+            - '**.md'
+
+jobs:
+    coverage:
+        name: PHP ${{ matrix.php }} on ${{ matrix.os }} ${{ matrix.arch }}
+        runs-on: ${{ matrix.os }}
+        container: shivammathur/node:latest-${{ matrix.arch }}
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: true
+            matrix:
+                os:
+                    - ubuntu-latest
+                arch:
+                    - amd64
+                    - i386
+                php:
+                    - 8.1
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: mbstring, opcache, pcre, gmp
+                  coverage: pcov
+              env:
+                  fail-fast: true
+
+            - name: Install dependencies
+              run: composer update --no-interaction
+
+            - name: Generate Coverage
+              run: |
+                  mkdir -p ./build/coverage/
+                  vendor/bin/phpunit --coverage-clover ./build/coverage/clover.xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              if: ${{ !env.ACT }}
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./build/coverage/clover.xml
+                  name: PHP ${{ matrix.php }} on ${{ matrix.os }} ${{ matrix.arch }}

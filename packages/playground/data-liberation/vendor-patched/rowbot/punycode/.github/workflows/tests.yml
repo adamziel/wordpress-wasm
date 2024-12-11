@@ -1,0 +1,176 @@
+name: Tests
+
+on:
+    pull_request:
+    push:
+        paths-ignore:
+            - '**.md'
+
+jobs:
+    tests:
+        name: Tests
+        runs-on: ${{ matrix.operating-system }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - 7.1
+                    - 7.2
+                    - 7.3
+                    - 7.4
+                    - 8.0
+                    - 8.1
+                    - 8.2
+                    - 8.3
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  coverage: none
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Run PHPStan
+              run: vendor/bin/phpstan analyse
+
+            - name: Run PHPCS
+              run: vendor/bin/phpcs
+
+            - name: Tests
+              run: vendor/bin/phpunit
+
+    tests-unstable:
+        name: Test Unstable
+        runs-on: ${{ matrix.operating-system }}
+        continue-on-error: true
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - nightly
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  coverage: none
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Install dependencies
+              run: composer install --ignore-platform-reqs
+
+            - name: Tests
+              run: vendor/bin/phpunit
+
+    tests-code-coverage:
+        name: Code Coverage
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 7.4
+                  coverage: pcov
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Tests with code coverage
+              run: |
+                  mkdir -p ./build/coverage/
+                  vendor/bin/phpunit --coverage-clover ./build/coverage/clover.xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./build/coverage/clover.xml
+
+    tests-jit:
+        name: Test JIT
+        runs-on: ${{ matrix.operating-system }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - 8.0
+                operating-system: [ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  coverage: none
+                  ini-values: opcache.enable_cli=1, opcache.jit=1255, opcache.jit_buffer_size=64M
+
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            - name: Install dependencies
+              run: composer install
+
+            - name: Tests
+              run: vendor/bin/phpunit
