@@ -61,7 +61,16 @@ for (const cachingEnabled of [true, false]) {
 		server!.setHttpCacheEnabled(cachingEnabled);
 
 		await page.goto(url);
-		await website.waitForNestedIframes();
+		// TODO: Re-enable this line and remove try/catch below before merge
+		//await website.waitForNestedIframes();
+		try {
+			await website.waitForNestedIframes();
+		} catch (e) {
+			await page.screenshot({
+				path: 'debug-playwright-deployment-test.png',
+			});
+			throw e;
+		}
 		await expect(page).toHaveScreenshot('website-old.png', {
 			maxDiffPixels,
 		});
