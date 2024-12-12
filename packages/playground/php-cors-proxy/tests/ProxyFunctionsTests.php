@@ -175,7 +175,8 @@ class ProxyFunctionsTests extends TestCase
                 $original_headers,
                 $strictly_disallowed_headers,
                 $headers_requiring_opt_in,
-            ));
+            )
+        );
     }
 
     public function testFilterHeaderStringsWithAdditionalAllowedHeaders()
@@ -211,6 +212,7 @@ class ProxyFunctionsTests extends TestCase
                 $original_headers,
                 $strictly_disallowed_headers,
                 $headers_requiring_opt_in,
-            ));
+            )
+        );
     }
 }
