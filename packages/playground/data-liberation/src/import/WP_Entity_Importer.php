@@ -126,6 +126,8 @@ class WP_Entity_Importer {
 			case WP_Imported_Entity::TYPE_TAG:
 			case WP_Imported_Entity::TYPE_CATEGORY:
 				return $this->import_term( $data );
+			case WP_Imported_Entity::TYPE_TERM_META:
+				return $this->import_term_meta( $data, $data['term_id'] );
 			case WP_Imported_Entity::TYPE_USER:
 				return $this->import_user( $data );
 			case WP_Imported_Entity::TYPE_SITE_OPTION:
@@ -414,6 +416,37 @@ class WP_Entity_Importer {
 		do_action( 'wxr_importer_processed_term', $term_id, $data );
 	}
 
+	public function import_term_meta( $meta_item, $term_id ) {
+		if ( empty( $meta_item ) ) {
+			return true;
+		}
+
+		/**
+		 * Pre-process term meta data.
+		 *
+		 * @param array $meta_item Meta data. (Return empty to skip.)
+		 * @param int $term_id Term the meta is attached to.
+		 */
+		$meta_item = apply_filters( 'wxr_importer_pre_process_term_meta', $meta_item, $term_id );
+		if ( empty( $meta_item ) ) {
+			return false;
+		}
+
+		// Have we already processed this?
+		if ( isset( $element['_already_mapped'] ) ) {
+			$this->logger->debug( 'Skipping term meta, already processed' );
+			return;
+		}
+
+		if ( ! isset( $meta_item['term_id'] ) ) {
+			echo "\nTERM-ID-NOT-SET\n";
+			$meta_item['term_id'] = $term_id;
+		}
+
+		$value        = maybe_unserialize( $meta_item['meta_value'] );
+		$term_meta_id = add_term_meta( $meta_item['term_id'], wp_slash( $meta_item['meta_key'] ), wp_slash_strings_only( $value ) );
+		do_action( 'wxr_importer_processed_term_meta', $term_meta_id, $meta_item, $meta_item['term_id'] );
+	}
 
 	/**
 	 * Prefill existing post data.
@@ -967,6 +1000,7 @@ class WP_Entity_Importer {
 
 		// Sort by ID to avoid excessive remapping later
 		usort( $comments, array( $this, 'sort_comments_by_id' ) );
+		$parent_id = isset( $comment['comment_parent'] ) ? (int) $comment['comment_parent'] : null;
 
 		/**
 		 * Pre-process comment data
@@ -974,13 +1008,12 @@ class WP_Entity_Importer {
 		 * @param array $comment Comment data. (Return empty to skip.)
 		 * @param int $post_id Post the comment is attached to.
 		 */
-		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id );
+		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id, $parent_id );
 		if ( empty( $comment ) ) {
 			return false;
 		}
 
 		$original_id = isset( $comment['comment_id'] ) ? (int) $comment['comment_id'] : 0;
-		$parent_id   = isset( $comment['comment_parent'] ) ? (int) $comment['comment_parent'] : 0;
 		$author_id   = isset( $comment['comment_user_id'] ) ? (int) $comment['comment_user_id'] : 0;
 
 		// if this is a new post we can skip the comment_exists() check
@@ -1094,10 +1127,11 @@ class WP_Entity_Importer {
 			$meta_item['comment_id'] = $comment_id;
 		}
 
+		// @TODO: Check if wp_slash is correct and not wp_slash_strings_only
 		$value           = maybe_unserialize( $meta_item['meta_value'] );
 		$comment_meta_id = add_comment_meta( $meta_item['comment_id'], wp_slash( $meta_item['meta_key'] ), wp_slash( $value ) );
 
-		do_action( 'wxr_importer_processed_comment_meta', $comment_meta_id, $meta_item, $comment_id );
+		do_action( 'wxr_importer_processed_comment_meta', $comment_meta_id, $meta_item, $meta_item['comment_id'] );
 	}
 
 	/**

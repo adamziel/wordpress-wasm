@@ -217,6 +217,14 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	private $last_comment_id = null;
 
 	/**
+	 * The ID of the last processed term.
+	 *
+	 * @since WP_VERSION
+	 * @var int|null
+	 */
+	private $last_term_id = null;
+
+	/**
 	 * Buffer for accumulating text content between tags.
 	 *
 	 * @since WP_VERSION
@@ -331,6 +339,13 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 				'wp:term_name' => 'name',
 			),
 		),
+		'wp:termmeta' => array(
+			'type' => 'term_meta',
+			'fields' => array(
+				'wp:meta_key' => 'meta_key',
+				'wp:meta_value' => 'meta_value',
+			),
+		),
 		'wp:tag' => array(
 			'type' => 'tag',
 			'fields' => array(
@@ -372,6 +387,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		if ( null !== $cursor ) {
 			$reader->last_post_id    = $cursor['last_post_id'];
 			$reader->last_comment_id = $cursor['last_comment_id'];
+			$reader->last_term_id    = $cursor['last_term_id'];
 		}
 		if ( null !== $upstream ) {
 			$reader->connect_upstream( $upstream );
@@ -421,6 +437,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 				'upstream' => $this->last_xml_byte_offset_outside_of_entity,
 				'last_post_id' => $this->last_post_id,
 				'last_comment_id' => $this->last_comment_id,
+				'last_term_id' => $this->last_term_id,
 			)
 		);
 	}
@@ -479,6 +496,17 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 */
 	public function get_last_comment_id() {
 		return $this->last_comment_id;
+	}
+
+	/**
+	 * Gets the ID of the last processed term.
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @return int|null The term ID, or null if no terms have been processed.
+	 */
+	public function get_last_term_id() {
+		return $this->last_term_id;
 	}
 
 	/**
@@ -875,8 +903,12 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 			$this->entity_data['comment_id'] = $this->last_comment_id;
 		} elseif ( $this->entity_type === 'tag' ) {
 			$this->entity_data['taxonomy'] = 'post_tag';
+			$this->last_term_id            = $this->entity_data['term_id'];
 		} elseif ( $this->entity_type === 'category' ) {
 			$this->entity_data['taxonomy'] = 'category';
+			$this->last_term_id            = $this->entity_data['term_id'];
+		} elseif ( $this->entity_type === 'term_meta' ) {
+			$this->entity_data['term_id'] = $this->last_term_id;
 		}
 		$this->entity_finished = true;
 		++$this->entities_read_so_far;

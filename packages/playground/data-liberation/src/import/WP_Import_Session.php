@@ -19,6 +19,7 @@ class WP_Import_Session {
 		'category',
 		'tag',
 		'term',
+		'term_meta',
 		'post',
 		'post_meta',
 		'comment',
@@ -310,8 +311,8 @@ class WP_Import_Session {
 		global $wpdb;
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM $wpdb->posts 
-				 WHERE post_type = 'frontloading_placeholder' 
+				"SELECT COUNT(*) FROM $wpdb->posts
+				 WHERE post_type = 'frontloading_placeholder'
 				 AND post_parent = %d
 				 AND post_status != %s
 				 AND post_status != %s",
@@ -373,8 +374,8 @@ class WP_Import_Session {
 		global $wpdb;
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM $wpdb->posts 
-			WHERE post_type = 'frontloading_placeholder' 
+				"SELECT COUNT(*) FROM $wpdb->posts
+			WHERE post_type = 'frontloading_placeholder'
 			AND post_parent = %d",
 				$this->post_id
 			)
@@ -417,8 +418,8 @@ class WP_Import_Session {
 			 */
 			$exists = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT ID FROM $wpdb->posts 
-				WHERE post_type = 'frontloading_placeholder' 
+					"SELECT ID FROM $wpdb->posts
+				WHERE post_type = 'frontloading_placeholder'
 				AND post_parent = %d
 				AND guid = %s
 				LIMIT 1",

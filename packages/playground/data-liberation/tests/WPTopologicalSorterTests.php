@@ -128,7 +128,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		$this->assertSame( 0, $post->post_parent );
 		$cats = wp_get_post_categories( $post->ID );
 		$this->assertCount( 1, $cats );
-		//$this->assertTrue( has_post_format( 'aside', $post->ID ) );
+		// $this->assertTrue( has_post_format( 'aside', $post->ID ) );
 
 		$post = $posts[2];
 		$this->assertSame( 'Top-level Foo', $post->post_title );
@@ -331,7 +331,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	 *
 	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/term-meta.php
 	 */
-	public function _not_test_serialized_term_meta() {
+	public function _no_test_serialized_term_meta() {
 		register_taxonomy( 'custom_taxonomy', array( 'post' ) );
 
 		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-term-meta.xml' );

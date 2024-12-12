@@ -38,15 +38,17 @@ class WP_Topological_Sorter {
 		'post'         => 3,
 		'post_meta'    => 4,
 		'term'         => 5,
+		'term_meta'    => 6,
 	);
 
 	private $mapped_pre_filters = array(
 		// Name of the filter, and the number of arguments it accepts.
-		'wxr_importer_pre_process_comment' => 2,
+		'wxr_importer_pre_process_comment' => 3,
 		'wxr_importer_pre_process_comment_meta' => 2,
 		'wxr_importer_pre_process_post' => 2,
 		'wxr_importer_pre_process_post_meta' => 2,
 		'wxr_importer_pre_process_term' => 1,
+		'wxr_importer_pre_process_term_meta' => 2,
 	);
 
 	private $mapped_post_actions = array(
@@ -56,6 +58,7 @@ class WP_Topological_Sorter {
 		'wxr_importer_processed_post' => 2,
 		'wxr_importer_processed_post_meta' => 2,
 		'wxr_importer_processed_term' => 2,
+		'wxr_importer_processed_term_meta' => 3,
 	);
 
 	/**
@@ -190,6 +193,7 @@ class WP_Topological_Sorter {
 			'wxr_importer_pre_process_post'         => 'post',
 			'wxr_importer_pre_process_post_meta'    => 'post_meta',
 			'wxr_importer_pre_process_term'         => 'term',
+			'wxr_importer_pre_process_term_meta'    => 'term_meta',
 		);
 
 		if ( ! $current_filter || ! array_key_exists( $current_filter, $types ) ) {
@@ -221,6 +225,7 @@ class WP_Topological_Sorter {
 			'wxr_importer_processed_post'         => 'post',
 			'wxr_importer_processed_post_meta'    => 'post_meta',
 			'wxr_importer_processed_term'         => 'term',
+			'wxr_importer_processed_term_meta'    => 'term_meta',
 		);
 
 		if ( ! $current_filter || ! array_key_exists( $current_filter, $types ) ) {
@@ -261,7 +266,7 @@ class WP_Topological_Sorter {
 			// Items with a parent has at least a sort order of 2.
 			'sort_order'   => 1,
 		);
-		$element_id = null;
+		$element_id  = null;
 
 		switch ( $element_type ) {
 			case 'comment':
@@ -284,6 +289,18 @@ class WP_Topological_Sorter {
 				$element_id = (string) $data['post_id'];
 				break;
 			case 'post_meta':
+				$element_id = (string) $data['meta_key'];
+
+				if ( array_key_exists( 'post_id', $data ) ) {
+					$new_element['parent_id'] = $data['post_id'];
+				}
+				break;
+			case 'term_meta':
+				$element_id = (string) $data['meta_key'];
+
+				if ( array_key_exists( 'term_id', $data ) ) {
+					$new_element['parent_id'] = $data['term_id'];
+				}
 				break;
 			case 'term':
 				$element_id = (string) $data['term_id'];
@@ -372,7 +389,15 @@ class WP_Topological_Sorter {
 				}
 				break;
 			case 'term':
-				// Not ID provided.
+				// No ID provided.
+				break;
+			case 'term_meta':
+				// The ID is the term ID.
+				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['term'] );
+
+				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+					$element['term_id'] = $mapped_ids['mapped_id'];
+				}
 				break;
 		}
 
