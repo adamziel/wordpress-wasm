@@ -11,6 +11,7 @@ import {
 	sparseCheckout,
 } from '@wp-playground/storage';
 import { zipNameToHumanName } from './utils/zip-name-to-human-name';
+import { fetchWithCorsProxy } from '@php-wasm/web';
 
 export type { FileTree };
 export const ResourceTypes = [
@@ -158,7 +159,9 @@ export abstract class Resource<T extends File | Directory> {
 				resource = new CorePluginResource(ref, progress);
 				break;
 			case 'url':
-				resource = new UrlResource(ref, progress);
+				resource = new UrlResource(ref, progress, {
+					corsProxy,
+				});
 				break;
 			case 'git:directory':
 				resource = new GitDirectoryResource(ref, progress, {
@@ -286,7 +289,10 @@ export abstract class FetchResource extends Resource<File> {
 	 * Creates a new instance of `FetchResource`.
 	 * @param progress The progress tracker.
 	 */
-	constructor(public override _progress?: ProgressTracker) {
+	constructor(
+		public override _progress?: ProgressTracker,
+		private corsProxy?: string
+	) {
 		super();
 	}
 
@@ -295,7 +301,11 @@ export abstract class FetchResource extends Resource<File> {
 		this.progress?.setCaption(this.caption);
 		const url = this.getURL();
 		try {
-			let response = await fetch(url);
+			let response = await fetchWithCorsProxy(
+				url,
+				undefined,
+				this.corsProxy
+			);
 			if (!response.ok) {
 				throw new Error(`Could not download "${url}"`);
 			}
@@ -381,8 +391,12 @@ export class UrlResource extends FetchResource {
 	 * @param resource The URL reference.
 	 * @param progress The progress tracker.
 	 */
-	constructor(private resource: UrlReference, progress?: ProgressTracker) {
-		super(progress);
+	constructor(
+		private resource: UrlReference,
+		progress?: ProgressTracker,
+		private options?: { corsProxy?: string }
+	) {
+		super(progress, options?.corsProxy);
 		/**
 		 * Translates GitHub URLs into raw.githubusercontent.com URLs.
 		 *

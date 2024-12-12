@@ -1,4 +1,5 @@
 import { UniversalPHP } from '@php-wasm/universal';
+import { fetchWithCorsProxy } from '@php-wasm/web';
 import { defineWpConfigConsts } from '@wp-playground/blueprints';
 
 export interface RequestData {
@@ -13,13 +14,20 @@ export interface RequestMessage {
 	data: RequestData;
 }
 
+export interface SetupFetchNetworkTransportOptions {
+	corsProxyUrl?: string;
+}
+
 /**
  * Allow WordPress to make network requests via the fetch API.
  * On the WordPress side, this is handled by Requests_Transport_Fetch
  *
  * @param playground the Playground instance to set up with network support.
  */
-export async function setupFetchNetworkTransport(playground: UniversalPHP) {
+export async function setupFetchNetworkTransport(
+	playground: UniversalPHP,
+	options?: SetupFetchNetworkTransportOptions
+) {
 	await defineWpConfigConsts(playground, {
 		consts: {
 			USE_FETCH_FOR_REQUESTS: true,
@@ -58,16 +66,14 @@ export async function setupFetchNetworkTransport(playground: UniversalPHP) {
 			data.headers['x-request-issuer'] = 'php';
 		}
 
-		return handleRequest(data);
+		const corsProxyUrl = options?.corsProxyUrl;
+		return handleRequest(data, (url: any, options: any) =>
+			fetchWithCorsProxy(url, options, corsProxyUrl)
+		);
 	});
 }
 
 export async function handleRequest(data: RequestData, fetchFn = fetch) {
-	const hostname = new URL(data.url).hostname;
-	const fetchUrl = ['w.org', 's.w.org'].includes(hostname)
-		? `/plugin-proxy.php?url=${encodeURIComponent(data.url)}`
-		: data.url;
-
 	let response;
 	try {
 		const fetchMethod = data.method || 'GET';
@@ -81,7 +87,7 @@ export async function handleRequest(data: RequestData, fetchFn = fetch) {
 			fetchHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
 		}
 
-		response = await fetchFn(fetchUrl, {
+		response = await fetchFn(data.url, {
 			method: fetchMethod,
 			headers: fetchHeaders,
 			body: fetchMethod === 'GET' ? undefined : data.data,
