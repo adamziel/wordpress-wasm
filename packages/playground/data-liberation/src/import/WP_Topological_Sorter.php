@@ -1,9 +1,22 @@
 <?php
 
 /**
- * The topological sorter class.
+ * The topological sorter class. We create a custom table that contains the WXR
+ * IDs and the mapped IDs. Everytime an element is processed, we add it to the
+ * table. The first time we process an element, it is mapped to the original ID
+ * and no mapped ID. From the second time, it is mapped to the mapped ID.
  *
- * We create a custom table that contains the WXR IDs and the mapped IDs.
+ * When the WP_Entity_Importer class read raw data from the source stream it
+ * filters the data with the 'wxr_importer_pre_process_*' filters. This is used
+ * to map the original IDs to the mapped IDs. This can change in the future and
+ * have the entity importer call the sorter directly.
+ *
+ * The first STAGE_TOPOLOGICAL_SORT stage do save all the elements with no mapped
+ * IDs. So during the STAGE_IMPORT_ENTITIES step the WP_Entity_Importer class
+ * read already inserted data and save them. From that moment all the entities
+ * have the IDs created using wp_insert_post(), wp_insert_comment(),
+ * wp_insert_term(), wp_insert_comment_meta(), wp_insert_post_meta() and
+ * wp_insert_term_meta() calls.
  */
 class WP_Topological_Sorter {
 
@@ -113,7 +126,19 @@ class WP_Topological_Sorter {
 		// See wp_get_db_schema
 		$max_index_length = 191;
 
-		// Create the table if it doesn't exist.
+		/**
+		 * This is a table used to map the IDs of the imported elements. It is used to map all the IDs of the elements.
+		 *
+		 * @param int $id The ID of the element.
+		 * @param int $session_id The current session ID.
+		 * @param int $element_type The type of the element, comment, comment_meta, post, post_meta, term, or term_meta.
+		 * @param string $element_id The ID of the element before the import.
+		 * @param string $mapped_id The mapped ID of the element after the import.
+		 * @param string $parent_id The parent ID of the element.
+		 * @param string $additional_id The additional ID of the element. Used for comments and terms. Comments have a comment_parent, and the post.
+		 * @param int $byte_offset The byte offset of the element inside the WXR file. Not used now.
+		 * @param int $sort_order The sort order of the element. Not used now.
+		 */
 		$sql = $wpdb->prepare(
 			'CREATE TABLE IF NOT EXISTS %i (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -122,6 +147,7 @@ class WP_Topological_Sorter {
 				element_id text NOT NULL,
 				mapped_id text DEFAULT NULL,
 				parent_id text DEFAULT NULL,
+				additional_id text DEFAULT NULL,
 				byte_offset bigint(20) unsigned NOT NULL,
 				sort_order int DEFAULT 1,
 				PRIMARY KEY  (id),
