@@ -561,7 +561,7 @@ class WP_Stream_Importer {
 			$entity = $this->entity_iterator->current();
 			$data   = $entity->get_data();
 			// $offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
-			$this->topological_sorter->map_element( $entity->get_type(), $data );
+			$this->topological_sorter->map_entity( $entity->get_type(), $data );
 			$this->entity_iterator->next();
 		}
 

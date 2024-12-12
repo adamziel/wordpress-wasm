@@ -2,8 +2,8 @@
 
 /**
  * The topological sorter class. We create a custom table that contains the WXR
- * IDs and the mapped IDs. Everytime an element is processed, we add it to the
- * table. The first time we process an element, it is mapped to the original ID
+ * IDs and the mapped IDs. Everytime an entity is processed, we add it to the
+ * table. The first time we process an entity, it is mapped to the original ID
  * and no mapped ID. From the second time, it is mapped to the mapped ID.
  *
  * When the WP_Entity_Importer class read raw data from the source stream it
@@ -11,7 +11,7 @@
  * to map the original IDs to the mapped IDs. This can change in the future and
  * have the entity importer call the sorter directly.
  *
- * The first STAGE_TOPOLOGICAL_SORT stage do save all the elements with no mapped
+ * The first STAGE_TOPOLOGICAL_SORT stage do save all the entities with no mapped
  * IDs. So during the STAGE_IMPORT_ENTITIES step the WP_Entity_Importer class
  * read already inserted data and save them. From that moment all the entities
  * have the IDs created using wp_insert_post(), wp_insert_comment(),
@@ -127,24 +127,24 @@ class WP_Topological_Sorter {
 		$max_index_length = 191;
 
 		/**
-		 * This is a table used to map the IDs of the imported elements. It is used to map all the IDs of the elements.
+		 * This is a table used to map the IDs of the imported entities. It is used to map all the IDs of the entities.
 		 *
-		 * @param int $id The ID of the element.
+		 * @param int $id The ID of the entity.
 		 * @param int $session_id The current session ID.
-		 * @param int $element_type The type of the element, comment, comment_meta, post, post_meta, term, or term_meta.
-		 * @param string $element_id The ID of the element before the import.
-		 * @param string $mapped_id The mapped ID of the element after the import.
-		 * @param string $parent_id The parent ID of the element.
-		 * @param string $additional_id The additional ID of the element. Used for comments and terms. Comments have a comment_parent, and the post.
-		 * @param int $byte_offset The byte offset of the element inside the WXR file. Not used now.
-		 * @param int $sort_order The sort order of the element. Not used now.
+		 * @param int $entity_type The type of the entity, comment, comment_meta, post, post_meta, term, or term_meta.
+		 * @param string $entity_id The ID of the entity before the import.
+		 * @param string $mapped_id The mapped ID of the entity after the import.
+		 * @param string $parent_id The parent ID of the entity.
+		 * @param string $additional_id The additional ID of the entity. Used for comments and terms. Comments have a comment_parent, and the post.
+		 * @param int $byte_offset The byte offset of the entity inside the WXR file. Not used now.
+		 * @param int $sort_order The sort order of the entity. Not used now.
 		 */
 		$sql = $wpdb->prepare(
 			'CREATE TABLE IF NOT EXISTS %i (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 				session_id bigint(20) unsigned NOT NULL,
-				element_type tinyint(1) NOT NULL,
-				element_id text NOT NULL,
+				entity_type tinyint(1) NOT NULL,
+				entity_id text NOT NULL,
 				mapped_id text DEFAULT NULL,
 				parent_id text DEFAULT NULL,
 				additional_id text DEFAULT NULL,
@@ -152,7 +152,7 @@ class WP_Topological_Sorter {
 				sort_order int DEFAULT 1,
 				PRIMARY KEY  (id),
 				KEY session_id (session_id),
-				KEY element_id (element_id(%d)),
+				KEY entity_id (entity_id(%d)),
 				KEY parent_id (parent_id(%d)),
 				KEY byte_offset (byte_offset)
 			) ' . $wpdb->get_charset_collate(),
@@ -207,8 +207,8 @@ class WP_Topological_Sorter {
 	 * object with the mapped IDs.
 	 *
 	 * @param array $data The data to map.
-	 * @param int|null $id The ID of the element.
-	 * @param int|null $additional_id The additional ID of the element.
+	 * @param int|null $id The ID of the entity.
+	 * @param int|null $additional_id The additional ID of the entity.
 	 */
 	public function filter_wxr_importer_pre_process( $data, $id = null, $additional_id = null ) {
 		$current_session = $this->current_session;
@@ -232,16 +232,16 @@ class WP_Topological_Sorter {
 			return false;
 		}
 
-		return $this->get_mapped_element( $types[ $current_filter ], $data, $id, $additional_id );
+		return $this->get_mapped_entity( $types[ $current_filter ], $data, $id, $additional_id );
 	}
 
 	/**
 	 * Called by 'wxr_importer_processed_*' actions. This adds the entity to the
 	 * sorter table.
 	 *
-	 * @param int|null $id The ID of the element.
+	 * @param int|null $id The ID of the entity.
 	 * @param array $data The data to map.
-	 * @param int|null $additional_id The additional ID of the element.
+	 * @param int|null $additional_id The additional ID of the entity.
 	 */
 	public function action_wxr_importer_processed( $id, $data, $additional_id = null ) {
 		$current_filter = current_action();
@@ -264,123 +264,123 @@ class WP_Topological_Sorter {
 			return false;
 		}
 
-		$this->map_element( $types[ $current_filter ], $data, $id, $additional_id );
+		$this->map_entity( $types[ $current_filter ], $data, $id, $additional_id );
 	}
 
 	/**
-	 * Map an element to the index. If $id is provided, it will be used to map the element.
+	 * Map an entity to the index. If $id is provided, it will be used to map the entity.
 	 *
-	 * @param string   $element_type The type of the element.
+	 * @param string   $entity_type The type of the entity.
 	 * @param array    $data The data to map.
-	 * @param int|null $id The ID of the element.
-	 * @param int|null $additional_id The additional ID of the element.
+	 * @param int|null $id The ID of the entity.
+	 * @param int|null $additional_id The additional ID of the entity.
 	 */
-	public function map_element( $element_type, $data, $id = null, $additional_id = null ) {
+	public function map_entity( $entity_type, $data, $id = null, $additional_id = null ) {
 		global $wpdb;
 
-		if ( ! array_key_exists( $element_type, self::ENTITY_TYPES ) ) {
+		if ( ! array_key_exists( $entity_type, self::ENTITY_TYPES ) ) {
 			return;
 		}
 
-		$new_element = array(
+		$new_entity = array(
 			'session_id'   => $this->current_session,
-			'element_type' => self::ENTITY_TYPES[ $element_type ],
-			'element_id'   => null,
+			'entity_type' => self::ENTITY_TYPES[ $entity_type ],
+			'entity_id'   => null,
 			'mapped_id'    => is_null( $id ) ? null : (string) $id,
 			'parent_id'    => null,
 			'byte_offset'  => 0,
 			// Items with a parent has at least a sort order of 2.
 			'sort_order'   => 1,
 		);
-		$element_id  = null;
+		$entity_id  = null;
 
-		switch ( $element_type ) {
+		switch ( $entity_type ) {
 			case 'comment':
-				$element_id = (string) $data['comment_id'];
+				$entity_id = (string) $data['comment_id'];
 				break;
 			case 'comment_meta':
-				$element_id = (string) $data['meta_key'];
+				$entity_id = (string) $data['meta_key'];
 
 				if ( array_key_exists( 'comment_id', $data ) ) {
-					$new_element['parent_id'] = $data['comment_id'];
+					$new_entity['parent_id'] = $data['comment_id'];
 				}
 				break;
 			case 'post':
 				if ( 'post' === $data['post_type'] || 'page' === $data['post_type'] ) {
 					if ( array_key_exists( 'post_parent', $data ) && '0' !== $data['post_parent'] ) {
-						$new_element['parent_id'] = $data['post_parent'];
+						$new_entity['parent_id'] = $data['post_parent'];
 					}
 				}
 
-				$element_id = (string) $data['post_id'];
+				$entity_id = (string) $data['post_id'];
 				break;
 			case 'post_meta':
-				$element_id = (string) $data['meta_key'];
+				$entity_id = (string) $data['meta_key'];
 
 				if ( array_key_exists( 'post_id', $data ) ) {
-					$new_element['parent_id'] = $data['post_id'];
+					$new_entity['parent_id'] = $data['post_id'];
 				}
 				break;
 			case 'term_meta':
-				$element_id = (string) $data['meta_key'];
+				$entity_id = (string) $data['meta_key'];
 
 				if ( array_key_exists( 'term_id', $data ) ) {
-					$new_element['parent_id'] = $data['term_id'];
+					$new_entity['parent_id'] = $data['term_id'];
 				}
 				break;
 			case 'term':
-				$element_id = (string) $data['term_id'];
+				$entity_id = (string) $data['term_id'];
 
 				if ( array_key_exists( 'parent', $data ) ) {
-					$new_element['parent_id'] = $data['parent'];
+					$new_entity['parent_id'] = $data['parent'];
 				}
 				break;
 		}
 
-		// The element has been imported, so we can use the ID.
+		// The entity has been imported, so we can use the ID.
 		if ( $id ) {
-			$existing_element = $this->get_mapped_ids( $element_id, self::ENTITY_TYPES[ $element_type ] );
+			$existing_entity = $this->get_mapped_ids( $entity_id, self::ENTITY_TYPES[ $entity_type ] );
 
-			if ( $existing_element && is_null( $existing_element['mapped_id'] ) ) {
-				$new_element['mapped_id'] = (string) $id;
+			if ( $existing_entity && is_null( $existing_entity['mapped_id'] ) ) {
+				$new_entity['mapped_id'] = (string) $id;
 
-				// Update the element if it already exists.
+				// Update the entity if it already exists.
 				$wpdb->update(
 					self::get_table_name(),
 					array( 'mapped_id' => (string) $id ),
 					array(
-						'element_id'   => (string) $element_id,
-						'element_type' => self::ENTITY_TYPES[ $element_type ],
+						'entity_id'   => (string) $entity_id,
+						'entity_type' => self::ENTITY_TYPES[ $entity_type ],
 					),
 					array( '%s' )
 				);
 			}
 		} else {
-			// Insert the element if it doesn't exist.
-			$new_element['element_id'] = $element_id;
-			$wpdb->insert( self::get_table_name(), $new_element );
+			// Insert the entity if it doesn't exist.
+			$new_entity['entity_id'] = $entity_id;
+			$wpdb->insert( self::get_table_name(), $new_entity );
 		}
 	}
 
 	/**
-	 * Get a mapped element. Called from 'wxr_importer_pre_process_*' filter.
+	 * Get a mapped entity. Called from 'wxr_importer_pre_process_*' filter.
 	 *
 	 * @param int $entity The entity to get the mapped ID for.
-	 * @param int $id The ID of the element.
+	 * @param int $id The ID of the entity.
 	 *
-	 * @return mixed|bool The mapped element or false if the post is not found.
+	 * @return mixed|bool The mapped entity or false if the post is not found.
 	 */
-	public function get_mapped_element( $element_type, $element, $id, $additional_id = null ) {
+	public function get_mapped_entity( $entity_type, $entity, $id, $additional_id = null ) {
 		$current_session = $this->current_session;
 		$already_mapped  = false;
 
-		switch ( $element_type ) {
+		switch ( $entity_type ) {
 			case 'comment':
 				// The ID is the post ID.
 				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$element['comment_post_ID'] = $mapped_ids['mapped_id'];
+					$entity['comment_post_ID'] = $mapped_ids['mapped_id'];
 				}
 				break;
 			case 'comment_meta':
@@ -388,7 +388,7 @@ class WP_Topological_Sorter {
 				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['comment'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$element['comment_id'] = $mapped_ids['mapped_id'];
+					$entity['comment_id'] = $mapped_ids['mapped_id'];
 				}
 				break;
 			case 'post':
@@ -396,13 +396,13 @@ class WP_Topological_Sorter {
 				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$element['post_parent'] = $mapped_ids['mapped_id'];
+					$entity['post_parent'] = $mapped_ids['mapped_id'];
 				}
 
-				$mapped_ids = $this->get_mapped_ids( $element['post_id'], self::ENTITY_TYPES['post'] );
+				$mapped_ids = $this->get_mapped_ids( $entity['post_id'], self::ENTITY_TYPES['post'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$element['post_id'] = $mapped_ids['mapped_id'];
+					$entity['post_id'] = $mapped_ids['mapped_id'];
 					$already_mapped     = true;
 				}
 				break;
@@ -411,7 +411,7 @@ class WP_Topological_Sorter {
 				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
 
 				if ( $mapped_ids ) {
-					$element['post_id'] = $mapped_ids['mapped_id'];
+					$entity['post_id'] = $mapped_ids['mapped_id'];
 				}
 				break;
 			case 'term':
@@ -422,26 +422,26 @@ class WP_Topological_Sorter {
 				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['term'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$element['term_id'] = $mapped_ids['mapped_id'];
+					$entity['term_id'] = $mapped_ids['mapped_id'];
 				}
 				break;
 		}
 
 		if ( $already_mapped ) {
 			// This is used to skip the post if it has already been mapped.
-			$element['_already_mapped'] = true;
+			$entity['_already_mapped'] = true;
 		}
 
-		return $element;
+		return $entity;
 	}
 
 	/**
-	 * Get the mapped ID for an element.
+	 * Get the mapped ID for an entity.
 	 *
-	 * @param int $id   The ID of the element.
-	 * @param int $type The type of the element.
+	 * @param int $id   The ID of the entity.
+	 * @param int $type The type of the entity.
 	 *
-	 * @return int|false The mapped ID or null if the element is not found.
+	 * @return int|false The mapped ID or null if the entity is not found.
 	 */
 	private function get_mapped_ids( $id, $type ) {
 		global $wpdb;
@@ -452,7 +452,7 @@ class WP_Topological_Sorter {
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT element_id, mapped_id FROM %i WHERE element_id = %s AND element_type = %d LIMIT 1',
+				'SELECT entity_id, mapped_id FROM %i WHERE entity_id = %s AND entity_type = %d LIMIT 1',
 				self::get_table_name(),
 				(string) $id,
 				$type
