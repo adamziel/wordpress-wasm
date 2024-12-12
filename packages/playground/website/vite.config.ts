@@ -33,6 +33,13 @@ const proxy: CommonServerOptions['proxy'] = {
 
 const path = (filename: string) => new URL(filename, import.meta.url).pathname;
 export default defineConfig(({ command, mode }) => {
+	const corsProxyUrl =
+		'CORS_PROXY_URL' in process.env
+			? process.env.CORS_PROXY_URL
+			: mode === 'production'
+			? 'https://wordpress-playground-cors-proxy.net/?'
+			: 'http://127.0.0.1:5263/cors-proxy.php?';
+
 	return {
 		// Split traffic from this server on dev so that the iframe content and
 		// outer content can be served from the same origin. In production it's
@@ -81,11 +88,7 @@ export default defineConfig(({ command, mode }) => {
 			virtualModule({
 				name: 'cors-proxy-url',
 				content: `
-				export const corsProxyUrl = '${
-					mode === 'production'
-						? '/cors-proxy.php'
-						: 'http://127.0.0.1:5263/cors-proxy.php'
-				}';`,
+				export const corsProxyUrl = ${JSON.stringify(corsProxyUrl || undefined)};`,
 			}),
 			// GitHub OAuth flow
 			{

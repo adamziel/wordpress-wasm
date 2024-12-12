@@ -95,11 +95,11 @@ class WP_Remote_File_Reader implements WP_Byte_Reader {
 		$this->current_chunk = null;
 	}
 
-	public function get_last_error(): string|null {
+	public function get_last_error(): ?string {
 		return $this->last_error;
 	}
 
-	public function get_bytes(): string|null {
+	public function get_bytes(): ?string {
 		return $this->current_chunk;
 	}
 

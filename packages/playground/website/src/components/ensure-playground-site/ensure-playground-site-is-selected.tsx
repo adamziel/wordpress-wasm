@@ -3,7 +3,7 @@ import { resolveBlueprintFromURL } from '../../lib/state/url/resolve-blueprint-f
 import { useCurrentUrl } from '../../lib/state/url/router-hooks';
 import { opfsSiteStorage } from '../../lib/state/opfs/opfs-site-storage';
 import {
-	siteListingLoaded,
+	OPFSSitesLoaded,
 	selectSiteBySlug,
 	setTemporarySiteSpec,
 	deriveSiteNameFromSlug,
@@ -36,7 +36,7 @@ export function EnsurePlaygroundSiteIsSelected({
 	children: React.ReactNode;
 }) {
 	const siteListingStatus = useAppSelector(
-		(state) => state.sites.loadingState
+		(state) => state.sites.opfsSitesLoadingState
 	);
 	const activeSite = useAppSelector((state) => selectActiveSite(state));
 	const dispatch = useAppDispatch();
@@ -60,14 +60,14 @@ export function EnsurePlaygroundSiteIsSelected({
 	useEffect(() => {
 		if (!opfsSiteStorage) {
 			logger.error('Error loading sites: OPFS not available');
-			dispatch(siteListingLoaded([]));
+			dispatch(OPFSSitesLoaded([]));
 			return;
 		}
 		opfsSiteStorage.list().then(
-			(sites) => dispatch(siteListingLoaded(sites)),
+			(sites) => dispatch(OPFSSitesLoaded(sites)),
 			(error) => {
 				logger.error('Error loading sites:', error);
-				dispatch(siteListingLoaded([]));
+				dispatch(OPFSSitesLoaded([]));
 			}
 		);
 	}, [dispatch]);

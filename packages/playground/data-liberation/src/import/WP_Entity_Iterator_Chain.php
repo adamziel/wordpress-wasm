@@ -12,12 +12,14 @@ class WP_Entity_Iterator_Chain implements Iterator {
 		$this->entities_iterator = $iterator;
 	}
 
-	public function current(): mixed {
+	#[\ReturnTypeWillChange]
+	public function current() {
 		$iterator = $this->get_iterator();
 		return $iterator ? $iterator->current() : null;
 	}
 
-	public function key(): mixed {
+	#[\ReturnTypeWillChange]
+	public function key() {
 		$iterator = $this->get_iterator();
 		return $iterator ? $iterator->key() : null;
 	}
@@ -53,7 +55,8 @@ class WP_Entity_Iterator_Chain implements Iterator {
 		return null;
 	}
 
-	public function get_reentrancy_cursor(): mixed {
+	#[\ReturnTypeWillChange]
+	public function get_reentrancy_cursor() {
 		if ( ! $this->entities_iterator ) {
 			return null;
 		}

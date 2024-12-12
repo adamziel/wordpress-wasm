@@ -36,6 +36,37 @@ class WP_Stream_Importer {
 	 * Populated from the WXR file's <wp:base_blog_url> tag.
 	 */
 	private $source_site_url;
+	/**
+	 * A list of [original_url, migrated_url] pairs for rewriting the URLs
+	 * in the imported content.
+	 */
+	private $site_url_mapping = array();
+	/**
+	 * A list of candidate base URLs that have been spotted in the WXR file.
+	 *
+	 * For example, the theme unit test data refers to a site with a base
+	 * URL https://wpthemetestdata.wordpress.com/, but it contains attachments
+	 * from https://wpthemetestdata.files.wordpress.com/.
+	 *
+	 * Every time the importer encounters a previously unseen attachment domain,
+	 * it needs more information to map it. We can't just guess. Assuming we're
+	 * importing into https://example.com/, we could guess that
+	 * https://wpthemetestdata.files.wordpress.com/ maps to:
+	 *
+	 * * https://example.com/
+	 * * https://example.com/wp-content/
+	 * * https://example.com/wp-content/uploads/
+	 * * ...a completely different path.
+	 *
+	 * There's no reliable way to guess the correct mapping. Instead of trying,
+	 * we're exposing the external domain to the API consumer, who can then
+	 * gather additional information from the user and decide whether to map
+	 * it and how.
+	 *
+	 * Once the API consumer decides on the mapping, it can call
+	 * add_site_url_mapping() to tell the importer what to map that domain to.
+	 */
+	private $site_url_mapping_candidates = array();
 	private $entity_iterator_factory;
 	/**
 	 * @param array|string|null $query {
@@ -138,12 +169,56 @@ class WP_Stream_Importer {
 		$this->next_stage       = $cursor['next_stage'];
 		$this->resume_at_entity = $cursor['resume_at_entity'];
 		if ( ! empty( $cursor['source_site_url'] ) ) {
-			$this->source_site_url = $cursor['source_site_url'];
+			$this->set_source_site_url( $cursor['source_site_url'] );
+		}
+		if ( ! empty( $cursor['site_url_mapping'] ) ) {
+			foreach ( $cursor['site_url_mapping'] as $pair ) {
+				$this->add_site_url_mapping( $pair[0], $pair[1] );
+			}
+		}
+		if ( ! empty( $cursor['site_url_mapping_candidates'] ) ) {
+			$this->site_url_mapping_candidates = $cursor['site_url_mapping_candidates'];
 		}
 		return true;
 	}
 
+	private function set_source_site_url( $source_site_url ) {
+		$this->source_site_url = $source_site_url;
+		// -1 is a well-known index for the source site URL.
+		// Every subsequent call to set_source_site_url() will
+		// override that mapping.
+		$this->site_url_mapping[-1] = array(
+			WP_URL::parse( $source_site_url ),
+			WP_URL::parse( $this->options['new_site_url'] ),
+		);
+	}
+
+	public function get_site_url_mapping_candidates() {
+		// Only return the candidates that have been spotted in the last index_entities() call.
+		if ( self::STAGE_INDEX_ENTITIES !== $this->stage ) {
+			return array();
+		}
+		$new_candidates = array();
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			if ( false === $status ) {
+				$new_candidates[] = $base_url;
+			}
+		}
+		return $new_candidates;
+	}
+
+	public function add_site_url_mapping( $from, $to ) {
+		$this->site_url_mapping[] = array( WP_URL::parse( $from ), WP_URL::parse( $to ) );
+	}
+
 	public function get_reentrancy_cursor() {
+		$serialized_site_url_mapping = array();
+		foreach ( $this->site_url_mapping as $pair ) {
+			$serialized_site_url_mapping[] = array(
+				(string) $pair[0],
+				(string) $pair[1],
+			);
+		}
 		return json_encode(
 			array(
 				'stage' => $this->stage,
@@ -154,6 +229,8 @@ class WP_Stream_Importer {
 				'next_stage' => $this->next_stage,
 				'resume_at_entity' => $this->resume_at_entity,
 				'source_site_url' => $this->source_site_url,
+				'site_url_mapping' => $serialized_site_url_mapping,
+				'site_url_mapping_candidates' => $this->site_url_mapping_candidates,
 			)
 		);
 	}
@@ -185,7 +262,7 @@ class WP_Stream_Importer {
 		$this->entity_iterator_factory = $entity_iterator_factory;
 		$this->options                 = $options;
 		if ( isset( $options['default_source_site_url'] ) ) {
-			$this->source_site_url = $options['default_source_site_url'];
+			$this->set_source_site_url( $options['default_source_site_url'] );
 		}
 	}
 
@@ -263,6 +340,11 @@ class WP_Stream_Importer {
 			$this->entity_iterator = $this->create_entity_iterator();
 		}
 
+		// Mark all mapping candidates as seen.
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			$this->site_url_mapping_candidates[ $base_url ] = true;
+		}
+
 		// Reset the counts and URLs found in the previous pass.
 		$this->indexed_entities_counts = array();
 		$this->indexed_assets_urls     = array();
@@ -312,11 +394,26 @@ class WP_Stream_Importer {
 			switch ( $type ) {
 				case 'site_option':
 					if ( $data['option_name'] === 'home' ) {
-						$this->source_site_url = $data['option_value'];
+						$this->set_source_site_url( $data['option_value'] );
 					}
 					break;
 				case 'post':
 					if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
+						/**
+						 * Keep track of alternative domains used to reference attachments,
+						 * e.g. Theme Unit Test Data site lives at https://wpthemetestdata.wordpress.com/
+						 * but many attachments are served from https://wpthemetestdata.files.wordpress.com/
+						 */
+						$parsed_url = WP_URL::parse( $data['attachment_url'] );
+						if ( $parsed_url ) {
+							$parsed_url->pathname = '';
+							$parsed_url->search   = '';
+							$parsed_url->hash     = '';
+							$base_url             = $parsed_url->toString();
+							if ( ! array_key_exists( $base_url, $this->site_url_mapping_candidates ) ) {
+								$this->site_url_mapping_candidates[ $base_url ] = false;
+							}
+						}
 						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
 						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
 					} elseif ( isset( $data['post_content'] ) ) {
@@ -337,6 +434,16 @@ class WP_Stream_Importer {
 		}
 		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
 		return true;
+	}
+
+	public function get_new_site_url_mapping_candidates() {
+		$candidates = array();
+		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
+			if ( false === $status ) {
+				$candidates[] = $base_url;
+			}
+		}
+		return $candidates;
 	}
 
 	public function get_indexed_entities_counts() {
@@ -374,6 +481,7 @@ class WP_Stream_Importer {
 			switch ( $event->type ) {
 				case WP_Attachment_Downloader_Event::FAILURE:
 				case WP_Attachment_Downloader_Event::SUCCESS:
+				case WP_Attachment_Downloader_Event::IN_PROGRESS:
 				case WP_Attachment_Downloader_Event::ALREADY_EXISTS:
 					$this->frontloading_events[] = $event;
 					foreach ( array_keys( $this->active_downloads ) as $entity_cursor ) {
@@ -539,11 +647,22 @@ class WP_Stream_Importer {
 					}
 					$p = new WP_Block_Markup_Url_Processor( $data[ $key ], $this->source_site_url );
 					while ( $p->next_url() ) {
-						if ( $this->url_processor_matched_asset_url( $p ) ) {
-							$filename      = $this->new_asset_filename( $p->get_raw_url() );
-							$new_asset_url = $this->options['uploads_url'] . '/' . $filename;
-							$p->replace_base_url( WP_URL::parse( $new_asset_url ) );
-							$attachments[] = $new_asset_url;
+						// Relative URLs are okay at this stage.
+						if ( ! $p->get_raw_url() ) {
+							continue;
+						}
+
+						/**
+						 * Any URL that has a corresponding frontloaded file is an asset URL.
+						 */
+						$asset_filename = $this->new_asset_filename(
+							$p->get_raw_url(),
+							$data['source_path'] ?? $data['slug'] ?? null
+						);
+						if ( file_exists( $this->options['uploads_path'] . '/' . $asset_filename ) ) {
+							$p->set_raw_url(
+								$this->options['uploads_url'] . '/' . $asset_filename
+							);
 							/**
 							 * @TODO: How would we know a specific image block refers to a specific
 							 *        attachment? We need to cross-correlate that to rewrite the URL.
@@ -553,13 +672,18 @@ class WP_Stream_Importer {
 							 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
 							 *        strategy? And the API consumer would make the decision?
 							 */
-						} elseif ( $this->source_site_url &&
-							$p->get_parsed_url() &&
-							url_matches( $p->get_parsed_url(), $this->source_site_url )
-						) {
-							$p->replace_base_url( WP_URL::parse( $this->options['new_site_url'] ) );
-						} else {
-							// Ignore other URLs.
+							continue;
+						}
+
+						// Absolute URLs are required at this stage.
+						if ( ! $p->get_parsed_url() ) {
+							continue;
+						}
+
+						$target_base_url = $this->get_url_mapping_target( $p->get_parsed_url() );
+						if ( false !== $target_base_url ) {
+							$p->replace_base_url( $target_base_url );
+							continue;
 						}
 					}
 					$data[ $key ] = $p->get_updated_html();
@@ -605,15 +729,15 @@ class WP_Stream_Importer {
 	}
 
 	private function enqueue_attachment_download( string $raw_url, $options = array() ) {
-		$context_path    = $options['context_path'] ?? null;
-		$original_url    = $options['original_url'] ?? $raw_url;
-		$url             = $this->rewrite_attachment_url( $raw_url, $context_path );
-		$asset_filename  = $this->new_asset_filename( $original_url );
-		$output_filename = ltrim( $asset_filename, '/' );
+		$output_filename = $this->new_asset_filename(
+			$options['original_url'] ?? $raw_url,
+			$options['context_path'] ?? null
+		);
 
-		$enqueued = $this->downloader->enqueue_if_not_exists( $url, $output_filename );
+		$download_url = $this->rewrite_attachment_url( $raw_url, $options['context_path'] ?? null );
+		$enqueued     = $this->downloader->enqueue_if_not_exists( $download_url, $output_filename );
 		if ( false === $enqueued ) {
-			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $url ), '1.0' );
+			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $raw_url ), '1.0' );
 			return false;
 		}
 
@@ -652,7 +776,12 @@ class WP_Stream_Importer {
 	 *   different permissions. Just because Bob deletes his copy, doesn't
 	 *   mean we should delete Alice's copy.
 	 */
-	private function new_asset_filename( string $raw_asset_url ) {
+	private function new_asset_filename( string $raw_asset_url, $context_path = null ) {
+		$raw_asset_url = $this->rewrite_attachment_url(
+			$raw_asset_url,
+			$context_path
+		);
+
 		$filename   = md5( $raw_asset_url );
 		$parsed_url = WP_URL::parse( $raw_asset_url );
 		if ( false !== $parsed_url ) {
@@ -696,8 +825,23 @@ class WP_Stream_Importer {
 		return (
 			$p->get_tag() === 'IMG' &&
 			$p->get_inspected_attribute_name() === 'src' &&
-			( ! $this->source_site_url || url_matches( $p->get_parsed_url(), $this->source_site_url ) )
+			$this->is_child_of_a_mapped_url( $p->get_parsed_url() )
 		);
+	}
+
+	private function is_child_of_a_mapped_url( $url ) {
+		return $this->get_url_mapping_target( $url ) !== false;
+	}
+
+	private function get_url_mapping_target( $source_url ) {
+		$url = WP_URL::parse( $source_url );
+		foreach ( $this->site_url_mapping as $pair ) {
+			$parsed_base_url = $pair[0];
+			if ( is_child_url_of( $parsed_base_url, $url ) ) {
+				return $pair[1];
+			}
+		}
+		return false;
 	}
 
 	private $first_iterator = true;

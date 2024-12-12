@@ -7,6 +7,7 @@ import { dirname, Semaphore } from '@php-wasm/util';
 import {
 	listDescendantFiles,
 	listGitFiles,
+	resolveCommitHash,
 	sparseCheckout,
 } from '@wp-playground/storage';
 import { zipNameToHumanName } from './utils/zip-name-to-human-name';
@@ -459,23 +460,22 @@ export class GitDirectoryResource extends Resource<Directory> {
 
 	async resolve() {
 		const repoUrl = this.options?.corsProxy
-			? `${this.options.corsProxy}?${this.reference.url}`
+			? `${this.options.corsProxy}${this.reference.url}`
 			: this.reference.url;
-		const ref = ['', 'HEAD'].includes(this.reference.ref)
-			? 'HEAD'
-			: `refs/heads/${this.reference.ref}`;
-		const allFiles = await listGitFiles(repoUrl, ref);
+
+		const commitHash = await resolveCommitHash(repoUrl, {
+			value: this.reference.ref,
+			type: 'infer',
+		});
+		const allFiles = await listGitFiles(repoUrl, commitHash);
 
 		const requestedPath = this.reference.path.replace(/^\/+/, '');
 		const filesToClone = listDescendantFiles(allFiles, requestedPath);
-		let files = await sparseCheckout(repoUrl, ref, filesToClone);
+		let files = await sparseCheckout(repoUrl, commitHash, filesToClone);
+
 		// Remove the path prefix from the cloned file names.
-		files = Object.fromEntries(
-			Object.entries(files).map(([name, contents]) => {
-				name = name.substring(this.reference.path.length);
-				name = name.replace(/^\/+/, '');
-				return [name, contents];
-			})
+		files = mapKeys(files, (name) =>
+			name.substring(requestedPath.length).replace(/^\/+/, '')
 		);
 		return {
 			name:
@@ -491,6 +491,12 @@ export class GitDirectoryResource extends Resource<Directory> {
 	get name() {
 		return this.reference.path.split('/').pop()!;
 	}
+}
+
+function mapKeys(obj: Record<string, any>, fn: (key: string) => string) {
+	return Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [fn(key), value])
+	);
 }
 
 /**

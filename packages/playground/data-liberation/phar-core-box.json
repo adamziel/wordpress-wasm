@@ -1,0 +1,28 @@
+{
+	"$schema": "https://raw.githubusercontent.com/box-project/box/refs/heads/main/res/schema.json",
+	"main": "bootstrap.php",
+	"output": "dist/data-liberation-core.phar",
+	"force-autodiscovery": false,
+	"compactors": [
+		"KevinGH\\Box\\Compactor\\Php",
+		"DataLiberationBoxCompactor"
+	],
+	"annotations": false,
+	"files": ["src/functions.php", "src/utf8_decoder.php"],
+	"directories": [
+		"src/block-markup",
+		"src/byte-readers",
+		"src/wxr",
+		"src/wordpress-core-html-api",
+		"src/xml-api",
+		"src/import",
+		"blueprints-library/src/WordPress/AsyncHttp",
+		"blueprints-library/src/WordPress/Streams",
+		"blueprints-library/src/WordPress/Util",
+		"vendor/brick",
+		"vendor/composer",
+		"vendor-patched/psr",
+		"vendor-patched/rowbot",
+		"vendor-patched/symfony/polyfill-intl-normalizer"
+	]
+}

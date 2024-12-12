@@ -48,7 +48,7 @@ class WP_File_Reader implements WP_Byte_Reader {
 		return $this->output_bytes;
 	}
 
-	public function get_last_error(): string|null {
+	public function get_last_error(): ?string {
 		return $this->last_error;
 	}
 

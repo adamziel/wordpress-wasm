@@ -55,7 +55,7 @@ v1 to ship and stress-test in Playground.
     – Test the speed of WP_Migration_URL_In_Text_Processor. Consider switching to the
     detector/rewriter explored by @dmsnell. Later on this might also require using
     his UTF-8 decoder.
-    – Make this PHP code compatible with PHP 7.2 – 8.3
+    – Make this PHP code compatible with PHP 7.2 – 8.4
     – Add extensibility so that specific plugins may, e.g., base64_decode() their block
     attributes before migrating the URLs.
     – Consider dropping the code from `src/wordpress-core`. Downside: Having a subset of

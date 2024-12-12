@@ -1,0 +1,70 @@
+name: Test URL
+on:
+    push:
+        paths-ignore:
+            - '**.md'
+
+    pull_request:
+        paths-ignore:
+            - '**.md'
+
+jobs:
+    test:
+        name: PHP ${{ matrix.php }} ${{ matrix.php-jit == 'on' && 'with' || 'without' }} JIT on ${{ matrix.os }} ${{ matrix.arch }}
+        runs-on: ${{ matrix.os }}
+        container: shivammathur/node:latest-${{ matrix.arch }}
+        continue-on-error: ${{ matrix.php == 'nightly' }}
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: true
+            matrix:
+                os:
+                    - ubuntu-latest
+                arch:
+                    - amd64
+                    - i386
+                php:
+                    - 8.1
+                    - 8.2
+                    - 8.3
+                php-jit:
+                    - on
+                    - off
+                include:
+                    - php: nightly
+                      os: ubuntu-latest
+                      arch: amd64
+                      php-jit: on
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: mbstring, opcache, pcre, gmp
+                  ini-values: zend.assertions=1, opcache.enable_cli=1, opcache.memory_consumption=256, opcache.jit=${{ matrix.php-jit == 'on' && 1255 || 'disable' }}, opcache.jit_buffer_size=${{ matrix.php-jit == 'on' && '256M' || '0' }}
+                  coverage: none
+              env:
+                  fail-fast: true
+
+            - name: Install dependencies
+              run: |
+                  if [[ ${{ matrix.php == 'nightly' }} ]]; then
+                    composer update --no-interaction --ignore-platform-reqs
+                  else
+                    composer update --no-interaction
+                  fi
+
+            - name: Run PHPCS
+              run: vendor/bin/phpcs
+
+            - name: Run PHPStan
+              run: vendor/bin/phpstan
+
+            - name: Run Tests
+              run: vendor/bin/phpunit
