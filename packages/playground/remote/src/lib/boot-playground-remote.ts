@@ -319,10 +319,6 @@ export async function bootPlaygroundRemote() {
 				);
 
 				if (options.withNetworking) {
-					console.log(
-						'Setting up fetch network transport',
-						options.corsProxyUrl
-					);
 					await setupFetchNetworkTransport(phpWorkerApi, {
 						corsProxyUrl: options.corsProxyUrl,
 					});
