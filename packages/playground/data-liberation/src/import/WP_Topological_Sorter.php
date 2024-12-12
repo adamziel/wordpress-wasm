@@ -54,54 +54,12 @@ class WP_Topological_Sorter {
 		'term_meta'    => 6,
 	);
 
-	private $mapped_pre_filters = array(
-		// Name of the filter, and the number of arguments it accepts.
-		'wxr_importer_pre_process_comment' => 3,
-		'wxr_importer_pre_process_comment_meta' => 2,
-		'wxr_importer_pre_process_post' => 2,
-		'wxr_importer_pre_process_post_meta' => 2,
-		'wxr_importer_pre_process_term' => 1,
-		'wxr_importer_pre_process_term_meta' => 2,
-	);
-
-	private $mapped_post_actions = array(
-		// Name of the filter, and the number of arguments it accepts.
-		'wxr_importer_processed_comment' => 3,
-		'wxr_importer_processed_comment_meta' => 3,
-		'wxr_importer_processed_post' => 2,
-		'wxr_importer_processed_post_meta' => 2,
-		'wxr_importer_processed_term' => 2,
-		'wxr_importer_processed_term_meta' => 3,
-	);
-
 	/**
 	 * Set the current session ID and add the filters and actions.
 	 */
 	public function __construct( $options = array() ) {
 		if ( array_key_exists( 'session_id', $options ) ) {
 			$this->current_session = $options['session_id'];
-		}
-
-		// The topological sorter needs to know about the mapped IDs for comments, terms, and posts.
-		foreach ( $this->mapped_pre_filters as $name => $accepted_args ) {
-			add_filter( $name, array( $this, 'filter_wxr_importer_pre_process' ), 10, $accepted_args );
-		}
-
-		foreach ( $this->mapped_post_actions as $name => $accepted_args ) {
-			add_action( $name, array( $this, 'action_wxr_importer_processed' ), 10, $accepted_args );
-		}
-	}
-
-	/**
-	 * Remove the filters.
-	 */
-	public function __destruct() {
-		foreach ( $this->mapped_pre_filters as $name => $accepted_args ) {
-			remove_filter( $name, array( $this, 'filter_wxr_importer_pre_process' ) );
-		}
-
-		foreach ( $this->mapped_post_actions as $name => $accepted_args ) {
-			remove_action( $name, array( $this, 'action_wxr_importer_processed' ) );
 		}
 	}
 
@@ -200,71 +158,6 @@ class WP_Topological_Sorter {
 			array( 'session_id' => $session_id ),
 			array( '%d' )
 		);
-	}
-
-	/**
-	 * Called by 'wxr_importer_pre_process_*' filters. This populates the entity
-	 * object with the mapped IDs.
-	 *
-	 * @param array $data The data to map.
-	 * @param int|null $id The ID of the entity.
-	 * @param int|null $additional_id The additional ID of the entity.
-	 */
-	public function filter_wxr_importer_pre_process( $data, $id = null, $additional_id = null ) {
-		$current_session = $this->current_session;
-		$current_filter  = current_filter();
-		$types           = array(
-			'wxr_importer_pre_process_comment'      => 'comment',
-			'wxr_importer_pre_process_comment_meta' => 'comment_meta',
-			'wxr_importer_pre_process_post'         => 'post',
-			'wxr_importer_pre_process_post_meta'    => 'post_meta',
-			'wxr_importer_pre_process_term'         => 'term',
-			'wxr_importer_pre_process_term_meta'    => 'term_meta',
-		);
-
-		if ( ! $current_filter || ! array_key_exists( $current_filter, $types ) ) {
-			_doing_it_wrong(
-				__METHOD__,
-				'This method should be called by the wxr_importer_pre_process_* filters.',
-				'1.0.0'
-			);
-
-			return false;
-		}
-
-		return $this->get_mapped_entity( $types[ $current_filter ], $data, $id, $additional_id );
-	}
-
-	/**
-	 * Called by 'wxr_importer_processed_*' actions. This adds the entity to the
-	 * sorter table.
-	 *
-	 * @param int|null $id The ID of the entity.
-	 * @param array $data The data to map.
-	 * @param int|null $additional_id The additional ID of the entity.
-	 */
-	public function action_wxr_importer_processed( $id, $data, $additional_id = null ) {
-		$current_filter = current_action();
-		$types          = array(
-			'wxr_importer_processed_comment'      => 'comment',
-			'wxr_importer_processed_comment_meta' => 'comment_meta',
-			'wxr_importer_processed_post'         => 'post',
-			'wxr_importer_processed_post_meta'    => 'post_meta',
-			'wxr_importer_processed_term'         => 'term',
-			'wxr_importer_processed_term_meta'    => 'term_meta',
-		);
-
-		if ( ! $current_filter || ! array_key_exists( $current_filter, $types ) ) {
-			_doing_it_wrong(
-				__METHOD__,
-				'This method should be called by the wxr_importer_processed_* filters.',
-				'1.0.0'
-			);
-
-			return false;
-		}
-
-		$this->map_entity( $types[ $current_filter ], $data, $id, $additional_id );
 	}
 
 	/**
@@ -370,7 +263,7 @@ class WP_Topological_Sorter {
 	 *
 	 * @return mixed|bool The mapped entity or false if the post is not found.
 	 */
-	public function get_mapped_entity( $entity_type, $entity, $id, $additional_id = null ) {
+	public function get_mapped_entity( $entity_type, $entity, $id = null, $additional_id = null ) {
 		$current_session = $this->current_session;
 		$already_mapped  = false;
 
