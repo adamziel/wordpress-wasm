@@ -38,12 +38,11 @@ class WP_Exporter {
 		$uploads_path = $uploads['basedir'];
 
 		$flags = \FilesystemIterator::SKIP_DOTS;
-		$recursive_dir_iterator = new \RecursiveDirectoryIterator(
-			$uploads_path,
-			$flags
-		);
 		$uploads_iterator = new \RecursiveIteratorIterator(
-			$recursive_dir_iterator
+			new \RecursiveDirectoryIterator(
+				$uploads_path,
+				$flags
+			)	
 		);
 
 		foreach ( $uploads_iterator as $file ) {
@@ -52,7 +51,11 @@ class WP_Exporter {
 			}
 			$absolute_path = $file->getPathname();
 			$relative_path = substr( $absolute_path, strlen($uploads_path) + 1 );
-			$zip_writer->writeFileFromPath( $relative_path, $absolute_path );
+			$zip_writer->writeFileFromPath(
+				// TODO: How to handle unconventional upload locations?
+				"wp-content/uploads/$relative_path",
+				$absolute_path
+			);
 
 			// TODO: Is this necessary to make sure per-file output is flushed?
 			fflush( $output_stream );
