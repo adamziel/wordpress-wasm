@@ -90,7 +90,7 @@ class WP_File_Visitor {
 		return false;
 	}
 
-	public function get_event() {
+	public function get_event(): ?WP_File_Visitor_Event {
 		return $this->current_event;
 	}
 }

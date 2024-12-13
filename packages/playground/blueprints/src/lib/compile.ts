@@ -15,6 +15,10 @@ import { logger } from '@php-wasm/logger';
 // eslint-disable-next-line
 import dataLiberationCoreUrl from '../../../data-liberation/dist/data-liberation-core.phar.gz?url';
 
+/* @ts-ignore */
+// eslint-disable-next-line
+import dataLiberationMarkdownUrl from '../../../data-liberation-markdown/dist/data-liberation-markdown.phar.gz?url';
+
 // @TODO: Configure this in the `wp-cli` step, not here.
 const { wpCLI, ...otherStepHandlers } = allStepHandlers;
 const keyedStepHandlers = {
@@ -233,7 +237,7 @@ export function compileBlueprint(
 	if (importWxrStepIndex !== undefined && importWxrStepIndex > -1) {
 		const importWxrStep = blueprint.steps![
 			importWxrStepIndex
-		]! as ImportWxrStep<any>;
+		]! as ImportWxrStep<any, any>;
 		if (importWxrStep.importer === 'data-liberation') {
 			blueprint.steps?.splice(importWxrStepIndex, 0, {
 				step: 'writeFile',
@@ -244,6 +248,21 @@ export function compileBlueprint(
 					caption: 'Downloading the Data Liberation WXR importer',
 				},
 			});
+			if (
+				importWxrStep.phpImporterOptions?.data_source ===
+				'markdown_directory'
+			) {
+				blueprint.steps?.splice(importWxrStepIndex, 0, {
+					step: 'writeFile',
+					path: '/internal/shared/data-liberation-markdown.phar',
+					data: {
+						resource: 'url',
+						url: dataLiberationMarkdownUrl,
+						caption:
+							'Downloading the Data Liberation Markdown importer',
+					},
+				});
+			}
 		} else {
 			blueprint.steps?.splice(importWxrStepIndex, 0, {
 				step: 'installPlugin',

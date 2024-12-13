@@ -35,12 +35,12 @@ class WP_Stream_Importer {
 	/**
 	 * Populated from the WXR file's <wp:base_blog_url> tag.
 	 */
-	private $source_site_url;
+	protected $source_site_url;
 	/**
 	 * A list of [original_url, migrated_url] pairs for rewriting the URLs
 	 * in the imported content.
 	 */
-	private $site_url_mapping = array();
+	protected $site_url_mapping = array();
 	/**
 	 * A list of candidate base URLs that have been spotted in the WXR file.
 	 *
@@ -66,8 +66,8 @@ class WP_Stream_Importer {
 	 * Once the API consumer decides on the mapping, it can call
 	 * add_site_url_mapping() to tell the importer what to map that domain to.
 	 */
-	private $site_url_mapping_candidates = array();
-	private $entity_iterator_factory;
+	protected $site_url_mapping_candidates = array();
+	protected $entity_iterator_factory;
 	/**
 	 * @param array|string|null $query {
 	 *     @type string      $uploads_path  The directory to download the media attachments to.
@@ -76,7 +76,7 @@ class WP_Stream_Importer {
 	 *                                      after the import. E.g. http://127.0.0.1:9400/wp-content/uploads/
 	 * }
 	 */
-	private $options;
+	protected $options;
 
 	const STAGE_INITIAL          = '#initial';
 	const STAGE_INDEX_ENTITIES   = '#index_entities';
@@ -98,7 +98,7 @@ class WP_Stream_Importer {
 	 * The current state of the import process.
 	 * @var string
 	 */
-	private $stage = self::STAGE_INITIAL;
+	protected $stage = self::STAGE_INITIAL;
 	/**
 	 * The next stage of the import process. An explicit call to
 	 * next_stage() is required to advance the importer.
@@ -108,13 +108,13 @@ class WP_Stream_Importer {
 	 * failed to download.
 	 * @var string
 	 */
-	private $next_stage;
+	protected $next_stage;
 
 	/**
 	 * Iterator that streams entities to import.
 	 */
-	private $entity_iterator;
-	private $resume_at_entity;
+	protected $entity_iterator;
+	protected $resume_at_entity;
 	/**
 	 * A map of currently downloaded resources for each entity in
 	 * the following format:
@@ -123,8 +123,8 @@ class WP_Stream_Importer {
 	 *
 	 * @var array<string,array<string,bool>>
 	 */
-	private $active_downloads = array();
-	private $downloader;
+	protected $active_downloads = array();
+	protected $downloader;
 
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
@@ -152,14 +152,14 @@ class WP_Stream_Importer {
 		$cursor = null
 	) {
 		$options  = static::parse_options( $options );
-		$importer = new WP_Stream_Importer( $entity_iterator_factory, $options );
+		$importer = new static( $entity_iterator_factory, $options );
 		if ( null !== $cursor && true !== $importer->initialize_from_cursor( $cursor ) ) {
 			return false;
 		}
 		return $importer;
 	}
 
-	private function initialize_from_cursor( $cursor ) {
+	protected function initialize_from_cursor( $cursor ) {
 		$cursor = json_decode( $cursor, true );
 		if ( ! is_array( $cursor ) ) {
 			_doing_it_wrong( __METHOD__, 'Cannot resume an importer with a non-array cursor.', '1.0.0' );
@@ -182,7 +182,7 @@ class WP_Stream_Importer {
 		return true;
 	}
 
-	private function set_source_site_url( $source_site_url ) {
+	protected function set_source_site_url( $source_site_url ) {
 		$this->source_site_url = $source_site_url;
 		// -1 is a well-known index for the source site URL.
 		// Every subsequent call to set_source_site_url() will
@@ -235,7 +235,7 @@ class WP_Stream_Importer {
 		);
 	}
 
-	private static function parse_options( $options ) {
+	protected static function parse_options( $options ) {
 		if ( ! isset( $options['new_site_url'] ) ) {
 			$options['new_site_url'] = get_site_url();
 		}
@@ -255,7 +255,7 @@ class WP_Stream_Importer {
 		return $options;
 	}
 
-	private function __construct(
+	protected function __construct(
 		$entity_iterator_factory,
 		$options = array()
 	) {
@@ -266,7 +266,7 @@ class WP_Stream_Importer {
 		}
 	}
 
-	private $frontloading_retries_iterator;
+	protected $frontloading_retries_iterator;
 	public function set_frontloading_retries_iterator( $frontloading_retries_iterator ) {
 		$this->frontloading_retries_iterator = $frontloading_retries_iterator;
 	}
@@ -277,7 +277,7 @@ class WP_Stream_Importer {
 	 *
 	 * @var WP_Entity_Importer
 	 */
-	private $importer;
+	protected $importer;
 
 	public function next_step() {
 		switch ( $this->stage ) {
@@ -328,10 +328,10 @@ class WP_Stream_Importer {
 		return true;
 	}
 
-	private $indexed_entities_counts = array();
-	private $indexed_assets_urls     = array();
+	protected $indexed_entities_counts = array();
+	protected $indexed_assets_urls     = array();
 
-	private function index_next_entities( $count = 10000 ) {
+	protected function index_next_entities( $count = 10000 ) {
 		if ( null !== $this->next_stage ) {
 			return false;
 		}
@@ -454,7 +454,7 @@ class WP_Stream_Importer {
 		return $this->indexed_assets_urls;
 	}
 
-	private $frontloading_events = array();
+	protected $frontloading_events = array();
 	public function get_frontloading_events() {
 		return $this->frontloading_events;
 	}
@@ -475,7 +475,7 @@ class WP_Stream_Importer {
 	 * downloader will enqueue B for download and will skip C and D since
 	 * the relevant files already exist in the filesystem.
 	 */
-	private function frontloading_advance_reentrancy_cursor() {
+	protected function frontloading_advance_reentrancy_cursor() {
 		while ( $this->downloader->next_event() ) {
 			$event = $this->downloader->get_event();
 			switch ( $event->type ) {
@@ -510,7 +510,7 @@ class WP_Stream_Importer {
 	 * before import_entities() so that every inserted post already has
 	 * all its attachments downloaded.
 	 */
-	private function frontload_next_entity() {
+	protected function frontload_next_entity() {
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = new WP_Entity_Iterator_Chain();
 			if ( null !== $this->frontloading_retries_iterator ) {
@@ -615,7 +615,7 @@ class WP_Stream_Importer {
 	 *        large datasets, but maybe it could be a choice for
 	 *        the API consumer?
 	 */
-	private function import_next_entity() {
+	protected function import_next_entity() {
 		if ( null !== $this->next_stage ) {
 			return false;
 		}
@@ -717,8 +717,8 @@ class WP_Stream_Importer {
 		return true;
 	}
 
-	private $imported_entities_counts = array();
-	private function count_imported_entity( $type ) {
+	protected $imported_entities_counts = array();
+	protected function count_imported_entity( $type ) {
 		if ( ! array_key_exists( $type, $this->imported_entities_counts ) ) {
 			$this->imported_entities_counts[ $type ] = 0;
 		}
@@ -728,7 +728,7 @@ class WP_Stream_Importer {
 		return $this->imported_entities_counts;
 	}
 
-	private function enqueue_attachment_download( string $raw_url, $options = array() ) {
+	protected function enqueue_attachment_download( string $raw_url, $options = array() ) {
 		$output_filename = $this->new_asset_filename(
 			$options['original_url'] ?? $raw_url,
 			$options['context_path'] ?? null
@@ -776,7 +776,7 @@ class WP_Stream_Importer {
 	 *   different permissions. Just because Bob deletes his copy, doesn't
 	 *   mean we should delete Alice's copy.
 	 */
-	private function new_asset_filename( string $raw_asset_url, $context_path = null ) {
+	protected function new_asset_filename( string $raw_asset_url, $context_path = null ) {
 		$raw_asset_url = $this->rewrite_attachment_url(
 			$raw_asset_url,
 			$context_path
@@ -798,7 +798,7 @@ class WP_Stream_Importer {
 		return $filename;
 	}
 
-	private function rewrite_attachment_url( string $raw_url, $context_path = null ) {
+	protected function rewrite_attachment_url( string $raw_url, $context_path = null ) {
 		if ( WP_URL::can_parse( $raw_url ) ) {
 			// Absolute URL, nothing to do.
 			return $raw_url;
@@ -821,7 +821,7 @@ class WP_Stream_Importer {
 	 * @TODO: How can we process the videos?
 	 * @TODO: What other asset types are there?
 	 */
-	private function url_processor_matched_asset_url( WP_Block_Markup_Url_Processor $p ) {
+	protected function url_processor_matched_asset_url( WP_Block_Markup_Url_Processor $p ) {
 		return (
 			$p->get_tag() === 'IMG' &&
 			$p->get_inspected_attribute_name() === 'src' &&
@@ -829,11 +829,11 @@ class WP_Stream_Importer {
 		);
 	}
 
-	private function is_child_of_a_mapped_url( $url ) {
+	protected function is_child_of_a_mapped_url( $url ) {
 		return $this->get_url_mapping_target( $url ) !== false;
 	}
 
-	private function get_url_mapping_target( $source_url ) {
+	protected function get_url_mapping_target( $source_url ) {
 		$url = WP_URL::parse( $source_url );
 		foreach ( $this->site_url_mapping as $pair ) {
 			$parsed_base_url = $pair[0];
@@ -844,8 +844,8 @@ class WP_Stream_Importer {
 		return false;
 	}
 
-	private $first_iterator = true;
-	private function create_entity_iterator() {
+	protected $first_iterator = true;
+	protected function create_entity_iterator() {
 		$factory = $this->entity_iterator_factory;
 		if ( $this->first_iterator ) {
 			$this->first_iterator = false;

@@ -54,7 +54,7 @@ export type GenericStep<FileResource, DirectoryResource> =
 	| DefineWpConfigConstsStep
 	| DefineSiteUrlStep
 	| EnableMultisiteStep
-	| ImportWxrStep<FileResource>
+	| ImportWxrStep<FileResource, DirectoryResource>
 	| ImportThemeStarterContentStep
 	| ImportWordPressFilesStep<FileResource>
 	| InstallPluginStep<FileResource, DirectoryResource>

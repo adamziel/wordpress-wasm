@@ -2,6 +2,9 @@
 
 class WP_File_Visitor_Event {
 	public $type;
+	/**
+	 * @var SplFileInfo
+	 */
 	public $dir;
 	public $files;
 

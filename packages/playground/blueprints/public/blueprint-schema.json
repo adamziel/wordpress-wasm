@@ -548,16 +548,33 @@
 						},
 						"file": {
 							"$ref": "#/definitions/FileReference",
-							"description": "The file to import"
+							"description": "The file to import",
+							"deprecated": "Use `importData` instead.",
+							"default": "wxr"
+						},
+						"importData": {
+							"anyOf": [
+								{
+									"$ref": "#/definitions/FileReference"
+								},
+								{
+									"$ref": "#/definitions/DirectoryReference"
+								}
+							],
+							"description": "The data to import. It can be a WXR file, a Markdown file, or a directory containing all the files to import at its root."
 						},
 						"importer": {
 							"type": "string",
 							"enum": ["data-liberation", "default"],
 							"description": "The importer to use. Possible values:\n\n- `default`: The importer from https://github.com/humanmade/WordPress-Importer\n- `data-liberation`: The experimental Data Liberation WXR importer developed at                      https://github.com/WordPress/wordpress-playground/issues/1894\n\nThis option is deprecated. The syntax will not be removed, but once the Data Liberation importer matures, it will become the only supported importer and the `importer` option will be ignored.",
 							"deprecated": true
+						},
+						"phpImporterOptions": {
+							"$ref": "#/definitions/ImporterOptions",
+							"description": "Snake case options to pass to the PHP importer constructor verbatim."
 						}
 					},
-					"required": ["file", "step"]
+					"required": ["importData", "step"]
 				},
 				{
 					"type": "object",
@@ -1355,6 +1372,21 @@
 				]
 			},
 			"properties": {}
+		},
+		"ImporterOptions": {
+			"type": "object",
+			"properties": {
+				"data_source": {
+					"type": "string",
+					"enum": ["wxr_file", "markdown_directory"],
+					"description": "The format of the file to import. Possible values:\n\n- `wxr_file` (default)\n- `markdown_directory`",
+					"default": "wxr_file"
+				}
+			},
+			"required": ["data_source"],
+			"additionalProperties": {
+				"description": "Additional options to pass to the importer."
+			}
 		},
 		"InstallPluginOptions": {
 			"type": "object",
