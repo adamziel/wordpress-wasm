@@ -59,7 +59,7 @@ export function Sidebar({
 	const resources = [
 		{
 			label: 'Preview WordPress PR',
-			href: '/wordpress.html',
+			href: '/?modal=preview-pr-wordpress',
 		},
 		{
 			label: 'More demos',
