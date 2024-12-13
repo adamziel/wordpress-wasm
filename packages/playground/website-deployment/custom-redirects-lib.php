@@ -57,29 +57,10 @@ function playground_handle_request() {
 		// Note: Using the header `Vary: Referer` does not seem to affect cacheability.
 		$may_edge_cache = false;
 
-		if ( isset( $redirect['internal' ] ) && $redirect['internal'] ) {
-			$requested_path = $redirect['location'];
-		} else {
-			$should_redirect = true;
-			if ( isset( $redirect['condition']['referers'] ) ) {
-				$should_redirect = false;
-				if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
-					foreach ( $redirect['condition']['referers'] as $referer ) {
-						if ( str_starts_with( $_SERVER['HTTP_REFERER'], $referer ) ) {
-							$should_redirect = true;
-							break;
-						}
-					}
-				}
-			}
-
-			if ( $should_redirect ) {
-				$log( "Redirecting to '{$redirect['location']}' with status '{$redirect['status']}'" );
-				header( "Location: {$redirect['location']}" );
-				http_response_code( $redirect['status'] );
-				die();
-			}
-		}
+		$log( "Redirecting to '{$redirect['location']}' with status '{$redirect['status']}'" );
+		header( "Location: {$redirect['location']}" );
+		http_response_code( $redirect['status'] );
+		die();
 	}
 
 	//
@@ -207,20 +188,6 @@ function playground_maybe_redirect( $requested_path ) {
 		);
 	}
 
-	if ( str_ends_with( $requested_path, '/wordpress' ) ) {
-		return array(
-			'location' => 'wordpress.html',
-			'status' => 301
-		);
-	}
-
-	if ( str_ends_with( $requested_path, '/gutenberg' ) ) {
-		return array(
-			'location' => 'gutenberg.html',
-			'status' => 301
-		);
-	}
-
 	if ( str_ends_with( $requested_path, '/proxy' ) ) {
 		return array(
 			'location' => 'https://github-proxy.com/',
@@ -249,16 +216,38 @@ function playground_maybe_redirect( $requested_path ) {
 		);
 	}
 
-	if ( str_ends_with( $requested_path, '/wordpress.html' ) ) {
+	if (
+		str_ends_with( $requested_path, '/wordpress.html' ) &&
+		isset( $_SERVER['HTTP_REFERER'] ) &&
+		(
+			str_starts_with( $_SERVER['HTTP_REFERER'], 'https://developer.wordpress.org/') ||
+			str_starts_with( $_SERVER['HTTP_REFERER'], 'https://wordpress.org/')
+		)
+	) {
 		return array(
-			'condition' => array(
-				'referers' => array(
-					'https://developer.wordpress.org/',
-					'https://wordpress.org/',
-				),
-			),
 			'location' => '/index.html',
 			'status' => 302,
+		);
+	}
+
+	if (
+		str_ends_with( $requested_path, '/wordpress' ) ||
+		str_ends_with( $requested_path, '/wordpress.html' )
+	) {
+		error_log( 'redir wp' );
+		return array(
+			'location' => '/?modal=preview-pr-wordpress',
+			'status' => 301
+		);
+	}
+
+	if (
+		str_ends_with( $requested_path, '/gutenberg' ) ||
+		str_ends_with( $requested_path, '/gutenberg.html' )
+	) {
+		return array(
+			'location' => '/?modal=preview-pr-gutenberg',
+			'status' => 301
 		);
 	}
 
