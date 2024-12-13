@@ -21,6 +21,14 @@ class WP_Exporter {
 
 		// @TODO: Replace upload URLs with relative file URLs.
 
+		$uploads = wp_upload_dir();
+		// @TODO: This is a hack and kind of broken. Replace attachment URLs using proper XML and URL parsing libraries.
+		$wxr_content = str_replace(
+			trailingslashit( $uploads['baseurl'] ),
+			'file://./wp-content/uploads/',
+			$wxr_content
+		);
+
 		header('Content-Type: application/zip');
 
 		// @TODO: Can we get rid of this open-stdout-on-demand workaround?
@@ -33,7 +41,6 @@ class WP_Exporter {
 		$zip_writer = new ZipStreamWriter( $output_stream );
 		$zip_writer->writeFileFromString( 'META-INF/export.wxr', $wxr_content );
 
-		$uploads = wp_upload_dir();
 		$uploads_path = $uploads['basedir'];
 
 		$flags = \FilesystemIterator::SKIP_DOTS;
