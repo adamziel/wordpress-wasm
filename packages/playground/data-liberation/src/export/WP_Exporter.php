@@ -53,10 +53,11 @@ class WP_Exporter {
 			$absolute_path = $file->getPathname();
 			$relative_path = substr( $absolute_path, strlen($uploads_path) + 1 );
 			$zip_writer->writeFileFromPath( $relative_path, $absolute_path );
+
+			// TODO: Is this necessary to make sure per-file output is flushed?
+			fflush( $output_stream );
 		}
 
 		$zip_writer->finish();
-		// TODO: Is this necessary?
-		fflush( $output_stream );
 	}
 }
