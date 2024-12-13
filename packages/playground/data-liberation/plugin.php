@@ -657,3 +657,15 @@ add_action(
 		);
 	}
 );
+
+add_action('wp_loaded', 'data_liberation_maybe_test_export');
+function data_liberation_maybe_test_export() {
+	$request_path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+	if( $request_path !== '/_data_liberation_test_export' ) {
+		return;
+	}
+
+	$exporter = new WP_Exporter();
+	$exporter->stream_export();
+	die();
+}
