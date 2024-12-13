@@ -100,7 +100,7 @@ class WP_Topological_Sorter {
 		$sql = $wpdb->prepare(
 			'CREATE TABLE IF NOT EXISTS %i (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-				session_id bigint(20) unsigned NOT NULL,
+				session_id bigint(20) unsigned,
 				entity_type tinyint(1) NOT NULL,
 				entity_id text NOT NULL,
 				mapped_id text DEFAULT NULL,
