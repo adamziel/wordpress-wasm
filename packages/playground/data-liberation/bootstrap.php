@@ -10,6 +10,10 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Response.php
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/HttpError.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamWriter.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipFileEntry.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipCentralDirectoryEntry.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipEndCentralDirectoryEntry.php';
 
 require_once __DIR__ . '/src/byte-readers/WP_Byte_Reader.php';
 require_once __DIR__ . '/src/byte-readers/WP_File_Reader.php';
@@ -64,6 +68,7 @@ require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
 require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
+require_once __DIR__ . '/src/export/WP_Exporter.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 
