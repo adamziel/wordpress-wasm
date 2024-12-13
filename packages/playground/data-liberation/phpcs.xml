@@ -2,6 +2,7 @@
     <description>PHP 7.0 compatibility.</description>
     <config name="testVersion" value="7.2"/>
     <exclude-pattern>src/wxr/WXR_Importer.php</exclude-pattern>
+    <exclude-pattern>vendor-patched/*</exclude-pattern>
     <rule ref="PHPCompatibility">
         <exclude name="PHPCompatibility.Keywords.ForbiddenNamesAsDeclared"/>
     </rule>

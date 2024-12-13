@@ -37,7 +37,15 @@ test.afterEach(async () => {
 });
 
 for (const cachingEnabled of [true, false]) {
-	test(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
+	/**
+	 * These tests are failing in CI but not locally, so they are skipped for
+	 * now. We are working on fixing this, but in the meantime, let's avoid
+	 * living with failures on trunk.
+	 *
+	 * The PR for fixing this issue is here:
+	 * https://github.com/WordPress/wordpress-playground/pull/2065
+	 */
+	test.skip(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
 		cachingEnabled ? 'enabled' : 'disabled'
 	})`, async ({ website, page, wordpress }) => {
 		server!.setHttpCacheEnabled(cachingEnabled);

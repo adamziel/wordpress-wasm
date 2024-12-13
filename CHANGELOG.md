@@ -4,6 +4,44 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.15] (2024-12-09) 
+
+### Enhancements
+
+- Shorten and simplify path to CORS proxy. ([#2063](https://github.com/WordPress/wordpress-playground/pull/2063))
+- Support users choosing how to handle URLs for sites that do not exist. ([#2059](https://github.com/WordPress/wordpress-playground/pull/2059))
+
+### Tools
+
+
+#### GitHub integration
+
+- Add zaerl to GitHub workflows actors. ([#2041](https://github.com/WordPress/wordpress-playground/pull/2041))
+
+### PHP WebAssembly
+
+- [Networking] Decrypt TLS 1.2 alert messages. ([#2060](https://github.com/WordPress/wordpress-playground/pull/2060))
+
+### Website
+
+- Fix CORS proxy deploy workflow. ([#2049](https://github.com/WordPress/wordpress-playground/pull/2049))
+- Nightly build bugfix – ship the actual nightly build, not the latest release. ([#2056](https://github.com/WordPress/wordpress-playground/pull/2056))
+- Remove duplicate "Saved Playgrounds" label. ([#2044](https://github.com/WordPress/wordpress-playground/pull/2044))
+
+### Various
+
+- Add deploy workflow for standalone CORS proxy. ([#2022](https://github.com/WordPress/wordpress-playground/pull/2022))
+- Restore CORS support to CORS proxy. ([#2023](https://github.com/WordPress/wordpress-playground/pull/2023))
+- [Data Liberation] "Fetch from a different URL" button for failed media downloads, Interactivity API support. ([#2040](https://github.com/WordPress/wordpress-playground/pull/2040))
+- [Data Liberation] Sync WP_HTML API with WordPress 6.7.1 (and add a new test). ([#2062](https://github.com/WordPress/wordpress-playground/pull/2062))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak @brandonpayton @zaerl
+
+
 ## [v1.0.14] (2024-12-02)
 
 ### Blueprints

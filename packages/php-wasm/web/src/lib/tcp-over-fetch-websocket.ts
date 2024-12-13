@@ -45,6 +45,7 @@ import { ContentTypes } from './tls/1_2/types';
 
 export type TCPOverFetchOptions = {
 	CAroot: GeneratedCertificate;
+	corsProxyUrl?: string;
 };
 
 /**
@@ -67,6 +68,7 @@ export const tcpOverFetchWebsocket = (tcpOptions: TCPOverFetchOptions) => {
 					constructor(url: string, wsOptions: string[]) {
 						super(url, wsOptions, {
 							CAroot: tcpOptions.CAroot,
+							corsProxyUrl: tcpOptions.corsProxyUrl,
 						});
 					}
 				};
@@ -85,6 +87,7 @@ export interface TCPOverFetchWebsocketOptions {
 	 * clientDownstream stream and tracking the closure of that stream.
 	 */
 	outputType?: 'messages' | 'stream';
+	corsProxyUrl?: string;
 }
 
 export class TCPOverFetchWebsocket {
@@ -101,6 +104,7 @@ export class TCPOverFetchWebsocket {
 	port = 0;
 	listeners = new Map<string, any>();
 	CAroot?: GeneratedCertificate;
+	corsProxyUrl?: string;
 
 	clientUpstream = new TransformStream();
 	clientUpstreamWriter = this.clientUpstream.writable.getWriter();
@@ -111,13 +115,18 @@ export class TCPOverFetchWebsocket {
 	constructor(
 		public url: string,
 		public options: string[],
-		{ CAroot, outputType = 'messages' }: TCPOverFetchWebsocketOptions = {}
+		{
+			CAroot,
+			corsProxyUrl,
+			outputType = 'messages',
+		}: TCPOverFetchWebsocketOptions = {}
 	) {
 		const wsUrl = new URL(url);
 		this.host = wsUrl.searchParams.get('host')!;
 		this.port = parseInt(wsUrl.searchParams.get('port')!, 10);
 		this.binaryType = 'arraybuffer';
 
+		this.corsProxyUrl = corsProxyUrl;
 		this.CAroot = CAroot;
 		if (outputType === 'messages') {
 			this.clientDownstream.readable
@@ -307,9 +316,10 @@ export class TCPOverFetchWebsocket {
 			'https'
 		);
 		try {
-			await RawBytesFetch.fetchRawResponseBytes(request).pipeTo(
-				tlsConnection.serverEnd.downstream.writable
-			);
+			await RawBytesFetch.fetchRawResponseBytes(
+				request,
+				this.corsProxyUrl
+			).pipeTo(tlsConnection.serverEnd.downstream.writable);
 		} catch (e) {
 			// Ignore errors from fetch()
 			// They are handled in the constructor
@@ -327,9 +337,10 @@ export class TCPOverFetchWebsocket {
 			'http'
 		);
 		try {
-			await RawBytesFetch.fetchRawResponseBytes(request).pipeTo(
-				this.clientDownstream.writable
-			);
+			await RawBytesFetch.fetchRawResponseBytes(
+				request,
+				this.corsProxyUrl
+			).pipeTo(this.clientDownstream.writable);
 		} catch (e) {
 			// Ignore errors from fetch()
 			// They are handled in the constructor
@@ -409,7 +420,11 @@ class RawBytesFetch {
 	/**
 	 * Streams a HTTP response including the status line and headers.
 	 */
-	static fetchRawResponseBytes(request: Request) {
+	static fetchRawResponseBytes(request: Request, corsProxyUrl?: string) {
+		const targetRequest = corsProxyUrl
+			? new Request(`${corsProxyUrl}${request.url}`, request)
+			: request;
+
 		// This initially used a TransformStream and piped the response
 		// body to the writable side of the TransformStream.
 		//
@@ -419,13 +434,34 @@ class RawBytesFetch {
 			async start(controller) {
 				let response: Response;
 				try {
-					response = await fetch(request);
-					controller.enqueue(RawBytesFetch.headersAsBytes(response));
+					response = await fetch(targetRequest);
 				} catch (error) {
+					/**
+					 * Pretend we've got a 400 Bad Request response whenever
+					 * the fetch() call fails.
+					 *
+					 * Just propagating an error and closing a WebSocket does
+					 * not make PHP aware the socket closed abruptly. This means
+					 * the AsyncHttp\Client will keep polling the socket indefinitely
+					 * until the request times out. This isn't perfect, as we want
+					 * to close the socket as soon as possible to avoid, e.g., 10 seconds
+					 * of unnecessary waitin for the timeout
+					 *
+					 * The root cause is unknown and likely related to the low-level
+					 * implementation of polling file descriptors. The following
+					 * workaround is far from ideal, but it must suffice until we
+					 * have a platform-level resolution.
+					 */
+					controller.enqueue(
+						new TextEncoder().encode(
+							'HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n'
+						)
+					);
 					controller.error(error);
 					return;
 				}
 
+				controller.enqueue(RawBytesFetch.headersAsBytes(response));
 				const reader = response.body?.getReader();
 				if (!reader) {
 					controller.close();

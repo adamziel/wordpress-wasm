@@ -549,6 +549,12 @@
 						"file": {
 							"$ref": "#/definitions/FileReference",
 							"description": "The file to import"
+						},
+						"importer": {
+							"type": "string",
+							"enum": ["data-liberation", "default"],
+							"description": "The importer to use. Possible values:\n\n- `default`: The importer from https://github.com/humanmade/WordPress-Importer\n- `data-liberation`: The experimental Data Liberation WXR importer developed at                      https://github.com/WordPress/wordpress-playground/issues/1894\n\nThis option is deprecated. The syntax will not be removed, but once the Data Liberation importer matures, it will become the only supported importer and the `importer` option will be ignored.",
+							"deprecated": true
 						}
 					},
 					"required": ["file", "step"]

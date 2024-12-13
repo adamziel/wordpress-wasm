@@ -2,6 +2,7 @@ import {
 	listGitRefs,
 	sparseCheckout,
 	listGitFiles,
+	resolveCommitHash,
 } from './git-sparse-checkout';
 
 describe('listRefs', () => {
@@ -18,9 +19,16 @@ describe('listRefs', () => {
 
 describe('sparseCheckout', () => {
 	it('should retrieve the requested files from a git repo', async () => {
+		const commitHash = await resolveCommitHash(
+			'https://github.com/WordPress/wordpress-playground.git',
+			{
+				value: 'trunk',
+				type: 'branch',
+			}
+		);
 		const files = await sparseCheckout(
 			'https://github.com/WordPress/wordpress-playground.git',
-			'refs/heads/trunk',
+			commitHash,
 			['README.md']
 		);
 		expect(files).toEqual({
@@ -32,9 +40,16 @@ describe('sparseCheckout', () => {
 
 describe('listGitFiles', () => {
 	it('should list the files in a git repo', async () => {
+		const commitHash = await resolveCommitHash(
+			'https://github.com/WordPress/wordpress-playground.git',
+			{
+				value: 'trunk',
+				type: 'branch',
+			}
+		);
 		const files = await listGitFiles(
 			'https://github.com/WordPress/wordpress-playground.git',
-			'refs/heads/trunk'
+			commitHash
 		);
 		expect(files).toEqual(
 			expect.arrayContaining([

@@ -25,6 +25,7 @@ Request http://127.0.0.1:5263/proxy.php/https://w.org/?test=1 to get the respons
 
 -   Stream data both ways, don't buffer.
 -   Don't pass auth headers in either direction.
+    - Opt-in for request headers possible using `X-Cors-Proxy-Allowed-Request-Headers`.
 -   Refuse to request private IPs.
 -   Refuse to process non-GET non-POST non-OPTIONS requests.
 -   Refuse to process POST request body larger than, say, 100KB.

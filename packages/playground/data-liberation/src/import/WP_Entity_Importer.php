@@ -1,5 +1,7 @@
 <?php
 /**
+ * Based on https://github.com/humanmade/WordPress-Importer
+ *
  * @TODO
  * * Handle missing fields. Some WXR files have comments, but no author information.
  *   Some others have posts, but no content. What should the importer do in these

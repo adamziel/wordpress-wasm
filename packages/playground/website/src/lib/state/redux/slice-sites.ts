@@ -37,7 +37,8 @@ const sitesAdapter = createEntityAdapter<SiteInfo, string>({
 
 // Define the initial state using the adapter and include the loading state
 const initialState = sitesAdapter.getInitialState({
-	loadingState: 'loading' as LoadingState,
+	opfsSitesLoadingState: 'loading' as LoadingState,
+	firstTemporarySiteCreated: false,
 });
 
 // Create the slice
@@ -67,15 +68,19 @@ const sitesSlice = createSlice({
 		},
 
 		setSites: sitesAdapter.setAll,
-
-		// New reducers for managing loading state
-		setLoadingState: (state, action: PayloadAction<LoadingState>) => {
-			state.loadingState = action.payload;
+		setOPFSSitesLoadingState: (
+			state,
+			action: PayloadAction<LoadingState>
+		) => {
+			state.opfsSitesLoadingState = action.payload;
+		},
+		setFirstTemporarySiteCreated: (state) => {
+			state.firstTemporarySiteCreated = true;
 		},
 	},
 });
 
-export const siteListingLoaded = (sites: SiteInfo[]) => {
+export const OPFSSitesLoaded = (sites: SiteInfo[]) => {
 	return (
 		dispatch: PlaygroundDispatch,
 		getState: () => PlaygroundReduxState
@@ -86,14 +91,14 @@ export const siteListingLoaded = (sites: SiteInfo[]) => {
 			allSites[site.slug] = site;
 		});
 		dispatch(sitesSlice.actions.setSites(allSites));
-		dispatch(setLoadingState('loaded'));
+		dispatch(setOPFSSitesLoadingState('loaded'));
 	};
 };
 
 // New selector for loading state
 export const getSitesLoadingState = (state: {
 	sites: ReturnType<typeof sitesSlice.reducer>;
-}) => state.sites.loadingState;
+}) => state.sites.opfsSitesLoadingState;
 
 export function deriveSlugFromSiteName(name: string) {
 	return name.toLowerCase().replaceAll(' ', '-');
@@ -268,10 +273,11 @@ export function setTemporarySiteSpec(
 			}),
 		};
 		dispatch(sitesSlice.actions.addSite(newSiteInfo));
+		dispatch(sitesSlice.actions.setFirstTemporarySiteCreated());
 		return newSiteInfo;
 	};
 }
-export const { setLoadingState } = sitesSlice.actions;
+export const { setOPFSSitesLoadingState } = sitesSlice.actions;
 
 export const {
 	selectAll: selectAllSites,
@@ -302,6 +308,18 @@ export const selectTemporarySites = createSelector(
 	(sites: SiteInfo[]) => {
 		return sites.filter((site) => site.metadata.storage === 'none');
 	}
+);
+
+export const selectSitesLoaded = createSelector(
+	[
+		(state: { sites: ReturnType<typeof sitesSlice.reducer> }) =>
+			state.sites.opfsSitesLoadingState,
+		(state: { sites: ReturnType<typeof sitesSlice.reducer> }) =>
+			state.sites.firstTemporarySiteCreated,
+	],
+	(opfsSitesLoadingState, firstTemporarySiteCreated) =>
+		['loaded', 'error'].includes(opfsSitesLoadingState) &&
+		firstTemporarySiteCreated
 );
 
 export default sitesSlice.reducer;

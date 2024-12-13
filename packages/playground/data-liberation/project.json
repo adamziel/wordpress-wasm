@@ -12,6 +12,22 @@
 				"parallel": false
 			}
 		},
+		"build:phar": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["bash ./phar-core-build.sh"],
+				"parallel": false
+			}
+		},
+		"build:plugin": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation",
+				"commands": ["bash ./plugin-build.sh"],
+				"parallel": false
+			}
+		},
 		"lint:php": {
 			"executor": "nx:run-commands",
 			"options": {
