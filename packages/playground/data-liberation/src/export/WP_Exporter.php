@@ -1,6 +1,5 @@
 <?php
 
-use WordPress\Zip\ZipStreamReader;
 use WordPress\Zip\ZipStreamWriter;
 
 class WP_Exporter {
