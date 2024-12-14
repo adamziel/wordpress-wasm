@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<head>
+	<title>WordPress PR Previewer</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta
+		property="og:image"
+		content="https://playground.wordpress.net/ogimage.png"
+	/>
+	<meta property="og:title" content="WordPress Pull Request preview" />
+	<meta
+		property="og:description"
+		content="Try any wordpress-develop Pull Request live via WordPress Playground!"
+	/>
+	<meta
+		name="description"
+		content="Try any wordpress-develop Pull Request live via WordPress Playground!"
+	/>
+	<link
+		rel="stylesheet"
+		href="https://fonts.googleapis.com/css?family=Noto+Serif:400,700"
+	/>
+	<link rel="stylesheet" href="./previewer.css" />
+	<script
+		async
+		src="https://www.googletagmanager.com/gtag/js?id=G-SVTNFCP8T7"
+	></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() {
+			dataLayer.push(arguments);
+		}
+		gtag('js', new Date());
+		gtag('config', 'G-SVTNFCP8T7');
+	</script>
+</head>
+<body>
+	<div id="main">
+		<svg
+			id="logo"
+			viewBox="0 0 122.52 122.523"
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<g fill="#1e1e1e">
+				<path
+					d="m8.708 61.26c0 20.802 12.089 38.779 29.619 47.298l-25.069-68.686c-2.916 6.536-4.55 13.769-4.55 21.388z"
+				/>
+				<path
+					d="m96.74 58.608c0-6.495-2.333-10.993-4.334-14.494-2.664-4.329-5.161-7.995-5.161-12.324 0-4.831 3.664-9.328 8.825-9.328.233 0 .454.029.681.042-9.35-8.566-21.807-13.796-35.489-13.796-18.36 0-34.513 9.42-43.91 23.688 1.233.037 2.395.063 3.382.063 5.497 0 14.006-.667 14.006-.667 2.833-.167 3.167 3.994.337 4.329 0 0-2.847.335-6.015.501l19.138 56.925 11.501-34.493-8.188-22.434c-2.83-.166-5.511-.501-5.511-.501-2.832-.166-2.5-4.496.332-4.329 0 0 8.679.667 13.843.667 5.496 0 14.006-.667 14.006-.667 2.835-.167 3.168 3.994.337 4.329 0 0-2.853.335-6.015.501l18.992 56.494 5.242-17.517c2.272-7.269 4.001-12.49 4.001-16.989z"
+				/>
+				<path
+					d="m62.184 65.857-15.768 45.819c4.708 1.384 9.687 2.141 14.846 2.141 6.12 0 11.989-1.058 17.452-2.979-.141-.225-.269-.464-.374-.724z"
+				/>
+				<path
+					d="m107.376 36.046c.226 1.674.354 3.471.354 5.404 0 5.333-.996 11.328-3.996 18.824l-16.053 46.413c15.624-9.111 26.133-26.038 26.133-45.426.001-9.137-2.333-17.729-6.438-25.215z"
+				/>
+				<path
+					d="m61.262 0c-33.779 0-61.262 27.481-61.262 61.26 0 33.783 27.483 61.263 61.262 61.263 33.778 0 61.265-27.48 61.265-61.263-.001-33.779-27.487-61.26-61.265-61.26zm0 119.715c-32.23 0-58.453-26.223-58.453-58.455 0-32.23 26.222-58.451 58.453-58.451 32.229 0 58.45 26.221 58.45 58.451 0 32.232-26.221 58.455-58.45 58.455z"
+				/>
+			</g>
+		</svg>
+		<form
+			id="create"
+			action="https://playground.wordpress.net"
+			method="GET"
+		>
+			<label for="pr-number">Pull request number or URL:</label>
+			<div id="createFields">
+				<input
+					id="pr-number"
+					type="text"
+					name="pr-number"
+					value=""
+					required
+					autofocus
+				/>
+				<button id="submit">
+					<span class="go">Go</span>
+					<span class="verifying">Verifying</span>
+				</button>
+			</div>
+		</form>
+		<div id="error"></div>
+	</div>
+
+	<div id="links">
+		Powered by
+		<a href="https://developer.wordpress.org/playground">
+			WordPress Playground
+		</a>
+		. To build a previewer like this for your repository, check the
+		<a
+			target="_blank"
+			href="https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html"
+			>code on GitHub</a
+		>
+		and the
+		<a
+			href="https://wordpress.github.io/wordpress-playground/developers/build-your-first-app/#preview-pull-requests-from-your-repository"
+		>
+			documentation page</a
+		>.
+	</div>
+	<script>
+		/*
+		 * This function uses a Playground Blueprint to apply a PR to a WordPress Playground site.
+		 *
+		 * You could build a similar tool to preview Pull Requests from your own repository!
+		 *
+		 * Learn more at:
+		 *
+		 * * https://wordpress.github.io/wordpress-playground/
+		 * * https://wordpress.github.io/wordpress-playground/developers/build-your-first-app/#preview-pull-requests-from-your-repository
+		 */
+
+		let submitting = false;
+		const submitButton = document.getElementById('submit');
+		const form = document.getElementById('create');
+		const errorDiv = document.getElementById('error');
+
+		form.addEventListener('submit', async function onSubmit(e) {
+			e.preventDefault();
+			if (submitting) {
+				return;
+			}
+
+			previewPr(document.getElementById('pr-number').value);
+		});
+
+		// If there's a PR query parameter, call previewPr with its value
+		let cleanupRetry = null;
+		const urlParams = new URLSearchParams(window.location.search);
+		const prNumber = urlParams.get('pr');
+		if (prNumber) {
+			document.getElementById('pr-number').value = prNumber;
+			previewPr(prNumber);
+		}
+
+		async function previewPr(prNumber) {
+			if (cleanupRetry) {
+				cleanupRetry();
+			}
+
+			submitting = true;
+			errorDiv.innerText = '';
+			submitButton.classList.add('loading');
+			submitButton.disabled = true;
+
+			// Extract number from a GitHub URL
+			if (
+				prNumber
+					.toLowerCase()
+					.includes('github.com/wordpress/wordpress-develop/pull')
+			) {
+				prNumber = prNumber.match(/\/pull\/(\d+)/)[1];
+			}
+
+			// Verify that the PR exists and that GitHub CI finished building it
+			const zipArtifactUrl = `https://playground.wordpress.net/plugin-proxy.php?org=WordPress&repo=wordpress-develop&workflow=Test%20Build%20Processes&artifact=wordpress-build-${prNumber}&pr=${prNumber}`;
+			// Send the HEAD request to zipArtifactUrl to confirm the PR and the artifact both exist
+			const response = await fetch(zipArtifactUrl + '&verify_only=true');
+			if (response.status !== 200) {
+				let error = 'invalid_pr_number';
+				try {
+					const json = await response.json();
+					if (json.error) {
+						error = json.error;
+					}
+				} catch (e) {}
+
+				if (error === 'invalid_pr_number') {
+					errorDiv.innerText = `The PR ${prNumber} does not exist.`;
+				} else if (
+					error === 'artifact_not_found' ||
+					error === 'artifact_not_available'
+				) {
+					if (parseInt(prNumber) < 5749) {
+						errorDiv.innerText = `The PR ${prNumber} predates the Pull Request previewer and requires a rebase before it can be previewed.`;
+					} else {
+						let retryIn = 30000;
+						function renderRetryIn() {
+							errorDiv.innerText = `Waiting for GitHub to finish building PR ${prNumber}. This might take 15 minutes or more! Retrying in ${
+								retryIn / 1000
+							}...`;
+						}
+						renderRetryIn();
+						const timerInterval = setInterval(() => {
+							retryIn -= 1000;
+							if (retryIn <= 0) {
+								retryIn = 0;
+							}
+							renderRetryIn();
+						}, 1000);
+						const scheduledRetry = setTimeout(() => {
+							previewPr(prNumber);
+						}, retryIn);
+						cleanupRetry = () => {
+							clearInterval(timerInterval);
+							clearTimeout(scheduledRetry);
+							cleanupRetry = null;
+						};
+					}
+				} else if (error === 'artifact_invalid') {
+					errorDiv.innerText = `The PR ${prNumber} requires a rebase before it can be previewed.`;
+				} else {
+					errorDiv.innerText = `The PR ${prNumber} couldn't be previewed due to an unexpected error. Please try again later or fill an issue in the WordPress Playground repository.`;
+					// https://github.com/WordPress/wordpress-playground/issues/new
+				}
+				submitting = false;
+				submitButton.classList.remove('loading');
+				submitButton.disabled = false;
+				return;
+			}
+
+			// Redirect to the Playground site with the Blueprint to download and apply the PR
+			const blueprint = {
+				$schema:
+					'https://playground.wordpress.net/blueprint-schema.json',
+				landingPage: urlParams.get('url') || '/wp-admin',
+				login: true,
+				preferredVersions: {
+					php: '7.4',
+				},
+				features: {
+					networking: true,
+				},
+			};
+			const encoded = JSON.stringify(blueprint);
+
+			// Passthrough the mode query parameter if it exists
+			const targetParams = new URLSearchParams();
+			if (urlParams.has('mode')) {
+				targetParams.set('mode', urlParams.get('mode'));
+			}
+			targetParams.set('core-pr', prNumber);
+			window.location =
+				'./?' + targetParams.toString() + '#' + encodeURI(encoded);
+		}
+	</script>
+</body>
