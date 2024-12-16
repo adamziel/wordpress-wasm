@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Finds string fragments that look like URLs and allow replacing them.
  * This is the first, "thick" sieve that yields "URL candidates" that must be
@@ -272,7 +273,7 @@ class WP_URL_In_Text_Processor {
 			$new_url = substr( $new_url, strpos( $new_url, '://' ) + 3 );
 		}
 		$this->raw_url                                 = $new_url;
-		$this->lexical_updates[ $this->url_starts_at ] = new WP_HTML_Text_Replacement(
+		$this->lexical_updates[ $this->url_starts_at ] = new \WP_HTML_Text_Replacement(
 			$this->url_starts_at,
 			$this->url_length,
 			$new_url

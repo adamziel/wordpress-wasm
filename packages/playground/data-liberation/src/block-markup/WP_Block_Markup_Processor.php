@@ -11,7 +11,7 @@
  * If the post cannot fit into memory, WordPress won't be able to render it
  * anyway.
  */
-class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
+class WP_Block_Markup_Processor extends \WP_HTML_Tag_Processor {
 
 	private $block_name;
 	protected $block_attributes;

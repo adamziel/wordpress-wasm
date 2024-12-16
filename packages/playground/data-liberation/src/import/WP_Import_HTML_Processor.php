@@ -1,7 +1,5 @@
 <?php
 
-namespace WordPress\DataLiberation\Import;
-
 /**
  * A copy of the WP_Interactivity_API_Directives_Processor class
  * from the Gutenberg plugin.

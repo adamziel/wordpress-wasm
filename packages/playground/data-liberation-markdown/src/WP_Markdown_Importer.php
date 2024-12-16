@@ -1,6 +1,5 @@
 <?php
 
-use WordPress\DataLiberation\EntityReaders\WP_Directory_Tree_Entity_Reader;
 use WordPress\Filesystem\WP_Filesystem;
 
 class WP_Markdown_Importer extends WP_Stream_Importer {

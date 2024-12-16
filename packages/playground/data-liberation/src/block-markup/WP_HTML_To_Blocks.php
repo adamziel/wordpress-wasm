@@ -1,8 +1,5 @@
 <?php
 
-use WordPress\Data_Liberation\Block_Markup\WP_Block_Markup_Converter;
-use WordPress\DataLiberation\Import\WP_Import_Utils;
-
 /**
  * A basic HTML markup to Block Markup converter.
  * It only considers the markup and won't consider any visual
@@ -21,7 +18,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	private $metadata               = array();
 
 	public function __construct( $html ) {
-		$this->html = new WP_HTML_Processor( $html );
+		$this->html = new \WP_HTML_Processor( $html );
 	}
 
 	public function convert() {
@@ -79,7 +76,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 					$this->metadata[ $key ][] = $value;
 					break;
 				case 'IMG':
-					$template = new WP_HTML_Tag_Processor( '<img>' );
+					$template = new \WP_HTML_Tag_Processor( '<img>' );
 					$template->next_tag();
 					foreach ( array( 'alt', 'title', 'src' ) as $attr ) {
 						if ( $html->get_attribute( $attr ) ) {
@@ -167,7 +164,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 
 				// Inline elements
 				case 'A':
-					$template = new WP_HTML_Tag_Processor( '<a>' );
+					$template = new \WP_HTML_Tag_Processor( '<a>' );
 					$template->next_tag();
 					if ( $html->get_attribute( 'href' ) ) {
 						$template->set_attribute( 'href', $html->get_attribute( 'href' ) );
@@ -320,7 +317,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 
 	private function push_block( $name, $attributes = array() ) {
 		$this->close_ephemeral_paragraph();
-		$block = new WP_Block_Object( $name, $attributes );
+		$block = new \WP_Block_Object( $name, $attributes );
 		array_push( $this->block_stack, $block );
 		$this->block_markup .= WP_Import_Utils::block_opener( $block->block_name, $block->attrs ) . "\n";
 	}

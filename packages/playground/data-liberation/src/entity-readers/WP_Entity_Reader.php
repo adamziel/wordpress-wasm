@@ -1,6 +1,6 @@
 <?php
 
-abstract class WP_Entity_Reader implements Iterator {
+abstract class WP_Entity_Reader implements \Iterator {
 
 	abstract public function get_entity();
 	abstract public function next_entity();

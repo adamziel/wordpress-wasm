@@ -98,7 +98,7 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 			 *        subtleties that will derail the process.
 			 *        Let's consider using WP_XML_Processor instead.
 			 */
-			$this->current_html_reader = new WP_HTML_Entity_Reader(
+			$this->current_html_reader = new \WP_HTML_Entity_Reader(
 				$html,
 				$this->current_post_id
 			);

@@ -1,7 +1,5 @@
 <?php
 
-namespace WordPress\DataLiberation\Import;
-
 class WP_Import_Utils {
 
 	public static function block_opener( $block_name, $attrs = array() ) {

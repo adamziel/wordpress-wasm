@@ -20,8 +20,6 @@ use League\CommonMark\Extension\Table\Table;
 use League\CommonMark\Extension\Table\TableCell;
 use League\CommonMark\Extension\Table\TableRow;
 use League\CommonMark\Extension\Table\TableSection;
-use WordPress\DataLiberation\Import\WP_Import_Utils;
-use WordPress\Data_Liberation\Block_Markup\WP_Block_Markup_Converter;
 
 class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 	const STATE_READY    = 'STATE_READY';

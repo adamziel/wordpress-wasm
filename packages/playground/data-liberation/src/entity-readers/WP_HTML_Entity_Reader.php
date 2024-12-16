@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Data_Liberation\Block_Markup\WP_HTML_To_Blocks;
+
 /**
  * Converts a single HTML file into a stream of WordPress entities.
  *
