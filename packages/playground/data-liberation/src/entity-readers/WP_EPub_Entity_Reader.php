@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Zip\WP_Zip_Filesystem;
+
 /**
  * https://www.w3.org/AudioVideo/ebook/
  * 
@@ -16,10 +18,97 @@
  * * Mime Type file: application/epub+zip.
  * * META-INF folder (container file which points to the location of the .opf file), signatures, encryption, rights, are xml files
  * * OEBPS folder stores the book content .(opf, ncx, html, svg, png, css, etc. files) 
- * * OEBPS folder stores the book content .(opf, ncx, html, svg, png, css, etc. files) 
  */
-// class WP_EPub_Entity_Reader extends WP_Entity_Reader {
+class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 
+    protected $zip;
+    protected $finished = false;
+    protected $current_post_id;
+    protected $remaining_html_files;
+    protected $current_html_reader;
 
+    public function __construct( WP_Zip_Filesystem $zip, $first_post_id ) {
+        $this->zip = $zip;
+        $this->current_post_id = $first_post_id;
+    }
 
-// }
+    public function next_entity() {
+        // If we're finished, we're finished.
+        if( $this->finished ) {
+            return false;
+        }
+
+        if( null === $this->remaining_html_files ) {
+            $path_found = false;
+            foreach( ['/OEBPS', '/EPUB'] as $path ) {
+                if( $this->zip->is_dir( $path ) ) {
+                    $path_found = true;
+                    break;
+                }
+            }
+            if( ! $path_found ) {
+                _doing_it_wrong(
+                    __METHOD__,
+                    'The EPUB file did not contain any HTML files.',
+                    '1.0.0'
+                );
+                $this->finished = true;
+                return false;
+            }
+            $files = $this->zip->ls( $path );
+            if( false === $files ) {
+                _doing_it_wrong(
+                    __METHOD__,
+                    'The EPUB file did not contain any HTML files.',
+                    '1.0.0'
+                );
+                $this->finished = true;
+                return false;
+            }
+            $this->remaining_html_files = [];
+            foreach( $files as $file ) {
+                if( str_ends_with( $file, '.xhtml' ) || str_ends_with( $file, '.html' ) ) {
+                    $this->remaining_html_files[] = $path . '/' . $file;
+                }
+            }
+        }
+
+        while( true ) {
+            if( 
+                null !== $this->current_html_reader && 
+                ! $this->current_html_reader->is_finished() && 
+                $this->current_html_reader->next_entity()
+            ) {
+                return true;
+            }
+
+            if( count( $this->remaining_html_files ) === 0 ) {
+                $this->finished = true;
+                return false;
+            }
+    
+            $html_file = array_shift( $this->remaining_html_files );
+            $html = $this->zip->read_file( $html_file );
+            $this->current_html_reader = new WP_HTML_Entity_Reader(
+                $html,
+                $this->current_post_id
+            );
+            $this->current_post_id++;
+        }
+
+        return false;
+    }
+
+    public function get_entity() {
+        return $this->current_html_reader->get_entity();
+    }
+
+    public function is_finished(): bool {
+        return $this->finished;
+    }
+
+    public function get_last_error(): ?string {
+        return null;
+    }
+
+}
