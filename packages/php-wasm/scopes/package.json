@@ -20,8 +20,17 @@
 		"directory": "../../../dist/packages/php-wasm/scopes"
 	},
 	"license": "GPL-2.0-or-later",
+	"exports": {
+		".": {
+			"import": "./index.js",
+			"require": "./index.cjs"
+		},
+		"./package.json": "./package.json",
+		"./README.md": "./README.md"
+	},
 	"type": "module",
-	"main": "index.js",
+	"main": "./index.cjs",
+	"module": "./index.js",
 	"types": "index.d.ts",
 	"gitHead": "2f8d8f3cea548fbd75111e8659a92f601cddc593",
 	"engines": {
