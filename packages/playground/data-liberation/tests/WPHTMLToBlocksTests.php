@@ -46,7 +46,11 @@ HTML;
         $processor = new WP_HTML_Processor( $markup );
         $serialized = $processor->serialize();
         if(str_ends_with($serialized, "</body></html>")) {
-            $serialized = substr($serialized, 0, strlen("</body></html>"));
+            $serialized = substr(
+                $serialized,
+                0,
+                strlen($serialized) - strlen("</body></html>")
+            );
         }
         return $serialized;
     }

@@ -27,7 +27,7 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
     protected $remaining_html_files;
     protected $current_html_reader;
 
-    public function __construct( WP_Zip_Filesystem $zip, $first_post_id ) {
+    public function __construct( WP_Zip_Filesystem $zip, $first_post_id = 1 ) {
         $this->zip = $zip;
         $this->current_post_id = $first_post_id;
     }
@@ -74,12 +74,23 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
         }
 
         while( true ) {
-            if( 
-                null !== $this->current_html_reader && 
-                ! $this->current_html_reader->is_finished() && 
-                $this->current_html_reader->next_entity()
-            ) {
-                return true;
+            if ( null !== $this->current_html_reader ) {
+                if(
+                    ! $this->current_html_reader->is_finished() && 
+                    $this->current_html_reader->next_entity()
+                ) {
+                    return true;
+                }
+                if($this->current_html_reader->get_last_error()) {
+                    var_dump('The EPUB file did not contain any HTML files.');
+                    _doing_it_wrong(
+                        __METHOD__,
+                        'The EPUB file did not contain any HTML files.',
+                        '1.0.0'
+                    );
+                    $this->finished = true;
+                    return false;
+                }
             }
 
             if( count( $this->remaining_html_files ) === 0 ) {
