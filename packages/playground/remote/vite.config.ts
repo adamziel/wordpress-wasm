@@ -72,6 +72,7 @@ export default defineConfig({
 	worker: {
 		format: 'es',
 		plugins,
+		sourcemap: true,
 		rollupOptions: {
 			output: {
 				// Ensure the service worker always has the same name
@@ -92,6 +93,7 @@ export default defineConfig({
 		//            in the app mode.
 		// @see https://github.com/vitejs/vite/issues/3295
 		assetsInlineLimit: 0,
+		sourcemap: true,
 		rollupOptions: {
 			input: {
 				wordpress: path('/remote.html'),
