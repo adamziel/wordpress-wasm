@@ -1,10 +1,12 @@
+const description =
+	'Avoid dependency on @wp-playground/wordpress-builds ' +
+	'because it is a private, unpublished package. Public, ' +
+	'published packages will be broken if they have a runtime ' +
+	'dependency on an unpublished package.';
 module.exports = {
 	meta: {
 		type: 'problem',
-		docs: {
-			description:
-				'Avoid using @wp-playground/wordpress-builds dependency',
-		},
+		docs: { description },
 	},
 	create(context) {
 		return {
@@ -13,7 +15,11 @@ module.exports = {
 					context.report({
 						loc: node.loc,
 						message:
-							'Avoid using @wp-playground/wordpress-builds dependency',
+							description +
+							' ' +
+							'If you need this dependency and deem it safe, ' +
+							'please disable the rule for this line and leave ' +
+							'a comment explaining why.',
 					});
 				}
 			},
