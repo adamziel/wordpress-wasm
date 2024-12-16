@@ -44,6 +44,12 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		if( ! isset( $options['index_file_patterns'] ) ) {
 			throw new \Exception( 'Missing required options: index_file_patterns' );
 		}
+		/**
+		 * @TODO: Use `sub_entity_reader_factory` instead of `markup_converter_factory`
+		 *        and expect a WP_Entity_Reader factory, not a WP_Markup_Converter factory.
+		 *        This way we'll source all the relevant entity data such as post_meta 
+		 *        from the files, not just the post_content. 
+		 */
 		if( ! isset( $options['markup_converter_factory'] ) ) {
 			throw new \Exception( 'Missing required options: markup_converter_factory' );
 		}

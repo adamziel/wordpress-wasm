@@ -35,7 +35,7 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
 		// We did not read any entities yet. Let's convert the HTML document into entities.
 		$converter = new WP_HTML_To_Blocks( $this->html );
-		if ( false === $converter->parse() ) {
+		if ( false === $converter->convert() ) {
 			return false;
 		}
 
