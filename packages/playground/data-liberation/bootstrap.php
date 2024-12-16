@@ -11,11 +11,19 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/HttpError.ph
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
 
-require_once __DIR__ . '/src/byte-readers/WP_Byte_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_GZ_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
+
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Byte_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_GZ_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Ranged_Reader.php';
+
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
 
 if (
 	! class_exists( 'WP_HTML_Tag_Processor' ) &&
@@ -54,8 +62,6 @@ require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
 require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/import/WP_Block_Object.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
-require_once __DIR__ . '/src/import/WP_File_Visitor.php';
-require_once __DIR__ . '/src/import/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader_Event.php';

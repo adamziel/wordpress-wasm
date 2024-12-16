@@ -2,6 +2,9 @@
 
 use WordPress\AsyncHTTP\Client;
 use WordPress\AsyncHTTP\Request;
+use WordPress\ByteReader\WP_File_Reader;
+use WordPress\ByteReader\WP_Remote_File_Reader;
+use WordPress\Filesystem\WP_Byte_Reader;
 
 /**
  * Idea:
@@ -129,7 +132,7 @@ class WP_Stream_Importer {
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Reader::create( new WP_File_Reader( $wxr_path ), $cursor );
+				return WP_WXR_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
 			},
 			$options,
 			$cursor

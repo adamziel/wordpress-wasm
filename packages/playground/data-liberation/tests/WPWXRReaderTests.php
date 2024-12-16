@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+use WordPress\ByteReader\WP_File_Reader;
+
 class WPWXRReaderTests extends TestCase {
     
     /**
@@ -566,7 +568,7 @@ https://playground.internal/path-not-taken was the second best choice.
         ];
 
 		$wxr = WP_WXR_Reader::create(
-            new WP_File_Reader( $xml_path )
+            WP_File_Reader::create( $xml_path )
         );
 
         for($i = 0; $i < 11; $i++) {
@@ -596,7 +598,7 @@ https://playground.internal/path-not-taken was the second best choice.
         ];
 
 		$wxr = WP_WXR_Reader::create(
-            new WP_File_Reader( $xml_path )
+            WP_File_Reader::create( $xml_path )
         );
 
         for($i = 0; $i < 11; $i++) {
@@ -607,7 +609,7 @@ https://playground.internal/path-not-taken was the second best choice.
             );
             $cursor = $wxr->get_reentrancy_cursor();
             $wxr = WP_WXR_Reader::create(
-                new WP_File_Reader( $xml_path ),
+                WP_File_Reader::create( $xml_path ),
                 $cursor
             );
             $this->assertTrue( $wxr->next_entity() );
