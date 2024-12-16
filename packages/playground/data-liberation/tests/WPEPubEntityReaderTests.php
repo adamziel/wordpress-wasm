@@ -41,6 +41,8 @@ class WPEPubEntityReaderTests extends TestCase {
     private function normalize_markup( $markup ) {
         $processor = new WP_HTML_Processor( $markup );
         $serialized = $processor->serialize();
+        // Naively remove parts of the HTML that serialize()
+        // adds that we don't want.
         $serialized = str_replace(
             [
                 '<html><head></head><body>',
