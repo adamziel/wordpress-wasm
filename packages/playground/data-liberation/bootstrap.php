@@ -52,6 +52,7 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
+require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Converter.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
@@ -62,6 +63,7 @@ require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
@@ -76,7 +78,6 @@ require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/import/WP_Import_HTML_Processor.php';
 require_once __DIR__ . '/src/import/WP_Import_Utils.php';
-
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 // When running in Playground, the composer autoloader script sees CLI SAPI and

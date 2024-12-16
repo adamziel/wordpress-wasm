@@ -1,5 +1,6 @@
 <?php
 
+use WordPress\Data_Liberation\Block_Markup\WP_Block_Markup_Converter;
 use WordPress\DataLiberation\Import\WP_Import_Utils;
 
 /**
@@ -7,7 +8,7 @@ use WordPress\DataLiberation\Import\WP_Import_Utils;
  * It only considers the markup and won't consider any visual
  * changes introduced via CSS or JavaScript.
  */
-class WP_HTML_To_Blocks {
+class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	const STATE_READY    = 'STATE_READY';
 	const STATE_COMPLETE = 'STATE_COMPLETE';
 
@@ -23,11 +24,26 @@ class WP_HTML_To_Blocks {
 		$this->html = new WP_HTML_Processor( $html );
 	}
 
-	public function parse() {
+	public function convert() {
 		if ( self::STATE_READY !== $this->state ) {
 			return false;
 		}
-		$this->convert();
+
+		while ( $this->html->next_token() ) {
+			switch ( $this->html->get_token_type() ) {
+				case '#text':
+					if ( $this->ignore_text ) {
+						break;
+					}
+					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );
+					break;
+				case '#tag':
+					$this->handle_tag();
+					break;
+			}
+		}
+
+		$this->close_ephemeral_paragraph();
 		return true;
 	}
 
@@ -44,24 +60,6 @@ class WP_HTML_To_Blocks {
 
 	public function get_block_markup() {
 		return $this->block_markup;
-	}
-
-	private function convert() {
-		while ( $this->html->next_token() ) {
-			switch ( $this->html->get_token_type() ) {
-				case '#text':
-					if ( $this->ignore_text ) {
-						break;
-					}
-					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );
-					break;
-				case '#tag':
-					$this->handle_tag();
-					break;
-			}
-		}
-
-		$this->close_ephemeral_paragraph();
 	}
 
 	private function handle_tag() {

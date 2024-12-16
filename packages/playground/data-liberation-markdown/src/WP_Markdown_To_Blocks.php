@@ -21,8 +21,9 @@ use League\CommonMark\Extension\Table\TableCell;
 use League\CommonMark\Extension\Table\TableRow;
 use League\CommonMark\Extension\Table\TableSection;
 use WordPress\DataLiberation\Import\WP_Import_Utils;
+use WordPress\Data_Liberation\Block_Markup\WP_Block_Markup_Converter;
 
-class WP_Markdown_To_Blocks {
+class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 	const STATE_READY    = 'STATE_READY';
 	const STATE_COMPLETE = 'STATE_COMPLETE';
 
@@ -40,7 +41,7 @@ class WP_Markdown_To_Blocks {
 		$this->markdown = $markdown;
 	}
 
-	public function parse() {
+	public function convert() {
 		if ( self::STATE_READY !== $this->state ) {
 			return false;
 		}
@@ -49,8 +50,15 @@ class WP_Markdown_To_Blocks {
 		return true;
 	}
 
-	public function get_frontmatter() {
+	public function get_all_metadata() {
 		return $this->frontmatter;
+	}
+
+	public function get_meta_value( $key ) {
+		if ( ! array_key_exists( $key, $this->frontmatter ) ) {
+			return null;
+		}
+		return $this->frontmatter[ $key ][0];
 	}
 
 	public function get_block_markup() {
@@ -74,7 +82,11 @@ class WP_Markdown_To_Blocks {
 		$parser = new MarkdownParser( $environment );
 
 		$document          = $parser->parse( $this->markdown );
-		$this->frontmatter = $document->data;
+		$this->frontmatter = [];
+		foreach( $document->data as $key => $value ) {
+			// Use an array as a value to comply with the WP_Block_Markup_Converter interface.
+			$this->frontmatter[ $key ] = [$value];
+		}
 
 		$walker = $document->walker();
 		while ( true ) {

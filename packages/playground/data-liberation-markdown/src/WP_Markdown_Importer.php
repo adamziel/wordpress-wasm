@@ -1,11 +1,26 @@
 <?php
 
+use WordPress\DataLiberation\EntityReaders\WP_Directory_Tree_Entity_Reader;
+use WordPress\Filesystem\WP_Filesystem;
+
 class WP_Markdown_Importer extends WP_Stream_Importer {
 
 	public static function create_for_markdown_directory( $markdown_directory, $options = array(), $cursor = null ) {
 		return WP_Markdown_Importer::create(
 			function ( $cursor = null ) use ( $markdown_directory ) {
-				return new WP_Markdown_Directory_Tree_Reader( $markdown_directory, $cursor );
+				// @TODO: Handle $cursor
+				return new WP_Directory_Tree_Entity_Reader( 
+					new WP_Filesystem(),
+					array (
+						'root_dir' => $markdown_directory,
+						'first_post_id' => 1,
+						'allowed_extensions' => array( 'md' ),
+						'index_file_patterns' => array( '#^index\.md$#' ),
+						'markup_converter_factory' => function( $content ) {
+							return new WP_Markdown_To_Blocks( $content );
+						},
+					)
+				);
 			},
 			$options,
 			$cursor
