@@ -2,8 +2,8 @@
 
 abstract class WP_Entity_Reader implements Iterator {
 
-    abstract public function get_entity();
-    abstract public function next_entity();
+	abstract public function get_entity();
+	abstract public function next_entity();
 
 	/**
 	 * Checks if processing is finished.
@@ -23,16 +23,16 @@ abstract class WP_Entity_Reader implements Iterator {
 	 */
 	abstract public function get_last_error(): ?string;
 
-    /**
-     * Returns a cursor that can be used to restore the reader's state.
-     *
-     * @TODO: Define a general interface for entity readers.
-     *
-     * @return string
-     */
-    public function get_reentrancy_cursor() {
-        return '';
-    }
+	/**
+	 * Returns a cursor that can be used to restore the reader's state.
+	 *
+	 * @TODO: Define a general interface for entity readers.
+	 *
+	 * @return string
+	 */
+	public function get_reentrancy_cursor() {
+		return '';
+	}
 
 	public function current(): object {
 		if ( null === $this->get_entity() && ! $this->is_finished() && ! $this->get_last_error() ) {

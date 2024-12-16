@@ -11,13 +11,13 @@ class WP_HTML_To_Blocks {
 	const STATE_READY    = 'STATE_READY';
 	const STATE_COMPLETE = 'STATE_COMPLETE';
 
-	private $state = self::STATE_READY;
-	private $block_stack   = array();
+	private $state       = self::STATE_READY;
+	private $block_stack = array();
 	private $html;
-	private $ignore_text = false;
+	private $ignore_text            = false;
 	private $in_ephemeral_paragraph = false;
-	private $block_markup  = '';
-	private $metadata = array();
+	private $block_markup           = '';
+	private $metadata               = array();
 
 	public function __construct( $html ) {
 		$this->html = new WP_HTML_Processor( $html );
@@ -31,11 +31,11 @@ class WP_HTML_To_Blocks {
 		return true;
 	}
 
-	public function get_meta_value($key) {
-		if ( !array_key_exists( $key, $this->metadata ) ) {
+	public function get_meta_value( $key ) {
+		if ( ! array_key_exists( $key, $this->metadata ) ) {
 			return null;
 		}
-		return $this->metadata[$key][0];
+		return $this->metadata[ $key ][0];
 	}
 
 	public function get_all_metadata() {
@@ -47,13 +47,13 @@ class WP_HTML_To_Blocks {
 	}
 
 	private function convert() {
-		while( $this->html->next_token() ) {
-			switch( $this->html->get_token_type() ) {
+		while ( $this->html->next_token() ) {
+			switch ( $this->html->get_token_type() ) {
 				case '#text':
 					if ( $this->ignore_text ) {
 						break;
 					}
-					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );					
+					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );
 					break;
 				case '#tag':
 					$this->handle_tag();
@@ -65,31 +65,31 @@ class WP_HTML_To_Blocks {
 	}
 
 	private function handle_tag() {
-		$html = $this->html;
-		$tag = $html->get_tag();
+		$html          = $this->html;
+		$tag           = $html->get_tag();
 		$tag_lowercase = strtolower( $tag );
 
-		$is_tag_opener = !$html->is_tag_closer();
-		if(!$html->expects_closer()) {
-			switch($tag) {
+		$is_tag_opener = ! $html->is_tag_closer();
+		if ( ! $html->expects_closer() ) {
+			switch ( $tag ) {
 				case 'META':
-					$key = $html->get_attribute('name');
-					$value = $html->get_attribute('content');
-					if(!array_key_exists($key, $this->metadata)) {
-						$this->metadata[$key] = [];
+					$key   = $html->get_attribute( 'name' );
+					$value = $html->get_attribute( 'content' );
+					if ( ! array_key_exists( $key, $this->metadata ) ) {
+						$this->metadata[ $key ] = array();
 					}
-					$this->metadata[$key][] = $value;
+					$this->metadata[ $key ][] = $value;
 					break;
 				case 'IMG':
 					$template = new WP_HTML_Tag_Processor( '<img>' );
 					$template->next_tag();
-					foreach(['alt', 'title', 'src'] as $attr) {
+					foreach ( array( 'alt', 'title', 'src' ) as $attr ) {
 						if ( $html->get_attribute( $attr ) ) {
 							$template->set_attribute( $attr, $html->get_attribute( $attr ) );
 						}
 					}
 					/**
-					 * 
+					 *
 					 */
 					$this->append_rich_text( $template->get_updated_html() );
 					break;
@@ -98,8 +98,8 @@ class WP_HTML_To_Blocks {
 					//        Just insert an HTML block or what?
 					break;
 			}
-		} else if($is_tag_opener) {
-			switch($tag) {
+		} elseif ( $is_tag_opener ) {
+			switch ( $tag ) {
 				// Block elements
 				case 'SCRIPT':
 					$this->ignore_text = true;
@@ -138,7 +138,7 @@ class WP_HTML_To_Blocks {
 					// Guess whether this is:
 					// * An inline <code> element? Let's convert it into a formatting element.
 					// * A block <code> element? Let's convert it into a block.
-					if($this->is_at_inline_code_element()) {
+					if ( $this->is_at_inline_code_element() ) {
 						$this->append_rich_text( '<' . $tag_lowercase . '>' );
 					} else {
 						$this->push_block( 'code' );
@@ -158,9 +158,12 @@ class WP_HTML_To_Blocks {
 				case 'H4':
 				case 'H5':
 				case 'H6':
-					$this->push_block( 'heading', array( 
-						'level' => (int)$tag[1] ?: 1,
-					) );
+					$this->push_block(
+						'heading',
+						array(
+							'level' => (int) $tag[1] ? $tag[1] : 1,
+						)
+					);
 					$this->block_markup .= '<h' . $tag[1] . '>';
 					break;
 
@@ -172,11 +175,11 @@ class WP_HTML_To_Blocks {
 						$template->set_attribute( 'href', $html->get_attribute( 'href' ) );
 					}
 					/**
-					 * 
+					 *
 					 */
 					$this->append_rich_text( $template->get_updated_html() );
 					break;
-				
+
 				// Formats – just pass through (minus the HTML attributes)
 				default:
 					if ( $this->is_inline_element( $tag ) ) {
@@ -186,8 +189,8 @@ class WP_HTML_To_Blocks {
 					}
 					break;
 			}
-		} else if($html->is_tag_closer()) {
-			switch($tag) {
+		} elseif ( $html->is_tag_closer() ) {
+			switch ( $tag ) {
 				case 'SCRIPT':
 					$this->ignore_text = false;
 					break;
@@ -201,7 +204,7 @@ class WP_HTML_To_Blocks {
 					$this->block_markup .= '</figure>';
 					$this->pop_block();
 					break;
-				
+
 				case 'THEAD':
 				case 'TBODY':
 				case 'TFOOT':
@@ -213,7 +216,7 @@ class WP_HTML_To_Blocks {
 
 				case 'CODE':
 					$this->block_markup .= '</' . $tag_lowercase . '>';
-					if(!$this->is_at_inline_code_element()) {
+					if ( ! $this->is_at_inline_code_element() ) {
 						$this->pop_block();
 					}
 					break;
@@ -224,7 +227,7 @@ class WP_HTML_To_Blocks {
 					$this->block_markup .= '</ul>';
 					$this->pop_block();
 					break;
-				
+
 				case 'LI':
 				case 'BLOCKQUOTE':
 				case 'PRE':
@@ -243,7 +246,7 @@ class WP_HTML_To_Blocks {
 				case 'A':
 					$this->block_markup .= '</a>';
 					break;
-	
+
 				// Formats
 				default:
 					if ( $this->is_inline_element( $tag ) ) {
@@ -274,14 +277,15 @@ class WP_HTML_To_Blocks {
 				'KBD',
 				'SAMP',
 				'VAR',
-			)
+			),
+			true
 		);
 	}
 
 	private function is_at_inline_code_element() {
 		$breadcrumbs = $this->html->get_breadcrumbs();
-		foreach($breadcrumbs as $tag) {
-			switch($tag) {
+		foreach ( $breadcrumbs as $tag ) {
+			switch ( $tag ) {
 				case 'A':
 				case 'P':
 				case 'LI':
@@ -302,12 +306,12 @@ class WP_HTML_To_Blocks {
 	 * Appends a snippet of HTML to the block markup.
 	 * Ensures given $html is a part of a block. If no block is
 	 * currently open, it appends a new paragraph block.
-	 * 
+	 *
 	 * @param string $html The HTML snippet to append.
 	 */
 	private function append_rich_text( $html ) {
-		$html = trim($html);
-		if(empty($html)) {
+		$html = trim( $html );
+		if ( empty( $html ) ) {
 			return;
 		}
 		// Make sure two subsequent append_text() calls don't merge the text.
@@ -332,19 +336,18 @@ class WP_HTML_To_Blocks {
 	}
 
 	private function ensure_open_block() {
-		if(empty($this->block_stack) && !$this->in_ephemeral_paragraph) {
-			$this->block_markup .= WP_Import_Utils::block_opener( 'paragraph' ) . "\n";
-			$this->block_markup .= '<p>';
+		if ( empty( $this->block_stack ) && ! $this->in_ephemeral_paragraph ) {
+			$this->block_markup          .= WP_Import_Utils::block_opener( 'paragraph' ) . "\n";
+			$this->block_markup          .= '<p>';
 			$this->in_ephemeral_paragraph = true;
 		}
 	}
 
 	private function close_ephemeral_paragraph() {
-		if($this->in_ephemeral_paragraph) {
-			$this->block_markup .= '</p>';
-			$this->block_markup .= WP_Import_Utils::block_closer( 'paragraph' );
+		if ( $this->in_ephemeral_paragraph ) {
+			$this->block_markup          .= '</p>';
+			$this->block_markup          .= WP_Import_Utils::block_closer( 'paragraph' );
 			$this->in_ephemeral_paragraph = false;
 		}
 	}
-
 }

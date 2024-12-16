@@ -1,6 +1,6 @@
 <?php
 
-use \WordPress\ByteReader\WP_Byte_Reader;
+use WordPress\ByteReader\WP_Byte_Reader;
 
 /**
  * Data Liberation API: WP_WXR_Entity_Reader class
@@ -904,5 +904,4 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		$this->text_buffer            = '';
 		$this->last_opener_attributes = array();
 	}
-
 }

@@ -4,7 +4,7 @@ namespace WordPress\DataLiberation\Import;
 
 class WP_Import_Utils {
 
-	static public function block_opener( $block_name, $attrs = array() ) {
+	public static function block_opener( $block_name, $attrs = array() ) {
 		$encoded_attrs = json_encode( $attrs );
 		if ( $attrs && $encoded_attrs !== '{}' ) {
 			$encoded_attrs .= ' ';
@@ -14,7 +14,7 @@ class WP_Import_Utils {
 		return "<!-- wp:{$block_name} {$encoded_attrs}-->";
 	}
 
-	static public function block_closer( $block_name ) {
+	public static function block_closer( $block_name ) {
 		return "<!-- /wp:{$block_name} -->";
 	}
 
@@ -24,7 +24,7 @@ class WP_Import_Utils {
 	 * @param array $blocks The blocks to convert to markup.
 	 * @return string The HTML markup.
 	 */
-	static public function convert_blocks_to_markup( $blocks ) {
+	public static function convert_blocks_to_markup( $blocks ) {
 		$block_markup = '';
 
 		foreach ( $blocks as $block ) {
@@ -43,7 +43,7 @@ class WP_Import_Utils {
 		return $block_markup;
 	}
 
-	static public function slug_to_title( $filename ) {
+	public static function slug_to_title( $filename ) {
 		$name = pathinfo( $filename, PATHINFO_FILENAME );
 		$name = preg_replace( '/^\d+/', '', $name );
 		$name = str_replace(
@@ -55,7 +55,7 @@ class WP_Import_Utils {
 		return $name;
 	}
 
-	static public function remove_first_h1_block_from_block_markup( $html ) {
+	public static function remove_first_h1_block_from_block_markup( $html ) {
 		$p = WP_Import_HTML_Processor::create_fragment( $html );
 		if ( false === $p->next_tag() ) {
 			return false;
@@ -95,5 +95,4 @@ class WP_Import_Utils {
 			),
 		);
 	}
-
 }
