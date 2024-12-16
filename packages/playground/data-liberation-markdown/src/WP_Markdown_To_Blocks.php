@@ -20,7 +20,7 @@ use League\CommonMark\Extension\Table\Table;
 use League\CommonMark\Extension\Table\TableCell;
 use League\CommonMark\Extension\Table\TableRow;
 use League\CommonMark\Extension\Table\TableSection;
-
+use WordPress\DataLiberation\Import\WP_Import_Utils;
 
 class WP_Markdown_To_Blocks {
 	const STATE_READY    = 'STATE_READY';
@@ -45,7 +45,7 @@ class WP_Markdown_To_Blocks {
 			return false;
 		}
 		$this->convert_markdown_to_blocks();
-		$this->block_markup = self::convert_blocks_to_markup( $this->parsed_blocks );
+		$this->block_markup = WP_Import_Utils::convert_blocks_to_markup( $this->parsed_blocks );
 		return true;
 	}
 
@@ -337,35 +337,6 @@ class WP_Markdown_To_Blocks {
 			}
 		}
 		$this->parsed_blocks = $this->root_block->inner_blocks;
-	}
-
-	private static function convert_blocks_to_markup( $blocks ) {
-		$block_markup = '';
-
-		foreach ( $blocks as $block ) {
-			// Start of block comment
-			$comment = '<!-- -->';
-			$p       = new WP_HTML_Tag_Processor( $comment );
-			$p->next_token();
-			$attrs   = $block->attrs;
-			$content = $block->attrs['content'] ?? '';
-			unset( $attrs['content'] );
-			$encoded_attrs = json_encode( $attrs );
-			if ( $encoded_attrs === '[]' ) {
-				$encoded_attrs = '';
-			}
-			$p->set_modifiable_text( " wp:{$block->block_name} " . $encoded_attrs . ' ' );
-			$open_comment = $p->get_updated_html();
-
-			$block_markup .= $open_comment . "\n";
-			$block_markup .= $content . "\n";
-			$block_markup .= self::convert_blocks_to_markup( $block->inner_blocks );
-
-			// End of block comment
-			$block_markup .= "<!-- /wp:{$block->block_name} -->\n";
-		}
-
-		return $block_markup;
 	}
 
 	private function append_content( $content ) {

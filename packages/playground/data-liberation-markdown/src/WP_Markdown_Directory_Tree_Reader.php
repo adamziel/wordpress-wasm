@@ -10,6 +10,8 @@
  * @TODO: Expose a cursor to allow resuming from where we left off.
  */
 
+use WordPress\DataLiberation\Import\WP_Import_Utils;
+
 class WP_Markdown_Directory_Tree_Reader implements Iterator {
 	private $file_visitor;
     private $filesystem;
@@ -65,7 +67,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 							'markdown' => '',
 							'source_path' => $missing_parent_path,
 							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ],
-							'title_fallback' => $this->slug_to_title( basename( $missing_parent_path ) ),
+							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $missing_parent_path ) ),
 						)
 					);
 				} else if ( false === $this->pending_directory_index ) {
@@ -76,7 +78,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 							'markdown' => '',
 							'source_path' => $dir,
 							'parent_id' => $parent_id,
-							'title_fallback' => $this->slug_to_title( basename( $dir ) ),
+							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $dir ) ),
 						)
 					);
 					// We're no longer looking for a directory index.
@@ -88,7 +90,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 							'markdown' => $this->filesystem->read_file( $file_path ),
 							'source_path' => $file_path,
 							'parent_id' => $parent_id,
-							'title_fallback' => $this->slug_to_title( basename( $file_path ) ),
+							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 						)
 					);
 					// We're no longer looking for a directory index.
@@ -105,7 +107,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 						'markdown' => $this->filesystem->read_file( $file_path ),
 						'source_path' => $file_path,
 						'parent_id' => $parent_id,
-						'title_fallback' => $this->slug_to_title( basename( $file_path ) ),
+						'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 					)
 				);
 				return true;
@@ -129,7 +131,7 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 		$block_markup = $converter->get_block_markup();
 		$frontmatter  = $converter->get_frontmatter();
 
-		$removed_title = $this->remove_first_h1_block_from_block_markup( $block_markup );
+		$removed_title = WP_Import_Utils::remove_first_h1_block_from_block_markup( $block_markup );
 		if ( false !== $removed_title ) {
 			$block_markup = $removed_title['remaining_html'];
 		}
@@ -269,59 +271,6 @@ class WP_Markdown_Directory_Tree_Reader implements Iterator {
 	protected function is_valid_file( $path ) {
         $extension = pathinfo($path, PATHINFO_EXTENSION);
 		return 'md' === $extension;
-	}
-
-	protected function slug_to_title( $filename ) {
-		$name = pathinfo( $filename, PATHINFO_FILENAME );
-		$name = preg_replace( '/^\d+/', '', $name );
-		$name = str_replace(
-			array( '-', '_' ),
-			' ',
-			$name
-		);
-		$name = ucwords( $name );
-		return $name;
-	}
-
-	private function remove_first_h1_block_from_block_markup( $html ) {
-		$p = WP_Markdown_HTML_Processor::create_fragment( $html );
-		if ( false === $p->next_tag() ) {
-			return false;
-		}
-		if ( $p->get_tag() !== 'H1' ) {
-			return false;
-		}
-		$depth = $p->get_current_depth();
-		$title = '';
-		do {
-			if ( false === $p->next_token() ) {
-				break;
-			}
-			if ( $p->get_token_type() === '#text' ) {
-				$title .= $p->get_modifiable_text() . ' ';
-			}
-		} while ( $p->get_current_depth() > $depth );
-
-		if ( ! $title ) {
-			return false;
-		}
-
-		// Move past the closing comment
-		$p->next_token();
-		if ( $p->get_token_type() === '#text' ) {
-			$p->next_token();
-		}
-		if ( $p->get_token_type() !== '#comment' ) {
-			return false;
-		}
-
-		return array(
-			'content' => trim( $title ),
-			'remaining_html' => substr(
-				$html,
-				$p->get_string_index_after_current_token()
-			),
-		);
 	}
 
 	/**

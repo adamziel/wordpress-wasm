@@ -18,7 +18,7 @@ class WPHTMLToBlocksTests extends TestCase {
 HTML;
         $converter = new WP_HTML_To_Blocks( $html );
         $converter->parse( $html );
-        $metadata = $converter->get_metadata();
+        $metadata = $converter->get_all_metadata();
         $expected_metadata = [
             'post_title' => ['WordPress 6.8 was released'],
             'post_date' => ['2024-12-16'],

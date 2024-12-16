@@ -31,7 +31,14 @@ class WP_HTML_To_Blocks {
 		return true;
 	}
 
-	public function get_metadata() {
+	public function get_meta_value($key) {
+		if ( !array_key_exists( $key, $this->metadata ) ) {
+			return null;
+		}
+		return $this->metadata[$key][0];
+	}
+
+	public function get_all_metadata() {
 		return $this->metadata;
 	}
 

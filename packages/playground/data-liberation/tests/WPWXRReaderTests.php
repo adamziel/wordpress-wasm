@@ -10,7 +10,7 @@ class WPWXRReaderTests extends TestCase {
      * @dataProvider preexisting_wxr_files_provider
      */
     public function test_does_not_crash_when_parsing_preexisting_wxr_files_as_string($path, $expected_entitys) {
-        $wxr = WP_WXR_Reader::create();
+        $wxr = WP_WXR_Entity_Reader::create();
         $wxr->append_bytes(file_get_contents($path));
         $wxr->input_finished();
 
@@ -27,7 +27,7 @@ class WPWXRReaderTests extends TestCase {
      */
     public function test_does_not_crash_when_parsing_preexisting_wxr_files_as_stream($path, $expected_entitys) {
         $stream = fopen($path, 'r');
-        $wxr = WP_WXR_Reader::create();
+        $wxr = WP_WXR_Entity_Reader::create();
         $found_entities = 0;
         while(true) {
             $chunk = fread($stream, 100);
@@ -66,7 +66,7 @@ class WPWXRReaderTests extends TestCase {
 
 
     public function test_simple_wxr() {
-        $importer = WP_WXR_Reader::create();
+        $importer = WP_WXR_Entity_Reader::create();
         $importer->append_bytes(file_get_contents(__DIR__ . '/fixtures/wxr-simple.xml'));
         $importer->input_finished();
         $this->assertTrue( $importer->next_entity() );
@@ -184,7 +184,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_attachments() {
-        $importer = WP_WXR_Reader::create();
+        $importer = WP_WXR_Entity_Reader::create();
         $importer->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -267,7 +267,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_terms() {
-        $importer = WP_WXR_Reader::create();
+        $importer = WP_WXR_Entity_Reader::create();
         $importer->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -302,7 +302,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_category() {
-        $importer = WP_WXR_Reader::create();
+        $importer = WP_WXR_Entity_Reader::create();
         $importer->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -333,7 +333,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_tag_string() {
-        $importer = WP_WXR_Reader::create();
+        $importer = WP_WXR_Entity_Reader::create();
         $importer->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -381,7 +381,7 @@ https://playground.internal/path-not-taken was the second best choice.
         XML;
         $chunks = str_split($wxr, 10);
 
-        $wxr = WP_WXR_Reader::create();
+        $wxr = WP_WXR_Entity_Reader::create();
         while(true) {
             if(true === $wxr->next_entity()) {
                 break;
@@ -413,7 +413,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_parse_comment() {
-        $wxr = WP_WXR_Reader::create();
+        $wxr = WP_WXR_Entity_Reader::create();
         $wxr->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -496,7 +496,7 @@ https://playground.internal/path-not-taken was the second best choice.
     }
 
     public function test_retains_last_ids() {
-        $wxr = WP_WXR_Reader::create();
+        $wxr = WP_WXR_Entity_Reader::create();
         $wxr->append_bytes(<<<XML
             <?xml version="1.0" encoding="UTF-8"?>
             <rss>
@@ -567,7 +567,7 @@ https://playground.internal/path-not-taken was the second best choice.
             "post_meta"
         ];
 
-		$wxr = WP_WXR_Reader::create(
+		$wxr = WP_WXR_Entity_Reader::create(
             WP_File_Reader::create( $xml_path )
         );
 
@@ -597,7 +597,7 @@ https://playground.internal/path-not-taken was the second best choice.
             "post_meta"
         ];
 
-		$wxr = WP_WXR_Reader::create(
+		$wxr = WP_WXR_Entity_Reader::create(
             WP_File_Reader::create( $xml_path )
         );
 
@@ -608,7 +608,7 @@ https://playground.internal/path-not-taken was the second best choice.
                 $wxr->get_entity()->get_type()
             );
             $cursor = $wxr->get_reentrancy_cursor();
-            $wxr = WP_WXR_Reader::create(
+            $wxr = WP_WXR_Entity_Reader::create(
                 WP_File_Reader::create( $xml_path ),
                 $cursor
             );

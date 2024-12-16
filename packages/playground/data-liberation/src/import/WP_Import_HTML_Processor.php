@@ -1,4 +1,7 @@
 <?php
+
+namespace WordPress\DataLiberation\Import;
+
 /**
  * A copy of the WP_Interactivity_API_Directives_Processor class
  * from the Gutenberg plugin.
@@ -7,7 +10,7 @@
  * @subpackage Markdown API
  */
 
-final class WP_Markdown_HTML_Processor extends WP_HTML_Processor {
+final class WP_Import_HTML_Processor extends \WP_HTML_Processor {
 
 	public function get_string_index_after_current_token() {
 		$name = 'current_token';

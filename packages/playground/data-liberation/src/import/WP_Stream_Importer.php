@@ -132,7 +132,7 @@ class WP_Stream_Importer {
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
+				return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
 			},
 			$options,
 			$cursor
@@ -142,7 +142,7 @@ class WP_Stream_Importer {
 	public static function create_for_wxr_url( $wxr_url, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_url ) {
-				return WP_WXR_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+				return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
 			},
 			$options,
 			$cursor
