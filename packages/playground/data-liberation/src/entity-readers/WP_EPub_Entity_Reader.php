@@ -82,7 +82,6 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
                     return true;
                 }
                 if($this->current_html_reader->get_last_error()) {
-                    var_dump('The EPUB file did not contain any HTML files.');
                     _doing_it_wrong(
                         __METHOD__,
                         'The EPUB file did not contain any HTML files.',
@@ -100,6 +99,12 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
     
             $html_file = array_shift( $this->remaining_html_files );
             $html = $this->zip->read_file( $html_file );
+            /**
+             * @TODO: Don't just assume that WP_HTML_Entity_Reader can
+             *        handle an XHTML file. We might run into XML-specific
+             *        subtleties that will derail the process.
+             *        Let's consider using WP_XML_Processor instead.
+             */
             $this->current_html_reader = new WP_HTML_Entity_Reader(
                 $html,
                 $this->current_post_id
