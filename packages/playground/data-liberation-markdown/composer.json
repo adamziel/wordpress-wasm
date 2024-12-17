@@ -1,5 +1,6 @@
 {
 	"name": "wordpress/data-liberation-markdown",
+	"name": "wordpress/data-liberation-markdown",
 	"prefer-stable": true,
 	"require": {
 		"league/commonmark": "^2.5",
