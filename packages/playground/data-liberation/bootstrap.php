@@ -10,17 +10,26 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Response.php
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/HttpError.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/ResponseWriter.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/StreamingResponseWriter.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/BufferingResponseWriter.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
-require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Local_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_In_Memory_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_SQLite_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Chroot.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Google_Drive_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Uploaded_Directory_Tree_Filesystem.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Byte_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_GZ_File_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Ranged_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_String_Reader.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
@@ -58,12 +67,17 @@ require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL.php';
 require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
+require_once __DIR__ . '/src/block-markup/WP_HTML_With_Blocks_to_Blocks.php';
+require_once __DIR__ . '/src/block-markup/WP_Block_HTML_Serializer.php';
 
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Filesystem_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Block_Markup_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Filesystem_To_Post_Tree.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
@@ -78,6 +92,16 @@ require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/import/WP_Import_HTML_Processor.php';
 require_once __DIR__ . '/src/import/WP_Import_Utils.php';
+
+require_once __DIR__ . '/src/git/WP_Git_Client.php';
+require_once __DIR__ . '/src/git/WP_Git_Pack_Processor.php';
+require_once __DIR__ . '/src/git/WP_Git_Repository.php';
+require_once __DIR__ . '/src/git/WP_Git_Filesystem.php';
+require_once __DIR__ . '/src/git/WP_Git_Server.php';
+require_once __DIR__ . '/src/git/WP_Git_Merge_Engine.php';
+require_once __DIR__ . '/src/git/functions.php';
+
+require_once __DIR__ . '/src/WP_Data_Liberation_HTML_Processor.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 // When running in Playground, the composer autoloader script sees CLI SAPI and
@@ -98,6 +122,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 if ( ! function_exists( '_doing_it_wrong' ) ) {
 	$GLOBALS['_doing_it_wrong_messages'] = array();
 	function _doing_it_wrong( $method, $message, $version ) {
+		throw new Exception( $message );
 		$GLOBALS['_doing_it_wrong_messages'][] = $message;
 	}
 }
@@ -173,5 +198,19 @@ if ( ! function_exists( 'mbstring_binary_safe_encoding' ) ) {
 if ( ! function_exists( 'reset_mbstring_encoding' ) ) {
 	function reset_mbstring_encoding() {
 		mbstring_binary_safe_encoding( true );
+	}
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		public $code;
+		public $message;
+		public $data;
+
+		public function __construct( $code, $message, $data = array() ) {
+			$this->code = $code;
+			$this->message = $message;
+			$this->data = $data;
+		}
 	}
 }

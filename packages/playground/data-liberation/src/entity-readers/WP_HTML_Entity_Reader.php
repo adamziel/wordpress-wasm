@@ -9,13 +9,15 @@ use WordPress\Data_Liberation\Block_Markup\WP_HTML_To_Blocks;
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
-	protected $html;
+	protected $block_markup;
+	protected $metadata;
 	protected $entities;
 	protected $finished = false;
 	protected $post_id;
 
-	public function __construct( $html, $post_id ) {
-		$this->html    = $html;
+	public function __construct( $block_markup, $metadata, $post_id ) {
+		$this->block_markup = $block_markup;
+		$this->metadata = $metadata;
 		$this->post_id = $post_id;
 	}
 
@@ -27,24 +29,17 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
 		// If we've already read some entities, skip to the next one.
 		if ( null !== $this->entities ) {
-			if ( count( $this->entities ) <= 1 ) {
+			array_shift( $this->entities );
+			if ( count( $this->entities ) === 0 ) {
 				$this->finished = true;
 				return false;
 			}
-			array_shift( $this->entities );
 			return true;
 		}
 
-		// We did not read any entities yet. Let's convert the HTML document into entities.
-		$converter = new WP_HTML_To_Blocks( $this->html );
-		if ( false === $converter->convert() ) {
-			return false;
-		}
-
-		$all_metadata   = $converter->get_all_metadata();
 		$post_fields    = array();
 		$other_metadata = array();
-		foreach ( $all_metadata as $key => $values ) {
+		foreach ( $this->metadata as $key => $values ) {
 			if ( in_array( $key, WP_Imported_Entity::POST_FIELDS, true ) ) {
 				$post_fields[ $key ] = $values[0];
 			} else {
@@ -59,7 +54,7 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 				$post_fields,
 				array(
 					'post_id' => $this->post_id,
-					'content' => $converter->get_block_markup(),
+					'content' => $this->block_markup,
 				)
 			)
 		);
@@ -70,8 +65,8 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 				'post_meta',
 				array(
 					'post_id' => $this->post_id,
-					'meta_key' => $key,
-					'meta_value' => $value,
+					'key' => $key,
+					'value' => $value,
 				)
 			);
 		}

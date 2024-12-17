@@ -35,7 +35,7 @@ $block_markup = file_get_contents( $inputFile );
 // @TODO: Decide – should the current site URL be always required to
 //        populate $base_url?
 $base_url = $options['from-url'] ?? 'https://playground.internal';
-$p        = new WP_Block_Markup_Url_Processor( $block_markup, $base_url );
+$p        = WP_Block_Markup_Url_Processor::create_from_html( $block_markup, $base_url );
 
 switch ( $command ) {
 	case 'list_urls':
@@ -76,7 +76,7 @@ switch ( $command ) {
 function wp_list_urls_in_block_markup( $options ) {
 	$block_markup = $options['block_markup'];
 	$base_url     = $options['base_url'] ?? 'https://playground.internal';
-	$p            = new WP_Block_Markup_Url_Processor( $block_markup, $base_url );
+	$p            = WP_Block_Markup_Url_Processor::create_from_html( $block_markup, $base_url );
 	while ( $p->next_url() ) {
 		// Skip empty relative URLs.
 		if ( ! trim( $p->get_raw_url() ) ) {

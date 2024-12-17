@@ -16,7 +16,7 @@ class WPHTMLToBlocksTests extends TestCase {
 <h1>WordPress 6.8 was released</h1>
 <p>Last week, WordPress 6.8 was released. This release includes a new default theme, a new block editor experience, and a new block library. It also includes a new block editor experience, and a new block library.</p>
 HTML;
-        $converter = new WP_HTML_To_Blocks( $html );
+        $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $html ) );
         $converter->convert( $html );
         $metadata = $converter->get_all_metadata();
         $expected_metadata = [
@@ -35,7 +35,7 @@ HTML;
      * @dataProvider provider_test_conversion
      */
     public function test_html_to_blocks_conversion( $html, $expected ) {
-        $converter = new WP_HTML_To_Blocks( $html );
+        $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $html ) );
         $converter->convert( $html );
         $blocks = $converter->get_block_markup();
 
@@ -43,15 +43,11 @@ HTML;
     }
 
     private function normalize_markup( $markup ) {
-        $processor = new WP_HTML_Processor( $markup );
+        $processor = WP_HTML_Processor::create_fragment( $markup );
         $serialized = $processor->serialize();
         $serialized = trim(
             str_replace(
                 [
-                    // Naively remove parts of the HTML that serialize()
-                    // adds that we don't want.
-                    '<html><head></head><body>',
-                    '</body></html>',
                     // Even more naively, remove all the newlines.
                     "\n"
                 ],
@@ -136,7 +132,7 @@ HTML
 
     public function test_html_to_blocks_excerpt() {
         $input = file_get_contents( __DIR__ . '/fixtures/html-to-blocks/excerpt.input.html' );
-        $converter = new WP_HTML_To_Blocks( $input );
+        $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $input ) );
         $converter->convert( $input );
         $blocks = $converter->get_block_markup();
 

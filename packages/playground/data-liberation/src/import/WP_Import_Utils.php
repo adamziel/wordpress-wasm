@@ -32,8 +32,11 @@ class WP_Import_Utils {
 				continue;
 			}
 			// Start of block comment
-			$block_markup .= self::block_opener( $block->block_name, $block->attrs );
-			$block_markup .= $block->attrs['content'] ?? '';
+			$attrs_without_content = $block->attrs;
+			$content = $block->attrs['content'] ?? '';
+			unset( $attrs_without_content['content'] );
+			$block_markup .= self::block_opener( $block->block_name, $attrs_without_content );
+			$block_markup .= $content;
 			$block_markup .= self::convert_blocks_to_markup( $block->inner_blocks );
 			$block_markup .= self::block_closer( $block->block_name );
 		}
@@ -86,7 +89,7 @@ class WP_Import_Utils {
 		}
 
 		return array(
-			'content' => trim( $title ),
+			'h1_content' => trim( $title ),
 			'remaining_html' => substr(
 				$html,
 				$p->get_string_index_after_current_token()

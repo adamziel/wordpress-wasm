@@ -50,6 +50,7 @@ testem.log
 *.timestamp-1678999213403.mjs
 /.env
 packages/playground/website/cypress/downloads
+packages/playground/data-liberation-static-files-editor/secrets.php
 vite.config.ts.timestamp-*.mjs
 
 # System Files

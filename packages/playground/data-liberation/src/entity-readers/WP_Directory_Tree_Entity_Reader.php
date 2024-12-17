@@ -17,6 +17,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 	private $pending_files = array();
 	private $parent_ids    = array();
 	private $next_post_id;
+	private $create_index_pages;
 	private $is_finished          = false;
 	private $entities_read_so_far = 0;
 	private $allowed_extensions   = array();
@@ -28,16 +29,24 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		$options
 	) {
 		if ( ! isset( $options['root_dir'] ) ) {
-			throw new \Exception( 'Missing required options: root_dir' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: root_dir', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['first_post_id'] ) ) {
-			throw new \Exception( 'Missing required options: first_post_id' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: first_post_id', '1.0.0' );
+			return false;
+		}
+		if ( 1 === $options['first_post_id'] ) {
+			_doing_it_wrong( __FUNCTION__, 'First post ID must be greater than 1', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['allowed_extensions'] ) ) {
-			throw new \Exception( 'Missing required options: allowed_extensions' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: allowed_extensions', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['index_file_patterns'] ) ) {
-			throw new \Exception( 'Missing required options: index_file_patterns' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: index_file_patterns', '1.0.0' );
+			return false;
 		}
 		/**
 		 * @TODO: Use `sub_entity_reader_factory` instead of `markup_converter_factory`
@@ -46,7 +55,8 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		 *        from the files, not just the post_content.
 		 */
 		if ( ! isset( $options['markup_converter_factory'] ) ) {
-			throw new \Exception( 'Missing required options: markup_converter_factory' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: markup_converter_factory', '1.0.0' );
+			return false;
 		}
 		return new self( $filesystem, $options );
 	}
@@ -57,6 +67,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 	) {
 		$this->file_visitor             = new \WordPress\Filesystem\WP_Filesystem_Visitor( $filesystem, $options['root_dir'] );
 		$this->filesystem               = $filesystem;
+		$this->create_index_pages       = $options['create_index_pages'] ?? false;
 		$this->next_post_id             = $options['first_post_id'];
 		$this->allowed_extensions       = $options['allowed_extensions'];
 		$this->index_file_patterns      = $options['index_file_patterns'];
@@ -98,8 +109,8 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$this->parent_ids[ $missing_parent_id_depth ] = $this->emit_post_entity(
 						array(
 							'content' => '',
-							'source_path' => $missing_parent_path,
-							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ],
+							'local_file_path' => $missing_parent_path,
+							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ] ?? null,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $missing_parent_path ) ),
 						)
 					);
@@ -109,7 +120,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$this->parent_ids[ $depth ] = $this->emit_post_entity(
 						array(
 							'content' => '',
-							'source_path' => $dir,
+							'local_file_path' => $dir,
 							'parent_id' => $parent_id,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $dir ) ),
 						)
@@ -120,8 +131,8 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$file_path                  = $this->pending_directory_index;
 					$this->parent_ids[ $depth ] = $this->emit_post_entity(
 						array(
-							'content' => $this->filesystem->read_file( $file_path ),
-							'source_path' => $file_path,
+							'content' => $this->filesystem->get_contents( $file_path ),
+							'local_file_path' => $file_path,
 							'parent_id' => $parent_id,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 						)
@@ -137,8 +148,8 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 				$file_path = array_shift( $this->pending_files );
 				$this->emit_post_entity(
 					array(
-						'content' => $this->filesystem->read_file( $file_path ),
-						'source_path' => $file_path,
+						'content' => $this->filesystem->get_contents( $file_path ),
+						'local_file_path' => $file_path,
 						'parent_id' => $parent_id,
 						'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 					)
@@ -168,7 +179,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		if ( ! $post_title ) {
 			$removed_title = WP_Import_Utils::remove_first_h1_block_from_block_markup( $block_markup );
 			if ( false !== $removed_title ) {
-				$post_title   = $removed_title['title'];
+				$post_title   = $removed_title['h1_content'];
 				$block_markup = $removed_title['remaining_html'];
 			}
 		}
@@ -186,7 +197,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		$entity_data = array(
 			'post_id' => $this->next_post_id,
 			'post_type' => 'page',
-			'guid' => $options['source_path'],
+			'guid' => $options['local_file_path'],
 			'post_title' => $post_title,
 			'post_content' => $block_markup,
 			'post_excerpt' => $converter->get_meta_value( 'post_excerpt' ) ?? '',
@@ -194,19 +205,19 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		);
 
 		/**
-		 * Technically `source_path` isn't a part of the WordPress post object,
+		 * Technically `local_file_path` isn't a part of the WordPress post object,
 		 * but we need it to resolve relative URLs in the imported content.
 		 *
 		 * This path is relative to the root directory traversed by this class.
 		 */
-		if ( ! empty( $options['source_path'] ) ) {
-			$source_path = $options['source_path'];
+		if ( ! empty( $options['local_file_path'] ) ) {
+			$local_file_path = $options['local_file_path'];
 			$root_dir    = $this->file_visitor->get_root_dir();
-			if ( str_starts_with( $source_path, $root_dir ) ) {
-				$source_path = substr( $source_path, strlen( $root_dir ) );
+			if ( str_starts_with( $local_file_path, $root_dir ) ) {
+				$local_file_path = substr( $local_file_path, strlen( $root_dir ) );
 			}
-			$source_path                = ltrim( $source_path, '/' );
-			$entity_data['source_path'] = $source_path;
+			$local_file_path                = ltrim( $local_file_path, '/' );
+			$entity_data['local_file_path'] = $local_file_path;
 		}
 
 		if ( $converter->get_meta_value( 'slug' ) ) {
@@ -286,6 +297,9 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 				return $idx;
 			}
 		}
+		if ( ! $this->create_index_pages && count( $files ) > 0 ) {
+			return 0;
+		}
 		return -1;
 	}
 
@@ -331,7 +345,13 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		return $this->entities_read_so_far - 1;
 	}
 
+	private $is_started = false;
+
 	public function valid(): bool {
+		if ( ! $this->is_started ) {
+			$this->next();
+			$this->is_started = true;
+		}
 		return ! $this->is_finished;
 	}
 
