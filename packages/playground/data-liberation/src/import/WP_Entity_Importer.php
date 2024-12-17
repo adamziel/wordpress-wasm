@@ -709,6 +709,7 @@ class WP_Entity_Importer {
 				$term_id     = is_array( $term_exists ) ? $term_exists['term_id'] : $term_exists;
 
 				if ( ! $term_id ) {
+					// @TODO: Add a unit test with a WXR with one post and X tags without root declated tags.
 					$new_term = wp_insert_term( $term['slug'], $taxonomy, $term );
 
 					if ( ! is_wp_error( $new_term ) ) {

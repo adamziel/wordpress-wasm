@@ -139,7 +139,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		$this->assertSame( 0, $post->post_parent );
 		$cats = wp_get_post_categories( $post->ID, array( 'fields' => 'all' ) );
 		$this->assertCount( 1, $cats );
-		// $this->assertSame( 'foo', $cats[0]->slug );
+		$this->assertSame( 'foo', $cats[0]->slug );
 
 		$post = $posts[3];
 		$this->assertSame( 'Foo-child', $post->post_title );
@@ -150,7 +150,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		$this->assertSame( 0, $post->post_parent );
 		$cats = wp_get_post_categories( $post->ID, array( 'fields' => 'all' ) );
 		$this->assertCount( 1, $cats );
-		// $this->assertSame( 'foo-bar', $cats[0]->slug );
+		$this->assertSame( 'foo-bar', $cats[0]->slug );
 
 		$post = $posts[4];
 		$this->assertSame( 'Private Post', $post->post_title );
@@ -162,10 +162,10 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		$cats = wp_get_post_categories( $post->ID );
 		$this->assertCount( 1, $cats );
 		$tags = wp_get_post_tags( $post->ID );
-		// $this->assertCount( 3, $tags );
-		// $this->assertSame( 'tag1', $tags[0]->slug );
-		// $this->assertSame( 'tag2', $tags[1]->slug );
-		// $this->assertSame( 'tag3', $tags[2]->slug );
+		$this->assertCount( 3, $tags );
+		$this->assertSame( 'tag1', $tags[0]->slug );
+		$this->assertSame( 'tag2', $tags[1]->slug );
+		$this->assertSame( 'tag3', $tags[2]->slug );
 
 		$post = $posts[5];
 		$this->assertSame( '1-col page', $post->post_title );
