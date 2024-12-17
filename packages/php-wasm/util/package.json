@@ -13,6 +13,17 @@
 		"access": "public",
 		"directory": "../../../dist/packages/php-wasm/util"
 	},
+	"exports": {
+		".": {
+			"import": "./index.js",
+			"require": "./index.cjs"
+		},
+		"./package.json": "./package.json",
+		"./README.md": "./README.md"
+	},
+	"type": "module",
+	"main": "./index.cjs",
+	"module": "./index.js",
 	"gitHead": "2f8d8f3cea548fbd75111e8659a92f601cddc593",
 	"engines": {
 		"node": ">=18.18.0",

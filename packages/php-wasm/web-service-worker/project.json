@@ -12,15 +12,20 @@
 				"buildTarget": "php-wasm-web-service-worker:build:bundle:production"
 			}
 		},
+		"build:package-json": {
+			"executor": "@wp-playground/nx-extensions:package-json",
+			"options": {
+				"tsConfig": "packages/php-wasm/web-service-worker/tsconfig.lib.json",
+				"outputPath": "dist/packages/php-wasm/web-service-worker",
+				"buildTarget": "php-wasm-web-service-worker:build:bundle:production"
+			}
+		},
 		"build:bundle": {
-			"executor": "@nx/js:tsc",
+			"executor": "@nx/vite:build",
 			"outputs": ["{options.outputPath}"],
 			"options": {
-				"outputPath": "dist/packages/php-wasm/web-service-worker",
-				"main": "packages/php-wasm/web-service-worker/src/index.ts",
-				"tsConfig": "packages/php-wasm/web-service-worker/tsconfig.lib.json",
-				"assets": ["packages/php-wasm/web-service-worker/*.md"],
-				"updateBuildableProjectDepsInPackageJson": true
+				"emptyOutDir": false,
+				"outputPath": "dist/packages/php-wasm/web-service-worker"
 			}
 		},
 		"lint": {
