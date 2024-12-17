@@ -65,7 +65,7 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			}
 
 			if (is_wp_error($response)) {
-				throw new Error($response->get_error_message());
+				die($response->get_error_message());
 			}
 		`,
 	});
@@ -107,8 +107,10 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 		`,
 	});
 
+	if (activatePluginResult.text) {
+		logger.warn(activatePluginResult.text);
+	}
 	if (isActiveCheckResult.text !== 'true') {
-		logger.debug(activatePluginResult.text);
 		if (isActiveCheckResult.text !== 'false') {
 			logger.debug(isActiveCheckResult.text);
 		}

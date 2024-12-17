@@ -107,4 +107,22 @@ describe('Blueprint step activatePlugin()', () => {
 			});
 		}).not.toThrow();
 	});
+
+	it('should activate the plugin if it produces output during activation', async () => {
+		const docroot = php.documentRoot;
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin.php`,
+			`<?php
+			/**
+			 * Plugin Name: Test Plugin
+			 */
+			echo 'Hello World';
+			`
+		);
+		await expect(async () => {
+			await activatePlugin(php, {
+				pluginPath: 'test-plugin.php',
+			});
+		}).not.toThrow();
+	});
 });
