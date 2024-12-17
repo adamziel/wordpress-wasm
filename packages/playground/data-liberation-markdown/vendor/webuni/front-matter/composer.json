@@ -1,0 +1,68 @@
+{
+	"name": "webuni/front-matter",
+	"type": "library",
+	"description": "Front matter parser and dumper for PHP",
+	"keywords": [
+		"front-matter",
+		"yaml",
+		"json",
+		"toml",
+		"neon",
+		"commonmark"
+	],
+	"homepage": "https://github.com/webuni/front-matter",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Martin Hasoň",
+			"email": "martin.hason@gmail.com",
+			"homepage": "https://www.martinhason.cz"
+		},
+		{
+			"name": "Webuni s.r.o.",
+			"homepage": "https://www.webuni.cz"
+		}
+	],
+	"require": {
+		"php": "^7.4 || ^8.0",
+		"symfony/yaml": "^3.4.31 || ^4.3.4 || ^5.0 || ^6.0 || ^7.0"
+	},
+	"require-dev": {
+		"ext-json": "*",
+		"friendsofphp/php-cs-fixer": "^3.41",
+		"league/commonmark": "^2.0",
+		"mthaml/mthaml": "^1.3",
+		"nette/neon": "^2.2 || ^3.0",
+		"phpunit/phpunit": "^9.6",
+		"phpstan/phpstan": "^1.10",
+		"twig/twig": "^3.0",
+		"yosymfony/toml": "^1.0"
+	},
+	"suggest": {
+		"nette/neon": "If you want to use NEON as front matter",
+		"yosymfony/toml": "If you want to use TOML as front matter"
+	},
+	"config": {
+		"sort-packages": true
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "2.0-dev"
+		}
+	},
+	"autoload": {
+		"psr-4": {
+			"Webuni\\FrontMatter\\": "src"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Webuni\\FrontMatter\\Tests\\": "tests"
+		}
+	},
+	"scripts": {
+		"analyse": "./run analyse",
+		"cs": "./run cs",
+		"tests": "./run tests"
+	}
+}

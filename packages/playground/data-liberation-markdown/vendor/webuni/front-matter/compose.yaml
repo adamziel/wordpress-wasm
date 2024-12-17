@@ -1,0 +1,10 @@
+services:
+    php:
+        image: 'minidocks/php:${PHP_VERSION:-8.3}'
+        volumes:
+            - .:$PWD
+            - ~/.composer/cache:/composer-cache
+            - ~/.composer/auth.json:/composer/auth.json
+        environment:
+            PATH_SUFFIX: './vendor/bin'
+        working_dir: $PWD
