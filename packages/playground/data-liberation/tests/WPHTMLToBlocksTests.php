@@ -131,11 +131,22 @@ TABLE,
 <!-- wp:table --><figure class="wp-block-table"><table class="has-fixed-layout"><thead><tr><th>Header 1 </th><th>Header 2 </th></tr></thead><tbody><tr><td>Cell 1 </td><td>Cell 2 </td></tr><tr><td>Cell 3 </td><td>Cell 4 </td></tr></tbody><tfoot><tr><td>Footer 1 </td><td>Footer 2 </td></tr></tfoot></table></figure><!-- /wp:table -->
 HTML
             ],
-            'An excerpt from an HTML file' => [
-                'html' => file_get_contents( __DIR__ . '/fixtures/html-to-blocks/excerpt.input.html' ),
-                'expected' => file_get_contents( __DIR__ . '/fixtures/html-to-blocks/excerpt.output.html' ),
-            ],
         ];
+    }
+
+    public function test_html_to_blocks_excerpt() {
+        $input = file_get_contents( __DIR__ . '/fixtures/html-to-blocks/excerpt.input.html' );
+        $converter = new WP_HTML_To_Blocks( $input );
+        $converter->convert( $input );
+        $blocks = $converter->get_block_markup();
+
+        $output_file = __DIR__ . '/fixtures/html-to-blocks/excerpt.output.html';
+        if (getenv('UPDATE_FIXTURES')) {
+            file_put_contents( $output_file, $blocks );
+        }
+
+        $this->assertEquals( file_get_contents( $output_file ), $blocks );
+        
     }
 
 }
