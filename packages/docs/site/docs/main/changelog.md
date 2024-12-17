@@ -9,6 +9,60 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.16] (2024-12-16) 
+
+### Enhancements
+
+- Allow Authorization header pass-through with X-Cors-Proxy-Allowed-Request-Headers. ([#2007](https://github.com/WordPress/wordpress-playground/pull/2007))
+- [Cors Proxy] Support Transfer-Encoding: Chunked. ([#2077](https://github.com/WordPress/wordpress-playground/pull/2077))
+- [Website] Enable CORS proxy for all fetches. ([#2076](https://github.com/WordPress/wordpress-playground/pull/2076))
+
+### Tools
+
+
+#### Blueprints
+
+- [Blueprints] Preserve the first char of all filenames sourced from GitDirectoryReference. ([#2070](https://github.com/WordPress/wordpress-playground/pull/2070))
+
+#### Import/Export
+
+- [Blueprints] Support Data Liberation importer in the importWxr step. ([#2058](https://github.com/WordPress/wordpress-playground/pull/2058))
+
+### PHP WebAssembly
+
+
+#### Website
+
+- [Webiste] Switch the CORS Proxy URL to wordpress-playground-cors-proxy.net. ([#2074](https://github.com/WordPress/wordpress-playground/pull/2074))
+
+### Website
+
+- Bugfix: Delist data-liberation-core.phar from the preloaded offline mode assets. ([#2072](https://github.com/WordPress/wordpress-playground/pull/2072))
+- Don't show the error reporting modal on the initial load. ([#2068](https://github.com/WordPress/wordpress-playground/pull/2068))
+- Prevent the initial flash of "You have no Playgrounds" message. ([#2069](https://github.com/WordPress/wordpress-playground/pull/2069))
+- Remove old PR preview HTML files and add redirects to new preview modals. ([#2081](https://github.com/WordPress/wordpress-playground/pull/2081))
+
+### Internal
+
+- [Meta] Remove GitHub Board Automation workflow. ([#2073](https://github.com/WordPress/wordpress-playground/pull/2073))
+
+### Bug Fixes
+
+- Temporary: Skip more CI-only deployment test failures. ([#2071](https://github.com/WordPress/wordpress-playground/pull/2071))
+
+### Various
+
+- Ensure that Site Editor templates are associated with the correct taxonomy. ([#1997](https://github.com/WordPress/wordpress-playground/pull/1997))
+- PR Preview: Document and simplify targetParams. ([#2052](https://github.com/WordPress/wordpress-playground/pull/2052))
+- Revert "Remove old PR preview HTML files and add redirects to new preview modals". ([#2082](https://github.com/WordPress/wordpress-playground/pull/2082))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @akirk @brandonpayton @maxschmeling
+
+
 ## [v1.0.15] (2024-12-09) 
 
 ### Enhancements

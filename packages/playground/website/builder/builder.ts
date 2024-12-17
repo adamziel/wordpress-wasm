@@ -1,9 +1,10 @@
-const importStartPlaygroundWeb = import(
-	'https://playground.wordpress.net/client/index.js'
-);
-const fetchBlueprintSchema = fetch(
-	'https://playground.wordpress.net/blueprint-schema.json'
-).then((r) => r.json());
+// @ts-nocheck -- This is a minimal conversion from JS to TS for build purposes.
+// @TODO: Make this TS checked
+import { startPlaygroundWeb } from '@wp-playground/client';
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import schema from '../../blueprints/public/blueprint-schema.json';
+// @ts-ignore
+import { corsProxyUrl } from 'virtual:cors-proxy-url';
 
 const deref = (obj, root) => {
 	if (!obj || typeof obj !== 'object' || !('$ref' in obj)) {
@@ -165,7 +166,6 @@ const getPrevSiblings = (editor, { column, row }) => {
 };
 
 const getStepProperties = async (stepType) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return reader.definitions.StepDefinition.oneOf
 		.filter((s) => s.properties.step['const'] === stepType)
@@ -175,7 +175,6 @@ const getStepProperties = async (stepType) => {
 };
 
 const completeStepProperty = async (stepType, prefix) => {
-	const schema = await fetchBlueprintSchema;
 	return schema.definitions.StepDefinition.oneOf
 		.filter((s) => s.properties.step['const'] === stepType)
 		.map((s) => Object.keys(s.properties))
@@ -185,7 +184,6 @@ const completeStepProperty = async (stepType, prefix) => {
 };
 
 const getStepSubProperties = async (stepType, resType, property) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return reader.definitions.StepDefinition.oneOf
 		.filter((s) => s.properties.step['const'] === stepType)
@@ -209,7 +207,6 @@ const completeStepSubProperty = async (
 	if (!resType && !subKey) {
 		return ['resource'];
 	}
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return reader.definitions.StepDefinition.oneOf
 		.filter((s) => s.properties.step['const'] === stepType)
@@ -229,7 +226,6 @@ const completeStepSubProperty = async (
 };
 
 const completeStep = async (prefix) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return reader.definitions.StepDefinition.oneOf
 		.map((s) => s.properties.step['const'])
@@ -237,7 +233,6 @@ const completeStep = async (prefix) => {
 };
 
 const completePhpVersion = async (prefix) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return reader.definitions.SupportedPHPVersion.enum.filter(
 		(s) => s.substr(0, prefix.length) === prefix
@@ -245,7 +240,6 @@ const completePhpVersion = async (prefix) => {
 };
 
 const completeRootKey = async (prefix) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return Object.keys(reader.definitions.Blueprint.properties).filter(
 		(s) => s[0] !== '$' && s.substr(0, prefix.length) === prefix
@@ -253,7 +247,6 @@ const completeRootKey = async (prefix) => {
 };
 
 const completeFeature = async (prefix) => {
-	const schema = await fetchBlueprintSchema;
 	const reader = getSchemaReader(schema);
 	return Object.keys(
 		reader.definitions.Blueprint.properties.features.properties
@@ -311,7 +304,7 @@ const getCompletions = async (editor, session, pos, prefix, callback) => {
 				);
 				const json = await res.json();
 				json?.plugins.forEach((p) => {
-					var doc = new DOMParser().parseFromString(
+					const doc = new DOMParser().parseFromString(
 						p.name,
 						'text/html'
 					);
@@ -364,7 +357,7 @@ const getCompletions = async (editor, session, pos, prefix, callback) => {
 				);
 				const json = await res.json();
 				json?.themes.forEach((p) => {
-					var doc = new DOMParser().parseFromString(
+					const doc = new DOMParser().parseFromString(
 						p.name,
 						'text/html'
 					);
@@ -524,7 +517,6 @@ function getCurrentBlueprint(editor) {
 }
 
 let lastRun = 0;
-const startPlaygroundWeb = (await importStartPlaygroundWeb).startPlaygroundWeb;
 const runBlueprint = async (editor) => {
 	const currentRun = ++lastRun;
 	// Trash the old iframe and create a new one
@@ -552,6 +544,7 @@ const runBlueprint = async (editor) => {
 			iframe: playgroundIframe,
 			remoteUrl: `https://playground.wordpress.net/remote.html`,
 			blueprint: blueprintCopy,
+			corsProxy: corsProxyUrl,
 		});
 	} catch (error) {
 		if (currentRun === lastRun) {
