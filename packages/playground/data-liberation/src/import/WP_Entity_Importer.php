@@ -703,14 +703,13 @@ class WP_Entity_Importer {
 			$terms_to_set = array();
 
 			foreach ( $data['terms'] as $term ) {
-				print_r( $term );
 				// Back compat with WXR 1.0 map 'tag' to 'post_tag'
 				$taxonomy    = ( 'tag' === $term['taxonomy'] ) ? 'post_tag' : $term['taxonomy'];
 				$term_exists = term_exists( $term['slug'], $taxonomy );
 				$term_id     = is_array( $term_exists ) ? $term_exists['term_id'] : $term_exists;
 
 				if ( ! $term_id ) {
-					$new_term = wp_insert_term( $term['name'], $taxonomy, array( 'slug' => $term['slug'] ) );
+					$new_term = wp_insert_term( $term['slug'], $taxonomy, $term );
 
 					if ( ! is_wp_error( $new_term ) ) {
 						$term_id = $new_term['term_id'];
