@@ -72,7 +72,6 @@ export default defineConfig({
 	worker: {
 		format: 'es',
 		plugins,
-		sourcemap: true,
 		rollupOptions: {
 			output: {
 				// Ensure the service worker always has the same name
