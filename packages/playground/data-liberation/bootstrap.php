@@ -61,7 +61,6 @@ require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
 
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
-require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
 
