@@ -1,6 +1,9 @@
 <?php
+
+use WordPress\ByteReader\WP_Byte_Reader;
+
 /**
- * Data Liberation API: WP_WXR_Reader class
+ * Data Liberation API: WP_WXR_Entity_Reader class
  *
  * Reads WordPress eXtended RSS (WXR) files and emits entities like posts,
  * comments, users, and terms. Enables efficient processing of large WXR
@@ -11,7 +14,7 @@
  *
  * ## Design goals
  *
- * WP_WXR_Reader is built with the following characteristics in mind:
+ * WP_WXR_Entity_Reader is built with the following characteristics in mind:
  *
  * * Speed – it should be as fast as possible
  * * No PHP extensions required – it can run on any PHP installation
@@ -21,7 +24,7 @@
  *
  * ## Implementation
  *
- * `WP_WXR_Reader` uses the `WP_XML_Processor` to find XML tags representing meaningful
+ * `WP_WXR_Entity_Reader` uses the `WP_XML_Processor` to find XML tags representing meaningful
  * WordPress entities. The reader knows the WXR schema and only looks for relevant elements.
  * For example, it knows that posts are stored in `rss > channel > item` and comments are
  * stored in `rss > channel > item > `wp:comment`.
@@ -33,7 +36,7 @@
  *
  * Example:
  *
- *     $reader = WP_WXR_Reader::create_for_streaming();
+ *     $reader = WP_WXR_Entity_Reader::create_for_streaming();
  *
  *     // Add data as it becomes available
  *     $reader->append_bytes( fread( $file_handle, 8192 ) );
@@ -64,24 +67,24 @@
  *     }
  *
  * The next_entity() -> fread -> break usage pattern may seem a bit tedious. This is expected. Even
- * if the WXR parsing part of the WP_WXR_Reader offers a high-level API, working with byte streams
+ * if the WXR parsing part of the WP_WXR_Entity_Reader offers a high-level API, working with byte streams
  * requires reasoning on a much lower level. The StreamChain class shipped in this repository will
  * make the API consumption easier with its transformation–oriented API for chaining data processors.
  *
- * Similarly to `WP_XML_Processor`, the `WP_WXR_Reader` enters a paused state when it doesn't
+ * Similarly to `WP_XML_Processor`, the `WP_WXR_Entity_Reader` enters a paused state when it doesn't
  * have enough XML bytes to parse the entire entity.
  *
  * ## Caveats
  *
  * ### Extensibility
  *
- * `WP_WXR_Reader` ignores any XML elements it doesn't recognize. The WXR format is extensible
+ * `WP_WXR_Entity_Reader` ignores any XML elements it doesn't recognize. The WXR format is extensible
  * so in the future the  reader may start supporting registration of custom handlers for unknown
  * tags in the future.
  *
  * ### Nested entities intertwined with data
  *
- * `WP_WXR_Reader` flushes the current entity whenever another entity starts. The upside is
+ * `WP_WXR_Entity_Reader` flushes the current entity whenever another entity starts. The upside is
  * simplicity and a tiny memory footprint. The downside is that it's possible to craft a WXR
  * document where some information would be lost. For example:
  *
@@ -101,7 +104,7 @@
  * </rss>
  * ```
  *
- * `WP_WXR_Reader` would accumulate post data until the `wp:post_meta` tag. Then it would emit a
+ * `WP_WXR_Entity_Reader` would accumulate post data until the `wp:post_meta` tag. Then it would emit a
  * `post` entity and accumulate the meta information until the `</wp:postmeta>` closer. Then it
  * would advance to `<wp:post_id>` and **ignore it**.
  *
@@ -122,7 +125,7 @@
  *
  * @since WP_VERSION
  */
-class WP_WXR_Reader implements Iterator {
+class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 
 	/**
 	 * The XML processor used to parse the WXR file.
@@ -355,7 +358,7 @@ class WP_WXR_Reader implements Iterator {
 			if ( false === $cursor ) {
 				_doing_it_wrong(
 					__METHOD__,
-					'Invalid cursor provided for WP_WXR_Reader::create().',
+					'Invalid cursor provided for WP_WXR_Entity_Reader::create().',
 					null
 				);
 				return false;
@@ -364,7 +367,7 @@ class WP_WXR_Reader implements Iterator {
 		}
 
 		$xml    = WP_XML_Processor::create_for_streaming( '', $xml_cursor );
-		$reader = new WP_WXR_Reader( $xml );
+		$reader = new WP_WXR_Entity_Reader( $xml );
 		if ( null !== $cursor ) {
 			$reader->last_post_id    = $cursor['last_post_id'];
 			$reader->last_comment_id = $cursor['last_comment_id'];
@@ -627,7 +630,7 @@ class WP_WXR_Reader implements Iterator {
 			/**
 			 * Custom adjustment: the Accessibility WXR file uses a non-standard
 			 * wp:wp_author tag.
-			 * @TODO: Should WP_WXR_Reader care about such non-standard tags when
+			 * @TODO: Should WP_WXR_Entity_Reader care about such non-standard tags when
 			 *        the regular WXR importer would ignore them? Perhaps a warning
 			 *        and an upstream PR would be a better solution.
 			 */
@@ -672,7 +675,7 @@ class WP_WXR_Reader implements Iterator {
 			 *         Long time ago...
 			 *     </wp:comment_content>
 			 *
-			 * The semantics of such a structure is not clear. The WP_WXR_Reader will
+			 * The semantics of such a structure is not clear. The WP_WXR_Entity_Reader will
 			 * enter an error state when it encounters such a structure.
 			 *
 			 * Such nesting wasn't found in any WXR files analyzed when building
@@ -900,39 +903,5 @@ class WP_WXR_Reader implements Iterator {
 		$this->entity_finished        = false;
 		$this->text_buffer            = '';
 		$this->last_opener_attributes = array();
-	}
-
-	public function current(): object {
-		if ( null === $this->entity_data && ! $this->is_finished() && ! $this->get_last_error() ) {
-			$this->next();
-		}
-		return $this->get_entity();
-	}
-
-	private $last_next_result = null;
-	public function next(): void {
-		// @TODO: Don't keep track of this. Just make sure the next_entity()
-		//        call will make the is_finished() true.
-		$this->last_next_result = $this->next_entity();
-	}
-
-	public function key(): string {
-		return $this->get_reentrancy_cursor();
-	}
-
-	public function valid(): bool {
-		return false !== $this->last_next_result && ! $this->is_finished() && ! $this->get_last_error();
-	}
-
-	public function rewind(): void {
-		// Haven't started yet.
-		if ( null === $this->last_next_result ) {
-			return;
-		}
-		_doing_it_wrong(
-			__METHOD__,
-			'WP_WXR_Reader does not support rewinding.',
-			null
-		);
 	}
 }

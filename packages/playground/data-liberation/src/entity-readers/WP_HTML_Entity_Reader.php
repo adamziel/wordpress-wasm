@@ -1,7 +1,11 @@
 <?php
 
+use WordPress\Data_Liberation\Block_Markup\WP_HTML_To_Blocks;
+
 /**
- * Converts a single HTML file into a stream of WordPress posts and post meta.
+ * Converts a single HTML file into a stream of WordPress entities.
+ *
+ * @TODO: Support post meta.
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
@@ -15,11 +19,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		$this->post_id = $post_id;
 	}
 
-	/**
-	 * Advances to the next entity.
-	 *
-	 * @return bool Whether the next entity was found.
-	 */
 	public function next_entity() {
 		// If we're finished, we're finished.
 		if ( $this->finished ) {
@@ -79,11 +78,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		return true;
 	}
 
-	/**
-	 * Returns the current entity.
-	 *
-	 * @return WP_Imported_Entity|false The current entity, or false if there are no entities left.
-	 */
 	public function get_entity() {
 		if ( $this->is_finished() ) {
 			return false;
@@ -91,20 +85,10 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		return $this->entities[0];
 	}
 
-	/**
-	 * Checks if this reader has finished yet.
-	 *
-	 * @return bool Whether the reader has finished.
-	 */
 	public function is_finished(): bool {
 		return $this->finished;
 	}
 
-	/**
-	 * Returns the last error that occurred when processing the HTML.
-	 *
-	 * @return string|null The last error, or null if there was no error.
-	 */
 	public function get_last_error(): ?string {
 		return null;
 	}
