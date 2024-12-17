@@ -67,20 +67,6 @@ require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 
-/**
- * Require conditionally – these files are missing from the data-liberation-core.phar
- * to reduce the bundle size (we'd need to include a large markdown parser and its
- * dependencies, too).
- *
- * @TODO: Build a separate "data-liberation-markdown" phar file plugin with the Markdown
- *        importing functionality.
- */
-if ( file_exists( __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php' ) ) {
-	require_once __DIR__ . '/src/markdown-api/WP_Markdown_To_Blocks.php';
-	require_once __DIR__ . '/src/markdown-api/WP_Markdown_Directory_Tree_Reader.php';
-	require_once __DIR__ . '/src/markdown-api/WP_Markdown_HTML_Processor.php';
-}
-
 // When running in Playground, the composer autoloader script sees CLI SAPI and
 // tries to use the STDERR, STDIN, and STDOUT constants.
 // @TODO: Don't use the "cli" SAPI string and don't allow composer to run platform checks.
