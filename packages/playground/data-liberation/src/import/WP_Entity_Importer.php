@@ -451,7 +451,6 @@ class WP_Entity_Importer {
 		}
 
 		if ( ! isset( $meta_item['term_id'] ) ) {
-			echo "\nTERM-ID-NOT-SET\n";
 			$meta_item['term_id'] = $term_id;
 		}
 
