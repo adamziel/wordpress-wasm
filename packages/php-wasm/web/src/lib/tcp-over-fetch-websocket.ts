@@ -42,6 +42,7 @@ import { TLS_1_2_Connection } from './tls/1_2/connection';
 import { generateCertificate, GeneratedCertificate } from './tls/certificates';
 import { concatUint8Arrays } from './tls/utils';
 import { ContentTypes } from './tls/1_2/types';
+import { fetchWithCorsProxy } from './fetch-with-cors-proxy';
 
 export type TCPOverFetchOptions = {
 	CAroot: GeneratedCertificate;
@@ -421,10 +422,6 @@ class RawBytesFetch {
 	 * Streams a HTTP response including the status line and headers.
 	 */
 	static fetchRawResponseBytes(request: Request, corsProxyUrl?: string) {
-		const targetRequest = corsProxyUrl
-			? new Request(`${corsProxyUrl}${request.url}`, request)
-			: request;
-
 		// This initially used a TransformStream and piped the response
 		// body to the writable side of the TransformStream.
 		//
@@ -434,7 +431,11 @@ class RawBytesFetch {
 			async start(controller) {
 				let response: Response;
 				try {
-					response = await fetch(targetRequest);
+					response = await fetchWithCorsProxy(
+						request,
+						undefined,
+						corsProxyUrl
+					);
 				} catch (error) {
 					/**
 					 * Pretend we've got a 400 Bad Request response whenever
