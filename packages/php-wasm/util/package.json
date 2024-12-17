@@ -1,6 +1,6 @@
 {
 	"name": "@php-wasm/util",
-	"version": "1.0.16",
+	"version": "1.0.17",
 	"type": "module",
 	"types": "index.d.ts",
 	"typedoc": {
@@ -21,7 +21,6 @@
 		"./package.json": "./package.json",
 		"./README.md": "./README.md"
 	},
-	"type": "module",
 	"main": "./index.cjs",
 	"module": "./index.js",
 	"gitHead": "2f8d8f3cea548fbd75111e8659a92f601cddc593",
