@@ -1,7 +1,5 @@
 <?php
 
-use WordPress\Data_Liberation\Block_Markup\WP_HTML_To_Blocks;
-
 /**
  * Converts a single HTML file into a stream of WordPress entities.
  *
@@ -9,14 +7,15 @@ use WordPress\Data_Liberation\Block_Markup\WP_HTML_To_Blocks;
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
-	protected $html;
+	protected $html_processor;
 	protected $entities;
 	protected $finished = false;
 	protected $post_id;
+	protected $last_error;
 
-	public function __construct( $html, $post_id ) {
-		$this->html    = $html;
-		$this->post_id = $post_id;
+	public function __construct( $html_processor, $post_id ) {
+		$this->html_processor = $html_processor;
+		$this->post_id        = $post_id;
 	}
 
 	public function next_entity() {
@@ -36,8 +35,9 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		}
 
 		// We did not read any entities yet. Let's convert the HTML document into entities.
-		$converter = new WP_HTML_To_Blocks( $this->html );
+		$converter = new WP_HTML_To_Blocks( $this->html_processor );
 		if ( false === $converter->convert() ) {
+			$this->last_error = $converter->get_last_error();
 			return false;
 		}
 
@@ -90,6 +90,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	}
 
 	public function get_last_error(): ?string {
-		return null;
+		return $this->last_error;
 	}
 }

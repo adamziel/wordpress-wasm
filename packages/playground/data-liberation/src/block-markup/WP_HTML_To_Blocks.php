@@ -28,14 +28,15 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 
 	private $state       = self::STATE_READY;
 	private $block_stack = array();
-	private $html;
+	private $markup_processor;
 	private $ignore_text            = false;
 	private $in_ephemeral_paragraph = false;
 	private $block_markup           = '';
 	private $metadata               = array();
+	private $last_error             = null;
 
-	public function __construct( $html ) {
-		$this->html = new \WP_HTML_Processor( $html );
+	public function __construct( $markup_processor ) {
+		$this->markup_processor = $markup_processor;
 	}
 
 	public function convert() {
@@ -43,21 +44,29 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			return false;
 		}
 
-		while ( $this->html->next_token() ) {
-			switch ( $this->html->get_token_type() ) {
+		while ( $this->markup_processor->next_token() ) {
+			var_dump( $this->markup_processor->get_token_type() );
+			switch ( $this->markup_processor->get_token_type() ) {
 				case '#text':
 					if ( $this->ignore_text ) {
 						break;
 					}
-					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );
+					$this->append_rich_text( htmlspecialchars( $this->markup_processor->get_modifiable_text() ) );
 					break;
 				case '#tag':
 					$this->handle_tag();
 					break;
 			}
 		}
+		var_dump( $this->markup_processor->get_last_error() );
+
+		if ( $this->markup_processor->get_last_error() ) {
+			$this->last_error = $this->markup_processor->get_last_error();
+			return false;
+		}
 
 		$this->close_ephemeral_paragraph();
+
 		return true;
 	}
 
@@ -77,8 +86,8 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	}
 
 	private function handle_tag() {
-		$html          = $this->html;
-		$tag           = $html->get_tag();
+		$html          = $this->markup_processor;
+		$tag           = strtoupper( $html->get_tag() );
 		$tag_lowercase = strtolower( $tag );
 
 		$is_tag_opener = ! $html->is_tag_closer();
@@ -304,7 +313,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	}
 
 	private function is_at_inline_code_element() {
-		$breadcrumbs = $this->html->get_breadcrumbs();
+		$breadcrumbs = $this->markup_processor->get_breadcrumbs();
 		foreach ( $breadcrumbs as $tag ) {
 			switch ( $tag ) {
 				case 'A':
@@ -391,5 +400,9 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			$this->block_markup          .= WP_Import_Utils::block_closer( 'paragraph' );
 			$this->in_ephemeral_paragraph = false;
 		}
+	}
+
+	public function get_last_error() {
+		return $this->last_error;
 	}
 }

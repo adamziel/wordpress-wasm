@@ -26,14 +26,17 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 	protected $current_post_id;
 	protected $remaining_html_files;
 	protected $current_html_reader;
-
+	protected $last_error;
 	public function __construct( WP_Zip_Filesystem $zip, $first_post_id = 1 ) {
 		$this->zip             = $zip;
 		$this->current_post_id = $first_post_id;
 	}
 
 	public function next_entity() {
-		// If we're finished, we're finished.
+		if ( $this->last_error ) {
+			return false;
+		}
+
 		if ( $this->finished ) {
 			return false;
 		}
@@ -92,16 +95,14 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 
 			$html_file = array_shift( $this->remaining_html_files );
 			$html      = $this->zip->read_file( $html_file );
-			/**
-			 * @TODO: Don't just assume that WP_HTML_Entity_Reader can
-			 *        handle an XHTML file. We might run into XML-specific
-			 *        subtleties that will derail the process.
-			 *        Let's consider using WP_XML_Processor instead.
-			 */
-			$this->current_html_reader = new \WP_HTML_Entity_Reader(
-				$html,
+			$this->current_html_reader = new WP_HTML_Entity_Reader(
+				WP_XML_Processor::create_from_string( $html ),
 				$this->current_post_id
 			);
+			if ( $this->current_html_reader->get_last_error() ) {
+				$this->last_error = $this->current_html_reader->get_last_error();
+				return false;
+			}
 			++$this->current_post_id;
 		}
 
@@ -117,6 +118,6 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 	}
 
 	public function get_last_error(): ?string {
-		return null;
+		return $this->last_error;
 	}
 }

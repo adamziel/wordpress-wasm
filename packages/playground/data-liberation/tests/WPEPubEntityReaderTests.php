@@ -21,6 +21,7 @@ class WPEPubEntityReaderTests extends TestCase {
                 'data' => $data,
             ];
         }
+        $this->assertNull( $reader->get_last_error() );
         $this->assertEquals( 3, count($entities) );
         $this->assertEquals( 117, strlen($entities[0]['data']['content']) );
         $this->assertGreaterThan( 1000, strlen($entities[1]['data']['content']) );
