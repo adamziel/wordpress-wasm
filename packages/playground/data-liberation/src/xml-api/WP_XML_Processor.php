@@ -1628,13 +1628,13 @@ class WP_XML_Processor {
 						return false;
 					}
 
-					$closer_at = $at;
+					$closer_at                  = $at;
 					$this->parser_state         = self::STATE_DOCTYPE_NODE;
 					$this->token_length         = $closer_at + 1 - $this->token_starts_at;
 					$this->bytes_already_parsed = $closer_at + 1;
 					return true;
 				}
-				
+
 				/*
 				 * Anything else here is either unsupported at this point or invalid
 				 * syntax. See the class-level @TODO annotations for more information.
@@ -1643,7 +1643,6 @@ class WP_XML_Processor {
 
 				return false;
 			}
-
 
 			/*
 			 * An `<?xml` token at the beginning of the document marks a start of an
@@ -2537,7 +2536,7 @@ class WP_XML_Processor {
 			return false;
 		}
 
-		return ! $this->is_empty_element() && ! $this->is_closing_tag;
+		return $this->is_tag_opener() && ! $this->is_empty_element();
 	}
 
 	/**

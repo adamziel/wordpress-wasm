@@ -45,7 +45,6 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 		}
 
 		while ( $this->markup_processor->next_token() ) {
-			var_dump( $this->markup_processor->get_token_type() );
 			switch ( $this->markup_processor->get_token_type() ) {
 				case '#text':
 					if ( $this->ignore_text ) {
@@ -58,7 +57,6 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 					break;
 			}
 		}
-		var_dump( $this->markup_processor->get_last_error() );
 
 		if ( $this->markup_processor->get_last_error() ) {
 			$this->last_error = $this->markup_processor->get_last_error();
@@ -90,8 +88,8 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 		$tag           = strtoupper( $html->get_tag() );
 		$tag_lowercase = strtolower( $tag );
 
-		$is_tag_opener = ! $html->is_tag_closer();
-		if ( ! $html->expects_closer() ) {
+		$is_void_tag = ! $html->expects_closer() && ! $html->is_tag_closer();
+		if ( $is_void_tag ) {
 			switch ( $tag ) {
 				case 'META':
 					$key   = $html->get_attribute( 'name' );
@@ -119,7 +117,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 					//        Just insert an HTML block or what?
 					break;
 			}
-		} elseif ( $is_tag_opener ) {
+		} elseif ( ! $html->is_tag_closer() ) {
 			switch ( $tag ) {
 				// Block elements
 				case 'SCRIPT':

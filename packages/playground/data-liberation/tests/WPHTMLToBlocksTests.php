@@ -146,7 +146,29 @@ HTML
         }
 
         $this->assertEquals( file_get_contents( $output_file ), $blocks );
-        
+    }
+
+    public function test_xhtml_to_blocks_conversion() {
+        $input = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Hello, world!</h1>
+        <p>And some content</p>
+    </body>
+</html>
+XML;
+        $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $input ) );
+        $converter->convert( $input );
+        $blocks = $converter->get_block_markup();
+        $expected = <<<HTML
+<!-- wp:heading {"level":1} --><h1>Hello, world! </h1><!-- /wp:heading --><!-- wp:paragraph --><p>And some content </p><!-- /wp:paragraph -->
+HTML;
+        $this->assertEquals(
+            $this->normalize_markup( $expected ),
+            $this->normalize_markup( $blocks )
+        );
     }
 
 }
