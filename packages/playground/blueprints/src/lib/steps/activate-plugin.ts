@@ -1,8 +1,6 @@
 import { phpVar } from '@php-wasm/util';
 import { StepHandler } from '.';
 import { logger } from '@php-wasm/logger';
-import { PHPResponse } from '@php-wasm/universal';
-
 /**
  * @inheritDoc activatePlugin
  * @example
@@ -40,7 +38,7 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	progress?.tracker.setCaption(`Activating ${pluginName || pluginPath}`);
 
 	const docroot = await playground.documentRoot;
-	const result = await playground.run({
+	const activatePluginResult = await playground.run({
 		code: `<?php
 			define( 'WP_ADMIN', true );
 			require_once( ${phpVar(docroot)}. "/wp-load.php" );
@@ -66,40 +64,57 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 				}
 			}
 
-			if ( null === $response ) {
-				die('Plugin activated successfully');
-			} else if ( is_wp_error( $response ) ) {
-				throw new Exception( $response->get_error_message() );
+			if (is_wp_error($response)) {
+				throw new Error($response->get_error_message());
 			}
-
-			throw new Exception( 'Unable to activate plugin' );
 		`,
 	});
 
 	/**
-	 * A valid plugin activation response is either
-	 * a 200 status code response with the text 'Plugin activated successfully'
-	 * or a redirect status code (300-399) response with the text ''
+	 * Instead of checking the plugin activation response,
+	 * check if the plugin is active by looking at the active plugins list.
 	 *
-	 * Some plugins redirect on activation.
+	 * Relying on the plugin activation response is not reliable because if the plugin activation
+	 * produces any output, it will be threaded as an error.
+	 * See WordPress source code for more details:
+	 * https://github.com/WordPress/wordpress-develop/blob/6.7/src/wp-admin/includes/plugin.php#L733
+	 *
+	 * Because some plugins can create an output, we need to use output buffering
+	 * to ensure the 'true' response is not polluted by other outputs.
+	 * If the plugin activation fails, we will return the buffered output as it might
+	 * contain more information about the failure.
 	 */
-	function isValidActivationResponse(result: PHPResponse) {
-		return (
-			(result.httpStatusCode === 200 &&
-				result.text === 'Plugin activated successfully') ||
-			(result.httpStatusCode >= 300 &&
-				result.httpStatusCode < 400 &&
-				result.text === '')
-		);
-	}
+	const relativePluginPath = pluginPath.replace(
+		docroot + '/wp-content/plugins/',
+		''
+	);
+	const isActiveCheckResult = await playground.run({
+		code: `<?php
+			ob_start();
+			require_once( ${phpVar(docroot)}. "/wp-load.php" );
 
-	if (!isValidActivationResponse(result)) {
-		logger.debug(result);
+			$relative_plugin_path = ${phpVar(relativePluginPath)};
+			$active_plugins = get_option( 'active_plugins' );
+			foreach ( $active_plugins as $plugin ) {
+				if ( strpos( $plugin, $relative_plugin_path ) === 0 ) {
+					ob_end_clean();
+					die('true');
+				}
+			}
+			die(ob_get_flush() ?? 'false');
+		`,
+	});
+
+	if (isActiveCheckResult.text !== 'true') {
+		logger.debug(activatePluginResult.text);
+		if (isActiveCheckResult.text !== 'false') {
+			logger.debug(isActiveCheckResult.text);
+		}
 		throw new Error(
 			`Plugin ${pluginPath} could not be activated – WordPress exited with no error. ` +
 				`Sometimes, when $_SERVER or site options are not configured correctly, ` +
 				`WordPress exits early with a 301 redirect. ` +
-				`Inspect the "debug" logs in the console for more details`
+				`Inspect the "debug" logs in the console for more details.`
 		);
 	}
 };

@@ -84,4 +84,27 @@ describe('Blueprint step activatePlugin()', () => {
 
 		expect(php.fileExists(createdFilePath)).toBe(true);
 	});
+
+	it('should succeed when the plugin redirects during activation', async () => {
+		const docroot = php.documentRoot;
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin.php`,
+			`<?php
+			/**
+			 * Plugin Name: Test Plugin
+			 */
+			add_action( 'activated_plugin', function( $plugin ) {
+				if( $plugin == plugin_basename( __FILE__ ) ) {
+					wp_redirect( admin_url( 'edit.php' ) );
+					exit();
+				}
+			} );
+			`
+		);
+		await expect(async () => {
+			await activatePlugin(php, {
+				pluginPath: 'test-plugin.php',
+			});
+		}).not.toThrow();
+	});
 });
