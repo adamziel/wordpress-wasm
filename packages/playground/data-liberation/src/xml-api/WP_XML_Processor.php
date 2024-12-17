@@ -1558,7 +1558,6 @@ class WP_XML_Processor {
 				 * See https://www.w3.org/TR/xml11.xml/#sec-cdata-sect
 				 */
 				if (
-					! $this->is_closing_tag &&
 					$doc_length > $this->token_starts_at + 8 &&
 					'[' === $xml[ $this->token_starts_at + 2 ] &&
 					'C' === $xml[ $this->token_starts_at + 3 ] &&
@@ -1580,6 +1579,59 @@ class WP_XML_Processor {
 					$this->text_starts_at       = $this->token_starts_at + 9;
 					$this->text_length          = $closer_at - $this->text_starts_at;
 					$this->bytes_already_parsed = $closer_at + 3;
+					return true;
+				}
+
+				/*
+				 * Identify DOCTYPE nodes.
+				 *
+				 * See https://www.w3.org/TR/xml11.html/#dtd
+				 */
+				if (
+					$doc_length > $this->token_starts_at + 8 &&
+					'D' === $xml[ $at + 2 ] &&
+					'O' === $xml[ $at + 3 ] &&
+					'C' === $xml[ $at + 4 ] &&
+					'T' === $xml[ $at + 5 ] &&
+					'Y' === $xml[ $at + 6 ] &&
+					'P' === $xml[ $at + 7 ] &&
+					'E' === $xml[ $at + 8 ]
+				) {
+					$at += 9;
+					// Skip whitespace.
+					$at += strspn( $this->xml, " \t\f\r\n", $at );
+
+					if ( $doc_length <= $at ) {
+						$this->mark_incomplete_input( 'Unclosed DOCTYPE declaration.' );
+
+						return false;
+					}
+
+					// @TODO: Expose the "name" value instead of skipping it like that
+					$at += $this->parse_name( $at );
+
+					// Skip whitespace.
+					$at += strspn( $this->xml, " \t\f\r\n", $at );
+
+					if ( $doc_length <= $at ) {
+						$this->mark_incomplete_input( 'Unclosed DOCTYPE declaration.' );
+						return false;
+					}
+
+					if ( $this->xml[ $at ] !== '>' ) {
+						$this->last_error = self::ERROR_SYNTAX;
+						_doing_it_wrong(
+							__METHOD__,
+							__( 'Unsupported DOCTYPE syntax. Only a simple <!DOCTYPE name> is supported.' ),
+							'WP_VERSION'
+						);
+						return false;
+					}
+
+					$closer_at                  = $at;
+					$this->parser_state         = self::STATE_DOCTYPE_NODE;
+					$this->token_length         = $closer_at + 1 - $this->token_starts_at;
+					$this->bytes_already_parsed = $closer_at + 1;
 					return true;
 				}
 
@@ -2472,6 +2524,22 @@ class WP_XML_Processor {
 	}
 
 	/**
+	 * Indicates if the currently matched tag is expected to be closed.
+	 * Returns true for tag openers (<div>) and false for empty elements (<img />) and tag closers (</div>).
+	 *
+	 * This method exists to provide a consistent interface with WP_HTML_Processor.
+	 *
+	 * @return bool Whether the tag is expected to be closed.
+	 */
+	public function expects_closer() {
+		if ( self::STATE_MATCHED_TAG !== $this->parser_state ) {
+			return false;
+		}
+
+		return $this->is_tag_opener() && ! $this->is_empty_element();
+	}
+
+	/**
 	 * Indicates if the currently matched tag is an empty element tag.
 	 *
 	 * XML tags ending with a solidus ("/") are parsed as empty elements. They have no
@@ -2603,6 +2671,9 @@ class WP_XML_Processor {
 
 			case self::STATE_CDATA_NODE:
 				return '#cdata-section';
+
+			case self::STATE_DOCTYPE_NODE:
+				return '#doctype';
 
 			case self::STATE_XML_DECLARATION:
 				return '#xml-declaration';
@@ -3030,10 +3101,11 @@ class WP_XML_Processor {
 					$this->last_error = self::ERROR_SYNTAX;
 					_doing_it_wrong( __METHOD__, 'Unexpected token type in prolog stage.', 'WP_VERSION' );
 				}
-
 				return $this->step();
-			case '#xml-declaration':
+			// @TODO: Fail if there's more than one <!DOCTYPE> or if <!DOCTYPE> was found before the XML declaration token.
+			case '#doctype':
 			case '#comment':
+			case '#xml-declaration':
 			case '#processing-instructions':
 				return true;
 			case '#tag':
@@ -3392,6 +3464,18 @@ class WP_XML_Processor {
 	 * @access private
 	 */
 	const STATE_CDATA_NODE = 'STATE_CDATA_NODE';
+
+	/**
+	 * Parser DOCTYPE Node State.
+	 *
+	 * Indicates that the parser has found a DOCTYPE declaration and it's possible
+	 * to read and modify its modifiable text.
+	 *
+	 * @since WP_VERSION
+	 *
+	 * @access private
+	 */
+	const STATE_DOCTYPE_NODE = 'STATE_DOCTYPE_NODE';
 
 	/**
 	 * Indicates that the parser has found an XML processing instruction.

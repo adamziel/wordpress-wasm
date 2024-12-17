@@ -5,18 +5,7 @@
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
-	/**
-	 * The HTML document to convert.
-	 *
-	 * @var string
-	 */
-	protected $html;
-
-	/**
-	 * The emitted entities.
-	 *
-	 * @var array
-	 */
+	protected $html_processor;
 	protected $entities;
 
 	/**
@@ -32,16 +21,11 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	 * @var int
 	 */
 	protected $post_id;
+	protected $last_error;
 
-	/**
-	 * Constructs the reader.
-	 *
-	 * @param string $html The HTML document to convert.
-	 * @param int $post_id The ID to use as `post_id` of the emitted post entity.
-	 */
-	public function __construct( $html, $post_id ) {
-		$this->html    = $html;
-		$this->post_id = $post_id;
+	public function __construct( $html_processor, $post_id ) {
+		$this->html_processor = $html_processor;
+		$this->post_id        = $post_id;
 	}
 
 	/**
@@ -66,8 +50,9 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		}
 
 		// We did not read any entities yet. Let's convert the HTML document into entities.
-		$converter = new WP_HTML_To_Blocks( $this->html );
+		$converter = new WP_HTML_To_Blocks( $this->html_processor );
 		if ( false === $converter->convert() ) {
+			$this->last_error = $converter->get_last_error();
 			return false;
 		}
 
@@ -135,6 +120,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	 * @return string|null The last error, or null if there was no error.
 	 */
 	public function get_last_error(): ?string {
-		return null;
+		return $this->last_error;
 	}
 }

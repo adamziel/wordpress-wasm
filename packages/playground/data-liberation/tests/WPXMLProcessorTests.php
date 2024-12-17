@@ -1749,4 +1749,46 @@ class WPXMLProcessorTests extends TestCase {
 		$this->assertEquals( 'Hello there', $resumed->get_modifiable_text(), 'Did not find the expected text.' );
 	}
 
+	/**
+	 * @ticket 61365
+	 * 
+	 * @covers WP_XML_Processor::next_token
+	 */
+	public function test_doctype_parsing() {
+		$processor = WP_XML_Processor::create_from_string(
+			'<!DOCTYPE html><root>Content</root>'
+		);
+
+		$this->assertTrue( $processor->next_token(), 'Did not find DOCTYPE node' );
+		$this->assertEquals( '#doctype', $processor->get_token_type(), 'Did not find DOCTYPE node' );
+		$this->assertTrue( $processor->next_token(), 'Did not find root tag' );
+		$this->assertEquals( 'root', $processor->get_tag(), 'Did not find root tag' );
+	}
+
+	/**
+	 * @ticket 61365
+	 * 
+	 * @covers WP_XML_Processor::next_token
+	 */
+	public function test_unsupported_doctype_parsing() {
+		$processor = WP_XML_Processor::create_from_string(
+			'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"><root>Content</root>'
+		);
+
+		$this->assertFalse( $processor->next_token(), 'Did not reject complex DOCTYPE' );
+		$this->assertEquals( 'syntax', $processor->get_last_error(), 'Did not set syntax error' );
+	}
+
+	public function test_doctype_in_tag_content_is_syntax_error() {
+		$processor = WP_XML_Processor::create_from_string(
+			'<root>Content<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"></root>'
+		);
+
+		$processor->next_token();
+		$processor->next_token();
+
+		$this->assertFalse( $processor->next_token(), 'Did not reject DOCTYPE in tag content' );
+		$this->assertEquals( 'syntax', $processor->get_last_error(), 'Did not set syntax error' );
+	}
+
 }

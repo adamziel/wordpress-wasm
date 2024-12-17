@@ -28,14 +28,15 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 
 	private $state       = self::STATE_READY;
 	private $block_stack = array();
-	private $html;
+	private $markup_processor;
 	private $ignore_text            = false;
 	private $in_ephemeral_paragraph = false;
 	private $block_markup           = '';
 	private $metadata               = array();
+	private $last_error             = null;
 
 	public function __construct( $html ) {
-		$this->html = WP_HTML_Processor::create_fragment( $html );
+		$this->markup_processor = WP_HTML_Processor::create_fragment( $html );
 	}
 
 	/**
@@ -46,13 +47,13 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			return false;
 		}
 
-		while ( $this->html->next_token() ) {
-			switch ( $this->html->get_token_type() ) {
+		while ( $this->markup_processor->next_token() ) {
+			switch ( $this->markup_processor->get_token_type() ) {
 				case '#text':
 					if ( $this->ignore_text ) {
 						break;
 					}
-					$this->append_html( htmlspecialchars( $this->html->get_modifiable_text() ) );
+					$this->append_html( htmlspecialchars( $this->markup_processor->get_modifiable_text() ) );
 					break;
 				case '#tag':
 					$this->handle_tag();
@@ -60,7 +61,13 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			}
 		}
 
+		if ( $this->markup_processor->get_last_error() ) {
+			$this->last_error = $this->markup_processor->get_last_error();
+			return false;
+		}
+
 		$this->close_ephemeral_paragraph();
+
 		return true;
 	}
 
@@ -93,8 +100,8 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	 * or metadata.
 	 */
 	private function handle_tag() {
-		$html          = $this->html;
-		$tag           = $html->get_tag();
+		$html          = $this->markup_processor;
+		$tag           = strtoupper( $html->get_tag() );
 		$tag_lowercase = strtolower( $tag );
 
 		$is_opener   = ! $html->is_tag_closer() && $html->expects_closer();
@@ -130,9 +137,9 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				$this->push_block( 'html' );
 				$template = new \WP_HTML_Tag_Processor( '<input>' );
 				$template->next_tag();
-				$attrs = $this->html->get_attribute_names_with_prefix( '' );
+				$attrs = $this->markup_processor->get_attribute_names_with_prefix( '' );
 				foreach ( $attrs as $attr ) {
-					$template->set_attribute( $attr, $this->html->get_attribute( $attr ) );
+					$template->set_attribute( $attr, $this->markup_processor->get_attribute( $attr ) );
 				}
 				$this->append_html( htmlspecialchars( $template->get_updated_html() ) );
 				$this->pop_block();
@@ -337,7 +344,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	}
 
 	private function is_at_inline_code_element() {
-		$breadcrumbs = $this->html->get_breadcrumbs();
+		$breadcrumbs = $this->markup_processor->get_breadcrumbs();
 		foreach ( $breadcrumbs as $tag ) {
 			switch ( $tag ) {
 				case 'A':
@@ -424,5 +431,9 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			$this->block_markup          .= WP_Import_Utils::block_closer( 'paragraph' );
 			$this->in_ephemeral_paragraph = false;
 		}
+	}
+
+	public function get_last_error() {
+		return $this->last_error;
 	}
 }
