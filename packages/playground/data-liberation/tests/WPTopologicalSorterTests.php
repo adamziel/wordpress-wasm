@@ -117,7 +117,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 		$this->assertSame( 'publish', $post->post_status );
 		$this->assertSame( 0, $post->post_parent );
 		$cats = wp_get_post_categories( $post->ID );
-		// $this->assertCount( 27, $cats );
+		$this->assertCount( 27, $cats );
 
 		$post = $posts[1];
 		$this->assertSame( 'Non-standard post format', $post->post_title );

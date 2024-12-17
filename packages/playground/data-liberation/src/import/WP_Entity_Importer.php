@@ -698,6 +698,37 @@ class WP_Entity_Importer {
 		}
 		$this->mark_post_exists( $data, $post_id );
 
+		// Add terms to the post
+		if ( ! empty( $data['terms'] ) ) {
+			$terms_to_set = array();
+
+			foreach ( $data['terms'] as $term ) {
+				print_r( $term );
+				// Back compat with WXR 1.0 map 'tag' to 'post_tag'
+				$taxonomy    = ( 'tag' === $term['taxonomy'] ) ? 'post_tag' : $term['taxonomy'];
+				$term_exists = term_exists( $term['slug'], $taxonomy );
+				$term_id     = is_array( $term_exists ) ? $term_exists['term_id'] : $term_exists;
+
+				if ( ! $term_id ) {
+					$new_term = wp_insert_term( $term['name'], $taxonomy, array( 'slug' => $term['slug'] ) );
+
+					if ( ! is_wp_error( $new_term ) ) {
+						$term_id = $new_term['term_id'];
+
+						$this->topological_sorter->map_entity( 'term', $new_term, $term_id );
+					} else {
+						continue;
+					}
+				}
+				$terms_to_set[ $taxonomy ][] = intval( $term_id );
+			}
+
+			foreach ( $terms_to_set as $tax => $ids ) {
+				// Add the post terms to the post
+				wp_set_post_terms( $post_id, $ids, $tax );
+			}
+		}
+
 		$this->logger->info(
 			sprintf(
 				/* translators: 1: post title, 2: post type name */
