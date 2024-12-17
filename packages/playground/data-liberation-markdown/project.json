@@ -1,0 +1,45 @@
+{
+	"name": "playground-data-liberation-markdown",
+	"$schema": "../../../node_modules/nx/schemas/project-schema.json",
+	"sourceRoot": "packages/playground/data-liberation-markdown",
+	"projectType": "library",
+	"targets": {
+		"install": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation-markdown",
+				"commands": ["composer install"],
+				"parallel": false
+			}
+		},
+		"build:phar": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation-markdown",
+				"commands": ["bash ./phar-build.sh"],
+				"parallel": false
+			},
+			"dependsOn": ["playground-data-liberation:build:phar"]
+		},
+		"lint:php": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation-markdown",
+				"commands": [
+					"../data-liberation/vendor/bin/phpcs --standard=./phpcs.xml -s ./src ./*.php"
+				],
+				"parallel": false
+			}
+		},
+		"lint:php:fix": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "packages/playground/data-liberation-markdown",
+				"commands": [
+					"../data-liberation/vendor/bin/phpcbf --standard=./phpcs.xml ./src"
+				],
+				"parallel": false
+			}
+		}
+	}
+}

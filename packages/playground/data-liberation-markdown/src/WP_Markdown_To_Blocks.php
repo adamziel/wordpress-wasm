@@ -80,10 +80,10 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 		$parser = new MarkdownParser( $environment );
 
 		$document          = $parser->parse( $this->markdown );
-		$this->frontmatter = [];
-		foreach( $document->data as $key => $value ) {
+		$this->frontmatter = array();
+		foreach ( $document->data as $key => $value ) {
 			// Use an array as a value to comply with the WP_Block_Markup_Converter interface.
-			$this->frontmatter[ $key ] = [$value];
+			$this->frontmatter[ $key ] = array( $value );
 		}
 
 		$walker = $document->walker();

@@ -44,6 +44,7 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
+require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Converter.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
@@ -63,7 +64,6 @@ require_once __DIR__ . '/src/import/WP_Import_Session.php';
 require_once __DIR__ . '/src/import/WP_Stream_Importer.php';
 require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
-require_once __DIR__ . '/src/import/WP_Markdown_Importer.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 
