@@ -74,6 +74,10 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	 * Instead of checking the plugin activation response,
 	 * check if the plugin is active by looking at the active plugins list.
 	 *
+	 * We have to split the activation and the check into two PHP runs
+	 * because some plugins might redirect during activation,
+	 * which would prevent any output that happens after activation from being returned.
+	 *
 	 * Relying on the plugin activation response is not reliable because if the plugin activation
 	 * produces any output, it will be threaded as an error.
 	 * See WordPress source code for more details:
@@ -84,16 +88,14 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	 * If the plugin activation fails, we will return the buffered output as it might
 	 * contain more information about the failure.
 	 */
-	const relativePluginPath = pluginPath.replace(
-		docroot + '/wp-content/plugins/',
-		''
-	);
 	const isActiveCheckResult = await playground.run({
 		code: `<?php
 			ob_start();
 			require_once( ${phpVar(docroot)}. "/wp-load.php" );
 
-			$relative_plugin_path = ${phpVar(relativePluginPath)};
+			$relative_plugin_path = str_replace( ${phpVar(
+				docroot
+			)}. "/wp-content/plugins/", '', ${phpVar(pluginPath)} );
 			$active_plugins = get_option( 'active_plugins' );
 			foreach ( $active_plugins as $plugin ) {
 				if ( strpos( $plugin, $relative_plugin_path ) === 0 ) {
