@@ -1,0 +1,39 @@
+<ruleset name="WordPressStandard">
+    <description>PHP 7.0 compatibility.</description>
+    <config name="testVersion" value="7.2"/>
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <rule ref="PHPCompatibility">
+        <exclude name="PHPCompatibility.Keywords.ForbiddenNamesAsDeclared"/>
+    </rule>
+	<rule ref="WordPress-Core">
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <exclude name="Generic.PHP.DiscourageGoto.Found"/>
+        <exclude name="Generic.CodeAnalysis.EmptyStatement.DetectedIf"/>
+        <!-- Unused arguments are necessary when inheriting from classes and overriding methods. -->
+        <exclude name="Generic.CodeAnalysis.UnusedFunctionParameter.Found"/>
+        <exclude name="Squiz.PHP.NonExecutableCode.Unreachable"/>
+        <exclude name="Squiz.Commenting.BlockComment.CloserSameLine"/>
+        <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+        <exclude name="Squiz.Commenting.FileComment.WrongStyle"/>
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamTag"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamType"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamComment"/>
+        <exclude name="Squiz.Commenting.VariableComment.Missing"/>
+        <exclude name="Squiz.PHP.CommentedOutCode.Found"/>
+        <!-- "Parameter comment must end with a full stop" is such a pebble in the shoe. -->
+        <exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+        <exclude name="Squiz.PHP.DisallowSizeFunctionsInLoops.Found"/>
+        <!-- Aligning the 1500 lines of public_suffix_list.php adds a lot of unnecessary noise and then
+             the actual indentation is not even correct because the rule seems to cound bytes, not printable
+             UTF-8 characteds. -->
+        <exclude name="WordPress.Arrays.MultipleStatementAlignment.DoubleArrowNotAligned"/>
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+        <exclude name="WordPress.PHP.YodaConditions.NotYoda"/>
+        <exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
+        <exclude name="WordPress.WP.AlternativeFunctions"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.file_system_operations_fclose"/>
+    </rule>
+</ruleset>
