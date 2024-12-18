@@ -26,7 +26,7 @@ describe('Blueprint step activatePlugin()', () => {
 	});
 
 	it('should activate the plugin', async () => {
-		const docroot = php.documentRoot;
+		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php /**\n * Plugin Name: Test Plugin */`
@@ -46,7 +46,7 @@ describe('Blueprint step activatePlugin()', () => {
 	});
 
 	it('should detect a silent failure in activating the plugin', async () => {
-		const docroot = php.documentRoot;
+		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php /**\n * Plugin Name: Test Plugin */`
@@ -65,7 +65,7 @@ describe('Blueprint step activatePlugin()', () => {
 	});
 
 	it('should run the activation hooks as a priviliged user', async () => {
-		const docroot = php.documentRoot;
+		const docroot = handler.documentRoot;
 		const createdFilePath =
 			docroot + '/activation-ran-as-a-priviliged-user.txt';
 		php.writeFile(
@@ -86,7 +86,7 @@ describe('Blueprint step activatePlugin()', () => {
 	});
 
 	it('should succeed when the plugin redirects during activation', async () => {
-		const docroot = php.documentRoot;
+		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php
@@ -109,7 +109,7 @@ describe('Blueprint step activatePlugin()', () => {
 	});
 
 	it('should activate the plugin if it produces output during activation', async () => {
-		const docroot = php.documentRoot;
+		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php
@@ -119,6 +119,22 @@ describe('Blueprint step activatePlugin()', () => {
 			echo 'Hello World';
 			`
 		);
+		await expect(async () => {
+			await activatePlugin(php, {
+				pluginPath: 'test-plugin.php',
+			});
+		}).not.toThrow();
+	});
+
+	it('should successfully complete plugin activation when the plugin is already active', async () => {
+		const docroot = handler.documentRoot;
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+		await activatePlugin(php, {
+			pluginPath: 'test-plugin.php',
+		});
 		await expect(async () => {
 			await activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
