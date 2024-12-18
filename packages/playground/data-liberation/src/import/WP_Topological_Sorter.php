@@ -6,17 +6,15 @@
  * table. The first time we process an entity, it is mapped to the original ID
  * and no mapped ID. From the second time, it is mapped to the mapped ID.
  *
- * When the WP_Entity_Importer class read raw data from the source stream it
- * filters the data with the 'wxr_importer_pre_process_*' filters. This is used
- * to map the original IDs to the mapped IDs. This can change in the future and
- * have the entity importer call the sorter directly.
+ * When the WP_Entity_Importer or similar class read raw data from the source
+ * stream that is used to map the original IDs to the mapped IDs.
  *
- * The first STAGE_TOPOLOGICAL_SORT stage do save all the entities with no mapped
- * IDs. So during the STAGE_IMPORT_ENTITIES step the WP_Entity_Importer class
- * read already inserted data and save them. From that moment all the entities
- * have the IDs created using wp_insert_post(), wp_insert_comment(),
- * wp_insert_term(), wp_insert_comment_meta(), wp_insert_post_meta() and
- * wp_insert_term_meta() calls.
+ * The first STAGE_TOPOLOGICAL_SORT stage do save all the entities with no
+ * mapped IDs. So during the STAGE_IMPORT_ENTITIES step the WP_Entity_Importer
+ * or similar class read already inserted data and save them. From that moment
+ * all the entities have the IDs created using wp_insert_post(),
+ * wp_insert_comment(), wp_insert_term(), wp_insert_comment_meta(),
+ * wp_insert_post_meta() and wp_insert_term_meta() calls.
  */
 class WP_Topological_Sorter {
 
@@ -55,11 +53,17 @@ class WP_Topological_Sorter {
 	);
 
 	/**
-	 * Set the current session ID and add the filters and actions.
+	 * Set the current session ID.
 	 */
 	public function __construct( $options = array() ) {
 		if ( array_key_exists( 'session_id', $options ) ) {
-			$this->current_session = $options['session_id'];
+			$this->set_session( $options['session_id'] );
+		} else {
+			$active_session = WP_Import_Session::get_active();
+
+			if ( $active_session ) {
+				$this->set_session( $active_session->get_id() );
+			}
 		}
 	}
 
@@ -81,15 +85,16 @@ class WP_Topological_Sorter {
 	public static function activate() {
 		global $wpdb;
 
-		// See wp_get_db_schema
+		// See wp_get_db_schema.
 		$max_index_length = 191;
 
 		/**
-		 * This is a table used to map the IDs of the imported entities. It is used to map all the IDs of the entities.
+		 * This is a table used to map the IDs of the imported entities. It is
+		 * used to map all the IDs of the entities.
 		 *
 		 * @param int $id The ID of the entity.
 		 * @param int $session_id The current session ID.
-		 * @param int $entity_type The type of the entity, comment, comment_meta, post, post_meta, term, or term_meta.
+		 * @param int $entity_type The type of the entity, comment, etc.
 		 * @param string $entity_id The ID of the entity before the import.
 		 * @param string $mapped_id The mapped ID of the entity after the import.
 		 * @param string $parent_id The parent ID of the entity.
@@ -124,7 +129,8 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Run by register_deactivation_hook.
+	 * Run by register_deactivation_hook. It drops the table and deletes the
+	 * option.
 	 */
 	public static function deactivate() {
 		global $wpdb;
@@ -138,10 +144,19 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Run by register_uninstall_hook.
+	 * Reset the class.
 	 */
 	public function reset() {
-		$this->current_session = null;
+		$this->set_session( null );
+	}
+
+	/**
+	 * Set the current session ID.
+	 *
+	 * @param int|null $session_id The session ID.
+	 */
+	public function set_session( $session_id ) {
+		$this->current_session = $session_id;
 	}
 
 	/**
@@ -150,12 +165,12 @@ class WP_Topological_Sorter {
 	 * @param int $session_id The session ID to delete rows for.
 	 * @return int|false The number of rows deleted, or false on error.
 	 */
-	public function delete_session( $session_id ) {
+	public function delete_session( $session_id = null ) {
 		global $wpdb;
 
 		return $wpdb->delete(
 			self::get_table_name(),
-			array( 'session_id' => $session_id ),
+			array( 'session_id' => $session_id ?? $this->current_session ),
 			array( '%d' )
 		);
 	}
@@ -256,7 +271,7 @@ class WP_Topological_Sorter {
 	}
 
 	/**
-	 * Get a mapped entity. Called from 'wxr_importer_pre_process_*' filter.
+	 * Get a mapped entity.
 	 *
 	 * @param int $entity The entity to get the mapped ID for.
 	 * @param int $id The ID of the entity.

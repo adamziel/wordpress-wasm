@@ -326,6 +326,8 @@ class WP_Stream_Importer {
 				$this->next_stage = self::STAGE_FINISHED;
 				return false;
 			case self::STAGE_FINISHED:
+				// Flush away the topological sorter session.
+				$this->topological_sorter->delete_session();
 				return false;
 		}
 	}
