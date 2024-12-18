@@ -86,7 +86,7 @@ class WP_Import_Utils {
 		}
 
 		return array(
-			'content' => trim( $title ),
+			'h1_content' => trim( $title ),
 			'remaining_html' => substr(
 				$html,
 				$p->get_string_index_after_current_token()

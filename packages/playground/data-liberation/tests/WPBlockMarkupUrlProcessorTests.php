@@ -7,7 +7,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 
     public function test_next_url_in_current_token_returns_false_when_no_url_is_found()
     {
-        $p = new WP_Block_Markup_Url_Processor('Text without URLs');
+        $p = WP_Block_Markup_Url_Processor::create_from_html('Text without URLs');
 		$this->assertFalse( $p->next_url_in_current_token() );
     }
 
@@ -17,7 +17,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
      */
     public function test_next_url_finds_the_url($url, $markup, $base_url='https://wordpress.org')
     {
-        $p = new WP_Block_Markup_Url_Processor($markup, $base_url);
+        $p = WP_Block_Markup_Url_Processor::create_from_html($markup, $base_url);
 		$this->assertTrue( $p->next_url(), 'Failed to find the URL in the markup.' );
 		$this->assertEquals($url, $p->get_raw_url(), 'Found a URL in the markup, but it wasn\'t the expected one.');
     }
@@ -77,7 +77,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 
 	public function test_next_url_returns_false_once_theres_no_more_urls(  ) {
 		$markup = '<img longdesc="https://first-url.org" src="https://mysite.com/wp-content/image.png">';
-		$p = new WP_Block_Markup_Url_Processor( $markup );
+		$p = WP_Block_Markup_Url_Processor::create_from_html( $markup );
 		$this->assertTrue( $p->next_url(), 'Failed to find the URL in the markup.' );
 		$this->assertTrue( $p->next_url(), 'Failed to find the URL in the markup.' );
 		$this->assertFalse( $p->next_url(), 'Found more URLs than expected.' );
@@ -85,7 +85,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 
 	public function test_next_url_finds_urls_in_multiple_attributes(  ) {
 		$markup = '<img longdesc="https://first-url.org" src="https://mysite.com/wp-content/image.png">';
-		$p = new WP_Block_Markup_Url_Processor( $markup );
+		$p = WP_Block_Markup_Url_Processor::create_from_html( $markup );
 		$this->assertTrue( $p->next_url(), 'Failed to find the URL in the markup.' );
 		$this->assertEquals( 'https://first-url.org', $p->get_raw_url(), 'Found a URL in the markup, but it wasn\'t the expected one.' );
 
@@ -95,7 +95,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 
 	public function test_next_url_finds_urls_in_multiple_tags(  ) {
 		$markup = '<img longdesc="https://first-url.org" src="https://mysite.com/wp-content/image.png"><a href="https://third-url.org">';
-		$p = new WP_Block_Markup_Url_Processor( $markup );
+		$p = WP_Block_Markup_Url_Processor::create_from_html( $markup );
 		$this->assertTrue( $p->next_url(), 'Failed to find the URL in the markup.' );
 		$this->assertEquals( 'https://first-url.org', $p->get_raw_url(), 'Found a URL in the markup, but it wasn\'t the expected one.' );
 
@@ -112,7 +112,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 	 */
 	public function test_set_url($markup, $new_url, $new_markup)
 	{
-		$p = new WP_Block_Markup_Url_Processor($markup);
+		$p = WP_Block_Markup_Url_Processor::create_from_html($markup);
 		$this->assertTrue($p->next_url(), 'Failed to find the URL in the markup.');
 		$this->assertTrue($p->set_raw_url($new_url), 'Failed to set the URL in the markup.');
 		$this->assertEquals($new_markup, $p->get_updated_html(), 'Failed to set the URL in the markup.');
@@ -141,7 +141,7 @@ class WPBlockMarkupUrlProcessorTests extends TestCase
 
 	public function test_set_url_complex_test_case()
 	{
-		$p = new WP_Block_Markup_Url_Processor(
+		$p = WP_Block_Markup_Url_Processor::create_from_html(
 			<<<HTML
 <!-- wp:image {"src": "https://mysite.com/wp-content/image.png", "meta": {"src": "https://mysite.com/wp-content/image.png"}} -->
 	<img src="https://mysite.com/wp-content/image.png">
@@ -189,7 +189,7 @@ HTML,
 	}
 
 	public function test_next_url_replace_the_url_for_simple_text() {
-		$p = new WP_Block_Markup_Url_Processor(
+		$p = WP_Block_Markup_Url_Processor::create_from_html(
 			'https://example.com/test/?page_id=1',
 			'https://example.com/'
 		);

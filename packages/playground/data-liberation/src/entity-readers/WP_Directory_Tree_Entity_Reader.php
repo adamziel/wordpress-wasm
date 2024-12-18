@@ -17,6 +17,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 	private $pending_files = array();
 	private $parent_ids    = array();
 	private $next_post_id;
+	private $create_root_page;
 	private $is_finished          = false;
 	private $entities_read_so_far = 0;
 	private $allowed_extensions   = array();
@@ -28,16 +29,24 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		$options
 	) {
 		if ( ! isset( $options['root_dir'] ) ) {
-			throw new \Exception( 'Missing required options: root_dir' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: root_dir', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['first_post_id'] ) ) {
-			throw new \Exception( 'Missing required options: first_post_id' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: first_post_id', '1.0.0' );
+			return false;
+		}
+		if ( 1 === $options['first_post_id'] ) {
+			_doing_it_wrong( __FUNCTION__, 'First post ID must be greater than 1', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['allowed_extensions'] ) ) {
-			throw new \Exception( 'Missing required options: allowed_extensions' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: allowed_extensions', '1.0.0' );
+			return false;
 		}
 		if ( ! isset( $options['index_file_patterns'] ) ) {
-			throw new \Exception( 'Missing required options: index_file_patterns' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: index_file_patterns', '1.0.0' );
+			return false;
 		}
 		/**
 		 * @TODO: Use `sub_entity_reader_factory` instead of `markup_converter_factory`
@@ -46,7 +55,8 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		 *        from the files, not just the post_content.
 		 */
 		if ( ! isset( $options['markup_converter_factory'] ) ) {
-			throw new \Exception( 'Missing required options: markup_converter_factory' );
+			_doing_it_wrong( __FUNCTION__, 'Missing required options: markup_converter_factory', '1.0.0' );
+			return false;
 		}
 		return new self( $filesystem, $options );
 	}
@@ -57,6 +67,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 	) {
 		$this->file_visitor             = new \WordPress\Filesystem\WP_Filesystem_Visitor( $filesystem, $options['root_dir'] );
 		$this->filesystem               = $filesystem;
+		$this->create_root_page         = $options['create_root_page'] ?? false;
 		$this->next_post_id             = $options['first_post_id'];
 		$this->allowed_extensions       = $options['allowed_extensions'];
 		$this->index_file_patterns      = $options['index_file_patterns'];
@@ -70,66 +81,69 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 				$depth     = $this->file_visitor->get_current_depth();
 				$parent_id = $this->parent_ids[ $depth - 1 ] ?? null;
 
-				if ( null === $parent_id && $depth > 1 ) {
-					// There's no parent ID even though we're a few levels deep.
-					// This is a scenario where `next_file()` skipped a few levels
-					// of directories with no relevant content in them:
-					//
-					// - /docs/
-					//   - /foo/
-					//     - /bar/
-					//       - /baz.md
-					//
-					// In this case, we need to backtrack and create the missing
-					// parent pages for /bar/ and /foo/.
+				// Don't create a parent page for the root directory.
+				if ( $depth > 1 || $this->create_root_page ) {
+					if ( null === $parent_id && $depth > 1 ) {
+						// There's no parent ID even though we're a few levels deep.
+						// This is a scenario where `next_file()` skipped a few levels
+						// of directories with no relevant content in them:
+						//
+						// - /docs/
+						//   - /foo/
+						//     - /bar/
+						//       - /baz.md
+						//
+						// In this case, we need to backtrack and create the missing
+						// parent pages for /bar/ and /foo/.
 
-					// Find the topmost missing parent ID
-					$missing_parent_id_depth = 1;
-					while ( isset( $this->parent_ids[ $missing_parent_id_depth ] ) ) {
-						++$missing_parent_id_depth;
+						// Find the topmost missing parent ID
+						$missing_parent_id_depth = 1;
+						while ( isset( $this->parent_ids[ $missing_parent_id_depth ] ) ) {
+							++$missing_parent_id_depth;
+						}
+
+						// Move up to the corresponding directory
+						$missing_parent_path = $dir;
+						for ( $i = $missing_parent_id_depth; $i < $depth; $i++ ) {
+							$missing_parent_path = dirname( $missing_parent_path );
+						}
+
+						$this->parent_ids[ $missing_parent_id_depth ] = $this->emit_post_entity(
+							array(
+								'content' => '',
+								'source_path' => $missing_parent_path,
+								'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ] ?? null,
+								'title_fallback' => WP_Import_Utils::slug_to_title( basename( $missing_parent_path ) ),
+							)
+						);
+					} elseif ( false === $this->pending_directory_index ) {
+						// No directory index candidate – let's create a fake page
+						// just to have something in the page tree.
+						$this->parent_ids[ $depth ] = $this->emit_post_entity(
+							array(
+								'content' => '',
+								'source_path' => $dir,
+								'parent_id' => $parent_id,
+								'title_fallback' => WP_Import_Utils::slug_to_title( basename( $dir ) ),
+							)
+						);
+						// We're no longer looking for a directory index.
+						$this->pending_directory_index = null;
+					} else {
+						$file_path                  = $this->pending_directory_index;
+						$this->parent_ids[ $depth ] = $this->emit_post_entity(
+							array(
+								'content' => $this->filesystem->read_file( $file_path ),
+								'source_path' => $file_path,
+								'parent_id' => $parent_id,
+								'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
+							)
+						);
+						// We're no longer looking for a directory index.
+						$this->pending_directory_index = null;
 					}
-
-					// Move up to the corresponding directory
-					$missing_parent_path = $dir;
-					for ( $i = $missing_parent_id_depth; $i < $depth; $i++ ) {
-						$missing_parent_path = dirname( $missing_parent_path );
-					}
-
-					$this->parent_ids[ $missing_parent_id_depth ] = $this->emit_post_entity(
-						array(
-							'content' => '',
-							'source_path' => $missing_parent_path,
-							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ],
-							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $missing_parent_path ) ),
-						)
-					);
-				} elseif ( false === $this->pending_directory_index ) {
-					// No directory index candidate – let's create a fake page
-					// just to have something in the page tree.
-					$this->parent_ids[ $depth ] = $this->emit_post_entity(
-						array(
-							'content' => '',
-							'source_path' => $dir,
-							'parent_id' => $parent_id,
-							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $dir ) ),
-						)
-					);
-					// We're no longer looking for a directory index.
-					$this->pending_directory_index = null;
-				} else {
-					$file_path                  = $this->pending_directory_index;
-					$this->parent_ids[ $depth ] = $this->emit_post_entity(
-						array(
-							'content' => $this->filesystem->read_file( $file_path ),
-							'source_path' => $file_path,
-							'parent_id' => $parent_id,
-							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
-						)
-					);
-					// We're no longer looking for a directory index.
-					$this->pending_directory_index = null;
+					return true;
 				}
-				return true;
 			}
 
 			while ( count( $this->pending_files ) ) {
@@ -168,7 +182,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		if ( ! $post_title ) {
 			$removed_title = WP_Import_Utils::remove_first_h1_block_from_block_markup( $block_markup );
 			if ( false !== $removed_title ) {
-				$post_title   = $removed_title['title'];
+				$post_title   = $removed_title['h1_content'];
 				$block_markup = $removed_title['remaining_html'];
 			}
 		}

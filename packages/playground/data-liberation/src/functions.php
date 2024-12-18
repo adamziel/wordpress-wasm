@@ -38,7 +38,7 @@ function wp_rewrite_urls( $options ) {
 		);
 	}
 
-	$p = new WP_Block_Markup_Url_Processor( $options['block_markup'], $options['base_url'] );
+	$p = WP_Block_Markup_Url_Processor::create_from_html( $options['block_markup'], $options['base_url'] );
 	while ( $p->next_url() ) {
 		$parsed_url = $p->get_parsed_url();
 		foreach ( $url_mapping as $mapping ) {

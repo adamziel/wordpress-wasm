@@ -39,46 +39,6 @@ add_filter(
 	}
 );
 
-/**
- * Import static pages from a disk, if one exists.
- */
-function import_static_pages() {
-	$static_root = WP_CONTENT_DIR . '/uploads/static-pages';
-	if ( ! is_dir( $static_root ) ) {
-		return;
-	}
-	$reader = WP_Directory_Tree_Entity_Reader::create(
-		new WP_Filesystem(),
-		array (
-			'root_dir' => $static_root,
-			'first_post_id' => 1,
-			'allowed_extensions' => array( 'md' ),
-			'index_file_patterns' => array( '#^index\.md$#' ),
-			'markup_converter_factory' => function( $content ) {
-				return new WP_Markdown_To_Blocks( $content );
-			},
-		)
-	);
-
-	$importer = WP_Stream_Importer::create(
-		function () use ( $reader ) {
-			return $reader;
-		},
-		array(),
-		null
-	);
-
-	$import_session = WP_Import_Session::create(
-		array(
-			'data_source' => 'static_pages',
-			'importer' => $importer,
-		)
-	);
-
-	data_liberation_import_step( $import_session, $importer );
-}
-register_activation_hook( __FILE__, 'import_static_pages' );
-
 add_action(
 	'init',
 	function () {

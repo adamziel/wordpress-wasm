@@ -421,7 +421,7 @@ class WP_Stream_Importer {
 						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
 					} elseif ( isset( $data['post_content'] ) ) {
 						$post = $data;
-						$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
+						$p    = WP_Block_Markup_Url_Processor::create_from_html( $post['post_content'], $this->source_site_url );
 						while ( $p->next_url() ) {
 							if ( ! $this->url_processor_matched_asset_url( $p ) ) {
 								continue;
@@ -588,7 +588,7 @@ class WP_Stream_Importer {
 					$this->enqueue_attachment_download( $data['attachment_url'] );
 				} elseif ( isset( $data['post_content'] ) ) {
 					$post = $data;
-					$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
+					$p    = WP_Block_Markup_Url_Processor::create_from_html( $post['post_content'], $this->source_site_url );
 					while ( $p->next_url() ) {
 						if ( ! $this->url_processor_matched_asset_url( $p ) ) {
 							continue;
@@ -648,7 +648,7 @@ class WP_Stream_Importer {
 					if ( ! isset( $data[ $key ] ) ) {
 						continue;
 					}
-					$p = new WP_Block_Markup_Url_Processor( $data[ $key ], $this->source_site_url );
+					$p = WP_Block_Markup_Url_Processor::create_from_html( $data[ $key ], $this->source_site_url );
 					while ( $p->next_url() ) {
 						// Relative URLs are okay at this stage.
 						if ( ! $p->get_raw_url() ) {
