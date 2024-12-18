@@ -203,7 +203,7 @@ class WP_Import_Command {
 				WP_CLI::line( WP_CLI::colorize( "Stage %g{$current_stage}%n" ) );
 				$step_count = 0;
 
-				while ( $this->importer->next_step( $this->count ) ) {
+				while ( $this->importer->next_step() ) {
 					++$step_count;
 					WP_CLI::line( WP_CLI::colorize( "Step %g{$step_count}%n" ) );
 				}

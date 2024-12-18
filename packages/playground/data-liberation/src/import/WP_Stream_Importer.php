@@ -290,24 +290,22 @@ class WP_Stream_Importer {
 	/**
 	 * Calculate next steps in the import process.
 	 *
-	 * @param int $count The number of entities to process in one go.
-	 *
 	 * @return bool
 	 */
-	public function next_step( $count = 10000 ) {
+	public function next_step() {
 		switch ( $this->stage ) {
 			case self::STAGE_INITIAL:
 				$this->next_stage = self::STAGE_INDEX_ENTITIES;
 				return false;
 			case self::STAGE_INDEX_ENTITIES:
-				if ( true === $this->index_next_entities( $count ) ) {
+				if ( true === $this->index_next_entities() ) {
 					return true;
 				}
 
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				if ( true === $this->topological_sort_next_entity( $count ) ) {
+				if ( true === $this->topological_sort_next_entity() ) {
 					return true;
 				}
 
