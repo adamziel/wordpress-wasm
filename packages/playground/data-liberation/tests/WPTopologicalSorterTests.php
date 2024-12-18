@@ -331,7 +331,7 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	 *
 	 * @see https://github.com/WordPress/wordpress-importer/blob/master/phpunit/tests/term-meta.php
 	 */
-	public function _no_test_serialized_term_meta() {
+	public function test_serialized_term_meta() {
 		register_taxonomy( 'custom_taxonomy', array( 'post' ) );
 
 		$this->import_wxr_file( __DIR__ . '/wxr/test-serialized-term-meta.xml' );

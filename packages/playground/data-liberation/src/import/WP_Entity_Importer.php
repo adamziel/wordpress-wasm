@@ -458,7 +458,7 @@ class WP_Entity_Importer {
 		$term_meta_id = add_term_meta( $meta_item['term_id'], wp_slash( $meta_item['meta_key'] ), wp_slash_strings_only( $value ) );
 
 		do_action( 'wxr_importer_processed_term_meta', $term_meta_id, $meta_item, $meta_item['term_id'] );
-		$this->topological_sorter->map_entity( 'term_meta', $meta_item, $term_meta_id, $meta_item['term_id'] );
+		$this->topological_sorter->map_entity( 'term_meta', $meta_item, $meta_item['meta_key'] );
 	}
 
 	/**
