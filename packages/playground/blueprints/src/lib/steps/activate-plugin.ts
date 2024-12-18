@@ -48,7 +48,7 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 
 			$plugin_path = getenv('PLUGIN_PATH');
 			$response = false;
-			if (!is_dir($plugin_path)) {
+			if ( ! is_dir( $plugin_path)) {
 				$response = activate_plugin($plugin_path);
 			}
 
@@ -63,10 +63,10 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 				}
 			}
 
-			if (is_wp_error($response)) {
-				die($response->get_error_message());
-			} else if (false === $response) {
-				die("The activatePlugin step wasn't able to find the plugin $plugin_path.");
+			if ( is_wp_error($response) ) {
+				die( $response->get_error_message() );
+			} else if ( false === $response ) {
+				die( "The activatePlugin step wasn't able to find the plugin $plugin_path." );
 			}
 		`,
 		env: {
@@ -101,32 +101,43 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	const isActiveCheckResult = await playground.run({
 		code: `<?php
 			ob_start();
-			require_once( getenv('DOCROOT') . "/wp-load.php" );
+			require_once( getenv( 'DOCROOT' ) . "/wp-load.php" );
 
-			$plugin_directory = getenv('DOCROOT') . "/wp-content/plugins/";
-			$relative_plugin_path = getenv('PLUGIN_PATH');
-			if (strpos($relative_plugin_path, $plugin_directory) === 0) {
+			$plugin_directory = getenv( 'DOCROOT' ) . "/wp-content/plugins/";
+			$relative_plugin_path = getenv( 'PLUGIN_PATH' );
+			if ( strpos( $relative_plugin_path, $plugin_directory ) === 0 ) {
 				$relative_plugin_path = substr_replace(
 					$relative_plugin_path,
 					'',
 					0,
-					strlen($plugin_directory)
+					strlen( $plugin_directory )
 				);
 			}
+
+			$is_relative_plugin_path_a_plugin_directory_name = (
+				false === strpos( $relative_plugin_path, '/' ) &&
+				substr( $relative_plugin_path, -strlen( '.php' ) ) !== '.php'
+			);
+
 			$active_plugins = get_option( 'active_plugins' );
 			foreach ( $active_plugins as $plugin ) {
-				if ( strpos( $plugin, $relative_plugin_path ) === 0 ) {
+				if ( $relative_plugin_path === $plugin || (
+					$is_relative_plugin_path_a_plugin_directory_name &&
+					substr( $plugin, 0, strlen( $relative_plugin_path ) + 1 ) === $relative_plugin_path . '/'
+				) ) {
 					ob_end_clean();
-					die('true');
+					die( 'true' );
 				}
 			}
-			die(ob_get_flush() ?: 'false');
+			die( ob_get_flush() ?: 'false' );
 		`,
 		env: {
 			DOCROOT: docroot,
 			PLUGIN_PATH: pluginPath,
 		},
 	});
+
+	console.log(isActiveCheckResult.text);
 
 	if (isActiveCheckResult.text === 'true') {
 		return;

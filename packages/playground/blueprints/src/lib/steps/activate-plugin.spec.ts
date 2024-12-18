@@ -25,24 +25,64 @@ describe('Blueprint step activatePlugin()', () => {
 		php = await handler.getPrimaryPhp();
 	});
 
-	it('should activate the plugin', async () => {
+	it('should activate a plugin file located in the plugins directory', async () => {
 		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php /**\n * Plugin Name: Test Plugin */`
 		);
-		await activatePlugin(php, {
-			pluginPath: 'test-plugin.php',
-		});
 
-		const response = await php.run({
-			code: `<?php
-				require_once '/wordpress/wp-load.php';
-				require_once ${phpVar(docroot)}. "/wp-admin/includes/plugin.php" ;
-				echo is_plugin_active('test-plugin.php') ? 'true' : 'false';
-			`,
-		});
-		expect(response.text).toBe('true');
+		await expect(
+			activatePlugin(php, {
+				pluginPath: 'test-plugin.php',
+			})
+		).resolves.toBeUndefined();
+	});
+
+	it('should activate a plugin file located in a subdirectory of the plugins directory', async () => {
+		const docroot = handler.documentRoot;
+		const pluginDir = `${docroot}/wp-content/plugins/test-plugin`;
+		php.mkdir(pluginDir);
+		php.writeFile(
+			`${pluginDir}/test-plugin.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+
+		await expect(
+			activatePlugin(php, {
+				pluginPath: `test-plugin/test-plugin.php`,
+			})
+		).resolves.toBeUndefined();
+	});
+
+	it('should activate a plugin if the absolute plugin directory path is provided', async () => {
+		const docroot = handler.documentRoot;
+		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin/test-plugin.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+
+		await expect(
+			activatePlugin(php, {
+				pluginPath: `${docroot}/wp-content/plugins/test-plugin`,
+			})
+		).resolves.toBeUndefined();
+	});
+
+	it('should activate a plugin if only a plugin directory path is provided and the plugin file has a different name from the directory', async () => {
+		const docroot = handler.documentRoot;
+		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin/index.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+
+		await expect(
+			activatePlugin(php, {
+				pluginPath: `${docroot}/wp-content/plugins/test-plugin/index.php`,
+			})
+		).resolves.toBeUndefined();
 	});
 
 	it('should detect a silent failure in activating the plugin', async () => {
@@ -56,11 +96,10 @@ describe('Blueprint step activatePlugin()', () => {
 			`${docroot}/wp-content/mu-plugins/0-exit.php`,
 			`<?php exit(0); `
 		);
-		expect(
-			async () =>
-				await activatePlugin(php, {
-					pluginPath: 'test-plugin.php',
-				})
+		await expect(
+			activatePlugin(php, {
+				pluginPath: 'test-plugin.php',
+			})
 		).rejects.toThrow(/Plugin test-plugin.php could not be activated/);
 	});
 
@@ -101,14 +140,14 @@ describe('Blueprint step activatePlugin()', () => {
 			} );
 			`
 		);
-		await expect(async () => {
-			await activatePlugin(php, {
+		await expect(
+			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
-			});
-		}).not.toThrow();
+			})
+		).resolves.toBeUndefined();
 	});
 
-	it('should activate the plugin if it produces output during activation', async () => {
+	it('should activate the plugin if it produces a output during activation', async () => {
 		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
@@ -119,14 +158,14 @@ describe('Blueprint step activatePlugin()', () => {
 			echo 'Hello World';
 			`
 		);
-		await expect(async () => {
-			await activatePlugin(php, {
+		await expect(
+			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
-			});
-		}).not.toThrow();
+			})
+		).resolves.toBeUndefined();
 	});
 
-	it('should successfully complete plugin activation when the plugin is already active', async () => {
+	it('should not throw an error if the plugin is already active', async () => {
 		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
@@ -135,10 +174,10 @@ describe('Blueprint step activatePlugin()', () => {
 		await activatePlugin(php, {
 			pluginPath: 'test-plugin.php',
 		});
-		await expect(async () => {
-			await activatePlugin(php, {
+		await expect(
+			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
-			});
-		}).not.toThrow();
+			})
+		).resolves.toBeUndefined();
 	});
 });
