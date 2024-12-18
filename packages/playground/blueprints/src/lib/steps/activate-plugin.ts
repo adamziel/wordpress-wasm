@@ -66,6 +66,8 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 
 			if (is_wp_error($response)) {
 				die($response->get_error_message());
+			} else if (false === $response) {
+				die("The plugin $plugin_path does not exist.");
 			}
 		`,
 		env: {
