@@ -41,13 +41,13 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	const activatePluginResult = await playground.run({
 		code: `<?php
 			define( 'WP_ADMIN', true );
-			require_once( ${phpVar(docroot)}. "/wp-load.php" );
-			require_once( ${phpVar(docroot)}. "/wp-admin/includes/plugin.php" );
+			require_once( getenv('DOCROOT') . "/wp-load.php" );
+			require_once( getenv('DOCROOT') . "/wp-admin/includes/plugin.php" );
 
 			// Set current user to admin
 			wp_set_current_user( get_users(array('role' => 'Administrator') )[0]->ID );
 
-			$plugin_path = ${phpVar(pluginPath)};
+			$plugin_path = getenv('PLUGIN_PATH');
 			$response = false;
 			if (!is_dir($plugin_path)) {
 				$response = activate_plugin($plugin_path);
@@ -68,6 +68,10 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 				die($response->get_error_message());
 			}
 		`,
+		env: {
+			PLUGIN_PATH: pluginPath,
+			DOCROOT: docroot,
+		},
 	});
 
 	/**
@@ -91,11 +95,18 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	const isActiveCheckResult = await playground.run({
 		code: `<?php
 			ob_start();
-			require_once( ${phpVar(docroot)}. "/wp-load.php" );
+			require_once( getenv('DOCROOT') . "/wp-load.php" );
 
-			$relative_plugin_path = str_replace( ${phpVar(
-				docroot
-			)}. "/wp-content/plugins/", '', ${phpVar(pluginPath)} );
+			$plugin_directory = getenv('DOCROOT') . "/wp-content/plugins/";
+			$relative_plugin_path = getenv('PLUGIN_PATH');
+			if (strpos($relative_plugin_path, $plugin_directory) === 0) {
+				$relative_plugin_path = substr_replace(
+					$relative_plugin_path,
+					'',
+					0,
+					strlen($plugin_directory)
+				);
+			}
 			$active_plugins = get_option( 'active_plugins' );
 			foreach ( $active_plugins as $plugin ) {
 				if ( strpos( $plugin, $relative_plugin_path ) === 0 ) {
@@ -103,8 +114,12 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 					die('true');
 				}
 			}
-			die(ob_get_flush() ?? 'false');
+			die(ob_get_flush() ?: 'false');
 		`,
+		env: {
+			DOCROOT: docroot,
+			PLUGIN_PATH: pluginPath,
+		},
 	});
 
 	if (activatePluginResult.text) {
