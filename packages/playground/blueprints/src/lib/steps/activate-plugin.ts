@@ -74,6 +74,11 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			DOCROOT: docroot,
 		},
 	});
+	if (activatePluginResult.text) {
+		logger.warn(
+			`Plugin ${pluginPath} activation printed the following bytes: ${activatePluginResult.text}`
+		);
+	}
 
 	/**
 	 * Instead of checking the plugin activation response,
@@ -123,18 +128,17 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 		},
 	});
 
-	if (activatePluginResult.text) {
-		logger.warn(activatePluginResult.text);
+	if (isActiveCheckResult.text === 'true') {
+		return;
 	}
-	if (isActiveCheckResult.text !== 'true') {
-		if (isActiveCheckResult.text !== 'false') {
-			logger.debug(isActiveCheckResult.text);
-		}
-		throw new Error(
-			`Plugin ${pluginPath} could not be activated – WordPress exited with no error. ` +
-				`Sometimes, when $_SERVER or site options are not configured correctly, ` +
-				`WordPress exits early with a 301 redirect. ` +
-				`Inspect the "debug" logs in the console for more details.`
-		);
+
+	if (isActiveCheckResult.text !== 'false') {
+		logger.debug(isActiveCheckResult.text);
 	}
+	throw new Error(
+		`Plugin ${pluginPath} could not be activated – WordPress exited with no error. ` +
+			`Sometimes, when $_SERVER or site options are not configured correctly, ` +
+			`WordPress exits early with a 301 redirect. ` +
+			`Inspect the "debug" logs in the console for more details.`
+	);
 };
