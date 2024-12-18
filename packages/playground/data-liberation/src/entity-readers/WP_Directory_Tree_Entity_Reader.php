@@ -345,7 +345,13 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		return $this->entities_read_so_far - 1;
 	}
 
+	private $is_started = false;
+
 	public function valid(): bool {
+		if ( ! $this->is_started ) {
+			$this->next();
+			$this->is_started = true;
+		}
 		return ! $this->is_finished;
 	}
 

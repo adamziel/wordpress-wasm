@@ -71,15 +71,19 @@ class WP_Blocks_To_Markdown {
                         $this->markdown .= "* $line\n";
                     }
                 }
+                $this->markdown .= "\n";
                 break;
             case 'wp:list-item':
                 $this->markdown .= $this->skip_and_convert_inner_html() . "\n";
                 break;
+            case 'wp:group':
+                // Ignore group blocks and process their inner blocks as if
+                // the group didn't exist.
+                break;
             case 'wp:code':
                 $code = $this->skip_and_convert_inner_html();
                 $language = $this->blocks->get_block_attribute('language') ?? '';
-                $fence = str_repeat('`', max(3, $this->longest_sequence_of($code, '`') + 1));
-                $this->markdown .= "$fence$language\n$code\n$fence\n\n";
+                $this->markdown .= $this->wrap_in_code_fence($code, $language);
                 break;
             case 'wp:image':
                 $alt = $this->blocks->get_block_attribute('alt') ?? '';
@@ -99,14 +103,21 @@ class WP_Blocks_To_Markdown {
                 break;
             default:
                 $code = '';
-                $code .= '<!-- ' . $this->blocks->get_modifiable_text() . ' -->';
-                $code .= $this->skip_and_convert_inner_html();
-                $code .= '<!-- ' . $this->blocks->get_modifiable_text() . ' -->';
-                $language = 'block';
-                $fence = str_repeat('`', max(3, $this->longest_sequence_of($code, '`') + 1));
-                $this->markdown .= "$fence$language\n$code\n$fence\n\n";
+                if($this->blocks->is_self_closing_block()) {
+                    $code .= '<!--' . $this->blocks->get_modifiable_text() . '-->';
+                } else {
+                    $code .= '<!--' . $this->blocks->get_modifiable_text() . '-->' . "\n";
+                    $code .= trim($this->skip_and_convert_inner_html()) . "\n";
+                    $code .= '<!-- ' . $this->blocks->get_modifiable_text() . ' -->';
+                }
+                $this->markdown .= $this->wrap_in_code_fence($code, 'block');
                 break;
         }
+    }
+
+    private function wrap_in_code_fence($code, $language = '') {
+        $fence = str_repeat('`', max(3, $this->longest_sequence_of($code, '`') + 1));
+        return "$fence$language\n$code\n$fence\n\n";
     }
 
     private function handle_tag() {
@@ -155,8 +166,13 @@ class WP_Blocks_To_Markdown {
     }
 
     private function skip_and_convert_inner_html() {
+        // It's important we call get_block_breadcrumbs() before
+        // calling skip_and_get_block_inner_html() because the 
+        // latter will get to the block closer and pop the block
+        // we've just entered from the stack.
+        $breadcrumbs_inside_block = $this->get_block_breadcrumbs();
         $html = $this->blocks->skip_and_get_block_inner_html();
-        $converter = new WP_Blocks_To_Markdown($html, [], $this->get_block_breadcrumbs());
+        $converter = new WP_Blocks_To_Markdown($html, [], $breadcrumbs_inside_block);
         $converter->convert();
         return $converter->get_markdown();
     }

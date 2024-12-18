@@ -17,6 +17,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 	protected $block_attributes;
 	private $block_attributes_updated;
 	private $block_closer;
+	private $self_closing_flag;
 	private $stack_of_open_blocks = array();
 	private $last_block_error;
 
@@ -126,6 +127,10 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 		return $this->block_name !== null && $this->block_closer === true;
 	}
 
+	public function is_self_closing_block() {
+		return $this->block_name !== null && $this->self_closing_flag === true;
+	}
+
 	private $in_next_token = false;
 	public function next_token(): bool {
 		// Prevent running next_token() logic twice when the parent method
@@ -140,6 +145,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 			$this->block_name               = null;
 			$this->block_attributes         = null;
 			$this->block_closer             = false;
+			$this->self_closing_flag        = false;
 			$this->block_attributes_updated = false;
 
 			while ( true ) {
@@ -207,27 +213,41 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 			$name = substr( $text, $name_starts_at, $name_length + 3 );
 			$at  += $name_length;
 
+			// Assume no attributes by default.
+			$attributes = array();
+
 			// Skip the whitespace that follows the block name.
 			$at += strspn( $text, ' \t\f\r\n', $at );
 			if ( $at < strlen( $text ) ) {
-				// It may be a block with attributes...
+				// It may be a self-closing block or a block with attributes.
 
-				// ...but block closers cannot have attributes.
+				// However, block closers can be neither – let's short-circuit.
 				if ( $this->block_closer ) {
 					return true;
 				}
 
-				// Let's try to parse attributes as JSON.
-				$json_maybe = substr( $text, $at );
-				$attributes = json_decode( $json_maybe, true );
-				if ( null === $attributes || ! is_array( $attributes ) ) {
-					// This comment looked like a block comment, but the attributes didn't
-					// parse as a JSON array. This means it wasn't a block after all.
-					return true;
+				// The rest of the comment can only consist of block attributes
+				// and an optional solidus character.
+				$rest = trim( substr( $text, $at ) );
+				$at = strlen( $text );
+
+				// Inspect our potential JSON for the self-closing solidus (`/`) character.
+				$json_maybe = $rest;
+				if ( substr( $json_maybe, -1 ) === '/' ) {
+					// Self-closing block (<!-- wp:image /-->)
+					$this->self_closing_flag = true;
+					$json_maybe = substr( $json_maybe, 0, -1 );
 				}
-			} else {
-				// This is a block without attributes.
-				$attributes = array();
+
+				// Let's try to parse attributes as JSON.
+				if( strlen( $json_maybe ) > 0 ) {
+					$attributes = json_decode( $json_maybe, true );
+					if ( null === $attributes || ! is_array( $attributes ) ) {
+						// This comment looked like a block comment, but the attributes didn't
+						// parse as a JSON array. This means it wasn't a block after all.
+						return true;
+					}
+				}
 			}
 
 			// We have a block name and a valid attributes array. We may not find a block
@@ -242,7 +262,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 					$this->last_block_error = sprintf('Block closer %s does not match the last opened block %s.', $name, $popped);
 					return false;
 				}
-			} else {
+			} else if (!$this->self_closing_flag) {
 				array_push($this->stack_of_open_blocks, $name);
 			}
 
