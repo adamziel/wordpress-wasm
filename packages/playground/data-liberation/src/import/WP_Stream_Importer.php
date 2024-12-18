@@ -368,6 +368,7 @@ class WP_Stream_Importer {
 		// Mark all mapping candidates as seen.
 		foreach ( $this->site_url_mapping_candidates as $base_url => $status ) {
 			$this->site_url_mapping_candidates[ $base_url ] = true;
+		}
 
 		// Reset the counts and URLs found in the previous pass.
 		$this->indexed_entities_counts = array();
