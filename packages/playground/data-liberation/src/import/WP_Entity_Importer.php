@@ -1024,8 +1024,7 @@ class WP_Entity_Importer {
 		}
 
 		do_action( 'wxr_importer_processed_post_meta', $post_id, $meta_item );
-		// @TODO: Check if post_id as ID is correct
-		$this->topological_sorter->map_entity( 'post_meta', $meta_item, $post_id );
+		$this->topological_sorter->map_entity( 'post_meta', $meta_item, $key );
 
 		return true;
 	}

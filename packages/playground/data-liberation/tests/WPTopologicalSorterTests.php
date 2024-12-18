@@ -356,6 +356,120 @@ class WPTopologicalSorterTests extends PlaygroundTestCase {
 	}
 
 	/**
+	 * Multiple sessions tests.
+	 */
+	public function test_topological_sorter_set_session() {
+		$sorter = new WP_Topological_Sorter();
+		$post   = array( 'post_id' => 1 );
+		$mapped = array(
+			'post_id'         => 1,
+			'_already_mapped' => false
+		);
+
+		// Add a first session.
+		$sorter->set_session( 1 );
+		$sorter->map_entity( 'post', $post );
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+		// Map the same entity again but with a different ID (the real one).
+		$sorter->map_entity( 'post', $post, 2 );
+
+		$mapped['_already_mapped'] = true;
+		$mapped['post_id']         = '2';
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$mapped = array(
+			'post_id'         => 1,
+			'_already_mapped' => false
+		);
+
+		// Add a second session.
+		$sorter->set_session( 2 );
+		$sorter->map_entity( 'post', $post );
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+		// Map the same entity again but with a different ID (the real one).
+		$sorter->map_entity( 'post', $post, 3 );
+
+		$mapped['_already_mapped'] = true;
+		$mapped['post_id']         = '3';
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$sorter->set_session( 1 );
+		$mapped['post_id'] = '2';
+		// First session should still have the old mapping.
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$sorter->delete_session( 1 );
+		$this->assertSame( $post, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$sorter->set_session( 2 );
+		$mapped['post_id'] = '3';
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$sorter->delete_session( 2 );
+		$this->assertSame( $post, $sorter->get_mapped_entity( 'post', $post ) );
+	}
+
+	/**
+	 * Null session tests.
+	 */
+	public function test_topological_sorter_no_session() {
+		$sorter = new WP_Topological_Sorter();
+		$post   = array( 'post_id' => 1 );
+		$mapped = array(
+			'post_id'         => 1,
+			'_already_mapped' => false
+		);
+
+		// Add a first session.
+		$sorter->map_entity( 'post', $post );
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+		// Map the same entity again but with a different ID (the real one).
+		$sorter->map_entity( 'post', $post, 2 );
+
+		$mapped['_already_mapped'] = true;
+		$mapped['post_id']         = '2';
+		$this->assertSame( $mapped, $sorter->get_mapped_entity( 'post', $post ) );
+	}
+
+	/**
+	 * Null session tests.
+	 */
+	public function test_topological_sorter_multiple_entities() {
+		$sorter      = new WP_Topological_Sorter();
+		$post        = array( 'post_id' => 1 );
+		$term        = array( 'term_id' => 1 );
+		$mapped_post = array(
+			'post_id'         => 1,
+			'_already_mapped' => false
+		);
+		$mapped_term = array(
+			'term_id'         => 1,
+			'_already_mapped' => false
+		);
+
+		// Add a first session.
+		$sorter->set_session( 1 );
+
+		$sorter->map_entity( 'post', $post );
+		$sorter->map_entity( 'term', $term );
+
+		$this->assertSame( $mapped_post, $sorter->get_mapped_entity( 'post', $post ) );
+		$this->assertSame( $mapped_term, $sorter->get_mapped_entity( 'term', $term ) );
+
+		// Map the same entity again but with a different ID (the real one).
+		$sorter->map_entity( 'post', $post, 2 );
+		$sorter->map_entity( 'term', $term, 2 );
+
+		$mapped_post['_already_mapped'] = true;
+		$mapped_post['post_id']         = '2';
+		$this->assertSame( $mapped_post, $sorter->get_mapped_entity( 'post', $post ) );
+
+		$mapped_term['_already_mapped'] = true;
+		$mapped_term['term_id']         = '2';
+		$this->assertSame( $mapped_term, $sorter->get_mapped_entity( 'term', $term ) );
+	}
+
+	/**
 	 * Import a WXR file.
 	 */
 	private function import_wxr_file( string $wxr_path ) {

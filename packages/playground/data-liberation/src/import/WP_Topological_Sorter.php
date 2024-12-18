@@ -43,6 +43,9 @@ class WP_Topological_Sorter {
 	 */
 	protected $current_item = 0;
 
+	/**
+	 * The entity types saved in the database.
+	 */
 	const ENTITY_TYPES = array(
 		'comment'      => 1,
 		'comment_meta' => 2,
@@ -50,6 +53,18 @@ class WP_Topological_Sorter {
 		'post_meta'    => 4,
 		'term'         => 5,
 		'term_meta'    => 6,
+	);
+
+	/**
+	 * The name of the field where the ID is saved.
+	 */
+	const ENTITY_TYPES_ID = array(
+		'comment'      => 'comment_id',
+		'comment_meta' => 'meta_key',
+		'post'         => 'post_id',
+		'post_meta'    => 'meta_key',
+		'term'         => 'term_id',
+		'term_meta'    => 'meta_key',
 	);
 
 	/**
@@ -200,15 +215,13 @@ class WP_Topological_Sorter {
 			// Items with a parent has at least a sort order of 2.
 			'sort_order'   => 1,
 		);
-		$entity_id  = null;
+		// Get the ID of the entity.
+		$entity_id = (string) $data[ self::ENTITY_TYPES_ID[ $entity_type ] ];
 
+		// Map the parent ID if the entity has one.
 		switch ( $entity_type ) {
-			case 'comment':
-				$entity_id = (string) $data['comment_id'];
-				break;
+			// @TODO: missing comment parent ID.
 			case 'comment_meta':
-				$entity_id = (string) $data['meta_key'];
-
 				if ( array_key_exists( 'comment_id', $data ) ) {
 					$new_entity['parent_id'] = $data['comment_id'];
 				}
@@ -219,28 +232,20 @@ class WP_Topological_Sorter {
 						$new_entity['parent_id'] = $data['post_parent'];
 					}
 				}
-
-				$entity_id = (string) $data['post_id'];
 				break;
 			case 'post_meta':
-				$entity_id = (string) $data['meta_key'];
-
 				if ( array_key_exists( 'post_id', $data ) ) {
 					$new_entity['parent_id'] = $data['post_id'];
 				}
 				break;
-			case 'term_meta':
-				$entity_id = (string) $data['meta_key'];
-
-				if ( array_key_exists( 'term_id', $data ) ) {
-					$new_entity['parent_id'] = $data['term_id'];
-				}
-				break;
 			case 'term':
-				$entity_id = (string) $data['term_id'];
-
 				if ( array_key_exists( 'parent', $data ) ) {
 					$new_entity['parent_id'] = $data['parent'];
+				}
+				break;
+			case 'term_meta':
+				if ( array_key_exists( 'term_id', $data ) ) {
+					$new_entity['parent_id'] = $data['term_id'];
 				}
 				break;
 		}
@@ -259,6 +264,7 @@ class WP_Topological_Sorter {
 					array(
 						'entity_id'   => (string) $entity_id,
 						'entity_type' => self::ENTITY_TYPES[ $entity_type ],
+						'session_id'  => $this->current_session,
 					),
 					array( '%s' )
 				);
@@ -279,65 +285,75 @@ class WP_Topological_Sorter {
 	 * @return mixed|bool The mapped entity or false if the post is not found.
 	 */
 	public function get_mapped_entity( $entity_type, $entity, $id = null, $additional_id = null ) {
-		$current_session = $this->current_session;
-		$already_mapped  = false;
+		$already_mapped = false;
+		$mapped_entity  = null;
 
-		switch ( $entity_type ) {
-			case 'comment':
-				// The ID is the post ID.
-				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
-
-				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$entity['comment_post_ID'] = $mapped_ids['mapped_id'];
-				}
-				break;
-			case 'comment_meta':
-				// The ID is the comment ID.
-				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['comment'] );
-
-				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$entity['comment_id'] = $mapped_ids['mapped_id'];
-				}
-				break;
-			case 'post':
-				// The ID is the parent post ID.
-				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
-
-				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$entity['post_parent'] = $mapped_ids['mapped_id'];
-				}
-
-				$mapped_ids = $this->get_mapped_ids( $entity['post_id'], self::ENTITY_TYPES['post'] );
-
-				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$entity['post_id'] = $mapped_ids['mapped_id'];
-					$already_mapped     = true;
-				}
-				break;
-			case 'post_meta':
-				// The ID is the post ID.
-				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
-
-				if ( $mapped_ids ) {
-					$entity['post_id'] = $mapped_ids['mapped_id'];
-				}
-				break;
-			case 'term':
-				// No ID provided.
-				break;
-			case 'term_meta':
-				// The ID is the term ID.
-				$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['term'] );
-
-				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
-					$entity['term_id'] = $mapped_ids['mapped_id'];
-				}
-				break;
+		if ( ! array_key_exists( $entity_type, self::ENTITY_TYPES ) ) {
+			return $entity;
 		}
 
-		if ( $already_mapped ) {
-			// This is used to skip the post if it has already been mapped.
-			$entity['_already_mapped'] = true;
+		// Get the mapped IDs of the entity.
+		$id_field      = self::ENTITY_TYPES_ID[ $entity_type ];
+		$mapped_entity = $this->get_mapped_ids( $entity[ $id_field ], self::ENTITY_TYPES[ $entity_type ] );
+
+		if ( $mapped_entity ) {
+			// Get entity parents.
+			switch ( $entity_type ) {
+				case 'comment':
+					// The ID is the post ID.
+					$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
+
+					if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+						// Save the mapped ID of comment parent post.
+						$entity['comment_post_ID'] = $mapped_ids['mapped_id'];
+					}
+					break;
+				case 'comment_meta':
+					// The ID is the comment ID.
+					$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['comment'] );
+
+					if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+						// Save the mapped ID of comment meta parent comment.
+						$entity['comment_id'] = $mapped_ids['mapped_id'];
+					}
+					break;
+				case 'post':
+					// The ID is the parent post ID.
+					$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
+
+					if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+						// Save the mapped ID of post parent.
+						$entity['post_parent'] = $mapped_ids['mapped_id'];
+					}
+					break;
+				case 'post_meta':
+					// The ID is the post ID.
+					$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['post'] );
+
+					if ( $mapped_ids ) {
+						// Save the mapped ID of post meta parent post.
+						$entity['post_id'] = $mapped_ids['mapped_id'];
+					}
+					break;
+				case 'term_meta':
+					// The ID is the term ID.
+					$mapped_ids = $this->get_mapped_ids( $id, self::ENTITY_TYPES['term'] );
+
+					if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+						// Save the mapped ID of term meta parent term.
+						$entity['term_id'] = $mapped_ids['mapped_id'];
+					}
+			}
+		}
+
+		if ( $mapped_entity ) {
+			if ( ! is_null( $mapped_entity['mapped_id'] ) ) {
+				// This is used to skip an entity if it has already been mapped.
+				$entity[ $id_field ]       = $mapped_entity['mapped_id'];
+				$entity['_already_mapped'] = true;
+			} else {
+				$entity['_already_mapped'] = false;
+			}
 		}
 
 		return $entity;
@@ -358,15 +374,28 @@ class WP_Topological_Sorter {
 			return null;
 		}
 
-		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				'SELECT entity_id, mapped_id FROM %i WHERE entity_id = %s AND entity_type = %d LIMIT 1',
-				self::get_table_name(),
-				(string) $id,
-				$type
-			),
-			ARRAY_A
-		);
+		if ( is_null( $this->current_session ) ) {
+			$results = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT entity_id, mapped_id FROM %i WHERE entity_id = %s AND entity_type = %d AND session_id IS NULL LIMIT 1',
+					self::get_table_name(),
+					(string) $id,
+					$type
+				),
+				ARRAY_A
+			);
+		} else {
+			$results = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT entity_id, mapped_id FROM %i WHERE entity_id = %s AND entity_type = %d AND session_id = %d LIMIT 1',
+					self::get_table_name(),
+					(string) $id,
+					$type,
+					$this->current_session
+				),
+				ARRAY_A
+			);
+		}
 
 		if ( $results && 1 === count( $results ) ) {
 			return $results[0];
