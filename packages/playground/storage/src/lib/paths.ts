@@ -46,3 +46,10 @@ export function listDescendantFiles(files: FileTree[], selectedPath: string) {
 	}
 	return descendants;
 }
+
+export function removePathPrefix(path: string, prefix: string) {
+	if (path.startsWith(prefix)) {
+		return path.substring(prefix.length);
+	}
+	return path;
+}

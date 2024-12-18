@@ -37,6 +37,7 @@ export default {
 			// Don't forgot to update your package.json as well.
 			formats: ['es', 'cjs'],
 		},
+		sourcemap: true,
 		rollupOptions: {
 			// External packages that should not be bundled into your library.
 			external: getExternalModules(),

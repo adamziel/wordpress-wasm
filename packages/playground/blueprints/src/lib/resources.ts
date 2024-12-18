@@ -7,9 +7,11 @@ import { dirname, Semaphore } from '@php-wasm/util';
 import {
 	listDescendantFiles,
 	listGitFiles,
+	resolveCommitHash,
 	sparseCheckout,
 } from '@wp-playground/storage';
 import { zipNameToHumanName } from './utils/zip-name-to-human-name';
+import { fetchWithCorsProxy } from '@php-wasm/web';
 
 export type { FileTree };
 export const ResourceTypes = [
@@ -157,7 +159,9 @@ export abstract class Resource<T extends File | Directory> {
 				resource = new CorePluginResource(ref, progress);
 				break;
 			case 'url':
-				resource = new UrlResource(ref, progress);
+				resource = new UrlResource(ref, progress, {
+					corsProxy,
+				});
 				break;
 			case 'git:directory':
 				resource = new GitDirectoryResource(ref, progress, {
@@ -285,7 +289,10 @@ export abstract class FetchResource extends Resource<File> {
 	 * Creates a new instance of `FetchResource`.
 	 * @param progress The progress tracker.
 	 */
-	constructor(public override _progress?: ProgressTracker) {
+	constructor(
+		public override _progress?: ProgressTracker,
+		private corsProxy?: string
+	) {
 		super();
 	}
 
@@ -294,7 +301,11 @@ export abstract class FetchResource extends Resource<File> {
 		this.progress?.setCaption(this.caption);
 		const url = this.getURL();
 		try {
-			let response = await fetch(url);
+			let response = await fetchWithCorsProxy(
+				url,
+				undefined,
+				this.corsProxy
+			);
 			if (!response.ok) {
 				throw new Error(`Could not download "${url}"`);
 			}
@@ -380,8 +391,12 @@ export class UrlResource extends FetchResource {
 	 * @param resource The URL reference.
 	 * @param progress The progress tracker.
 	 */
-	constructor(private resource: UrlReference, progress?: ProgressTracker) {
-		super(progress);
+	constructor(
+		private resource: UrlReference,
+		progress?: ProgressTracker,
+		private options?: { corsProxy?: string }
+	) {
+		super(progress, options?.corsProxy);
 		/**
 		 * Translates GitHub URLs into raw.githubusercontent.com URLs.
 		 *
@@ -461,21 +476,20 @@ export class GitDirectoryResource extends Resource<Directory> {
 		const repoUrl = this.options?.corsProxy
 			? `${this.options.corsProxy}${this.reference.url}`
 			: this.reference.url;
-		const ref = ['', 'HEAD'].includes(this.reference.ref)
-			? 'HEAD'
-			: `refs/heads/${this.reference.ref}`;
-		const allFiles = await listGitFiles(repoUrl, ref);
+
+		const commitHash = await resolveCommitHash(repoUrl, {
+			value: this.reference.ref,
+			type: 'infer',
+		});
+		const allFiles = await listGitFiles(repoUrl, commitHash);
 
 		const requestedPath = this.reference.path.replace(/^\/+/, '');
 		const filesToClone = listDescendantFiles(allFiles, requestedPath);
-		let files = await sparseCheckout(repoUrl, ref, filesToClone);
+		let files = await sparseCheckout(repoUrl, commitHash, filesToClone);
+
 		// Remove the path prefix from the cloned file names.
-		files = Object.fromEntries(
-			Object.entries(files).map(([name, contents]) => {
-				name = name.substring(this.reference.path.length);
-				name = name.replace(/^\/+/, '');
-				return [name, contents];
-			})
+		files = mapKeys(files, (name) =>
+			name.substring(requestedPath.length).replace(/^\/+/, '')
 		);
 		return {
 			name:
@@ -491,6 +505,12 @@ export class GitDirectoryResource extends Resource<Directory> {
 	get name() {
 		return this.reference.path.split('/').pop()!;
 	}
+}
+
+function mapKeys(obj: Record<string, any>, fn: (key: string) => string) {
+	return Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [fn(key), value])
+	);
 }
 
 /**

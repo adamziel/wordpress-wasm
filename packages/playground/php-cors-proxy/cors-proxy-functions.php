@@ -299,20 +299,67 @@ class IpUtils
 
 }
 
+/**
+ * Filters headers by name, removing disallowed headers and enforcing opt-in requirements.
+ * 
+ * @param array $php_headers {
+ *  An associative array of headers.
+ *  @type string $key Header name.
+ * }
+ * @param array $disallowed_headers       List of header names that are disallowed.
+ * @param array $headers_requiring_opt_in List of header names that require opt-in
+ *                                        via the X-Cors-Proxy-Allowed-Request-Headers header.
+ * 
+ * @return array {
+ *  Filtered headers.
+ *  @type string $key Header name.
+ */
+function filter_headers_by_name(
+    $php_headers,
+    $disallowed_headers,
+    $headers_requiring_opt_in = [],
+) {
+    $lowercased_php_headers = array_change_key_case($php_headers, CASE_LOWER);
+    $disallowed_headers = array_map('strtolower', $disallowed_headers);
+    $headers_requiring_opt_in = array_map('strtolower', $headers_requiring_opt_in);
 
-function filter_headers_strings($php_headers, $remove_headers) {
-    $remove_headers = array_map('strtolower', $remove_headers);
-    $headers = [];
-    foreach ($php_headers as $header) {
-        $lower_header = strtolower($header);
-        foreach($remove_headers as $remove_header) {
-            if (strpos($lower_header, $remove_header) === 0) {
-                continue 2;
+    // Get explicitly allowed headers from X-Cors-Proxy-Allowed-Request-Headers
+    $headers_opt_in_str =
+        $lowercased_php_headers['x-cors-proxy-allowed-request-headers'] ?? '';
+    $headers_with_opt_in = $headers_opt_in_str
+        ? array_map('trim', explode(',', $headers_opt_in_str))
+        : [];
+    $headers_with_opt_in = array_map('strtolower', $headers_with_opt_in);
+
+    // Filter headers
+    return array_filter(
+        $php_headers,
+        function (
+            $key
+        ) use (
+            $disallowed_headers, 
+            $headers_requiring_opt_in,
+            $headers_with_opt_in,
+        ) {
+            $lower_key = strtolower($key);
+
+            // Skip if disallowed
+            if (in_array($lower_key, $disallowed_headers)) {
+                return false;
             }
-        }
-        $headers[] = $header;
-    }
-    return $headers;
+
+            // Skip if opt-in is required but not provided
+            if (
+                in_array($lower_key, $headers_requiring_opt_in) &&
+                !in_array($lower_key, $headers_with_opt_in)
+            ) {
+                return false;
+            }
+
+            return true;
+        },
+        ARRAY_FILTER_USE_KEY
+    );
 }
 
 function kv_headers_to_curl_format($headers) {

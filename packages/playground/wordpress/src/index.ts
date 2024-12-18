@@ -147,6 +147,26 @@ export async function setupPlatformLevelMuPlugins(php: UniversalPHP) {
 			if (!$user) {
 				return;
 			}
+
+			/**
+			 * We're about to set cookies and redirect. It will log the user in
+			 * if the headers haven't been sent yet.
+			 *
+			 * However, if they have been sent already – e.g. there a PHP
+			 * notice was printed, we'll exit the script with a bunch of errors
+			 * on the screen and without the user being logged in. This
+			 * will happen on every page load and will effectively make Playground
+			 * unusable.
+			 *
+			 * Therefore, we just won't auto-login if headers have been sent. Maybe
+			 * we'll be able to finish the operation in one of the future requests
+			 * or maybe not, but at least we won't end up with a permanent white screen.
+			 */
+			if (headers_sent()) {
+				_doing_it_wrong('playground_auto_login', 'Headers already sent, the Playground runtime will not auto-login the user', '1.0.0');
+				return;
+			}
+
 			/**
 			 * This approach is described in a comment on
 			 * https://developer.wordpress.org/reference/functions/wp_set_current_user/
@@ -154,7 +174,17 @@ export async function setupPlatformLevelMuPlugins(php: UniversalPHP) {
 			wp_set_current_user( $user->ID, $user->user_login );
 			wp_set_auth_cookie( $user->ID );
 			do_action( 'wp_login', $user->user_login, $user );
+
 			setcookie('playground_auto_login_already_happened', '1');
+
+			/**
+			 * Confirm that nothing in WordPress, plugins, or filters have finalized
+			 * the headers sending phase. See the comment above for more context.
+			 */
+			if (headers_sent()) {
+				_doing_it_wrong('playground_auto_login', 'Headers already sent, the Playground runtime will not auto-login the user', '1.0.0');
+				return;
+			}
 
 			/**
 			 * Reload page to ensure the user is logged in correctly.

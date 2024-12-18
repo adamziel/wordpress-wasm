@@ -11,7 +11,9 @@
 		<script src="https://cdn.jsdelivr.net/npm/ace-builds@1.31.2/src-min-noconflict/ace.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/ace-builds@1.31.2/src-min-noconflict/ext-language_tools.js"></script>
 		<link rel="stylesheet" type="text/css" href="style.css" />
-		<script src="builder.js" type="module"></script>
+		<script type="module">
+			import('./builder');
+		</script>
 	</head>
 	<body>
 		<div class="playground-wrapper">

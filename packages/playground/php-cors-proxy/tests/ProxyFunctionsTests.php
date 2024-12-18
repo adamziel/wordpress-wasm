@@ -147,4 +147,72 @@ class ProxyFunctionsTests extends TestCase
             'http://cors.playground.wordpress.net/cors-proxy.php?http://cors.playground.wordpress.net'
         );
     }
+
+    public function testFilterHeadersStrings()
+    {
+        $original_headers = [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Cookie' => 'test=1',
+            'Host' => 'example.com',
+        ];
+
+        $strictly_disallowed_headers = [
+            'Cookie',
+            'Host',
+        ];
+
+        $headers_requiring_opt_in = [
+            'Authorization',
+        ];
+
+        $this->assertEquals(
+            [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
+            filter_headers_by_name(
+                $original_headers,
+                $strictly_disallowed_headers,
+                $headers_requiring_opt_in,
+            )
+        );
+    }
+
+    public function testFilterHeaderStringsWithAdditionalAllowedHeaders()
+    {
+        $original_headers = [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Cookie' => 'test=1',
+            'Host' => 'example.com',
+            'Authorization' => 'Bearer 1234567890',
+            'X-Authorization' => 'Bearer 1234567890',
+            'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
+        ];
+
+        $strictly_disallowed_headers = [
+            'Cookie',
+            'Host',
+        ];
+
+        $headers_requiring_opt_in = [
+            'Authorization',
+        ];
+
+        $this->assertEquals(
+            [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer 1234567890',
+                'X-Authorization' => 'Bearer 1234567890',
+                'X-Cors-Proxy-Allowed-Request-Headers' => 'Authorization',
+            ],
+            filter_headers_by_name(
+                $original_headers,
+                $strictly_disallowed_headers,
+                $headers_requiring_opt_in,
+            )
+        );
+    }
 }
