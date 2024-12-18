@@ -903,6 +903,8 @@ class WP_WXR_Reader implements Iterator {
 	}
 
 	public function current(): object {
+		// Lazily initialize the iterator when it is first accessed.
+		// The alternative is eager initialization in the constructor.
 		if ( null === $this->entity_data && ! $this->is_finished() && ! $this->get_last_error() ) {
 			$this->next();
 		}
