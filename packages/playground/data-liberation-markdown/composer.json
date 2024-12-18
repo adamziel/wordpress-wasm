@@ -1,0 +1,27 @@
+{
+	"name": "wordpress/data-liberation-markdown",
+	"name": "wordpress/data-liberation-markdown",
+	"prefer-stable": true,
+	"require": {
+		"league/commonmark": "^2.5",
+		"webuni/front-matter": "^2.0"
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"preferred-install": "dist",
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"autoload": {
+		"classmap": [
+			"src/"
+		]
+	},
+	"authors": [
+		{
+			"name": "WordPress Contributors",
+			"email": "contributors@wordpress.org"
+		}
+	]
+}

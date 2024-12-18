@@ -1,0 +1,12 @@
+{
+	"$schema": "https://raw.githubusercontent.com/box-project/box/refs/heads/main/res/schema.json",
+	"main": "src/bootstrap.php",
+	"output": "dist/data-liberation-markdown.phar",
+	"force-autodiscovery": true,
+	"compactors": [
+		"KevinGH\\Box\\Compactor\\Php",
+		"DataLiberationBoxCompactor"
+	],
+	"annotations": false,
+	"directories": ["src/", "vendor/"]
+}
