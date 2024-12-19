@@ -89,7 +89,9 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 	 * which would prevent any output that happens after activation from being returned.
 	 *
 	 * Relying on the plugin activation response is not reliable because if the plugin activation
-	 * produces any output, WordPress will assume it's an activation error.
+	 * produces any output, WordPress will assume it's an activation error and return a WP_Error.
+	 * WordPress will still activate the plugin and load the required page,
+	 * but it will also show the error as a notice in wp-admin.
 	 * See WordPress source code for more details:
 	 * https://github.com/WordPress/wordpress-develop/blob/6.7/src/wp-admin/includes/plugin.php#L733
 	 *
