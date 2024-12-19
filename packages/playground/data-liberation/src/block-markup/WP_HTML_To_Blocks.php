@@ -35,7 +35,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	private $metadata               = array();
 
 	public function __construct( $html ) {
-		$this->html = new \WP_HTML_Processor( $html );
+		$this->html = WP_HTML_Processor::create_fragment( $html );
 	}
 
 	public function convert() {
