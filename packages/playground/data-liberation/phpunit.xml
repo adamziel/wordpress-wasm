@@ -1,16 +1,17 @@
 <?xml version="1.0"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="bootstrap.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd" cacheDirectory=".phpunit.cache">
-  <testsuites>
-    <testsuite name="Application Test Suite">
-      <file>tests/WPWXRReaderTests.php</file>
-      <file>tests/WPRewriteUrlsTests.php</file>
-      <file>tests/WPURLInTextProcessorTests.php</file>
-      <file>tests/WPBlockMarkupProcessorTests.php</file>
-      <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
-      <file>tests/URLParserWHATWGComplianceTests.php</file>
-      <file>tests/WPXMLProcessorTests.php</file>
-      <file>tests/UrldecodeNTests.php</file>
-      <file>tests/WPStreamImporterTests.php</file>
-    </testsuite>
-  </testsuites>
+    <testsuites>
+        <testsuite name="Application Test Suite">
+	    <file>tests/WPEntityImporterTests.php</file>
+            <file>tests/URLParserWHATWGComplianceTests.php</file>
+            <file>tests/UrldecodeNTests.php</file>
+            <file>tests/WPBlockMarkupProcessorTests.php</file>
+            <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
+            <file>tests/WPRewriteUrlsTests.php</file>
+            <file>tests/WPStreamImporterTests.php</file>
+            <file>tests/WPURLInTextProcessorTests.php</file>
+            <file>tests/WPWXRReaderTests.php</file>
+            <file>tests/WPXMLProcessorTests.php</file>
+        </testsuite>
+    </testsuites>
 </phpunit>

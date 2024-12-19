@@ -7,6 +7,7 @@ class WP_Imported_Entity {
 	const TYPE_COMMENT      = 'comment';
 	const TYPE_COMMENT_META = 'comment_meta';
 	const TYPE_TERM         = 'term';
+	const TYPE_TERM_META    = 'term_meta';
 	const TYPE_TAG          = 'tag';
 	const TYPE_CATEGORY     = 'category';
 	const TYPE_USER         = 'user';
