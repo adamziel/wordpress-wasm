@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Represents a single entity, whether a WordPress post, post meta,
+ * a single SQL record, or something entirely different.
+ */
 class WP_Imported_Entity {
 
 	const TYPE_POST         = 'post';
@@ -11,6 +15,32 @@ class WP_Imported_Entity {
 	const TYPE_CATEGORY     = 'category';
 	const TYPE_USER         = 'user';
 	const TYPE_SITE_OPTION  = 'site_option';
+
+	const POST_FIELDS = array(
+		'post_title',
+		'link',
+		'guid',
+		'post_excerpt',
+		'post_published_at',
+		'post_author',
+		'post_content',
+		'post_excerpt',
+		'post_id',
+		'post_status',
+		'post_date',
+		'post_date_gmt',
+		'post_modified',
+		'post_modified_gmt',
+		'comment_status',
+		'ping_status',
+		'post_name',
+		'post_parent',
+		'menu_order',
+		'post_type',
+		'post_password',
+		'is_sticky',
+		'attachment_url',
+	);
 
 	private $type;
 	private $data;
