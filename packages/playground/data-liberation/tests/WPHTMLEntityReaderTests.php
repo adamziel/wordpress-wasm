@@ -34,7 +34,7 @@ HTML;
                     'post_id' => 1,
                     'content' => $this->normalize_markup(<<<HTML
 <!-- wp:heading {"level":1} -->
-<h1>It is our pleasure to announce that WordPress 6.8 was released</h1>
+<h1>It is our pleasure to announce that WordPress 6.8 was released </h1>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
