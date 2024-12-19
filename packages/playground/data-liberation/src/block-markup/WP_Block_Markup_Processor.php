@@ -72,7 +72,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 		if ( $this->is_block_closer() ) {
 			return false;
 		}
-		$this->block_attributes = $attributes;
+		$this->block_attributes         = $attributes;
 		$this->block_attributes_updated = true;
 		return true;
 	}

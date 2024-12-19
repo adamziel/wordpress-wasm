@@ -16,7 +16,7 @@ class WP_Import_Utils {
 	 * @return string The block opener.
 	 */
 	public static function block_opener( $block_name, $attrs = array() ) {
-		$template = "<!-- wp:{$block_name} -->";
+		$template  = "<!-- wp:{$block_name} -->";
 		$processor = new WP_Block_Markup_Processor( $template );
 		$processor->next_token();
 		$processor->set_block_attributes( $attrs );
@@ -57,5 +57,4 @@ class WP_Import_Utils {
 
 		return $block_markup;
 	}
-
 }

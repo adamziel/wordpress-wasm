@@ -97,15 +97,15 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 		$tag           = $html->get_tag();
 		$tag_lowercase = strtolower( $tag );
 
-		$is_opener = ! $html->is_tag_closer() && $html->expects_closer();
-		$is_closer = $html->is_tag_closer();
+		$is_opener   = ! $html->is_tag_closer() && $html->expects_closer();
+		$is_closer   = $html->is_tag_closer();
 		$is_void_tag = ! $html->expects_closer();
-		$prefix = (
+		$prefix      = (
 			$is_void_tag ? '' : (
 				$is_closer ? '-' : '+'
 			)
 		);
-		$event = $prefix . $tag;
+		$event       = $prefix . $tag;
 		switch ( $event ) {
 			case 'META':
 				$key   = $html->get_attribute( 'name' );
@@ -150,7 +150,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			case '-SCRIPT':
 				$this->ignore_text = false;
 				break;
-	
+
 			case '+UL':
 			case '+OL':
 				$this->push_block( 'list', array( 'ordered' => $tag === 'ol' ) );
@@ -170,7 +170,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				$this->block_markup .= '</' . $tag_lowercase . '>';
 				$this->pop_block();
 				break;
-	
+
 			case '+TABLE':
 				$this->push_block( 'table' );
 				$this->block_markup .= '<figure class="wp-block-table">';
@@ -181,7 +181,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				$this->block_markup .= '</figure>';
 				$this->pop_block();
 				break;
-	
+
 			case '+THEAD':
 			case '+TBODY':
 			case '+TFOOT':
@@ -198,7 +198,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 			case '-TH':
 				$this->block_markup .= '</' . $tag_lowercase . '>';
 				break;
-	
+
 			case '+BLOCKQUOTE':
 				$this->push_block( 'quote' );
 				$this->block_markup .= '<' . $tag_lowercase . '>';
@@ -207,7 +207,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				$this->block_markup .= '</' . $tag_lowercase . '>';
 				$this->pop_block();
 				break;
-	
+
 			case '+PRE':
 				$this->push_block( 'code' );
 				$this->block_markup .= '<' . $tag_lowercase . '  class="wp-block-code">';
@@ -245,7 +245,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				$this->block_markup .= '</p>';
 				$this->pop_block();
 				break;
-	
+
 			case '+H1':
 			case '+H2':
 			case '+H3':
@@ -288,7 +288,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 				if ( $this->should_preserve_tag_in_rich_text( $tag ) ) {
 					if ( $is_opener ) {
 						$this->append_html( '<' . $tag_lowercase . '>' );
-					} else if ( $is_closer ) {
+					} elseif ( $is_closer ) {
 						$this->append_html( '</' . $tag_lowercase . '>' );
 					}
 				} else {
