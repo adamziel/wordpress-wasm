@@ -231,7 +231,7 @@ export default function GitHubExportForm({
 			} else if (formValues.contentType === 'plugin') {
 				updatedValues['toPathInRepo'] = `/${formValues.plugin}`;
 			} else {
-				updatedValues['toPathInRepo'] = '/playground';
+				updatedValues['toPathInRepo'] = '/';
 			}
 			setFormValues({
 				...formValues,
@@ -312,6 +312,10 @@ export default function GitHubExportForm({
 				);
 			}
 
+			if (relativeExportPaths.length === 0) {
+				relativeExportPaths = ['/'];
+			}
+
 			const isoDateSlug = new Date().toISOString().replace(/[:.]/g, '-');
 			const newBranchName = `playground-changes-${isoDateSlug}`;
 			let commitMessage = formValues.commitMessage;
@@ -382,7 +386,6 @@ export default function GitHubExportForm({
 					});
 				}
 			}
-
 			const changes = await changeset(
 				new Map(Object.entries(ghComparableFiles)),
 				allPlaygroundFiles
