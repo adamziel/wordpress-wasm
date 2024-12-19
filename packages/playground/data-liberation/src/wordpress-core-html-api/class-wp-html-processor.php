@@ -1613,10 +1613,7 @@ class WP_HTML_Processor extends WP_HTML_Tag_Processor {
 				 */
 				$charset = $this->get_attribute( 'charset' );
 				if ( is_string( $charset ) && 'tentative' === $this->state->encoding_confidence ) {
-					// Commenting this out for now. We're assuming UTF-8 in WP_HTML_To_Blocks and
-					// we don't want to fail just because a document contained a meta tag with a UTF-8 charset.
-					// @TODO: Bail on non-utf8 charsets.
-					// $this->bail( 'Cannot yet process META tags with charset to determine encoding.' );
+					$this->bail( 'Cannot yet process META tags with charset to determine encoding.' );
 				}
 
 				/*
@@ -1635,10 +1632,7 @@ class WP_HTML_Processor extends WP_HTML_Tag_Processor {
 					0 === strcasecmp( $http_equiv, 'Content-Type' ) &&
 					'tentative' === $this->state->encoding_confidence
 				) {
-					// Commenting this out for now. We're assuming UTF-8 in WP_HTML_To_Blocks and
-					// we don't want to fail just because a document contained a meta tag with a UTF-8 charset.
-					// @TODO: Bail on non-utf8 charsets.
-					// $this->bail( 'Cannot yet process META tags with http-equiv Content-Type to determine encoding.' );
+					$this->bail( 'Cannot yet process META tags with http-equiv Content-Type to determine encoding.' );
 				}
 
 				return true;
