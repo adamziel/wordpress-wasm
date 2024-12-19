@@ -103,28 +103,37 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			ob_start();
 			require_once( getenv( 'DOCROOT' ) . "/wp-load.php" );
 
+			/**
+			 * Extracts the relative plugin path from either an absolute or relative plugin path.
+			 *
+			 * Absolute paths starting with plugin directory (e.g., '/wordpress/wp-content/plugins/test-plugin/index.php')
+			 * should be converted to relative paths (e.g., 'test-plugin/index.php')
+			 *
+			 * Directories should finish with a trailing slash to ensure we match the full plugin directory name.
+			 *
+			 * Examples:
+			 * - '/wordpress/wp-content/plugins/test-plugin/index.php' → 'test-plugin/index.php'
+			 * - '/wordpress/wp-content/plugins/test-plugin/' → 'test-plugin/'
+			 * - '/wordpress/wp-content/plugins/test-plugin' → 'test-plugin/'
+			 * - 'test-plugin/index.php' → 'test-plugin/index.php'
+			 * - 'test-plugin/' → 'test-plugin/'
+			 * - 'test-plugin' → 'test-plugin/'
+			 */
 			$plugin_directory = getenv( 'DOCROOT' ) . "/wp-content/plugins/";
 			$relative_plugin_path = getenv( 'PLUGIN_PATH' );
-			if ( strpos( $relative_plugin_path, $plugin_directory ) === 0 ) {
-				$relative_plugin_path = substr_replace(
-					$relative_plugin_path,
-					'',
-					0,
-					strlen( $plugin_directory )
-				);
+			if (strpos($relative_plugin_path, $plugin_directory) === 0) {
+				$relative_plugin_path = substr($relative_plugin_path, strlen($plugin_directory));
 			}
-
-			$is_relative_plugin_path_a_plugin_directory_name = (
-				false === strpos( $relative_plugin_path, '/' ) &&
-				substr( $relative_plugin_path, -strlen( '.php' ) ) !== '.php'
-			);
+			if (
+				pathinfo($relative_plugin_path, PATHINFO_EXTENSION) !== 'php' &&
+				substr($relative_plugin_path, -1) !== '/'
+			) {
+				$relative_plugin_path = $relative_plugin_path . '/';
+			}
 
 			$active_plugins = get_option( 'active_plugins' );
 			foreach ( $active_plugins as $plugin ) {
-				if ( $relative_plugin_path === $plugin || (
-					$is_relative_plugin_path_a_plugin_directory_name &&
-					substr( $plugin, 0, strlen( $relative_plugin_path ) + 1 ) === $relative_plugin_path . '/'
-				) ) {
+				if ( substr( $plugin, 0, strlen( $relative_plugin_path ) ) === $relative_plugin_path ) {
 					ob_end_clean();
 					die( 'true' );
 				}

@@ -55,6 +55,21 @@ describe('Blueprint step activatePlugin()', () => {
 		).resolves.toBeUndefined();
 	});
 
+	it('should activate a plugin if a absolute plugin path is provided', async () => {
+		const docroot = handler.documentRoot;
+		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin/index.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+
+		await expect(
+			activatePlugin(php, {
+				pluginPath: `${docroot}/wp-content/plugins/test-plugin/index.php`,
+			})
+		).resolves.toBeUndefined();
+	});
+
 	it('should activate a plugin if the absolute plugin directory path is provided', async () => {
 		const docroot = handler.documentRoot;
 		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
@@ -66,21 +81,6 @@ describe('Blueprint step activatePlugin()', () => {
 		await expect(
 			activatePlugin(php, {
 				pluginPath: `${docroot}/wp-content/plugins/test-plugin`,
-			})
-		).resolves.toBeUndefined();
-	});
-
-	it('should activate a plugin if only a plugin directory path is provided and the plugin file has a different name from the directory', async () => {
-		const docroot = handler.documentRoot;
-		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
-		php.writeFile(
-			`${docroot}/wp-content/plugins/test-plugin/index.php`,
-			`<?php /**\n * Plugin Name: Test Plugin */`
-		);
-
-		await expect(
-			activatePlugin(php, {
-				pluginPath: `${docroot}/wp-content/plugins/test-plugin/index.php`,
 			})
 		).resolves.toBeUndefined();
 	});
@@ -103,10 +103,10 @@ describe('Blueprint step activatePlugin()', () => {
 		).rejects.toThrow(/Plugin test-plugin.php could not be activated/);
 	});
 
-	it('should run the activation hooks as a priviliged user', async () => {
+	it('should run the activation hooks as a privileged user', async () => {
 		const docroot = handler.documentRoot;
 		const createdFilePath =
-			docroot + '/activation-ran-as-a-priviliged-user.txt';
+			docroot + '/activation-ran-as-a-privileged-user.txt';
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
 			`<?php /**\n * Plugin Name: Test Plugin */
@@ -124,7 +124,7 @@ describe('Blueprint step activatePlugin()', () => {
 		expect(php.fileExists(createdFilePath)).toBe(true);
 	});
 
-	it('should succeed when the plugin redirects during activation', async () => {
+	it('should activate a plugin if it redirects during activation', async () => {
 		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
@@ -147,7 +147,7 @@ describe('Blueprint step activatePlugin()', () => {
 		).resolves.toBeUndefined();
 	});
 
-	it('should activate the plugin if it produces a output during activation', async () => {
+	it('should activate a plugin if it produces a output during activation', async () => {
 		const docroot = handler.documentRoot;
 		php.writeFile(
 			`${docroot}/wp-content/plugins/test-plugin.php`,
