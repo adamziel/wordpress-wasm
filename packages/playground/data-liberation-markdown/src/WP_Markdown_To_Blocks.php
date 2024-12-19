@@ -52,7 +52,7 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 		return $this->frontmatter;
 	}
 
-	public function get_meta_value( $key ) {
+	public function get_first_meta_value( $key ) {
 		if ( ! array_key_exists( $key, $this->frontmatter ) ) {
 			return null;
 		}
