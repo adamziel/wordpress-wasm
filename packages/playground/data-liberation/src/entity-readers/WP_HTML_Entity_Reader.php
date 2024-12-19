@@ -5,11 +5,40 @@
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
+	/**
+	 * The HTML document to convert.
+	 *
+	 * @var string
+	 */
 	protected $html;
+
+	/**
+	 * The emitted entities.
+	 *
+	 * @var array
+	 */
 	protected $entities;
+
+	/**
+	 * Whether the reader has finished.
+	 *
+	 * @var bool
+	 */
 	protected $finished = false;
+
+	/**
+	 * The ID of the post to import.
+	 *
+	 * @var int
+	 */
 	protected $post_id;
 
+	/**
+	 * Constructs the reader.
+	 *
+	 * @param string $html The HTML document to convert.
+	 * @param int $post_id The ID to use as `post_id` of the emitted post entity.
+	 */
 	public function __construct( $html, $post_id ) {
 		$this->html    = $html;
 		$this->post_id = $post_id;
@@ -53,7 +82,7 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 			}
 		}
 
-		// Yield the post entity.
+		// Emit the post entity.
 		$this->entities[] = new WP_Imported_Entity(
 			'post',
 			array_merge(
@@ -65,7 +94,7 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 			)
 		);
 
-		// Yield all the metadata that don't belong to the post entity.
+		// Emit all the metadata that don't belong to the post entity.
 		foreach ( $other_metadata as $key => $value ) {
 			$this->entities[] = new WP_Imported_Entity(
 				'post_meta',

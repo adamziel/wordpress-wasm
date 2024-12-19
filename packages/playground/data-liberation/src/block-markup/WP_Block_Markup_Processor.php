@@ -58,6 +58,25 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 		return $this->block_attributes;
 	}
 
+	/**
+	 * Overwrites all the block attributes of the currently matched block
+	 * opener.
+	 *
+	 * @param array $attributes The attributes to set.
+	 * @return bool Whether the attributes were set.
+	 */
+	public function set_block_attributes( $attributes ) {
+		if ( '#block-comment' !== $this->get_token_type() ) {
+			return false;
+		}
+		if ( $this->is_block_closer() ) {
+			return false;
+		}
+		$this->block_attributes = $attributes;
+		$this->block_attributes_updated = true;
+		return true;
+	}
+
 	public function is_block_closer() {
 		return $this->block_name !== null && $this->block_closer === true;
 	}
@@ -165,17 +184,23 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 		if ( ! $this->block_attributes_updated ) {
 			return false;
 		}
+		$encoded_attributes = json_encode(
+			$this->block_attributes_iterator
+				? $this->block_attributes_iterator->getSubIterator( 0 )->getArrayCopy()
+				: $this->block_attributes,
+			JSON_HEX_TAG | // Convert < and > to \u003C and \u003E
+			JSON_HEX_AMP   // Convert & to \u0026
+		);
+		if ( $encoded_attributes === '[]' ) {
+			$encoded_attributes = '';
+		} else {
+			$encoded_attributes .= ' ';
+		}
 		$this->set_modifiable_text(
 			' ' .
-			$this->block_name . ' ' .
-			json_encode(
-				$this->block_attributes_iterator
-					? $this->block_attributes_iterator->getSubIterator( 0 )->getArrayCopy()
-					: $this->block_attributes,
-				JSON_HEX_TAG | // Convert < and > to \u003C and \u003E
-				JSON_HEX_AMP   // Convert & to \u0026
-			)
-			. ' '
+			$this->block_name .
+			' ' .
+			$encoded_attributes
 		);
 
 		return true;
