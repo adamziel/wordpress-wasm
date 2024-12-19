@@ -98,6 +98,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 if ( ! function_exists( '_doing_it_wrong' ) ) {
 	$GLOBALS['_doing_it_wrong_messages'] = array();
 	function _doing_it_wrong( $method, $message, $version ) {
+		throw new Exception( $message );
 		$GLOBALS['_doing_it_wrong_messages'][] = $message;
 	}
 }

@@ -1,0 +1,23 @@
+{
+	"$schema": "../blueprints/public/blueprint-schema.json",
+	"login": true,
+	"constants": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true,
+		"WP_DEBUG_DISPLAY": true
+	},
+	"steps": [
+		{
+			"step": "activatePlugin",
+			"pluginPath": "data-liberation/plugin.php"
+		},
+		{
+			"step": "activatePlugin",
+			"pluginPath": "z-data-liberation-markdown/plugin.php"
+		},
+		{
+			"step": "activatePlugin",
+			"pluginPath": "z-data-liberation-static-files-editor/plugin.php"
+		}
+	]
+}
