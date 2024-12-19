@@ -119,11 +119,19 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			 * - 'test-plugin/' → 'test-plugin/'
 			 * - 'test-plugin' → 'test-plugin/'
 			 */
-			$plugin_directory = getenv( 'DOCROOT' ) . "/wp-content/plugins/";
+			$plugin_directory = WP_PLUGIN_DIR . '/';
 			$relative_plugin_path = getenv( 'PLUGIN_PATH' );
 			if (strpos($relative_plugin_path, $plugin_directory) === 0) {
 				$relative_plugin_path = substr($relative_plugin_path, strlen($plugin_directory));
 			}
+
+			// Let's make sure the plugin path exists on the filesystem.
+			if ( ! file_exists( $plugin_directory . $relative_plugin_path ) &&
+				! is_dir( $plugin_directory . $relative_plugin_path )
+			) {
+				die( 'There is no plugin at ' . $plugin_directory . $relative_plugin_path );
+			}
+
 			if (
 				pathinfo($relative_plugin_path, PATHINFO_EXTENSION) !== 'php' &&
 				substr($relative_plugin_path, -1) !== '/'
@@ -145,7 +153,6 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			PLUGIN_PATH: pluginPath,
 		},
 	});
-
 
 	if (isActiveCheckResult.text === 'true') {
 		// Plugin activation was successful, yay!
