@@ -127,11 +127,8 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 				$relative_plugin_path = substr($relative_plugin_path, strlen($plugin_directory));
 			}
 
-			if (
-				substr($relative_plugin_path, -1) !== '/' &&
-				is_dir( $plugin_directory . $relative_plugin_path )
-			) {
-				$relative_plugin_path = $relative_plugin_path . '/';
+			if ( is_dir( $plugin_directory . $relative_plugin_path ) ) {
+				$relative_plugin_path = rtrim( $relative_plugin_path, '/' ) . '/';
 			}
 
 			$active_plugins = get_option( 'active_plugins' );
