@@ -70,7 +70,7 @@ describe('Blueprint step activatePlugin()', () => {
 		).resolves.toBeUndefined();
 	});
 
-	it('should activate a plugin if the absolute plugin directory path is provided', async () => {
+	it('should activate a plugin if a absolute plugin directory path is provided', async () => {
 		const docroot = handler.documentRoot;
 		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
 		php.writeFile(
@@ -81,6 +81,21 @@ describe('Blueprint step activatePlugin()', () => {
 		await expect(
 			activatePlugin(php, {
 				pluginPath: `${docroot}/wp-content/plugins/test-plugin`,
+			})
+		).resolves.toBeUndefined();
+	});
+
+	it('should activate a plugin if a absolute plugin directory path with a trailing slash is provided', async () => {
+		const docroot = handler.documentRoot;
+		php.mkdir(`${docroot}/wp-content/plugins/test-plugin`);
+		php.writeFile(
+			`${docroot}/wp-content/plugins/test-plugin/test-plugin.php`,
+			`<?php /**\n * Plugin Name: Test Plugin */`
+		);
+
+		await expect(
+			activatePlugin(php, {
+				pluginPath: `${docroot}/wp-content/plugins/test-plugin/`,
 			})
 		).resolves.toBeUndefined();
 	});
