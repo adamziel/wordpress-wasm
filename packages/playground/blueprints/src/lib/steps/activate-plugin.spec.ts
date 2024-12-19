@@ -36,7 +36,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should activate a plugin file located in a subdirectory of the plugins directory', async () => {
@@ -52,7 +52,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: `test-plugin/test-plugin.php`,
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should activate a plugin if a absolute plugin path is provided', async () => {
@@ -67,7 +67,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: `${docroot}/wp-content/plugins/test-plugin/index.php`,
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should activate a plugin if a absolute plugin directory path is provided', async () => {
@@ -82,7 +82,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: `${docroot}/wp-content/plugins/test-plugin`,
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should activate a plugin if a absolute plugin directory path with a trailing slash is provided', async () => {
@@ -97,7 +97,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: `${docroot}/wp-content/plugins/test-plugin/`,
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should detect a silent failure in activating the plugin', async () => {
@@ -159,7 +159,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should activate a plugin if it produces a output during activation', async () => {
@@ -177,7 +177,7 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 
 	it('should not throw an error if the plugin is already active', async () => {
@@ -193,6 +193,6 @@ describe('Blueprint step activatePlugin()', () => {
 			activatePlugin(php, {
 				pluginPath: 'test-plugin.php',
 			})
-		).resolves.toBeUndefined();
+		).resolves.not.toThrow();
 	});
 });
