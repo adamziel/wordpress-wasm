@@ -19,7 +19,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	private $inspected_url_attribute_idx = - 1;
 
 	public static function create_from_html( $html, $base_url_string = null ) {
-		$processor = static::create_fragment( $html );
+		$processor                  = static::create_fragment( $html );
 		$processor->base_url_string = $base_url_string;
 		$processor->base_url_object = $base_url_string ? WP_URL::parse( $base_url_string ) : null;
 		return $processor;

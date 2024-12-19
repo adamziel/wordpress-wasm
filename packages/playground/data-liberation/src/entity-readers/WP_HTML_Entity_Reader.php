@@ -26,11 +26,11 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
 		// If we've already read some entities, skip to the next one.
 		if ( null !== $this->entities ) {
-			if ( count( $this->entities ) <= 1 ) {
+			array_shift( $this->entities );
+			if ( count( $this->entities ) === 0 ) {
 				$this->finished = true;
 				return false;
 			}
-			array_shift( $this->entities );
 			return true;
 		}
 

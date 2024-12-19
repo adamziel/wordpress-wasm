@@ -45,21 +45,21 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 	}
 
 	public function skip_and_get_block_inner_html() {
-		if('#block-comment' !== $this->get_token_type()) {
+		if ( '#block-comment' !== $this->get_token_type() ) {
 			return false;
 		}
 
-		if($this->is_block_closer()) {
+		if ( $this->is_block_closer() ) {
 			return false;
 		}
 
-		if(false === WP_HTML_Tag_Processor::set_bookmark('block-start')) {
+		if ( false === WP_HTML_Tag_Processor::set_bookmark( 'block-start' ) ) {
 			return false;
 		}
 
 		$starting_block_depth = $this->get_block_depth();
-		while($this->next_token()) {
-			if(
+		while ( $this->next_token() ) {
+			if (
 				$this->get_token_type() === '#block-comment' &&
 				$this->is_block_closer() &&
 				$this->get_block_depth() === $starting_block_depth - 1
@@ -68,16 +68,16 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 			}
 		}
 
-		if(false === WP_HTML_Tag_Processor::set_bookmark('block-end')) {
-			WP_HTML_Tag_Processor::release_bookmark('block-start');
+		if ( false === WP_HTML_Tag_Processor::set_bookmark( 'block-end' ) ) {
+			WP_HTML_Tag_Processor::release_bookmark( 'block-start' );
 			return false;
 		}
 
 		$inner_html_start = $this->bookmarks['block-start']->start + $this->bookmarks['block-start']->length;
-		$inner_html_end = $this->bookmarks['block-end']->start - $inner_html_start;
+		$inner_html_end   = $this->bookmarks['block-end']->start - $inner_html_start;
 
-		WP_HTML_Tag_Processor::release_bookmark('block-start');
-		WP_HTML_Tag_Processor::release_bookmark('block-end');
+		WP_HTML_Tag_Processor::release_bookmark( 'block-start' );
+		WP_HTML_Tag_Processor::release_bookmark( 'block-end' );
 
 		return substr(
 			$this->html,
@@ -87,7 +87,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 	}
 
 	public function get_block_depth() {
-		return count($this->stack_of_open_blocks);
+		return count( $this->stack_of_open_blocks );
 	}
 
 	public function get_block_breadcrumbs() {
@@ -115,12 +115,12 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 		return $this->block_attributes;
 	}
 
-	public function get_block_attribute($attribute_name) {
+	public function get_block_attribute( $attribute_name ) {
 		if ( null === $this->block_attributes ) {
 			return false;
 		}
 
-		return $this->block_attributes[$attribute_name] ?? false;
+		return $this->block_attributes[ $attribute_name ] ?? false;
 	}
 
 	public function is_block_closer() {
@@ -135,7 +135,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 	public function next_token(): bool {
 		// Prevent running next_token() logic twice when the parent method
 		// makes recursive calls to itself.
-		if($this->in_next_token) {
+		if ( $this->in_next_token ) {
 			return parent::next_token();
 		}
 		$this->in_next_token = true;
@@ -229,18 +229,18 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 				// The rest of the comment can only consist of block attributes
 				// and an optional solidus character.
 				$rest = trim( substr( $text, $at ) );
-				$at = strlen( $text );
+				$at   = strlen( $text );
 
 				// Inspect our potential JSON for the self-closing solidus (`/`) character.
 				$json_maybe = $rest;
 				if ( substr( $json_maybe, -1 ) === '/' ) {
 					// Self-closing block (<!-- wp:image /-->)
 					$this->self_closing_flag = true;
-					$json_maybe = substr( $json_maybe, 0, -1 );
+					$json_maybe              = substr( $json_maybe, 0, -1 );
 				}
 
 				// Let's try to parse attributes as JSON.
-				if( strlen( $json_maybe ) > 0 ) {
+				if ( strlen( $json_maybe ) > 0 ) {
 					$attributes = json_decode( $json_maybe, true );
 					if ( null === $attributes || ! is_array( $attributes ) ) {
 						// This comment looked like a block comment, but the attributes didn't
@@ -256,14 +256,14 @@ class WP_Block_Markup_Processor extends WP_HTML_Processor {
 			$this->block_name       = $name;
 			$this->block_attributes = $attributes;
 
-			if($this->block_closer) {
-				$popped = array_pop($this->stack_of_open_blocks);
-				if($popped !== $name) {
-					$this->last_block_error = sprintf('Block closer %s does not match the last opened block %s.', $name, $popped);
+			if ( $this->block_closer ) {
+				$popped = array_pop( $this->stack_of_open_blocks );
+				if ( $popped !== $name ) {
+					$this->last_block_error = sprintf( 'Block closer %s does not match the last opened block %s.', $name, $popped );
 					return false;
 				}
-			} else if (!$this->self_closing_flag) {
-				array_push($this->stack_of_open_blocks, $name);
+			} elseif ( ! $this->self_closing_flag ) {
+				array_push( $this->stack_of_open_blocks, $name );
 			}
 
 			return true;
