@@ -125,16 +125,10 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 				$relative_plugin_path = substr($relative_plugin_path, strlen($plugin_directory));
 			}
 
-			// Let's make sure the plugin path exists on the filesystem.
-			if ( ! file_exists( $plugin_directory . $relative_plugin_path ) &&
-				! is_dir( $plugin_directory . $relative_plugin_path )
-			) {
-				die( 'There is no plugin at ' . $plugin_directory . $relative_plugin_path );
-			}
-
 			if (
 				pathinfo($relative_plugin_path, PATHINFO_EXTENSION) !== 'php' &&
-				substr($relative_plugin_path, -1) !== '/'
+				substr($relative_plugin_path, -1) !== '/' &&
+				is_dir( $plugin_directory . $relative_plugin_path )
 			) {
 				$relative_plugin_path = $relative_plugin_path . '/';
 			}
