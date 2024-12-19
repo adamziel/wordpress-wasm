@@ -18,10 +18,12 @@ import { usePlaygroundClientInfo } from '../../../lib/use-playground-client';
 import { OfflineNotice } from '../../offline-notice';
 import { DownloadAsZipMenuItem } from '../../toolbar-buttons/download-as-zip';
 import { GithubExportMenuItem } from '../../toolbar-buttons/github-export-menu-item';
+import { RenameMenuItem } from '../../toolbar-buttons/rename-menu-item';
 import { ReportError } from '../../toolbar-buttons/report-error';
 import { TemporarySiteNotice } from '../temporary-site-notice';
 import { SiteInfo } from '../../../lib/state/redux/slice-sites';
 import {
+	setActiveModal,
 	setSiteManagerOpen,
 	setSiteManagerSection,
 } from '../../../lib/state/redux/slice-ui';
@@ -30,6 +32,7 @@ import { encodeStringAsBase64 } from '../../../lib/base64';
 import { ActiveSiteSettingsForm } from '../site-settings-form/active-site-settings-form';
 import { getRelativeDate } from '../../../lib/get-relative-date';
 import { removeSite } from '../../../lib/state/redux/slice-sites';
+import { modalSlugs } from '../../layout';
 
 export function SiteInfoPanel({
 	className,
@@ -222,6 +225,9 @@ export function SiteInfoPanel({
 									<>
 										{!isTemporary && (
 											<MenuGroup>
+												<RenameMenuItem
+													onClose={onClose}
+												/>
 												<MenuItem
 													aria-label="Delete this Playground"
 													className={css.danger}
