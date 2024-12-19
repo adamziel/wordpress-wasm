@@ -128,7 +128,6 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 			}
 
 			if (
-				pathinfo($relative_plugin_path, PATHINFO_EXTENSION) !== 'php' &&
 				substr($relative_plugin_path, -1) !== '/' &&
 				is_dir( $plugin_directory . $relative_plugin_path )
 			) {
