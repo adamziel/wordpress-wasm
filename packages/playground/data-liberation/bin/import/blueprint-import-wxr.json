@@ -11,8 +11,8 @@
 			"pluginPath": "data-liberation/plugin.php"
 		},
 		{
-			"step": "runPHP",
-			"code": "<?php require_once 'wordpress/wp-load.php';\n$upload_dir = wp_upload_dir();\nforeach ( wp_visit_file_tree( $upload_dir['basedir'] . '/import-wxr' ) as $event ) {\nforeach ( $event->files as $file ) {\nif ( $file->isFile() && pathinfo( $file->getPathname(), PATHINFO_EXTENSION ) === 'xml' ) {\ndata_liberation_import( $file->getPathname() );\n}\n}\n};"
+			"step": "wp-cli",
+			"command": "wp data-liberation import /wordpress/wp-content/uploads/import-wxr"
 		}
 	]
 }

@@ -39,40 +39,29 @@ add_filter(
 	}
 );
 
-add_action(
-	'init',
-	function () {
-		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			/**
-			 * Import a WXR file.
-			 *
-			 * <file>
-			 * : The WXR file to import.
-			 */
-			$command = function ( $args, $assoc_args ) {
-				$file = $args[0];
-				data_liberation_import( $file );
-			};
+function data_liberation_init() {
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		require_once __DIR__ . '/src/cli/WP_Import_Command.php';
 
-			// Register the WP-CLI import command.
-			// Example usage: wp data-liberation /path/to/file.xml
-			WP_CLI::add_command( 'data-liberation', $command );
-		}
-
-		register_post_status(
-			'error',
-			array(
-				'label' => _x( 'Error', 'post' ), // Label name
-				'public' => false,
-				'exclude_from_search' => false,
-				'show_in_admin_all_list' => false,
-				'show_in_admin_status_list' => false,
-				// translators: %s is the number of errors
-				'label_count' => _n_noop( 'Error <span class="count">(%s)</span>', 'Error <span class="count">(%s)</span>' ),
-			)
-		);
+		// Register the WP-CLI import command.
+		WP_CLI::add_command( 'data-liberation', WP_Import_Command::class );
 	}
-);
+
+	register_post_status(
+		'error',
+		array(
+			'label' => _x( 'Error', 'post' ), // Label name
+			'public' => false,
+			'exclude_from_search' => false,
+			'show_in_admin_all_list' => false,
+			'show_in_admin_status_list' => false,
+			// translators: %s is the number of errors
+			'label_count' => _n_noop( 'Error <span class="count">(%s)</span>', 'Error <span class="count">(%s)</span>' ),
+		)
+	);
+}
+
+add_action( 'init', 'data_liberation_init' );
 
 // Register admin menu
 add_action(

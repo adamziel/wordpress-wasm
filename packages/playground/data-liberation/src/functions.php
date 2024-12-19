@@ -167,7 +167,7 @@ function wp_visit_file_tree( $dir ) {
 		if ( '.' === $file || '..' === $file ) {
 			continue;
 		}
-		$file_path = $dir . '/' . $file;
+		$file_path = rtrim( $dir, '/' ) . '/' . $file;
 		if ( is_dir( $file_path ) ) {
 			$directories[] = $file_path;
 			continue;
@@ -190,49 +190,6 @@ function wp_visit_file_tree( $dir ) {
 	yield new WP_File_Visitor_Event(
 		WP_File_Visitor_Event::EVENT_EXIT,
 		new SplFileInfo( $dir )
-	);
-}
-
-/**
- * Import a WXR file. Used by the CLI.
- *
- * @param string $path The path to the WXR file.
- * @return void
- */
-function data_liberation_import( $path ): bool {
-	$importer = WP_Stream_Importer::create_for_wxr_file( $path );
-
-	if ( ! $importer ) {
-		return false;
-	}
-
-	$is_wp_cli = defined( 'WP_CLI' ) && WP_CLI;
-
-	if ( $is_wp_cli ) {
-		WP_CLI::line( "Importing from {$path}" );
-	}
-
-	while ( $importer->next_step() ) {
-		// Output the current stage if running in WP-CLI.
-		if ( $is_wp_cli ) {
-			$current_stage = $importer->get_current_stage();
-			WP_CLI::line( "Import: stage {$current_stage}" );
-		}
-	}
-
-	if ( $is_wp_cli ) {
-		WP_CLI::success( 'Import ended' );
-	}
-
-	return true;
-}
-
-function get_all_post_meta_flat( $post_id ) {
-	return array_map(
-		function ( $value ) {
-			return $value[0];
-		},
-		get_post_meta( $post_id )
 	);
 }
 

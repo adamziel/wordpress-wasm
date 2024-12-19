@@ -57,7 +57,6 @@ class WP_Entity_Importer {
 	protected $tags       = array();
 	protected $base_url   = '';
 
-	protected $logger;
 	protected $options = array();
 
 	// NEW STYLE
@@ -95,7 +94,6 @@ class WP_Entity_Importer {
 		$this->mapping['term_id']   = array();
 		$this->requires_remapping   = $empty_types;
 		$this->exists               = $empty_types;
-		$this->logger               = new Logger();
 
 		$this->options = wp_parse_args(
 			$options,
@@ -136,15 +134,8 @@ class WP_Entity_Importer {
 	}
 
 	public function import_site_option( $data ) {
-		$this->logger->info(
-			sprintf(
-				/* translators: %s: option name */
-				__( 'Imported site option "%s"', 'wordpress-importer' ),
-				$data['option_name']
-			)
-		);
-
 		update_option( $data['option_name'], $data['option_value'] );
+		do_action( 'wxr_importer_processed_site_option', $data );
 	}
 
 	public function import_user( $data ) {
@@ -209,15 +200,6 @@ class WP_Entity_Importer {
 
 		$user_id = wp_insert_user( wp_slash( $userdata ) );
 		if ( is_wp_error( $user_id ) ) {
-			$this->logger->error(
-				sprintf(
-					/* translators: %s: user login */
-					__( 'Failed to import user "%s"', 'wordpress-importer' ),
-					$userdata['user_login']
-				)
-			);
-			$this->logger->debug( $user_id->get_error_message() );
-
 			/**
 			 * User processing failed.
 			 *
@@ -232,22 +214,6 @@ class WP_Entity_Importer {
 			$this->mapping['user'][ $original_id ] = $user_id;
 		}
 		$this->mapping['user_slug'][ $original_slug ] = $user_id;
-
-		$this->logger->info(
-			sprintf(
-				/* translators: %s: user login */
-				__( 'Imported user "%s"', 'wordpress-importer' ),
-				$userdata['user_login']
-			)
-		);
-		$this->logger->debug(
-			sprintf(
-				/* translators: 1: original user ID, 2: new user ID */
-				__( 'User %1$d remapped to %2$d', 'wordpress-importer' ),
-				$original_id,
-				$user_id
-			)
-		);
 
 		// TODO: Implement meta handling once WXR includes it
 		/**
@@ -327,17 +293,6 @@ class WP_Entity_Importer {
 
 		$result = wp_insert_term( $data['name'], $data['taxonomy'], $termdata );
 		if ( is_wp_error( $result ) ) {
-			$this->logger->warning(
-				sprintf(
-					/* translators: 1: taxonomy name, 2: term name */
-					__( 'Failed to import %1$s %2$s', 'wordpress-importer' ),
-					$data['taxonomy'],
-					$data['name']
-				)
-			);
-			$this->logger->debug( $result->get_error_message() );
-			do_action( 'wp_import_insert_term_failed', $result, $data );
-
 			/**
 			 * Term processing failed.
 			 *
@@ -353,25 +308,6 @@ class WP_Entity_Importer {
 
 		$this->mapping['term'][ $mapping_key ]    = $term_id;
 		$this->mapping['term_id'][ $original_id ] = $term_id;
-
-		$this->logger->info(
-			sprintf(
-			/* translators: 1: term name, 2: taxonomy name */
-				__( 'Imported "%1$s" (%2$s)', 'wordpress-importer' ),
-				$data['name'],
-				$data['taxonomy']
-			)
-		);
-		$this->logger->debug(
-			sprintf(
-			/* translators: 1: original term ID, 2: new term ID */
-				__( 'Term %1$d remapped to %2$d', 'wordpress-importer' ),
-				$original_id,
-				$term_id
-			)
-		);
-
-		do_action( 'wp_import_insert_term', $term_id, $data );
 
 		/**
 		 * Term processing completed.
@@ -449,7 +385,6 @@ class WP_Entity_Importer {
 		 */
 		$data = apply_filters( 'wxr_importer_pre_process_post', $data );
 		if ( empty( $data ) ) {
-			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
 		}
 
@@ -458,7 +393,6 @@ class WP_Entity_Importer {
 
 		// Have we already processed this?
 		if ( isset( $this->mapping['post'][ $original_id ] ) ) {
-			$this->logger->debug( 'Skipping post, already processed' );
 			return;
 		}
 
@@ -467,28 +401,17 @@ class WP_Entity_Importer {
 
 		// Is this type even valid?
 		if ( ! $post_type_object ) {
-			$this->logger->warning(
-				sprintf(
-					/* translators: 1: post title, 2: post type */
-					__( 'Failed to import "%1$s": Invalid post type %2$s', 'wordpress-importer' ),
-					$data['post_title'],
-					$post_type
-				)
-			);
+			/**
+			 * Post type not found.
+			 *
+			 * @param array $data Raw data imported for the post.
+			 */
+			do_action( 'wxr_importer_process_post_type_not_found', $data );
 			return false;
 		}
 
 		$post_exists = $this->post_exists( $data );
 		if ( $post_exists ) {
-			$this->logger->info(
-				sprintf(
-					/* translators: 1: post type name, 2: post title */
-					__( '%1$s "%2$s" already exists.', 'wordpress-importer' ),
-					$post_type_object->labels->singular_name,
-					$data['post_title']
-				)
-			);
-
 			/**
 			 * Post processing already imported.
 			 *
@@ -557,13 +480,6 @@ class WP_Entity_Importer {
 			// @TODO: Do not download any attachments here. We're just inserting the data
 			//        at this point. All the downloads have already been processed by now.
 			if ( ! $this->options['fetch_attachments'] ) {
-				$this->logger->notice(
-					sprintf(
-						/* translators: %s: post title */
-						__( 'Skipping attachment "%s", fetching attachments disabled' ),
-						$data['post_title']
-					)
-				);
 				/**
 				 * Post processing skipped.
 				 *
@@ -581,16 +497,6 @@ class WP_Entity_Importer {
 		}
 
 		if ( is_wp_error( $post_id ) ) {
-			$this->logger->error(
-				sprintf(
-					/* translators: 1: post title, 2: post type name */
-					__( 'Failed to import "%1$s" (%2$s)', 'wordpress-importer' ),
-					$data['post_title'],
-					$post_type_object->labels->singular_name
-				)
-			);
-			$this->logger->debug( $post_id->get_error_message() );
-
 			/**
 			 * Post processing failed.
 			 *
@@ -600,7 +506,7 @@ class WP_Entity_Importer {
 			 * @param array $comments Raw comment data, already processed by {@see process_comments}.
 			 * @param array $terms Raw term data, already processed.
 			 */
-			do_action( 'wxr_importer_process_failed_post', $post_id, $data, $meta, $comments, $terms );
+			do_action( 'wxr_importer_process_failed_post', $post_id, $data, $meta, $post_type_object );
 			return false;
 		}
 
@@ -616,23 +522,6 @@ class WP_Entity_Importer {
 			$this->requires_remapping['post'][ $post_id ] = true;
 		}
 		$this->mark_post_exists( $data, $post_id );
-
-		$this->logger->info(
-			sprintf(
-				/* translators: 1: post title, 2: post type name */
-				__( 'Imported "%1$s" (%2$s)', 'wordpress-importer' ),
-				$data['post_title'] ?? '',
-				$post_type_object->labels->singular_name
-			)
-		);
-		$this->logger->debug(
-			sprintf(
-				/* translators: 1: original post ID, 2: new post ID */
-				__( 'Post %1$d remapped to %2$d', 'wordpress-importer' ),
-				$original_id,
-				$post_id
-			)
-		);
 
 		/**
 		 * Post processing completed.
@@ -703,8 +592,6 @@ class WP_Entity_Importer {
 		$original_object_id = get_post_meta( $post_id, '_menu_item_object_id', true );
 		$object_id          = null;
 
-		$this->logger->debug( sprintf( 'Processing menu item %s', $item_type ) );
-
 		$requires_remapping = false;
 		switch ( $item_type ) {
 			case 'taxonomy':
@@ -733,7 +620,6 @@ class WP_Entity_Importer {
 			default:
 				// associated object is missing or not imported yet, we'll retry later
 				$this->missing_menu_items[] = $item;
-				$this->logger->debug( 'Unknown menu item type' );
 				break;
 		}
 
@@ -746,7 +632,6 @@ class WP_Entity_Importer {
 			return;
 		}
 
-		$this->logger->debug( sprintf( 'Menu item %d mapped to %d', $original_object_id, $object_id ) );
 		update_post_meta( $post_id, '_menu_item_object_id', wp_slash( $object_id ) );
 	}
 
@@ -1191,59 +1076,5 @@ class WP_Entity_Importer {
 		}
 
 		return $a['comment_id'] - $b['comment_id'];
-	}
-}
-
-/**
- * @TODO how to treat this? Should this class even exist?
- *       how does WordPress handle different levels? It
- *       seems useful for usage in wp-cli, Blueprints,
- *       and other non-web environments.
- */
-// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
-class Logger {
-	/**
-	 * Log a debug message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function debug( $message ) {
-		// echo( '[DEBUG] ' . $message );
-	}
-
-	/**
-	 * Log an info message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function info( $message ) {
-		// echo( '[INFO] ' . $message );
-	}
-
-	/**
-	 * Log a warning message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function warning( $message ) {
-		echo( '[WARNING] ' . $message );
-	}
-
-	/**
-	 * Log an error message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function error( $message ) {
-		echo( '[ERROR] ' . $message );
-	}
-
-	/**
-	 * Log a notice message.
-	 *
-	 * @param string $message Message to log
-	 */
-	public function notice( $message ) {
-		// echo( '[NOTICE] ' . $message );
 	}
 }
