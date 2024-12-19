@@ -55,7 +55,7 @@ class WP_Block_Markup_Entity_Reader extends WP_Entity_Reader {
         // the first H1 block. In block markup exports, it will be the opposite.
         //
         // @TODO: Enable the API consumer to customize the title resolution.
-        if ( ! $post_fields['post_title'] ) {
+        if ( ! isset( $post_fields['post_title'] ) ) {
             $removed_title = WP_Import_Utils::remove_first_h1_block_from_block_markup( $post_fields['post_content'] );
             if ( false !== $removed_title ) {
                 $post_fields['post_title']   = $removed_title['h1_content'];
