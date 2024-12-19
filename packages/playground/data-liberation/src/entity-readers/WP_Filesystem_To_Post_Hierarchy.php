@@ -242,12 +242,4 @@ class WP_Filesystem_To_Post_Hierarchy {
 		}
 		return $filtered_paths;
 	}
-
-	/**
-	 * @TODO: Either implement this method, or introduce a concept of
-	 *        reentrant and non-reentrant entity readers.
-	 */
-	public function get_reentrancy_cursor() {
-		return '';
-	}
 }
