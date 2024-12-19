@@ -126,6 +126,8 @@ class WP_Entity_Importer {
 			case WP_Imported_Entity::TYPE_TAG:
 			case WP_Imported_Entity::TYPE_CATEGORY:
 				return $this->import_term( $data );
+			case WP_Imported_Entity::TYPE_TERM_META:
+				return $this->import_term_meta( $data, $data['term_id'] );
 			case WP_Imported_Entity::TYPE_USER:
 				return $this->import_user( $data );
 			case WP_Imported_Entity::TYPE_SITE_OPTION:
@@ -382,6 +384,28 @@ class WP_Entity_Importer {
 		do_action( 'wxr_importer_processed_term', $term_id, $data );
 	}
 
+
+	public function import_term_meta( $meta_item, $term_id ) {
+		/**
+		 * Pre-process term meta data.
+		 *
+		 * @param array $meta_item Meta data. (Return empty to skip.)
+		 * @param int $term_id Term the meta is attached to.
+		 */
+		$meta_item = apply_filters( 'wxr_importer_pre_process_term_meta', $meta_item, $term_id );
+		if ( empty( $meta_item ) ) {
+			return false;
+		}
+
+		if ( ! isset( $meta_item['term_id'] ) ) {
+			$meta_item['term_id'] = $term_id;
+		}
+
+		$value        = maybe_unserialize( $meta_item['meta_value'] );
+		$term_meta_id = add_term_meta( $meta_item['term_id'], wp_slash( $meta_item['meta_key'] ), wp_slash_strings_only( $value ) );
+
+		do_action( 'wxr_importer_processed_term_meta', $term_meta_id, $meta_item, $meta_item['term_id'] );
+	}
 
 	/**
 	 * Prefill existing post data.
@@ -880,11 +904,11 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id, $post );
+		$key   = apply_filters( 'import_post_meta_key', $meta_item['meta_key'], $post_id, $post );
 		$value = false;
 
 		if ( '_edit_last' === $key ) {
-			$value = intval( $meta_item['value'] );
+			$value = intval( $meta_item['meta_value'] );
 			if ( ! isset( $this->mapping['user'][ $value ] ) ) {
 				// Skip!
 				_doing_it_wrong( __METHOD__, 'User ID not found in mapping', '4.7' );
@@ -897,7 +921,7 @@ class WP_Entity_Importer {
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string
 			if ( ! $value ) {
-				$value = maybe_unserialize( $meta_item['value'] );
+				$value = maybe_unserialize( $meta_item['meta_value'] );
 			}
 
 			add_post_meta( $post_id, $key, $value );
@@ -1047,8 +1071,8 @@ class WP_Entity_Importer {
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
-		$value = maybe_unserialize( $meta_item['value'] );
-		add_comment_meta( $comment_id, wp_slash( $meta_item['key'] ), wp_slash( $value ) );
+		$value = maybe_unserialize( $meta_item['meta_value'] );
+		add_comment_meta( $comment_id, wp_slash( $meta_item['meta_key'] ), wp_slash( $value ) );
 	}
 
 	/**

@@ -65,13 +65,23 @@
 		<wp:is_sticky>0</wp:is_sticky>
 		<category domain="category" nicename="alpha"><![CDATA[a \"great\" category]]></category>
 		<wp:postmeta>
-			<wp:meta_key>Post by</wp:meta_key>
-			<wp:meta_value><![CDATA[admin]]></wp:meta_value>
-		</wp:postmeta>
-		<wp:postmeta>
 			<wp:meta_key>_edit_last</wp:meta_key>
 			<wp:meta_value><![CDATA[1]]></wp:meta_value>
 		</wp:postmeta>
+		<wp:comment>
+			<wp:comment_id>1</wp:comment_id>
+			<wp:comment_author><![CDATA[Mr WordPress]]></wp:comment_author>
+			<wp:comment_author_email></wp:comment_author_email>
+			<wp:comment_author_url>http://wordpress.org/</wp:comment_author_url>
+			<wp:comment_author_IP></wp:comment_author_IP>
+			<wp:comment_date>2011-01-18 20:53:18</wp:comment_date>
+			<wp:comment_date_gmt>2011-01-18 20:53:18</wp:comment_date_gmt>
+			<wp:comment_content><![CDATA[\o/ ¯\_(ツ)_/¯]]></wp:comment_content>
+			<wp:comment_approved>1</wp:comment_approved>
+			<wp:comment_type></wp:comment_type>
+			<wp:comment_parent>0</wp:comment_parent>
+			<wp:comment_user_id>0</wp:comment_user_id>
+		</wp:comment>
 	</item>
 </channel>
 </rss>
