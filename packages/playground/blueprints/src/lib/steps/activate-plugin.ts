@@ -146,9 +146,9 @@ export const activatePlugin: StepHandler<ActivatePluginStep> = async (
 		},
 	});
 
-	console.log(isActiveCheckResult.text);
 
 	if (isActiveCheckResult.text === 'true') {
+		// Plugin activation was successful, yay!
 		return;
 	}
 
