@@ -64,7 +64,7 @@ HTML)
     }
 
     private function normalize_markup( $markup ) {
-        return WP_HTML_Processor::create_fragment( $markup )->serialize();
+        return str_replace( "\n", '', WP_HTML_Processor::create_fragment( $markup )->serialize() );
     }
 
 }
