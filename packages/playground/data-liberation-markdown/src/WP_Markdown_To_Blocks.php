@@ -179,7 +179,8 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 						break;
 
 					case Block\Paragraph::class:
-						if ( $this->current_block()->block_name === 'list-item' ) {
+						$current_block = $this->current_block();
+						if ( $current_block && $current_block->block_name === 'list-item' ) {
 							break;
 						}
 						$this->push_block( 'paragraph' );

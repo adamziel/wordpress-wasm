@@ -67,6 +67,75 @@ class WP_Blocks_To_Markdown {
                 $content = $this->html_to_markdown($inner_html);
                 return str_repeat('#', $level) . ' ' . $content . "\n\n";
 
+            case 'core/table':
+                // Accumulate all the table contents to compute the markdown
+                // column widths.
+                $processor = WP_Data_Liberation_HTML_Processor::create_fragment($inner_html);
+                $rows = [];
+                $header = [];
+                $in_header = false;
+                $current_row = [];
+
+                while ($processor->next_token()) {
+                    if ($processor->get_token_type() !== '#tag') {
+                        continue;
+                    }
+
+                    $tag = $processor->get_tag();
+                    $is_closer = $processor->is_tag_closer();
+
+                    if ($tag === 'THEAD' && !$is_closer) {
+                        $in_header = true;
+                    } else if ($tag === 'THEAD' && $is_closer) {
+                        $in_header = false;
+                    } else if ($tag === 'TR' && $is_closer) {
+                        if ($in_header) {
+                            $header = $current_row;
+                        } else {
+                            $rows[] = $current_row;
+                        }
+                        $current_row = [];
+                    } else if (($tag === 'TH' || $tag === 'TD') && !$is_closer) {
+                        $cell_content = $processor->get_inner_html();
+                        $current_row[] = $this->html_to_markdown($cell_content);
+                        $processor->skip_to_closer();
+                    }
+                }
+
+                if (empty($header) && !empty($rows)) {
+                    $header = array_shift($rows);
+                }
+
+                if (empty($header)) {
+                    return '';
+                }
+
+                $col_widths = array_map('strlen', $header);
+                foreach ($rows as $row) {
+                    foreach ($row as $i => $cell) {
+                        $col_widths[$i] = max($col_widths[$i], strlen($cell));
+                    }
+                }
+
+                $padded_header = array_map(function($cell, $width) {
+                    return str_pad($cell, $width);
+                }, $header, $col_widths);
+                $markdown = "| " . implode(" | ", $padded_header) . " |\n";
+
+                $separator_cells =  array_map(function($width) {
+                    return str_repeat("-", $width + 2);
+                }, $col_widths);
+                $markdown .= "|" . implode("|", $separator_cells) . "|\n";
+
+                foreach ($rows as $row) {
+                    $padded_cells = array_map(function($cell, $width) {
+                        return str_pad($cell, $width);
+                    }, $row, $col_widths);  
+                    $markdown .= "| " . implode(" | ", $padded_cells) . " |\n";
+                }
+
+                return $markdown . "\n";
+
             case 'core/list':
                 array_push($this->state['listStyle'], array(
                     'style' => isset($attributes['ordered']) ? ($attributes['type'] ?? 'decimal') : '-',
@@ -138,7 +207,7 @@ class WP_Blocks_To_Markdown {
     }
 
     private function html_to_markdown($html, $parents = []) {
-        $processor = WP_HTML_Processor::create_fragment($html);
+        $processor = WP_Data_Liberation_HTML_Processor::create_fragment($html);
         $markdown = '';
         
         while ($processor->next_token()) {
@@ -170,6 +239,11 @@ class WP_Blocks_To_Markdown {
                     $markdown .= '*';
                     break;
                     
+                case '+DEL':
+                case '-DEL':
+                    $markdown .= '~~';
+                    break;
+
                 case '+CODE':
                 case '-CODE':
                     if(!$this->has_parent('core/code')){
@@ -192,6 +266,9 @@ class WP_Blocks_To_Markdown {
             }
         }
         
+        // The HTML processor gives us all the whitespace verbatim
+        // as it was encountered in the byte stream.
+        // Let's normalize it to a single space.
         $markdown = trim($markdown, "\n ");
         $markdown = preg_replace('/ +/', ' ', $markdown);
         $markdown = preg_replace('/\n+/', "\n", $markdown);

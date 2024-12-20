@@ -81,6 +81,7 @@ require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/import/WP_Import_HTML_Processor.php';
 require_once __DIR__ . '/src/import/WP_Import_Utils.php';
+require_once __DIR__ . '/src/WP_Data_Liberation_HTML_Processor.php';
 require_once __DIR__ . '/src/utf8_decoder.php';
 
 // When running in Playground, the composer autoloader script sees CLI SAPI and

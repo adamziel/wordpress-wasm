@@ -14,10 +14,6 @@
 		{
 			"step": "activatePlugin",
 			"pluginPath": "z-data-liberation-markdown/plugin.php"
-		},
-		{
-			"step": "activatePlugin",
-			"pluginPath": "z-data-liberation-static-files-editor/plugin.php"
 		}
 	]
 }

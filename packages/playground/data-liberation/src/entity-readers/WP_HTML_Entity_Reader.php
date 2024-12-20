@@ -70,8 +70,8 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 				'post_meta',
 				array(
 					'post_id' => $this->post_id,
-					'meta_key' => $key,
-					'meta_value' => $value,
+					'key' => $key,
+					'value' => $value,
 				)
 			);
 		}
