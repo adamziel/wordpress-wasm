@@ -92,6 +92,7 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
                     $data['guid'] = $post_tree_node['source_path_relative'];
                     $data['post_parent'] = $post_tree_node['parent_id'];
                     $data['post_title'] = $data['post_title'] ?? null;
+                    $data['post_status'] = 'publish';
                     $data['post_type'] = 'page';
                     if ( ! $data['post_title'] ) {
                         $data['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['source_path_relative'] ) );
