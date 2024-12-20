@@ -8,6 +8,6 @@ import url from './sqlite-database-integration.zip?url';
  * This file must statically exists in the project because of the way
  * vite resolves imports.
  */
-export const size = 86695;
+export const size = 86847;
 export { url };
 
