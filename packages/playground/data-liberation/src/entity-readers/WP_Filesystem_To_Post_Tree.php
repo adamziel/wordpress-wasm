@@ -2,10 +2,10 @@
 
 /**
  */
-class WP_Filesystem_To_Post_Hierarchy {
+class WP_Filesystem_To_Post_Tree {
 	private $file_visitor;
 
-	private $current_post;
+	private $current_node;
 
 	private $pending_files = array();
 	private $pending_directory_index;
@@ -31,7 +31,7 @@ class WP_Filesystem_To_Post_Hierarchy {
 			return false;
 		}
 		if ( 1 === $options['first_post_id'] ) {
-			_doing_it_wrong( __FUNCTION__, 'First post ID must be greater than 1', '1.0.0' );
+			_doing_it_wrong( __FUNCTION__, 'First node ID must be greater than 1', '1.0.0' );
 			return false;
 		}
 		if ( ! isset( $options['filter_pattern'] ) ) {
@@ -59,12 +59,12 @@ class WP_Filesystem_To_Post_Hierarchy {
 		$this->index_file_pattern = $options['index_file_pattern'];
 	}
 
-	public function get_current_post() {
-		return $this->current_post;
+	public function get_current_node() {
+		return $this->current_node;
 	}
 
-	public function next_post() {
-		$this->current_post = null;
+	public function next_node() {
+		$this->current_node = null;
 		if ( $this->is_finished ) {
 			return false;
 		}
@@ -157,7 +157,7 @@ class WP_Filesystem_To_Post_Hierarchy {
 	protected function emit_object( $options ) {
 		$post_id = $this->next_post_id;
 		++$this->next_post_id;
-		$this->current_post = array_merge(
+		$this->current_node = array_merge(
 			$options,
 			array(
 				'post_id' => $post_id,

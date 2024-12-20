@@ -20,7 +20,7 @@ class WP_Blocks_To_Markdown {
 		return true;
 	}
 
-	public function get_markdown() {
+	public function get_result() {
 		return $this->markdown;
 	}
 
@@ -174,7 +174,7 @@ class WP_Blocks_To_Markdown {
         $html = $this->blocks->skip_and_get_block_inner_html();
         $converter = new WP_Blocks_To_Markdown($html, [], $breadcrumbs_inside_block);
         $converter->convert();
-        return $converter->get_markdown();
+        return $converter->get_result();
     }
 
 	private function longest_sequence_of($input, $substring) {

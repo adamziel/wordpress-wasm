@@ -21,7 +21,7 @@ class WP_Static_Files_Editor_Plugin {
 
     static public function register_hooks() {
         register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
-        add_action('save_post_page', array(self::class, 'on_save_post'));
+        add_action('save_post', array(self::class, 'on_save_post'));
     }
 
     /**
@@ -42,18 +42,9 @@ class WP_Static_Files_Editor_Plugin {
 
         $importer = WP_Stream_Importer::create(
             function () {
-                return WP_Directory_Tree_Entity_Reader::create(
+                return new WP_Filesystem_Entity_Reader(
                     new WP_Filesystem(),
-                    array (
-                        'root_dir' => WP_STATIC_CONTENT_DIR,
-                        'create_root_page' => true,
-                        'first_post_id' => 2,
-                        'allowed_extensions' => array( 'md' ),
-                        'index_file_patterns' => array( '#^index\.md$#' ),
-                        'markup_converter_factory' => function( $content ) {
-                            return new WP_Markdown_To_Blocks( $content );
-                        },
-                    )
+                    WP_STATIC_CONTENT_DIR
                 );
             },
             array(),
@@ -107,12 +98,12 @@ class WP_Static_Files_Editor_Plugin {
             return;
         }
         
-        self::deltree(WP_STATIC_CONTENT_DIR);
+        // self::deltree(WP_STATIC_CONTENT_DIR);
         mkdir(WP_STATIC_CONTENT_DIR);
         self::save_db_pages_as_html(WP_STATIC_CONTENT_DIR);
     }
 
-    static private function save_db_pages_as_html($path, $parent_id = 0) {
+    static private function save_db_pages_as_html($path, $parent_id = null) {
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
@@ -130,18 +121,39 @@ class WP_Static_Files_Editor_Plugin {
                 $pages->the_post();
                 $page_id = get_the_ID();
                 $page = get_post($page_id);
-                $title = sanitize_title(get_the_title());
-                
-                // $content = '<h1>' . esc_html(get_the_title()) . "</h1>\n\n" . get_the_content();
 
-                $converter = new WP_Blocks_To_Markdown(
-                    $page->post_content,
-                    array(
-                        'title' => get_the_title(),
-                    )
+                $content_converter = get_post_meta($page_id, 'content_converter', true);
+                if(empty($content_converter)) {
+                    $content_converter = 'md';
+                }
+
+                $title_block = (
+                    WP_Import_Utils::block_opener('heading', array('level' => 1)) . 
+                    '<h1>' . esc_html(get_the_title()) . '</h1>' . 
+                    WP_Import_Utils::block_closer('heading')
                 );
-                $converter->convert();
-                $content = $converter->get_markdown();
+                $block_markup = $title_block . $page->post_content;
+
+                switch($content_converter) {
+                    case 'html':
+                    case 'xhtml':
+                        // @TODO: Implement a Blocks to HTML converter.
+                        break;
+                    case 'md':
+                    default:
+                        $converter = new WP_Blocks_To_Markdown(
+                            $block_markup,
+                            array(
+                                'title' => get_the_title(),
+                            )
+                        );
+                        if(false === $converter->convert()) {
+                            // @TODO: error handling.
+                        }
+                        $content = $converter->get_result();
+                        break;
+                }
+
 
                 $child_pages = get_pages(array('child_of' => $page_id, 'post_type' => 'page'));
 
@@ -149,17 +161,23 @@ class WP_Static_Files_Editor_Plugin {
                     mkdir($path, 0777, true);
                 }
 
+                $source_path_relative = get_post_meta($page_id, 'source_path', true);
+                if(empty($source_path_relative)) {
+                    $title = sanitize_title(get_the_title());
+                    $source_path_relative = $page->menu_order . '_' . $title . '.' . $content_converter;
+                }
+                $source_file_path = WP_STATIC_CONTENT_DIR . '/' . $source_path_relative;
                 if (!empty($child_pages)) {
-                    $new_parent = $path . '/' . $page->menu_order . '_' . $title;
-                    if (!file_exists($new_parent)) {
-                        mkdir($new_parent, 0777, true);
+                    if(is_dir($source_file_path)) {
+                        $dirname = $source_file_path;
+                    } else {
+                        $dirname = dirname($source_file_path);
+                        mkdir($dirname, 0777, true);
                     }
-                    // file_put_contents($new_parent . '/index.html', $content);
-                    file_put_contents($new_parent . '/index.md', $content);
-                    self::save_db_pages_as_html($new_parent, $page_id);
+                    file_put_contents($source_file_path . '/index.' . $content_converter, $content);
+                    self::save_db_pages_as_html($dirname, $page_id);
                 } else {
-                    // file_put_contents($path . '/' . $page->menu_order . '_' . $title . '.html', $content);
-                    file_put_contents($path . '/' . $page->menu_order . '_' . $title . '.md', $content);
+                    file_put_contents($source_file_path, $content);
                 }
             }
         }
