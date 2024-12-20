@@ -22,6 +22,94 @@ class WP_Static_Files_Editor_Plugin {
     static public function register_hooks() {
         register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
         add_action('save_post', array(self::class, 'on_save_post'));
+        add_action('init', function() {
+            $converter = new WP_Blocks_To_Markdown(<<<HTML
+<!-- wp:heading {"level":1} -->
+<h1>WordPress 6.8 was released</h1>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Last week, WordPress 6.8 <b>was released</b>. This release includes a new default theme, a new block editor experience, and a new block library. It also includes a new block editor experience, and a new block library.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul>
+    <!-- wp:list-item -->
+    <li>Major Features
+        <!-- wp:list -->
+        <ul>
+            <!-- wp:list-item -->
+            <li>Block Editor Updates
+                <!-- wp:list -->
+                <ul>
+                    <!-- wp:list-item -->
+                    <li>New <code>block patterns</code> added</li>
+                    <!-- /wp:list-item -->
+                     
+                    <!-- wp:list-item -->
+                    <li>Improved performance
+
+                Hey Hey
+
+                <b>More lines</b>
+                        <!-- wp:list -->
+                        <ul>
+                            <!-- wp:list-item -->
+                            <li>New <code>block
+                Hey Hey
+
+                <b>More lines</b> patterns</code> added</li>
+                            <!-- /wp:list-item -->
+                            <!-- wp:list-item -->
+                            <li>Improved performance</li>
+                            <!-- /wp:list-item -->
+                        </ul>
+                        <!-- /wp:list -->
+                    </li>
+                    <!-- /wp:list-item -->
+                    <!-- wp:list-item -->
+                    <li>Improved performance</li>
+                    <!-- /wp:list-item -->
+                </ul>
+                <!-- /wp:list -->
+            </li>
+            <!-- /wp:list-item -->
+                    <!-- wp:list-item -->
+                    <li>Improved performance</li>
+                    <!-- /wp:list-item -->
+                    <!-- wp:list-item -->
+                    <li>Improved performance</li>
+                    <!-- /wp:list-item -->
+        </ul>
+        <!-- /wp:list -->
+    </li>
+    <!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote">
+<!-- wp:code -->
+<pre class="wp-block-code"><code>function hello() {
+    console.log("Hello world!");
+}</code></pre>
+<!-- /wp:code -->
+</blockquote>
+<!-- /wp:quote -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table class="has-fixed-layout">
+<thead><tr><th>Header 1</th><th>Header 2</th></tr></thead>
+<tbody><tr><td>Cell 1</td><td>Cell 2</td></tr><tr><td>Cell 3</td><td>Cell 4</td></tr></tbody>
+</table></figure>
+<!-- /wp:table -->
+
+HTML);
+            echo '<plaintext>';
+            $converter->convert();
+            var_dump($converter->get_result());
+            die();
+        }); 
     }
 
     /**
@@ -99,7 +187,7 @@ class WP_Static_Files_Editor_Plugin {
         }
         
         // self::deltree(WP_STATIC_CONTENT_DIR);
-        mkdir(WP_STATIC_CONTENT_DIR);
+        mkdir(WP_STATIC_CONTENT_DIR, 0777, true);
         self::save_db_pages_as_html(WP_STATIC_CONTENT_DIR);
     }
 
@@ -161,7 +249,7 @@ class WP_Static_Files_Editor_Plugin {
                     mkdir($path, 0777, true);
                 }
 
-                $source_path_relative = get_post_meta($page_id, 'source_path', true);
+                $source_path_relative = get_post_meta($page_id, 'source_path_relative', true);
                 if(empty($source_path_relative)) {
                     $title = sanitize_title(get_the_title());
                     $source_path_relative = $page->menu_order . '_' . $title . '.' . $content_converter;

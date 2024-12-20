@@ -49,8 +49,8 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
             $source_content_converter = null;
             $post_tree_node = $this->post_tree->get_current_node();
             if($post_tree_node['type'] === 'file') {
-                $content = $this->filesystem->read_file($post_tree_node['source_path']);
-                $extension = pathinfo($post_tree_node['source_path'], PATHINFO_EXTENSION);
+                $content = $this->filesystem->read_file($post_tree_node['source_path_absolute']);
+                $extension = pathinfo($post_tree_node['source_path_absolute'], PATHINFO_EXTENSION);
                 switch($extension) {
                     case 'md':
                         $converter = new WP_Markdown_To_Blocks( $content );
@@ -89,12 +89,12 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
                 $data = $entity->get_data();
                 if( $entity->get_type() === 'post' ) {
                     $data['id'] = $post_tree_node['post_id'];
-                    $data['guid'] = $post_tree_node['source_path'];
+                    $data['guid'] = $post_tree_node['source_path_relative'];
                     $data['post_parent'] = $post_tree_node['parent_id'];
                     $data['post_title'] = $data['post_title'] ?? null;
                     $data['post_type'] = 'page';
                     if ( ! $data['post_title'] ) {
-                        $data['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['source_path'] ) );
+                        $data['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['source_path_relative'] ) );
                     }
                     $entity = new WP_Imported_Entity( $entity->get_type(), $data );
                 }
@@ -103,7 +103,7 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
         
             // Also emit:
             $additional_meta = array(
-                'source_path' => $post_tree_node['source_path'],
+                'source_path_relative' => $post_tree_node['source_path_relative'],
                 'source_type' => $post_tree_node['type'],
                 'source_content_converter' => $source_content_converter,
             );
@@ -112,8 +112,8 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
                     'post_meta',
                     array(
                         'post_id' => $post_tree_node['post_id'],
-                        'meta_key' => $key,
-                        'meta_value' => $value,
+                        'key' => $key,
+                        'value' => $value,
                     )
                 );
             }

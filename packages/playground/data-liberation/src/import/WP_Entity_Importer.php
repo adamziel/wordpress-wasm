@@ -865,7 +865,7 @@ class WP_Entity_Importer {
 	 * @return int|WP_Error Number of meta items imported on success, error otherwise.
 	 */
 	public function import_post_meta( $meta_item, $post_id ) {
-		if ( empty( $meta ) ) {
+		if ( empty( $meta_item ) ) {
 			return true;
 		}
 
@@ -880,7 +880,7 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id, $post );
+		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id );
 		$value = false;
 
 		if ( '_edit_last' === $key ) {
@@ -893,6 +893,7 @@ class WP_Entity_Importer {
 
 			$value = $this->mapping['user'][ $value ];
 		}
+
 
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string

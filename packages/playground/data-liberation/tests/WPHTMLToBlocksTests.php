@@ -35,7 +35,7 @@ HTML;
      * @dataProvider provider_test_conversion
      */
     public function test_html_to_blocks_conversion( $html, $expected ) {
-        $converter = new WP_HTML_To_Blocks( new WP_HTML_Processor( $html ) );
+        $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $html ) );
         $converter->convert( $html );
         $blocks = $converter->get_block_markup();
 
@@ -43,15 +43,11 @@ HTML;
     }
 
     private function normalize_markup( $markup ) {
-        $processor = new WP_HTML_Processor( $markup );
+        $processor = WP_HTML_Processor::create_fragment( $markup );
         $serialized = $processor->serialize();
         $serialized = trim(
             str_replace(
                 [
-                    // Naively remove parts of the HTML that serialize()
-                    // adds that we don't want.
-                    '<html><head></head><body>',
-                    '</body></html>',
                     // Even more naively, remove all the newlines.
                     "\n"
                 ],

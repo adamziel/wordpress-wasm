@@ -1,198 +1,240 @@
 <?php
 
 /**
- * Experimental Blocks to Markdown converter.
+ * Converts WordPress blocks to Markdown.
  */
 class WP_Blocks_To_Markdown {
-	private $blocks;
-	private $markdown = '';
-	private $metadata = array();
-    private $context_breadcrumbs = array();
+    private $block_markup;
+    private $state;
+    private $parents = [];
 
-	public function __construct($block_markup, $metadata = array(), $context_breadcrumbs = array()) {
-		$this->blocks = WP_Block_Markup_Processor::create_fragment($block_markup);
-		$this->metadata = $metadata;
-        $this->context_breadcrumbs = $context_breadcrumbs;
-	}
+    public function __construct($block_markup) {
+        $this->block_markup = $block_markup;
+        $this->state = array(
+            'indent' => array(),
+            'listStyle' => array()
+        );
+    }
 
-	public function convert() {
-		$this->blocks_to_markdown();
-		return true;
-	}
+    private $markdown;
 
-	public function get_result() {
-		return $this->markdown;
-	}
+    public function convert() {
+        $this->markdown = $this->blocks_to_markdown(parse_blocks($this->block_markup));
+    }
 
-	private function blocks_to_markdown() {
-        if($this->metadata) {
-            $this->markdown .= "---\n";
-            foreach($this->metadata as $key => $value) {
-                // @TODO: Apply correct YAML value escaping
-                $value = json_encode($value);
-                $this->markdown .= "$key: $value\n";
-            }
-            $this->markdown .= "---\n\n";
+    public function get_result() {
+        return $this->markdown;
+    }
+
+    private function blocks_to_markdown($blocks) {
+        $output = '';
+        foreach ($blocks as $block) {
+            array_push($this->parents, $block['blockName']);
+            $output .= $this->block_to_markdown($block);
+            array_pop($this->parents);
         }
+        return $output;
+    }
 
-        while($this->blocks->next_token()) {
-            switch($this->blocks->get_token_type()) {
-                case '#block-comment':
-                    $this->handle_block_comment();
-                    break;
-                case '#tag':
-                    $this->handle_tag();
-                    break;
-                case '#text':
-                    $this->markdown .= ltrim(preg_replace('/ +/', ' ', $this->blocks->get_modifiable_text()));
-                    break;
-            }
-        }
-	}
+    private function block_to_markdown($block) {
+        $block_name = $block['blockName'];
+        $attributes = $block['attrs'] ?? array();
+        $inner_html = $block['innerHTML'] ?? '';
+        $inner_blocks = $block['innerBlocks'] ?? array();
 
-    private function handle_block_comment() {
-        if ( $this->blocks->is_block_closer() ) {
-            return;
-        }
-        switch($this->blocks->get_block_name()) {
-            case 'wp:quote':
-                $markdown = $this->skip_and_convert_inner_html();
-                $lines = explode("\n", $markdown);
-                foreach($lines as $line) {
-                    $this->markdown .= "> $line\n";
+        switch ($block_name) {
+            case 'core/paragraph':
+                return $this->html_to_markdown($inner_html) . "\n\n";
+
+            case 'core/quote':
+                $content = $this->blocks_to_markdown($inner_blocks);
+                $lines = explode("\n", $content);
+                return implode("\n", array_map(function($line) {
+                    return "> $line"; 
+                }, $lines)) . "\n\n";
+
+            case 'core/code':
+                $code = $this->html_to_markdown($inner_html);
+                $language = $attributes['language'] ?? '';
+                $fence = str_repeat('`', max(3, $this->longest_sequence_of($code, '`') + 1));
+                return "{$fence}{$language}\n{$code}\n{$fence}\n\n";
+
+            case 'core/image':
+                return "![" . ($attributes['alt'] ?? '') . "](" . ($attributes['url'] ?? '') . ")\n\n";
+
+            case 'core/heading':
+                $level = $attributes['level'] ?? 1;
+                $content = $this->html_to_markdown($inner_html);
+                return str_repeat('#', $level) . ' ' . $content . "\n\n";
+
+            case 'core/list':
+                array_push($this->state['listStyle'], array(
+                    'style' => isset($attributes['ordered']) ? ($attributes['type'] ?? 'decimal') : '-',
+                    'count' => $attributes['start'] ?? 1
+                ));
+                $list = $this->blocks_to_markdown($inner_blocks);
+                array_pop($this->state['listStyle']);
+                if($this->has_parent('core/list-item')){
+                    return $list;
                 }
-                $this->markdown .= ">\n";
-                break;
-            case 'wp:list':
-                $markdown = $this->skip_and_convert_inner_html();
-                $lines = explode("\n", $markdown);
-                foreach($lines as $line) {
-                    if($line) {
-                        $this->markdown .= "* $line\n";
+                return $list . "\n";
+
+            case 'core/list-item':
+                if (empty($this->state['listStyle'])) {
+                    return '';
+                }
+
+                $item = end($this->state['listStyle']);
+                $bullet = $this->get_list_bullet($item);
+                $bullet_indent = str_repeat(' ', strlen($bullet) + 1);
+
+                $content = $this->html_to_markdown($inner_html);
+                $content_parts = explode("\n", $content, 2);
+                $content_parts = array_map('trim', $content_parts);
+                $first_line = $content_parts[0];
+                $rest_lines = $content_parts[1] ?? '';
+
+                $item['count']++;
+
+                if (empty($inner_html)) {
+                    $output = implode('', $this->state['indent']) . "$bullet $first_line\n";
+                    array_push($this->state['indent'], $bullet_indent);
+                    if ($rest_lines) {
+                        $output .= $this->indent($rest_lines, $bullet_indent);
                     }
+                    array_pop($this->state['indent']);
+                    return $output;
                 }
-                $this->markdown .= "\n";
-                break;
-            case 'wp:list-item':
-                $this->markdown .= $this->skip_and_convert_inner_html() . "\n";
-                break;
-            case 'wp:group':
-                // Ignore group blocks and process their inner blocks as if
-                // the group didn't exist.
-                break;
-            case 'wp:code':
-                $code = $this->skip_and_convert_inner_html();
-                $language = $this->blocks->get_block_attribute('language') ?? '';
-                $this->markdown .= $this->wrap_in_code_fence($code, $language);
-                break;
-            case 'wp:image':
-                $alt = $this->blocks->get_block_attribute('alt') ?? '';
-                $url = $this->blocks->get_block_attribute('url');
-                $this->markdown .= "![$alt]($url)\n\n";
-                break;
-            case 'wp:heading':
-                $level = $this->blocks->get_block_attribute('level') ?? 1;
-                $content = $this->skip_and_convert_inner_html();
-                $this->markdown .= str_repeat('#', $level) . ' ' . $content . "\n\n";
-                break;
-            case 'wp:paragraph':
-                $this->markdown .= $this->skip_and_convert_inner_html() . "\n\n";
-                break;
-            case 'wp:separator':
-                $this->markdown .= "\n---\n\n";
-                break;
-            default:
-                $code = '';
-                if($this->blocks->is_self_closing_block()) {
-                    $code .= '<!--' . $this->blocks->get_modifiable_text() . '-->';
+
+                $markdown = $this->indent("$bullet $first_line\n");
+
+                array_push($this->state['indent'], $bullet_indent);
+                if($rest_lines){
+                    $markdown .= $this->indent($rest_lines) . "\n";
+                }
+                $inner_blocks_markdown = $this->blocks_to_markdown(
+                    $inner_blocks
+                );
+                if($inner_blocks_markdown){
+                    $markdown .= $inner_blocks_markdown . "\n";
+                }
+                array_pop($this->state['indent']);
+
+                $markdown = rtrim($markdown, "\n");
+                if($this->has_parent('core/list-item')){
+                    $markdown .= "\n";
                 } else {
-                    $code .= '<!--' . $this->blocks->get_modifiable_text() . '-->' . "\n";
-                    $code .= trim($this->skip_and_convert_inner_html()) . "\n";
-                    $code .= '<!-- ' . $this->blocks->get_modifiable_text() . ' -->';
+                    $markdown .= "\n\n";
                 }
-                $this->markdown .= $this->wrap_in_code_fence($code, 'block');
-                break;
+
+                return $markdown;
+
+            case 'core/separator':
+                return "\n---\n\n";
+
+            default:
+                return '';
         }
     }
 
-    private function wrap_in_code_fence($code, $language = '') {
-        $fence = str_repeat('`', max(3, $this->longest_sequence_of($code, '`') + 1));
-        return "$fence$language\n$code\n$fence\n\n";
-    }
-
-    private function handle_tag() {
-        $prefix = $this->blocks->is_tag_closer() ? '-' : '+';
-        $event = $prefix . $this->blocks->get_tag();
-        switch($event) {
-            case '+B':
-            case '-B':
-            case '+STRONG':
-            case '-STRONG':
-                $this->markdown .= '**';
-                break;
-            case '+I':
-            case '-I':
-            case '+EM':
-            case '-EM': 
-                $this->markdown .= '*';
-                break;
-            case '+U':
-            case '-U':
-                $this->markdown .= '_';
-                break;
-            case '+CODE':
-            case '-CODE':
-                if(!in_array('wp:code', $this->get_block_breadcrumbs(), true)) {
-                    $this->markdown .= '`';
-                }
-                break;
-            case '+A':
-                $href = $this->blocks->get_attribute('href');
-                $this->markdown .= '[';
-                break;
-            case '-A':
-                $href = $this->blocks->get_attribute('href');
-                $this->markdown .= "]($href)";
-                break;
-            case '+BR':
-                $this->markdown .= "\n";
-                break;
-            case '+IMG':
-                $alt = $this->blocks->get_attribute('alt') ?? '';
-                $url = $this->blocks->get_attribute('src');
-                $this->markdown .= "![$alt]($url)\n\n";
-                break;
-        }
-    }
-
-    private function skip_and_convert_inner_html() {
-        // It's important we call get_block_breadcrumbs() before
-        // calling skip_and_get_block_inner_html() because the 
-        // latter will get to the block closer and pop the block
-        // we've just entered from the stack.
-        $breadcrumbs_inside_block = $this->get_block_breadcrumbs();
-        $html = $this->blocks->skip_and_get_block_inner_html();
-        $converter = new WP_Blocks_To_Markdown($html, [], $breadcrumbs_inside_block);
-        $converter->convert();
-        return $converter->get_result();
-    }
-
-	private function longest_sequence_of($input, $substring) {
-        $at = 0;
-        $sequence_length = 0;
-        while($at < strlen($input)) {
-            $at += strcspn($input, $substring, $at);
-            $current_sequence_length = strspn($input, $substring, $at);
-            if($current_sequence_length > $sequence_length) {
-                $sequence_length = $current_sequence_length;
+    private function html_to_markdown($html, $parents = []) {
+        $processor = WP_HTML_Processor::create_fragment($html);
+        $markdown = '';
+        
+        while ($processor->next_token()) {
+            if ($processor->get_token_type() === '#text') {
+                $markdown .= $processor->get_modifiable_text();
+                continue;
+            } else if ($processor->get_token_type() !== '#tag') {
+                continue;
             }
-            $at += $current_sequence_length;
-        }
-		return $sequence_length;
-	}
+            
+            $last_href = null;
+            $tag_name = $processor->get_tag();
+            $sign = $processor->is_tag_closer() ? '-' : (
+                $processor->expects_closer() ? '+' : ''
+            );
+            $event = $sign . $tag_name;
+            switch ($event) {
+                case '+B':
+                case '-B':
+                case '+STRONG':
+                case '-STRONG':
+                    $markdown .= '**';
+                    break;
+                    
+                case '+I':
+                case '-I':
+                case '+EM':
+                case '-EM':
+                    $markdown .= '*';
+                    break;
+                    
+                case '+CODE':
+                case '-CODE':
+                    if(!$this->has_parent('core/code')){
+                        $markdown .= '`';
+                    }
+                    break;
+                    
+                case '+A':
+                    $last_href = $processor->get_attribute('href') ?? '';
+                    $markdown .= '[';
+                    break;
 
-    private function get_block_breadcrumbs() {
-        return array_merge($this->context_breadcrumbs, $this->blocks->get_block_breadcrumbs());
+                case '-A':
+                    $markdown .= "]($last_href)";
+                    break;
+                    
+                case 'BR':
+                    $markdown .= "\n";
+                    break;
+            }
+        }
+        
+        $markdown = trim($markdown, "\n ");
+        $markdown = preg_replace('/ +/', ' ', $markdown);
+        $markdown = preg_replace('/\n+/', "\n", $markdown);
+        return $markdown;
     }
 
+    private function has_parent($parent) {
+        return in_array($parent, $this->parents, true);
+    }
+
+    private function get_list_bullet($item) {
+        if ($item['style'] === '-') {
+            return '-';
+        }
+        return $item['count'] . '.';
+    }
+
+    private function indent($string) {
+        if (empty($this->state['indent'])) {
+            return $string;
+        }
+
+        $indent = implode('', $this->state['indent']);
+        $lines = explode("\n", $string);
+        return implode("\n", array_map(function($line) use ($indent) {
+            return empty($line) ? $line : $indent . $line;
+        }, $lines));
+    }
+
+    private function longest_sequence_of($input, $substring) {
+        $longest = 0;
+        $current = 0;
+        $len = strlen($input);
+        
+        for ($i = 0; $i < $len; $i++) {
+            if ($input[$i] === $substring) {
+                $current++;
+                $longest = max($longest, $current);
+            } else {
+                $current = 0;
+            }
+        }
+        
+        return $longest;
+    }
 }
