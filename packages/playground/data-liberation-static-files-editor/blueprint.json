@@ -1,6 +1,7 @@
 {
 	"$schema": "../blueprints/public/blueprint-schema.json",
 	"login": true,
+	"landingPage": "/wp-admin/edit.php?post_type=local_file",
 	"constants": {
 		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true,

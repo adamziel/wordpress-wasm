@@ -180,3 +180,17 @@ if ( ! function_exists( 'reset_mbstring_encoding' ) ) {
 		mbstring_binary_safe_encoding( true );
 	}
 }
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		public $code;
+		public $message;
+		public $data;
+
+		public function __construct( $code, $message, $data = array() ) {
+			$this->code = $code;
+			$this->message = $message;
+			$this->data = $data;
+		}
+	}
+}

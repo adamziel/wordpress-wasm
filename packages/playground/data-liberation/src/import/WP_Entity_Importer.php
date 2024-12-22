@@ -464,7 +464,6 @@ class WP_Entity_Importer {
 
 		$post_type        = $data['post_type'] ?? 'post';
 		$post_type_object = get_post_type_object( $post_type );
-
 		// Is this type even valid?
 		if ( ! $post_type_object ) {
 			$this->logger->warning(

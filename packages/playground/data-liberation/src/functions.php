@@ -289,3 +289,15 @@ if ( ! function_exists( 'mb_str_split' ) ) {
 		return $result;
 	}
 }
+
+function wp_join_paths() {
+	$paths = array();
+	foreach ( func_get_args() as $arg ) {
+		if ( $arg !== '' ) {
+			$paths[] = $arg;
+		}
+	}
+	$path = implode('/', $paths);
+
+	return preg_replace( '#/+#', '/', $path );
+}

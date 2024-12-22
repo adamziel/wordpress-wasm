@@ -109,7 +109,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$this->parent_ids[ $missing_parent_id_depth ] = $this->emit_post_entity(
 						array(
 							'content' => '',
-							'source_path' => $missing_parent_path,
+							'local_file_path' => $missing_parent_path,
 							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ] ?? null,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $missing_parent_path ) ),
 						)
@@ -120,7 +120,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$this->parent_ids[ $depth ] = $this->emit_post_entity(
 						array(
 							'content' => '',
-							'source_path' => $dir,
+							'local_file_path' => $dir,
 							'parent_id' => $parent_id,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $dir ) ),
 						)
@@ -132,7 +132,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$this->parent_ids[ $depth ] = $this->emit_post_entity(
 						array(
 							'content' => $this->filesystem->read_file( $file_path ),
-							'source_path' => $file_path,
+							'local_file_path' => $file_path,
 							'parent_id' => $parent_id,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 						)
@@ -149,7 +149,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 				$this->emit_post_entity(
 					array(
 						'content' => $this->filesystem->read_file( $file_path ),
-						'source_path' => $file_path,
+						'local_file_path' => $file_path,
 						'parent_id' => $parent_id,
 						'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
 					)
@@ -197,7 +197,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		$entity_data = array(
 			'post_id' => $this->next_post_id,
 			'post_type' => 'page',
-			'guid' => $options['source_path'],
+			'guid' => $options['local_file_path'],
 			'post_title' => $post_title,
 			'post_content' => $block_markup,
 			'post_excerpt' => $converter->get_meta_value( 'post_excerpt' ) ?? '',
@@ -205,19 +205,19 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		);
 
 		/**
-		 * Technically `source_path` isn't a part of the WordPress post object,
+		 * Technically `local_file_path` isn't a part of the WordPress post object,
 		 * but we need it to resolve relative URLs in the imported content.
 		 *
 		 * This path is relative to the root directory traversed by this class.
 		 */
-		if ( ! empty( $options['source_path'] ) ) {
-			$source_path = $options['source_path'];
+		if ( ! empty( $options['local_file_path'] ) ) {
+			$local_file_path = $options['local_file_path'];
 			$root_dir    = $this->file_visitor->get_root_dir();
-			if ( str_starts_with( $source_path, $root_dir ) ) {
-				$source_path = substr( $source_path, strlen( $root_dir ) );
+			if ( str_starts_with( $local_file_path, $root_dir ) ) {
+				$local_file_path = substr( $local_file_path, strlen( $root_dir ) );
 			}
-			$source_path                = ltrim( $source_path, '/' );
-			$entity_data['source_path'] = $source_path;
+			$local_file_path                = ltrim( $local_file_path, '/' );
+			$entity_data['local_file_path'] = $local_file_path;
 		}
 
 		if ( $converter->get_meta_value( 'slug' ) ) {

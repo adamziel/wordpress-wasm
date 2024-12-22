@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<phpunit 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  bootstrap="tests/bootstrap.php" 
+  colors="true" 
+  xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd" 
+  cacheDirectory=".phpunit.cache"
+>
+  <testsuites>
+    <testsuite name="Application Test Suite">
+      <file>tests/WPStaticFileSyncTests.php</file>
+    </testsuite>
+  </testsuites>
+</phpunit>

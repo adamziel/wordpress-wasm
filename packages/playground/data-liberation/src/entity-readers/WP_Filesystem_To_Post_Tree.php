@@ -12,7 +12,6 @@ class WP_Filesystem_To_Post_Tree {
 
 	private $parent_ids = array();
 	private $next_post_id;
-	private $root_dir;
 	private $create_index_pages;
 	private $entities_read_so_far = 0;
 	private $filter_pattern       = '##';
@@ -23,10 +22,6 @@ class WP_Filesystem_To_Post_Tree {
 		\WordPress\Filesystem\WP_Abstract_Filesystem $filesystem,
 		$options
 	) {
-		if ( ! isset( $options['root_dir'] ) ) {
-			_doing_it_wrong( __FUNCTION__, 'Missing required options: root_dir', '1.0.0' );
-			return false;
-		}
 		if ( ! isset( $options['first_post_id'] ) ) {
 			_doing_it_wrong( __FUNCTION__, 'Missing required options: first_post_id', '1.0.0' );
 			return false;
@@ -50,8 +45,7 @@ class WP_Filesystem_To_Post_Tree {
 		\WordPress\Filesystem\WP_Abstract_Filesystem $filesystem,
 		$options
 	) {
-		$this->file_visitor       = new WordPress\Filesystem\WP_Filesystem_Visitor( $filesystem, $options['root_dir'] );
-		$this->root_dir           = $options['root_dir'];
+		$this->file_visitor       = new WordPress\Filesystem\WP_Filesystem_Visitor( $filesystem );
 		$this->create_index_pages = $options['create_index_pages'] ?? true;
 		$this->next_post_id       = $options['first_post_id'];
 		$this->filter_pattern     = $options['filter_pattern'];
@@ -101,7 +95,7 @@ class WP_Filesystem_To_Post_Tree {
 					$this->parent_ids[ $missing_parent_id_depth ] = $this->emit_object(
 						array(
 							'type' => 'directory',
-							'source_path_absolute' => $missing_parent_path,
+							'local_file_path' => $missing_parent_path,
 							'parent_id' => $this->parent_ids[ $missing_parent_id_depth - 1 ] ?? null,
 						)
 					);
@@ -111,7 +105,7 @@ class WP_Filesystem_To_Post_Tree {
 					$this->parent_ids[ $depth ] = $this->emit_object(
 						array(
 							'type' => 'file_placeholder',
-							'source_path_absolute' => $dir,
+							'local_file_path' => $dir,
 							'parent_id' => $parent_id,
 						)
 					);
@@ -122,7 +116,7 @@ class WP_Filesystem_To_Post_Tree {
 					$this->parent_ids[ $depth ] = $this->emit_object(
 						array(
 							'type' => 'file',
-							'source_path_absolute' => $file_path,
+							'local_file_path' => $file_path,
 							'parent_id' => $parent_id,
 						)
 					);
@@ -138,7 +132,7 @@ class WP_Filesystem_To_Post_Tree {
 				$this->emit_object(
 					array(
 						'type' => 'file',
-						'source_path_absolute' => $file_path,
+						'local_file_path' => $file_path,
 						'parent_id' => $parent_id,
 					)
 				);
@@ -160,7 +154,6 @@ class WP_Filesystem_To_Post_Tree {
 			$options,
 			array(
 				'post_id' => $post_id,
-				'source_path_relative' => substr( $options['source_path_absolute'], strlen( $this->root_dir ) ),
 			)
 		);
 		++$this->entities_read_so_far;
@@ -182,7 +175,7 @@ class WP_Filesystem_To_Post_Tree {
 			if ( $event->is_entering() ) {
 				$abs_paths = array();
 				foreach ( $event->files as $filename ) {
-					$abs_paths[] = $event->dir . '/' . $filename;
+					$abs_paths[] = wp_join_paths( $event->dir, $filename );
 				}
 				$this->pending_files = $this->choose_relevant_files( $abs_paths );
 				if ( ! count( $this->pending_files ) ) {

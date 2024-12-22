@@ -6,14 +6,15 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
     private $post_tree;
     private $entities = array();
     private $current_entity;
+    private $post_type;
     private $finished = false;
 
-	public function __construct( $filesystem, $root_dir = '/' ) {
+	public function __construct( $filesystem, $options = array() ) {
 		$this->filesystem = $filesystem;
+        $this->post_type = $options['post_type'] ?? 'page';
         $this->post_tree = WP_Filesystem_To_Post_Tree::create(
             $this->filesystem,
             array (
-                'root_dir' => $root_dir,
                 'first_post_id' => 2,
                 'filter_pattern' => '#\.(?:md|html|xhtml)$#',
                 'index_file_pattern' => '#^index\.[a-z]+$#',
@@ -49,8 +50,8 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
             $source_content_converter = null;
             $post_tree_node = $this->post_tree->get_current_node();
             if($post_tree_node['type'] === 'file') {
-                $content = $this->filesystem->read_file($post_tree_node['source_path_absolute']);
-                $extension = pathinfo($post_tree_node['source_path_absolute'], PATHINFO_EXTENSION);
+                $content = $this->filesystem->read_file($post_tree_node['local_file_path']);
+                $extension = pathinfo($post_tree_node['local_file_path'], PATHINFO_EXTENSION);
                 switch($extension) {
                     case 'md':
                         $converter = new WP_Markdown_To_Blocks( $content );
@@ -89,13 +90,13 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
                 $data = $entity->get_data();
                 if( $entity->get_type() === 'post' ) {
                     $data['id'] = $post_tree_node['post_id'];
-                    $data['guid'] = $post_tree_node['source_path_relative'];
+                    $data['guid'] = $post_tree_node['local_file_path'];
                     $data['post_parent'] = $post_tree_node['parent_id'];
                     $data['post_title'] = $data['post_title'] ?? null;
                     $data['post_status'] = 'publish';
-                    $data['post_type'] = 'page';
+                    $data['post_type'] = $this->post_type;
                     if ( ! $data['post_title'] ) {
-                        $data['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['source_path_relative'] ) );
+                        $data['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['local_file_path'] ) );
                     }
                     $entity = new WP_Imported_Entity( $entity->get_type(), $data );
                 }
@@ -104,7 +105,7 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
         
             // Also emit:
             $additional_meta = array(
-                'source_path_relative' => $post_tree_node['source_path_relative'],
+                'local_file_path' => $post_tree_node['local_file_path'],
                 'source_type' => $post_tree_node['type'],
                 'source_content_converter' => $source_content_converter,
             );

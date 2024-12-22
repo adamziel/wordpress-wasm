@@ -596,7 +596,7 @@ class WP_Stream_Importer {
 						$this->enqueue_attachment_download(
 							$p->get_raw_url(),
 							array(
-								'context_path' => $post['source_path'] ?? $post['slug'] ?? null,
+								'context_path' => $post['local_file_path'] ?? $post['slug'] ?? null,
 							)
 						);
 					}
@@ -660,7 +660,7 @@ class WP_Stream_Importer {
 						 */
 						$asset_filename = $this->new_asset_filename(
 							$p->get_raw_url(),
-							$data['source_path'] ?? $data['slug'] ?? null
+							$data['local_file_path'] ?? $data['slug'] ?? null
 						);
 						if ( file_exists( $this->options['uploads_path'] . '/' . $asset_filename ) ) {
 							$p->set_raw_url(
