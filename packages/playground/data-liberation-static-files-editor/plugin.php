@@ -16,6 +16,7 @@
  *        using the post_parent field. Could be more flexible (no need for index.md files) and require
  *        less complex operations in the code (no need to update a subtree of posts when moving a post,
  *        no need to periodically "flatten" the parent directory).
+ * @TODO: Maybe use Playground's FilePickerTree React component? Or re-implement it with interactivity API?
  */
 
 use WordPress\Filesystem\WP_Filesystem;
