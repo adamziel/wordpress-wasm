@@ -1,6 +1,21 @@
 <?php
 /**
  * Plugin Name: Data Liberation – WordPress Static files editor
+ * 
+ * @TODO: Page metadata editor in Gutenberg
+ * @TODO: A special "filename" field in wp-admin and in Gutenberg. Either source from the page title or
+ *        pin it to a specific, user-defined value.
+ * @TODO: Choose the local file storage format (MD, HTML, etc.) in Gutenberg page options.
+ * @TODO: HTML, XHTML, and Blocks renderers
+ * @TODO: Integrity check – is the database still in sync with the files?
+ *        If not, what should we do?
+ *        * Overwrite the database with the local files? This is a local files editor after all.
+ *        * Display a warning in wp-admin and let the user decide what to do?
+ * @TODO: Consider tricky scenarios – moving a parent to trash and then restoring it.
+ * @TODO: Consider using hierarchical taxonomy to model the directory/file structure – instead of
+ *        using the post_parent field. Could be more flexible (no need for index.md files) and require
+ *        less complex operations in the code (no need to update a subtree of posts when moving a post,
+ *        no need to periodically "flatten" the parent directory).
  */
 
 use WordPress\Filesystem\WP_Filesystem;

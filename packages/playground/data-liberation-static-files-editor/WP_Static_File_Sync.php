@@ -214,16 +214,36 @@ class WP_Static_File_Sync
             return;
         }
 
-        $relative_path = get_post_meta($post_id, 'local_file_path', true);
-        if (! $relative_path ) {
+        $local_file_path = get_post_meta($post_id, 'local_file_path', true);
+        if (! $local_file_path ) {
             return;
         }
 
-        if (! $this->filesystem->exists($relative_path)) {
+        if (! $this->filesystem->exists($local_file_path)) {
             return;
         }
 
-        $this->delete_page($relative_path);
+        $has_children = !!get_posts([
+            'post_type' => $this->post_type,
+            'post_parent' => $post_id,
+            'numberposts' => 1,
+            'fields' => 'ids'
+        ]);
+
+        if($has_children) {
+            $path_to_delete = dirname($local_file_path);
+            $success = $this->filesystem->rmdir($path_to_delete, ['recursive' => true]);
+        } else {
+            $path_to_delete = $local_file_path;
+            $success = $this->filesystem->rm($path_to_delete);
+        }
+
+        if(!$success) {
+            $this->bail('failed_to_delete_directory', 'Failed to delete local file: ' . $path_to_delete);
+            return;
+        }
+
+        $this->flatten_parent_if_needed(dirname($path_to_delete));
     }
 
     private function wordpress_ready_for_sync(): bool {
@@ -252,34 +272,50 @@ class WP_Static_File_Sync
 
         $content_converter = get_post_meta($page_id, 'content_converter', true) ?: 'md';
         
+        /**
+         * @TODO: Decide – should we only do one of the following
+         *        instead of both?
+         * 
+         * 1. Include the title as the first H1 block
+         * 2. Include the title as a metadata field
+         */
         $title_block = (
             WP_Import_Utils::block_opener('heading', array('level' => 1)) . 
             '<h1>' . esc_html(get_the_title($page_id)) . '</h1>' . 
             WP_Import_Utils::block_closer('heading')
         );
         $block_markup = $title_block . $page->post_content;
+        $metadata = array(
+            'title' => get_the_title($page_id),
+        );
 
         switch($content_converter) {
-            case 'html':
-            case 'xhtml':
-                // @TODO: Implement a Blocks to HTML converter – OR just render
-                //        the blocks.
-                break;
+            // case 'blocks':
+            //     $converter = new WP_Blocks_To_Blocks(
+            //         $block_markup,
+            //         $metadata
+            //     );
+            //     break;
+            // case 'html':
+            // case 'xhtml':
+            //     $converter = new WP_Blocks_To_HTML(
+            //         $block_markup,
+            //         $metadata
+            //     );
+            //     break;
             case 'md':
             default:
                 $converter = new WP_Blocks_To_Markdown(
                     $block_markup,
-                    array(
-                        'title' => get_the_title($page_id),
-                    )
+                    $metadata
                 );
-                if(false === $converter->convert()) {
-                    // @TODO: error handling.
-                    return;
-                }
-                return $converter->get_result();
                 break;
         }
+        if(false === $converter->convert()) {
+            // @TODO: error handling.
+            return;
+        }
+        return $converter->get_result();
     }
 
     public function get_last_error()
@@ -412,25 +448,6 @@ class WP_Static_File_Sync
         }
 
         return $new_path;
-    }
-
-    /**
-     * Delete a file and remove its parent directory if it becomes empty.
-     */
-    private function delete_page(string $path): bool
-    {
-        if (!$this->filesystem->is_file($path)) {
-            $this->bail('path_not_found', 'Path does not exist: ' . $path);
-            return false;
-        }
-
-        // Delete the file
-        if(!$this->filesystem->rm($path)) {
-            $this->bail('failed_to_delete_file', 'Failed to delete file: ' . $path);
-            return false;
-        }
-
-        return $this->flatten_parent_if_needed($path);
     }
 
     /**
