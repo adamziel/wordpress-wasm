@@ -50,7 +50,7 @@ describe('rotatePHPRuntime()', () => {
 		expect(php.readFileAsText('/internal/shared/test')).toBe('playground');
 	});
 
-	it('Preserves NODEFS mounts through PHP runtime recreation', async () => {
+	it('Preserves a single NODEFS mount through PHP runtime recreation', async () => {
 		// Rotate the PHP runtime
 		const recreateRuntimeSpy = vitest.fn(recreateRuntime);
 
@@ -83,6 +83,111 @@ describe('rotatePHPRuntime()', () => {
 
 		// Confirm the local NODEFS mount is lost
 		expect(php.readFileAsText('/test-root/file')).toBe('playground');
+	});
+
+	it('Preserves 4 WordPress plugin mounts through PHP runtime recreation', async () => {
+		// Rotate the PHP runtime
+		const recreateRuntimeSpy = vitest.fn(recreateRuntime);
+
+		const php = new PHP(await recreateRuntime());
+		rotatePHPRuntime({
+			php,
+			cwd: '/wordpress',
+			recreateRuntime: recreateRuntimeSpy,
+			maxRequests: 10,
+		});
+
+		// Create temporary directories and files for plugins and uploads
+		const tempDirs = [
+			fs.mkdtempSync(path.join(os.tmpdir(), 'data-liberation-')),
+			fs.mkdtempSync(path.join(os.tmpdir(), 'data-liberation-markdown-')),
+			fs.mkdtempSync(
+				path.join(os.tmpdir(), 'data-liberation-static-files-editor-')
+			),
+			fs.mkdtempSync(path.join(os.tmpdir(), 'static-pages-')),
+		];
+
+		// Add test files to each directory
+		tempDirs.forEach((dir, i) => {
+			fs.writeFileSync(path.join(dir, 'test.php'), `plugin-${i}`);
+		});
+
+		// Create WordPress directory structure
+		php.mkdir('/wordpress/wp-content/plugins/data-liberation');
+		php.mkdir('/wordpress/wp-content/plugins/z-data-liberation-markdown');
+		php.mkdir(
+			'/wordpress/wp-content/plugins/z-data-liberation-static-files-editor'
+		);
+		php.mkdir('/wordpress/wp-content/uploads/static-pages');
+
+		// Mount the directories using WordPress paths
+		await php.mount(
+			'/wordpress/wp-content/plugins/data-liberation',
+			createNodeFsMountHandler(tempDirs[0])
+		);
+		await php.mount(
+			'/wordpress/wp-content/plugins/z-data-liberation-markdown',
+			createNodeFsMountHandler(tempDirs[1])
+		);
+		await php.mount(
+			'/wordpress/wp-content/plugins/z-data-liberation-static-files-editor',
+			createNodeFsMountHandler(tempDirs[2])
+		);
+		await php.mount(
+			'/wordpress/wp-content/uploads/static-pages',
+			createNodeFsMountHandler(tempDirs[3])
+		);
+
+		// Verify files exist
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/data-liberation/test.php'
+			)
+		).toBe('plugin-0');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/z-data-liberation-markdown/test.php'
+			)
+		).toBe('plugin-1');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/z-data-liberation-static-files-editor/test.php'
+			)
+		).toBe('plugin-2');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/uploads/static-pages/test.php'
+			)
+		).toBe('plugin-3');
+
+		// Rotate the PHP runtime
+		for (let i = 0; i < 15; i++) {
+			await php.run({ code: `` });
+		}
+
+		expect(recreateRuntimeSpy).toHaveBeenCalledTimes(1);
+
+		// Verify files still exist after rotation
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/data-liberation/test.php'
+			)
+		).toBe('plugin-0');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/z-data-liberation-markdown/test.php'
+			)
+		).toBe('plugin-1');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/plugins/z-data-liberation-static-files-editor/test.php'
+			)
+		).toBe('plugin-2');
+		expect(
+			php.readFileAsText(
+				'/wordpress/wp-content/uploads/static-pages/test.php'
+			)
+		).toBe('plugin-3');
 	});
 
 	it('Free up the available PHP memory', async () => {

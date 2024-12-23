@@ -48,7 +48,6 @@ export const PHP_INI_PATH = '/internal/shared/php.ini';
 const AUTO_PREPEND_SCRIPT = '/internal/shared/auto_prepend_file.php';
 
 type MountObject = {
-	path: string;
 	mountHandler: MountHandler;
 	unmount: () => Promise<any>;
 };
@@ -68,7 +67,7 @@ export class PHP implements Disposable {
 	#wasmErrorsTarget: UnhandledRejectionsTarget | null = null;
 	#eventListeners: Map<string, Set<PHPEventListener>> = new Map();
 	#messageListeners: MessageListener[] = [];
-	#mounts: MountObject[] = [];
+	#mounts: Record<string, MountObject> = {};
 	requestHandler?: PHPRequestHandler;
 
 	/**
@@ -1019,10 +1018,15 @@ export class PHP implements Disposable {
 		const oldFS = this[__private__dont__use].FS;
 
 		// Unmount all the mount handlers
-		const mountHandlers: Record<string, MountHandler> = {};
-		for (const mount of this.#mounts) {
-			mountHandlers[mount.path] = mount.mountHandler;
-			await mount.unmount();
+		const mountHandlers: { mountHandler: MountHandler; vfsPath: string }[] =
+			[];
+		for (const [vfsPath, mount] of Object.entries(this.#mounts)) {
+			mountHandlers.push({ mountHandler: mount.mountHandler, vfsPath });
+			try {
+				await mount.unmount();
+			} catch (e) {
+				console.error(e);
+			}
 		}
 
 		// Kill the current runtime
@@ -1048,11 +1052,9 @@ export class PHP implements Disposable {
 		}
 
 		// Re-mount all the mount handlers
-		for (const [virtualFSPath, mountHandler] of Object.entries(
-			mountHandlers
-		)) {
-			this.mkdir(virtualFSPath);
-			await this.mount(virtualFSPath, mountHandler);
+		for (const { mountHandler, vfsPath } of mountHandlers) {
+			this.mkdir(vfsPath);
+			await this.mount(vfsPath, mountHandler);
 		}
 	}
 
@@ -1072,18 +1074,14 @@ export class PHP implements Disposable {
 			this[__private__dont__use].FS,
 			virtualFSPath
 		);
-		const mountObject: MountObject = {
+		const mountObject = {
 			mountHandler,
-			path: virtualFSPath,
 			unmount: async () => {
 				await unmountCallback();
-				const index = this.#mounts.indexOf(mountObject);
-				if (index !== -1) {
-					this.#mounts.splice(index, 1);
-				}
+				delete this.#mounts[virtualFSPath];
 			},
 		};
-		this.#mounts.push(mountObject);
+		this.#mounts[virtualFSPath] = mountObject;
 		return () => {
 			mountObject.unmount();
 		};
