@@ -3,7 +3,7 @@
 rm -rf ./my-notes/workdir/*
 cp -r ./my-notes/safe-copy/* ./my-notes/workdir/
 
-bun ../cli/src/cli.ts \
+bun --inspect ../cli/src/cli.ts \
     server \
     --mount=../data-liberation-static-files-editor:/wordpress/wp-content/plugins/z-data-liberation-static-files-editor \
     --mount=../data-liberation-markdown:/wordpress/wp-content/plugins/z-data-liberation-markdown \

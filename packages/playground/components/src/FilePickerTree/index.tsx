@@ -28,7 +28,7 @@ export type FilePickerControlProps = {
 
 type ExpandedNodePaths = Record<string, boolean>;
 
-const FilePickerTree: React.FC<FilePickerControlProps> = ({
+export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	isLoading = false,
 	error = undefined,
 	files,
@@ -324,5 +324,3 @@ const FileName: React.FC<{
 		</>
 	);
 };
-
-export default FilePickerTree;

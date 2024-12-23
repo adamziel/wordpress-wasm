@@ -229,11 +229,13 @@ async function run() {
 			}
 			lastCaption =
 				e.detail.caption || lastCaption || 'Running the Blueprint';
-			logger.log(
+			process.stdout.clearLine(0);
+			process.stdout.cursorTo(0);
+			process.stdout.write(
 				'\r\x1b[K' + `${lastCaption.trim()} – ${e.detail.progress}%`
 			);
 			if (progress100) {
-				logger.log('\n');
+				process.stdout.write('\n');
 			}
 		});
 		return compileBlueprint(blueprint as Blueprint, {
@@ -274,8 +276,10 @@ async function run() {
 						Math.min(100, (100 * e.detail.loaded) / e.detail.total)
 					);
 					if (!args.quiet) {
+						process.stdout.clearLine(0);
+						process.stdout.cursorTo(0);
 						process.stdout.write(
-							`\rDownloading WordPress ${percentProgress}%...    `
+							`Downloading WordPress ${percentProgress}%...`
 						);
 					}
 				}) as any);
@@ -309,6 +313,7 @@ async function run() {
 					WP_DEBUG_DISPLAY: false,
 				};
 
+			logger.log(`Booting WordPress...`);
 			requestHandler = await bootWordPress({
 				siteUrl: absoluteUrl,
 				createPhpRuntime: async () =>
@@ -334,14 +339,23 @@ async function run() {
 					},
 				},
 			});
+			logger.log(`Booted!`);
 
 			const php = await requestHandler.getPrimaryPhp();
 			try {
-				if (wpDetails && !args.mountBeforeInstall) {
+				if (
+					wpDetails &&
+					!args.mountBeforeInstall &&
+					!fs.existsSync(preinstalledWpContentPath)
+				) {
+					logger.log(
+						`Caching preinstalled WordPress for the next boot...`
+					);
 					fs.writeFileSync(
 						preinstalledWpContentPath,
 						await zipDirectory(php, '/wordpress')
 					);
+					logger.log(`Cached!`);
 				}
 
 				if (args.mount) {

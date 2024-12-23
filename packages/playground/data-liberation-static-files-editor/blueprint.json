@@ -19,6 +19,10 @@
 		{
 			"step": "activatePlugin",
 			"pluginPath": "z-data-liberation-static-files-editor/plugin.php"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; wp_insert_post(array('post_title' => 'My Notes', 'post_status' => 'publish', 'post_type' => 'page'));"
 		}
 	]
 }
