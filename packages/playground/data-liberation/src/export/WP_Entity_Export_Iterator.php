@@ -6,6 +6,7 @@ add_action('plugins_loaded', function() {
 		return;
 	}
 
+	header('Content-Type: text/plain');
 	$export_iterator = new WP_Entity_Export_Iterator();
 	foreach ($export_iterator as $key => $entity) {
 		echo "Key: $key\n";
@@ -98,6 +99,7 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 				$this->current_id
 			)
 		);
+		// @TODO: How to handle errors?
 		
 		$this->current_entity = null;
 		if ($current_row) {
@@ -134,6 +136,10 @@ class WP_Entity_Export_Iterator implements Iterator {
 
 	#[\ReturnTypeWillChange]
 	public function next() {
+		if (!$this->entity_iterator_iterator->valid()) {
+			return;
+		}
+
 		$this->entity_iterator_iterator->current()->next();
 		if (!$this->entity_iterator_iterator->current()->valid()) {
 			$this->entity_iterator_iterator->next();
@@ -167,10 +173,7 @@ class WP_Entity_Export_Iterator implements Iterator {
 
 	#[\ReturnTypeWillChange]
 	public function valid() {
-		return (
-			$this->entity_iterator_iterator->valid() &&
-			$this->entity_iterator_iterator->current()->valid()
-		);
+		return $this->entity_iterator_iterator->valid();
 	}
 
 	// TODO: Maybe simplify this if we stick with just iterating over rows for all tables.
