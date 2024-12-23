@@ -142,8 +142,12 @@ class WP_Entity_Export_Iterator implements Iterator {
 		}
 
 		$this->entity_iterator_iterator->current()->next();
-		if (!$this->entity_iterator_iterator->current()->valid()) {
+		while (
+			! $this->entity_iterator_iterator->current()->valid() &&
+			$this->entity_iterator_iterator->valid()
+		) {
 			$this->entity_iterator_iterator->next();
+			$this->entity_iterator_iterator->current()->rewind();
 		}
 	}
 
