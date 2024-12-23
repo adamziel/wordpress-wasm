@@ -1,7 +1,17 @@
 <?php
 
 // @TODO: This is just a hack for easy manual testing. Remove it before merge.
+add_action('muplugins_loaded', function() {
+	if ($_SERVER['REQUEST_URI'] !== '/_test_export_entities') {
+		return;
+	}
 
+	$export_iterator = new WP_Entity_Export_Iterator();
+	foreach ($export_iterator as $key => $entity) {
+		echo "Key: $key\n";
+		var_dump($entity);
+	}
+});
 
 // @TODO: Move to dedicated file
 class WP_Export_Entity {
