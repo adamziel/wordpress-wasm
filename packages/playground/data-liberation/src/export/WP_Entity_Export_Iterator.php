@@ -97,13 +97,14 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 				// @TODO: Consider selecting more than 1 row at a time for possibly-better performance.
 				"SELECT * FROM {$this->table_name} WHERE {$this->primary_key} > %d ORDER BY {$this->primary_key} ASC LIMIT 1",
 				$this->current_id
-			)
+			),
+			ARRAY_A
 		);
 		// @TODO: How to handle errors?
 		
 		$this->current_entity = null;
 		if ($current_row) {
-			$this->current_id = $current_row->{$this->primary_key};
+			$this->current_id = $current_row[$this->primary_key];
 			$this->current_entity = new WP_Export_Entity($this->entity_type, $current_row);
 		}
 	}
