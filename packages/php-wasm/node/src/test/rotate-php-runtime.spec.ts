@@ -14,6 +14,42 @@ const recreateRuntime = async (version: any = LatestSupportedPHPVersion) =>
 	await loadNodeRuntime(version);
 
 describe('rotatePHPRuntime()', () => {
+	it('Preserves the /internal directory through PHP runtime recreation', async () => {
+		// Rotate the PHP runtime
+		const recreateRuntimeSpy = vitest.fn(recreateRuntime);
+
+		const php = new PHP(await recreateRuntime());
+		rotatePHPRuntime({
+			php,
+			cwd: '/test-root',
+			recreateRuntime: recreateRuntimeSpy,
+			maxRequests: 10,
+		});
+
+		// Create a temporary directory and a file in it
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'temp-'));
+		const tempFile = path.join(tempDir, 'file');
+		fs.writeFileSync(tempFile, 'playground');
+
+		// Mount the temporary directory
+		php.mkdir('/internal/shared');
+		php.writeFile('/internal/shared/test', 'playground');
+
+		// Confirm the file is there
+		expect(php.fileExists('/internal/shared/test')).toBe(true);
+
+		// Rotate the PHP runtime
+		for (let i = 0; i < 15; i++) {
+			await php.run({ code: `` });
+		}
+
+		expect(recreateRuntimeSpy).toHaveBeenCalledTimes(1);
+
+		// Confirm the file is still there
+		expect(php.fileExists('/internal/shared/test')).toBe(true);
+		expect(php.readFileAsText('/internal/shared/test')).toBe('playground');
+	});
+
 	it('Preserves NODEFS mounts through PHP runtime recreation', async () => {
 		// Rotate the PHP runtime
 		const recreateRuntimeSpy = vitest.fn(recreateRuntime);

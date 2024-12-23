@@ -1039,6 +1039,9 @@ export class PHP implements Disposable {
 			this.setSapiName(this.#sapiName);
 		}
 
+		// Copy the old /internal directory to the new filesystem
+		copyFS(oldFS, this[__private__dont__use].FS, '/internal');
+
 		// Copy the MEMFS directory structure from the old FS to the new one
 		if (cwd) {
 			copyFS(oldFS, this[__private__dont__use].FS, cwd);
