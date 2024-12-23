@@ -14,6 +14,41 @@ const recreateRuntime = async (version: any = LatestSupportedPHPVersion) =>
 	await loadNodeRuntime(version);
 
 describe('rotatePHPRuntime()', () => {
+	it('Preserves NODEFS mounts through PHP runtime recreation', async () => {
+		// Rotate the PHP runtime
+		const recreateRuntimeSpy = vitest.fn(recreateRuntime);
+
+		const php = new PHP(await recreateRuntime());
+		rotatePHPRuntime({
+			php,
+			cwd: '/test-root',
+			recreateRuntime: recreateRuntimeSpy,
+			maxRequests: 10,
+		});
+
+		// Create a temporary directory and a file in it
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'temp-'));
+		const tempFile = path.join(tempDir, 'file');
+		fs.writeFileSync(tempFile, 'playground');
+
+		// Mount the temporary directory
+		php.mkdir('/test-root');
+		await php.mount('/test-root', createNodeFsMountHandler(tempDir));
+
+		// Confirm the file is still there
+		expect(php.readFileAsText('/test-root/file')).toBe('playground');
+
+		// Rotate the PHP runtime
+		for (let i = 0; i < 15; i++) {
+			await php.run({ code: `` });
+		}
+
+		expect(recreateRuntimeSpy).toHaveBeenCalledTimes(1);
+
+		// Confirm the local NODEFS mount is lost
+		expect(php.readFileAsText('/test-root/file')).toBe('playground');
+	});
+
 	it('Free up the available PHP memory', async () => {
 		const freeMemory = (php: PHP) =>
 			php[__private__dont__use].HEAPU32.reduce(
