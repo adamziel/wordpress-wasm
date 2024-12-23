@@ -1,8 +1,8 @@
 <?php
 
 // @TODO: This is just a hack for easy manual testing. Remove it before merge.
-add_action('muplugins_loaded', function() {
-	if ($_SERVER['REQUEST_URI'] !== '/_test_export_entities') {
+add_action('plugins_loaded', function() {
+	if (!str_starts_with($_SERVER['REQUEST_URI'], '/_test_export_entities')) {
 		return;
 	}
 
@@ -11,6 +11,7 @@ add_action('muplugins_loaded', function() {
 		echo "Key: $key\n";
 		var_dump($entity);
 	}
+	die();
 });
 
 // @TODO: Move to dedicated file
@@ -98,6 +99,7 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 			)
 		);
 		
+		$this->current_entity = null;
 		if ($current_row) {
 			$this->current_id = $current_row->{$this->primary_key};
 			$this->current_entity = new WP_Export_Entity($this->entity_type, $current_row);
