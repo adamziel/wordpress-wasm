@@ -57,16 +57,18 @@ class WP_Export_Entity {
 
 // TODO: Maybe this can work for all primary key types
 class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
+	protected $entity_type;
 	protected $table_name;
 	protected $primary_key;
-	protected $current_row;
+	protected $current_entity;
 	protected $current_id;
 
-	public function __construct($table_name, $primary_key) {
+	public function __construct($entity_type, $table_name, $primary_key) {
+		$this->entity_type = $entity_type;
 		$this->table_name = $table_name;
 		$this->primary_key = $primary_key;
 		$this->current_id = 0;
-		$this->current_row = null;
+		$this->current_entity = null;
 	}
 
 	#[\ReturnTypeWillChange]
@@ -77,7 +79,7 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 
 	#[\ReturnTypeWillChange]
 	public function current() {
-		return $this->current_row;
+		return $this->current_entity;
 	}
 
 	#[\ReturnTypeWillChange]
@@ -88,21 +90,23 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 	#[\ReturnTypeWillChange]
 	public function next() {
 		global $wpdb;
-		$this->current_row = $wpdb->get_row(
+		$current_row = $wpdb->get_row(
 			$wpdb->prepare(
 				// @TODO: Consider selecting more than 1 row at a time for possibly-better performance.
 				"SELECT * FROM {$this->table_name} WHERE {$this->primary_key} > %d ORDER BY {$this->primary_key} ASC LIMIT 1",
 				$this->current_id
 			)
 		);
-		if ($this->current_row) {
-			$this->current_id = $this->current_row->{$this->primary_key};
+		
+		if ($current_row) {
+			$this->current_id = $current_row->{$this->primary_key};
+			$this->current_entity = new WP_Export_Entity($this->entity_type, $current_row);
 		}
 	}
 	
 	#[\ReturnTypeWillChange]
 	public function valid() {
-		return $this->current_row !== null;
+		return $this->current_entity !== null;
 	}
 }
 
@@ -171,45 +175,55 @@ class WP_Entity_Export_Iterator implements Iterator {
 	protected function create_entity_export_strategies() {
 		global $wpdb;
 		return array(
-			'term'              => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'term',
 				$wpdb->terms,
-				'term_id',
+				'term_id'
 			),
-			'termmeta'          => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'termmeta',
 				$wpdb->terms,
-				'term_id',
+				'term_id'
 			),
-			'term_taxonomy'     => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'term_taxonomy',
 				$wpdb->term_taxonomy,
-				'term_id',
+				'term_id'
 			),
-			'term_relationship' => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'term_relationship',
 				$wpdb->term_relationships,
-				'term_taxonomy_id',
+				'term_taxonomy_id'
 			),
-			'user'              => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'user',
 				$wpdb->users,
-				'ID',
+				'ID'
 			),
-			'post'              => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'post',
 				$wpdb->posts,
-				'ID',
+				'ID'
 			),
-			'post_meta'         => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'post_meta',
 				$wpdb->postmeta,
-				'meta_id',
+				'meta_id'
 			),
-			'comment'           => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'comment',
 				$wpdb->comments,
-				'comment_ID',
+				'comment_ID'
 			),
-			'comment_meta'      => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'comment_meta',
 				$wpdb->commentmeta,
-				'meta_id',
+				'meta_id'
 			),
-			'option'            => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+			new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				'option',
 				$wpdb->options,
-				'option_id',
+				'option_id'
 			),
 			// @TODO: Support export of custom tables, maybe allowing plugins to choose entity iterator via filter
 		);
