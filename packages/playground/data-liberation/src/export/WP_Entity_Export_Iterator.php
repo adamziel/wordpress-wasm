@@ -111,9 +111,9 @@ class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
 }
 
 // @TODO: Maybe this is the same as incrementing ID iterator, but maybe should should handle other kinds of tables as well.
-class WP_Custom_Table_Entity_Iterator implements Iterator {
-	// @TODO: Implement
-}
+// class WP_Custom_Table_Entity_Iterator implements Iterator {
+// 	// @TODO: Implement
+// }
 
 class WP_Entity_Export_Iterator implements Iterator {
 	protected $entity_iterator_iterator = null;
