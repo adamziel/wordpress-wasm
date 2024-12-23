@@ -1,18 +1,25 @@
 <?php
 
+// @TODO: This is just a hack for easy manual testing. Remove it before merge.
+
+
 // @TODO: Move to dedicated file
 class WP_Export_Entity {
-	// TODO: Is there any reason we need to model specific concepts like
+	// @TODO: If we want to naively stream entities, perhaps sites should be able
+	//        run a process that cleans up cruft like orphaned term relationships.
+	//        Then that process could be run before attempting export.
+	// @TODO: Is there any reason we need to model specific concepts like
 	//       "category" rather than just exporting terms and taxonomy
 	//       relationships?
 	//       Intuition: Directly representing terms, taxonomies,
 	//       and relationships will be more flexible at this level.
-	const TYPE_TERM_TAXONOMY     = 'term_taxonomy';
 	const TYPE_TERM              = 'term';
-	const TYPE_TERM_RELATIONSHIP = 'term_relationship';
+	// @TODO: Counts likely will need regenerated after import
+	const TYPE_TERM_TAXONOMY     = 'term_taxonomy';
 	const TYPE_USER              = 'user';
 	const TYPE_POST              = 'post';
 	const TYPE_POST_META         = 'post_meta';
+	const TYPE_TERM_RELATIONSHIP = 'term_relationship';
 	const TYPE_COMMENT           = 'comment';
 	const TYPE_COMMENT_META      = 'comment_meta';
 	const TYPE_OPTION            = 'option';
@@ -20,7 +27,7 @@ class WP_Export_Entity {
 	private $type;
 	private $data;
 
-	public function __construct( $type, $data ) {
+	public function __construct($type, $data) {
 		$this->type = $type;
 		$this->data = $data;
 	}
@@ -33,69 +40,137 @@ class WP_Export_Entity {
 		return $this->data;
 	}
 
-	public function set_data( $data ) {
+	public function set_data($data) {
 		$this->data = $data;
 	}
 }
 
-class WP_Taxonomy_Entity_Iterator extends Iterator {
-	// @TODO: Implement - Should just list unique taxonomy names
-}
-
 // TODO: Maybe this can work for all primary key types
-class WP_Entity_Iterator_For_Table_With_Incrementing_IDs extends Iterator {
+class WP_Entity_Iterator_For_Table_With_Incrementing_IDs implements Iterator {
+	protected $table_name;
+	protected $primary_key;
+	protected $current_row;
+	protected $current_id;
 
-	public function __construct($table_name, $id_column_name) {
-
+	public function __construct($table_name, $primary_key) {
+		$this->table_name = $table_name;
+		$this->primary_key = $primary_key;
+		$this->current_id = 0;
+		$this->current_row = null;
 	}
 
-	// @TODO: Implement and use lazy init so there is little cost before use
-}	
-
-class WP_Custom_Table_Entity_Iterator extends Iterator {
-	// @TODO: Implement
-}
-
-class WP_Entity_Export_Iterator extends Iterator {
-	protected $entity_export_strategies = null;
-
-	protected $table_iterator = null;
-	protected $entity_iterator = null;
-
-	protected $current_table = null;
-	protected $last_row_id = null;
-	protected $current_entity = null;
-
-	public function __construct() {
-		// @TODO: Implement
+	#[\ReturnTypeWillChange]
+	public function rewind() {
+		$this->current_id = 0;
+		$this->next();
 	}
 
 	#[\ReturnTypeWillChange]
 	public function current() {
-		// @TODO: Implement
-	}
-
-	#[\ReturnTypeWillChange]
-	public function next() {
-		// @TODO: Implement
+		return $this->current_row;
 	}
 
 	#[\ReturnTypeWillChange]
 	public function key() {
-		// @TODO: Implement
-		// @TODO: Return reentrancy cursor which can also be the cursor for the current item?
+		return $this->current_id;
 	}
 
+	#[\ReturnTypeWillChange]
+	public function next() {
+		global $wpdb;
+		$this->current_row = $wpdb->get_row(
+			$wpdb->prepare(
+				// @TODO: Consider selecting more than 1 row at a time for possibly-better performance.
+				"SELECT * FROM {$this->table_name} WHERE {$this->primary_key} > %d ORDER BY {$this->primary_key} ASC LIMIT 1",
+				$this->current_id
+			)
+		);
+		if ($this->current_row) {
+			$this->current_id = $this->current_row->{$this->primary_key};
+		}
+	}
+	
+	#[\ReturnTypeWillChange]
 	public function valid() {
-		// @TODO: Implement
+		return $this->current_row !== null;
+	}
+}
+
+// @TODO: Maybe this is the same as incrementing ID iterator, but maybe should should handle other kinds of tables as well.
+class WP_Custom_Table_Entity_Iterator extends Iterator {
+	// @TODO: Implement
+}
+
+class WP_Entity_Export_Iterator implements Iterator {
+	protected $entity_iterator_iterator = null;
+
+	#[\ReturnTypeWillChange]
+	public function rewind() {
+		$entity_export_strategies = $this->create_entity_export_strategies();
+		$this->entity_iterator_iterator = new ArrayIterator($entity_export_strategies);
+		$this->next();
 	}
 
+	#[\ReturnTypeWillChange]
+	public function current() {
+		return $this->entity_iterator_iterator->current()->current();
+	}
+
+	#[\ReturnTypeWillChange]
+	public function next() {
+		$this->entity_iterator_iterator->current()->next();
+		if (!$this->entity_iterator_iterator->current()->valid()) {
+			$this->entity_iterator_iterator->next();
+		}
+	}
+
+	#[\ReturnTypeWillChange]
+	public function key() {
+
+		if (!$this->entity_iterator_iterator->valid()) {
+			return null;
+		}
+
+		if (!$this->entity_iterator_iterator->current()->valid()) {
+			return null;
+		}
+
+		$entity_iterator_iterator_key = $this->entity_iterator_iterator->key();
+		$entity_iterator_key = $this->entity_iterator_iterator->current()->key();
+
+		// @TODO: Return reentrancy cursor which can also be the cursor for the current item?
+		// NOTE: For reentrancy, should we prefer including table name instead of table iterator index?
+		return implode(
+			',',
+			array(
+				$entity_iterator_iterator_key,
+				$entity_iterator_key,
+			)
+		);
+	}
+
+	#[\ReturnTypeWillChange]
+	public function valid() {
+		return (
+			$this->entity_iterator_iterator->valid() &&
+			$this->entity_iterator_iterator->current()->valid()
+		);
+	}
+
+	// TODO: Maybe simplify this if we stick with just iterating over rows for all tables.
 	protected function create_entity_export_strategies() {
 		global $wpdb;
 		return array(
-			'term_taxonomy'     => new WP_Taxonomy_Entity_Iterator(),
 			'term'              => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
 				$wpdb->terms,
+				'term_id',
+			),
+			'termmeta'          => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				$wpdb->terms,
+				'term_id',
+			),
+			'term_taxonomy'     => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
+				$wpdb->term_taxonomy,
 				'term_id',
 			),
 			'term_relationship' => new WP_Entity_Iterator_For_Table_With_Incrementing_IDs(
