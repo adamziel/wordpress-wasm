@@ -7,23 +7,38 @@ class WP_Blocks_To_Markdown {
     private $block_markup;
     private $state;
     private $parents = [];
+    private $metadata;
 
-    public function __construct($block_markup) {
+    public function __construct($block_markup, $metadata = []) {
         $this->block_markup = $block_markup;
         $this->state = array(
             'indent' => array(),
             'listStyle' => array()
         );
+        $this->metadata = $metadata;
     }
 
     private $markdown;
 
     public function convert() {
-        $this->markdown = $this->blocks_to_markdown(parse_blocks($this->block_markup));
+        $this->markdown = '';
+        $this->markdown .= $this->frontmatter();
+        $this->markdown .= $this->blocks_to_markdown(parse_blocks($this->block_markup));
     }
 
     public function get_result() {
         return $this->markdown;
+    }
+
+    private function frontmatter() {
+        if(empty($this->metadata)){
+            return '';
+        }
+        $frontmatter = '';
+        foreach ($this->metadata as $key => $value) {
+            $frontmatter .= "$key: ".json_encode($value)."\n";
+        }
+        return "---\n$frontmatter---\n\n";
     }
 
     private function blocks_to_markdown($blocks) {

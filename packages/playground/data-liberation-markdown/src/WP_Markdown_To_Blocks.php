@@ -42,7 +42,6 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 			return false;
 		}
 		$this->convert_markdown_to_blocks();
-		// $this->block_markup = WP_Import_Utils::convert_blocks_to_markup( $this->parsed_blocks );
 		return true;
 	}
 
@@ -122,7 +121,9 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 							'list',
 							$attrs
 						);
-						$this->append_content( '<ul class="wp-block-list">' );
+
+                        $tag = $attrs['ordered'] ? 'ol' : 'ul';
+                        $this->append_content( '<' . $tag . ' class="wp-block-list">' );
 						break;
 
 					case ExtensionBlock\ListItem::class:
@@ -255,7 +256,11 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 						$this->pop_block();
 						break;
 					case ExtensionBlock\ListBlock::class:
-						$this->append_content( '</ul>' );
+                        if($node->getListData()->type === 'unordered') {
+                            $this->append_content( '</ul>' );
+                        } else {
+                            $this->append_content( '</ol>' );
+                        }
 						$this->pop_block();
 						break;
 					case ExtensionBlock\ListItem::class:

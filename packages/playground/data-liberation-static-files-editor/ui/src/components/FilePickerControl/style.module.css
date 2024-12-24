@@ -1,0 +1,91 @@
+.control {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 2px;
+	display: flex;
+	align-items: center;
+	width: 230px;
+	gap: 8px;
+	cursor: pointer;
+
+	.browse-label {
+		display: inline-flex;
+		text-decoration: none;
+		font-family: inherit;
+		font-weight: normal;
+		font-size: 13px;
+		margin: 0;
+		border: 0;
+		cursor: pointer;
+		-webkit-appearance: none;
+		background: none;
+		transition: box-shadow 0.1s linear;
+		align-items: center;
+		box-sizing: border-box;
+		padding: 6px 12px;
+		border-radius: 2px;
+		border: 1px solid #ddd;
+	}
+
+	.selected-path {
+		width: 250px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.path-preview {
+		overflow: hidden;
+		color: #000 !important;
+	}
+}
+
+.modal :global(.components-modal__content) {
+	margin-bottom: 80px;
+	padding: 0;
+}
+
+.modal-footer {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	min-height: 80px;
+	padding: 16px 24px;
+	gap: 8px;
+	box-sizing: border-box;
+	border-top: 1px solid #ddd;
+	background: #fff;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	width: 100%;
+}
+
+.path-mapping-button {
+	height: 30px;
+}
+
+.path-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.path-preview::before,
+.path-preview::after {
+	overflow: hidden;
+	white-space: pre;
+}
+
+.path-preview::before {
+	content: attr(data-content-start);
+	text-overflow: ellipsis;
+	flex-grow: 1;
+}
+
+.path-preview::after {
+	content: attr(data-content-end);
+	flex-shrink: 0;
+}

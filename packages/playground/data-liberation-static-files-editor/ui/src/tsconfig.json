@@ -1,0 +1,21 @@
+{
+	"compileOnSave": false,
+	"compilerOptions": {
+		"rootDir": ".",
+		"sourceMap": true,
+		"declaration": false,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"importHelpers": true,
+		"resolveJsonModule": true,
+		"jsx": "react",
+		"target": "ES2021",
+		"module": "esnext",
+		"lib": ["ES2022", "esnext.disposable", "dom"],
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"baseUrl": "."
+	}
+}

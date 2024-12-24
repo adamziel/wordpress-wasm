@@ -53,7 +53,7 @@ class WP_Static_Files_Editor_Plugin {
         // $static_sync = new WP_Static_File_Sync( self::get_fs() );
         // $static_sync->initialize_sync();
 
-        register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
+        // register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
         add_action('init', function() {
             self::register_post_type();
@@ -132,7 +132,6 @@ class WP_Static_Files_Editor_Plugin {
             }));', 'after');
         });
 
-
         add_action('rest_api_init', function() {
             register_rest_route('static-files-editor/v1', '/get-or-create-post-for-file', array(
                 'methods' => 'POST',
@@ -158,6 +157,168 @@ class WP_Static_Files_Editor_Plugin {
                 },
             ));
         });
+
+        // @TODO: the_content and rest_prepare_local_file filters run twice for REST API requests.
+        //        find a way of only running them once.
+
+        // Add the filter for 'the_content'
+        add_filter('the_content', function($content, $post = null) {
+            // If no post is provided, try to get it from the global scope
+            if (!$post) {
+                global $post;
+            }
+            
+            // Check if this post is of type "local_file"
+            if ($post && $post->post_type === 'local_file') {
+                // Get the latest content from the database first
+                $content = $post->post_content;
+                
+                // Then refresh from file if needed
+                $new_content = self::refresh_post_from_local_file($post);
+                if(!is_wp_error($new_content)) {
+                    $content = $new_content;
+                }
+                return $content;
+            }
+            
+            // Return original content for all other post types
+            return $content;
+        }, 10, 2);
+
+        // Add filter for REST API responses
+        add_filter('rest_prepare_local_file', function($response, $post, $request) {
+            $new_content = self::refresh_post_from_local_file($post);
+            if(!is_wp_error($new_content)) {
+                $response->data['content']['raw'] = $new_content;
+                $response->data['content']['rendered'] = '';
+            }
+            return $response;
+        }, 10, 3);
+
+        // Update the file after post is saved
+        add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
+            self::save_post_data_to_local_file($post);
+        }, 10, 3);
+    }
+
+    static private $synchronizing = false;
+    static private function acquire_synchronization_lock() {
+        // Ignore auto-saves or revisions
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            // return false;
+        }
+
+        // Skip if in maintenance mode
+        if (wp_is_maintenance_mode()) {
+            return false;
+        }
+
+        if (defined('WP_IMPORTING') && WP_IMPORTING) {
+            return false;
+        }
+
+        // @TODO: Synchronize between threads
+        if(self::$synchronizing) {
+            return false;
+        }
+        self::$synchronizing = true;
+        return true;
+    }
+
+    static private function release_synchronization_lock() {
+        self::$synchronizing = false;
+    }
+
+    static private function refresh_post_from_local_file($post) {
+        try {
+            if(!self::acquire_synchronization_lock()) {
+                return;
+            }
+
+            $post_id = $post->ID;
+            $fs = self::get_fs();
+            $path = get_post_meta($post_id, 'local_file_path', true);
+            if(!$fs->is_file($path)) {
+                _doing_it_wrong(__METHOD__, 'File not found', '1.0.0');
+                return;
+            }
+            $content = $fs->read_file($path);
+            $extension = pathinfo($path, PATHINFO_EXTENSION);
+            switch($extension) {
+                case 'md':
+                    $converter = new WP_Markdown_To_Blocks( $content );
+                    break;
+                case 'xhtml':
+                    $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $content ) );
+                    break;
+                case 'html':
+                default:
+                    $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $content ) );
+                    break;
+            }
+            $converter->convert();
+
+            $metadata = [];
+            foreach($converter->get_all_metadata() as $key => $value) {
+                $metadata[$key] = $value[0];
+            }
+            $new_content = $converter->get_block_markup();
+
+            $updated = wp_update_post(array(
+                'ID' => $post_id,
+                'post_content' => $new_content,
+                // 'meta_input' => $metadata,
+            ));
+            if(is_wp_error($updated)) {
+                return $updated;
+            }
+
+            return $new_content;            
+        } finally {
+            self::release_synchronization_lock();
+        }
+    }
+
+    static private function save_post_data_to_local_file($post) {
+        try {
+            if(!self::acquire_synchronization_lock()) {
+                return;
+            }
+
+            $post_id = $post->ID;
+            if (
+                empty($post->ID) ||
+                $post->post_status !== 'publish' ||
+                $post->post_type !== WP_LOCAL_FILE_POST_TYPE
+            ) {
+                return;
+            }
+
+            $fs = self::get_fs();
+            $path = get_post_meta($post_id, 'local_file_path', true);
+            $extension = pathinfo($path, PATHINFO_EXTENSION);
+            $metadata = get_post_meta($post_id);
+
+            // @TODO: Include specific post fields in the stored metadata
+            // foreach(WP_Imported_Entity::POST_FIELDS as $field) {
+            //     $metadata[$field] = get_post_field($field, $post_id);
+            // }
+            $content = get_post_field('post_content', $post_id);
+            switch($extension) {
+                // @TODO: Add support for HTML and XHTML
+                case 'html':
+                case 'xhtml':
+                case 'md':
+                default:
+                    $converter = new WP_Blocks_To_Markdown( $content, $metadata );
+                    break;
+            }
+            $converter->convert();
+            $fs->put_contents($path, $converter->get_result());
+        } finally {
+            self::release_synchronization_lock();
+        }
+
     }
 
     static public function get_local_files_tree($subdirectory = '') {
@@ -298,58 +459,67 @@ class WP_Static_Files_Editor_Plugin {
     }
 
     static public function get_or_create_post_for_file($request) {
-        $file_path = $request->get_param('path');
-        $file_path = '/' . ltrim($file_path, '/');
-        $create_file = $request->get_param('create_file');
-        
-        if (!$file_path) {
-            return new WP_Error('missing_path', 'File path is required');
-        }
-
-        // Create the file if requested and it doesn't exist
-        if ($create_file) {
-            $fs = self::get_fs();
-            if (!$fs->put_contents($file_path, '')) {
-                return new WP_Error('file_creation_failed', 'Failed to create file');
+        try {   
+            if(!self::acquire_synchronization_lock()) {
+                return;
             }
-        }
 
-        // Check if a post already exists for this file path
-        $existing_posts = get_posts(array(
-            'post_type' => WP_LOCAL_FILE_POST_TYPE,
-            'meta_key' => 'local_file_path',
-            'meta_value' => $file_path,
-            'posts_per_page' => 1
-        ));
+            $file_path = $request->get_param('path');
+            $file_path = '/' . ltrim($file_path, '/');
+            $create_file = $request->get_param('create_file');
+                
+            if (!$file_path) {
+                return new WP_Error('missing_path', 'File path is required');
+            }
 
-        $post_content = '';
-        if (file_exists($file_path)) {
-            $post_content = file_get_contents($file_path);
-        }
+            // Create the file if requested and it doesn't exist
+            $fs = self::get_fs();
+            if ($create_file) {
+                if (!$fs->put_contents($file_path, '')) {
+                    return new WP_Error('file_creation_failed', 'Failed to create file');
+                }
+            }
 
-        if (!empty($existing_posts)) {
-            // Update existing post
-            $post_data = array(
-                'ID' => $existing_posts[0]->ID,
-                'post_content' => $post_content
-            );
-            $post_id = wp_update_post($post_data);
-        } else {
-            // Create new post
-            $post_data = array(
-                'post_title' => basename($file_path),
+            // Check if a post already exists for this file path
+            $existing_posts = get_posts(array(
                 'post_type' => WP_LOCAL_FILE_POST_TYPE,
-                'post_status' => 'publish',
-                'post_content' => $post_content,
-                'meta_input' => array(
-                    'local_file_path' => $file_path
-                )
-            );
-            $post_id = wp_insert_post($post_data);
+                'meta_key' => 'local_file_path',
+                'meta_value' => $file_path,
+                'posts_per_page' => 1
+            ));
+
+            if (!empty($existing_posts)) {
+                // Update existing post
+                $post_data = array(
+                    'ID' => $existing_posts[0]->ID,
+                    'post_content' => ''
+                );
+                $post_id = wp_update_post($post_data);
+            } else {
+                // Create new post
+                $post_data = array(
+                    'post_title' => basename($file_path),
+                    'post_type' => WP_LOCAL_FILE_POST_TYPE,
+                    'post_status' => 'publish',
+                    'post_content' => '',
+                    'meta_input' => array(
+                        'local_file_path' => $file_path
+                    )
+                );
+                $post_id = wp_insert_post($post_data);
+            }
+
+            if (is_wp_error($post_id)) {
+                return $post_id;
+            }
+
+        } finally {
+            self::release_synchronization_lock();
         }
 
-        if (is_wp_error($post_id)) {
-            return $post_id;
+        $refreshed_post = self::refresh_post_from_local_file(get_post($post_id));
+        if (is_wp_error($refreshed_post)) {
+            return $refreshed_post;
         }
 
         return array(
