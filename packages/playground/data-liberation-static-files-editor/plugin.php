@@ -43,7 +43,11 @@ class WP_Static_Files_Editor_Plugin {
 
     static private function get_fs() {
         if(!self::$fs) {
-            self::$fs = new WP_Filesystem( WP_STATIC_CONTENT_DIR );
+            // self::$fs = new WP_Filesystem( WP_STATIC_CONTENT_DIR );
+            self::$fs = new WP_Git_Filesystem(
+                new WP_Git_Client('https://github.com/WordPress/gutenberg'),
+                '/docs/how-to-guides/data-basics'
+            );
         }
         return self::$fs;
     }
@@ -239,7 +243,7 @@ class WP_Static_Files_Editor_Plugin {
             $fs = self::get_fs();
             $path = get_post_meta($post_id, 'local_file_path', true);
             if(!$fs->is_file($path)) {
-                _doing_it_wrong(__METHOD__, 'File not found', '1.0.0');
+                _doing_it_wrong(__METHOD__, 'File not found: ' . $path, '1.0.0');
                 return;
             }
             $content = $fs->read_file($path);
@@ -280,6 +284,7 @@ class WP_Static_Files_Editor_Plugin {
     }
 
     static private function save_post_data_to_local_file($post) {
+        return;
         try {
             if(!self::acquire_synchronization_lock()) {
                 return;
