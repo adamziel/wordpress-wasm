@@ -31,7 +31,7 @@
 		opacity: 1;
 	}
 
-	tr:has(.selected, :focus, :active) .more-actions {
+	tr:has(.selected) .more-actions {
 		opacity: 1;
 		button {
 			color: #ffffff !important;
