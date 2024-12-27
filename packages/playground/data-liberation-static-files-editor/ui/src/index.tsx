@@ -3,6 +3,7 @@ import {
 	CreatedNode,
 	FileNode,
 	FilePickerTree,
+	FileTree,
 } from './components/FilePickerTree';
 import { store as editorStore } from '@wordpress/editor';
 import { store as preferencesStore } from '@wordpress/preferences';
@@ -98,37 +99,47 @@ function ConnectedFilePickerTree() {
 		});
 	};
 
-	const handleNodeCreated = async (node: CreatedNode) => {
-		if (node.type === 'file') {
-			await createEmptyFile(node.path);
-		} else if (node.type === 'folder') {
-			// Create an empty .gitkeep file in the new directory
-			// to make sure it will actually be created in the filesystem.
-			// @TODO: Rethink this approach. Ideally we could just display the
-			//        directory in the tree, and let the user create files inside it.
-			await createEmptyFile(node.path + '/.gitkeep');
-		}
-	};
-
-	const createEmptyFile = async (newFilePath: string) => {
+	const handleNodesCreated = async (tree: FileTree) => {
 		try {
+			const formData = new FormData();
+			formData.append('path', tree.path);
+
+			// Convert nodes to JSON, but extract files to separate form fields
+			const processNode = (node: FileNode, prefix: string): any => {
+				const nodeData = { ...node };
+				if (node.content instanceof File) {
+					formData.append(`${prefix}_content`, node.content);
+					nodeData.content = `@file:${prefix}_content`;
+				}
+				if (node.children) {
+					nodeData.children = node.children.map((child, index) =>
+						processNode(child, `${prefix}_${index}`)
+					);
+				}
+				return nodeData;
+			};
+
+			const processedNodes = tree.nodes.map((node, index) =>
+				processNode(node, `file_${index}`)
+			);
+			formData.append('nodes', JSON.stringify(processedNodes));
+
 			const response = (await apiFetch({
-				path: '/static-files-editor/v1/get-or-create-post-for-file',
+				path: '/static-files-editor/v1/create-files',
 				method: 'POST',
-				data: {
-					path: newFilePath,
-					create_file: true,
-				},
-			})) as { post_id: string };
+				body: formData,
+			})) as { created_files: Array<{ path: string; post_id: string }> };
 
 			await refreshFileTree();
 
-			onNavigateToEntityRecord({
-				postId: response.post_id,
-				postType: WP_LOCAL_FILE_POST_TYPE,
-			});
+			if (response.created_files.length > 0) {
+				onNavigateToEntityRecord({
+					postId: response.created_files[0].post_id,
+					postType: WP_LOCAL_FILE_POST_TYPE,
+				});
+			}
 		} catch (error) {
-			console.error('Failed to create file:', error);
+			console.error('Failed to create files:', error);
 		}
 	};
 
@@ -169,7 +180,7 @@ function ConnectedFilePickerTree() {
 				files={fileTree}
 				onSelect={handleFileClick}
 				initialPath={selectedPath}
-				onNodeCreated={handleNodeCreated}
+				onNodesCreated={handleNodesCreated}
 				onNodeDeleted={handleNodeDeleted}
 				onNodeMoved={handleNodeMoved}
 			/>

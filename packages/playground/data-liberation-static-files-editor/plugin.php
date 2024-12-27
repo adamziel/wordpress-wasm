@@ -171,6 +171,14 @@ class WP_Static_Files_Editor_Plugin {
                     return current_user_can('edit_posts');
                 },
             ));
+
+            register_rest_route('static-files-editor/v1', '/create-files', array(
+                'methods' => 'POST',
+                'callback' => array(self::class, 'create_files_endpoint'),
+                'permission_callback' => function() {
+                    return current_user_can('edit_posts');
+                },
+            ));
         });
 
         // @TODO: the_content and rest_prepare_local_file filters run twice for REST API requests.
@@ -611,6 +619,109 @@ class WP_Static_Files_Editor_Plugin {
         }
 
         return array('success' => true);
+    }
+
+    static public function create_files_endpoint($request) {
+        $path = $request->get_param('path');
+        $nodes_json = $request->get_param('nodes');
+        
+        if(!$path) {
+            $path = '/';
+        }
+
+        if (!$nodes_json) {
+            return new WP_Error('invalid_tree', 'Invalid file tree structure');
+        }
+
+        $nodes = json_decode($nodes_json, true);
+        if (!$nodes) {
+            return new WP_Error('invalid_json', 'Invalid JSON structure');
+        }
+
+        $created_files = [];
+
+        try {
+            $fs = self::get_fs();
+            foreach ($nodes as $node) {
+                $result = self::process_node($node, $path, $fs, $request);
+                if (is_wp_error($result)) {
+                    return $result;
+                }
+                $created_files = array_merge($created_files, $result);
+            }
+
+            return array(
+                'created_files' => $created_files
+            );
+        } catch (Exception $e) {
+            return new WP_Error('creation_failed', $e->getMessage());
+        }
+    }
+
+    static private function process_node($node, $parent_path, $fs, $request) {
+        if (!isset($node['name']) || !isset($node['type'])) {
+            return new WP_Error('invalid_node', 'Invalid node structure');
+        }
+
+        $path = rtrim($parent_path, '/') . '/' . ltrim($node['name'], '/');
+        $created_files = [];
+
+        if ($node['type'] === 'folder') {
+            if (!$fs->mkdir($path)) {
+                return new WP_Error('mkdir_failed', "Failed to create directory: $path");
+            }
+            
+            if (!empty($node['children'])) {
+                foreach ($node['children'] as $child) {
+                    $result = self::process_node($child, $path, $fs, $request);
+                    if (is_wp_error($result)) {
+                        return $result;
+                    }
+                    $created_files = array_merge($created_files, $result);
+                }
+            }
+        } else {
+            $content = '';
+            if (isset($node['content']) && is_string($node['content']) && strpos($node['content'], '@file:') === 0) {
+                $file_key = substr($node['content'], 6);
+                $uploaded_file = $request->get_file_params()[$file_key] ?? null;
+                if ($uploaded_file && $uploaded_file['error'] === UPLOAD_ERR_OK) {
+                    $content = file_get_contents($uploaded_file['tmp_name']);
+                }
+            }
+
+            if (!$fs->put_contents($path, $content)) {
+                return new WP_Error('write_failed', "Failed to write file: $path");
+            }
+
+            /*
+            // @TODO: Should we create posts here?
+            //        * We'll reindex the data later anyway and create those posts on demand.
+            //        * ^ yes, but this means we don't have these posts in the database right after the upload.
+            //        * But if we do create them, how do we know which files need a post, and which ones are
+            //          images, videos, etc?
+            $post_data = array(
+                'post_title' => basename($path),
+                'post_type' => WP_LOCAL_FILE_POST_TYPE,
+                'post_status' => 'publish',
+                'meta_input' => array(
+                    'local_file_path' => $path
+                )
+            );
+            $post_id = wp_insert_post($post_data);
+
+            if (is_wp_error($post_id)) {
+                return $post_id;
+            }
+            */
+
+            $created_files[] = array(
+                'path' => $path,
+                // 'post_id' => $post_id
+            );
+        }
+
+        return $created_files;
     }
 
 }

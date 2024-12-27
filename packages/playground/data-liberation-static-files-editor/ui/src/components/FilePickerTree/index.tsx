@@ -1,4 +1,5 @@
-import React, {
+import React from 'react';
+import {
 	useEffect,
 	useRef,
 	useState,
@@ -19,23 +20,32 @@ import '@wordpress/components/build-style/style.css';
 import css from './style.module.css';
 import classNames from 'classnames';
 import { folder, file } from '../icons';
+import { FileTree } from './types';
 
 export type FileNode = {
 	name: string;
 	type: 'file' | 'folder';
 	children?: FileNode[];
+	content?: File;
 };
 
-export type CreatedNode = {
-	type: 'file' | 'folder';
-	path: string;
-};
+export type CreatedNode =
+	| {
+			type: 'file' | 'folder';
+			path: string;
+			content?: string | ArrayBuffer | File;
+	  }
+	| {
+			type: 'tree';
+			path: string;
+			content: FileNode[];
+	  };
 
 export type FilePickerControlProps = {
 	files: FileNode[];
 	initialPath?: string;
 	onSelect?: (path: string, node: FileNode) => void;
-	onNodeCreated?: (node: CreatedNode) => void;
+	onNodesCreated?: (tree: FileTree) => void;
 	onNodeDeleted?: (path: string) => void;
 	onNodeMoved?: ({
 		fromPath,
@@ -61,6 +71,7 @@ type DragState = {
 	path: string;
 	hoverPath: string | null;
 	hoverType: 'file' | 'folder' | null;
+	isExternal?: boolean;
 };
 
 type FilePickerContextType = {
@@ -93,8 +104,8 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	files,
 	initialPath,
 	onSelect = () => {},
-	onNodeCreated = (...args) => {
-		console.log('onNodeCreated', args);
+	onNodesCreated = (tree: FileTree) => {
+		console.log('onNodesCreated', tree);
 	},
 	onNodeDeleted = (path: string) => {
 		console.log('onNodeDeleted', path);
@@ -206,13 +217,15 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				toPath,
 			});
 		} else {
-			const fullPath = `${editedNode.parentPath}/${name}`.replace(
-				/\/+/g,
-				'/'
-			);
-			onNodeCreated({
-				type: editedNode.type,
-				path: fullPath,
+			onNodesCreated({
+				path: editedNode.parentPath,
+				nodes: [
+					{
+						name: name,
+						type: editedNode.type,
+						content: null,
+					},
+				],
 			});
 		}
 	};
@@ -226,6 +239,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			path,
 			hoverPath: null,
 			hoverType: null,
+			isExternal: false,
 		});
 	};
 
@@ -239,6 +253,19 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		type: 'file' | 'folder'
 	) => {
 		e.preventDefault();
+
+		// Handle external files being dragged in
+		if (e.dataTransfer.types.includes('Files')) {
+			e.dataTransfer.dropEffect = 'copy';
+			setDragState({
+				path: '',
+				hoverPath: path,
+				hoverType: type,
+				isExternal: true,
+			});
+			return;
+		}
+
 		if (dragState && dragState.path !== path) {
 			// Prevent dropping a folder into its own descendant
 			if (dragState.path && isDescendantPath(dragState.path, path)) {
@@ -255,12 +282,71 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		}
 	};
 
-	const handleDrop = (
+	const handleDrop = async (
 		e: React.DragEvent,
 		targetPath: string,
 		targetType: 'file' | 'folder'
 	) => {
 		e.preventDefault();
+		// Handle file/directory upload
+		if (e.dataTransfer.items.length > 0) {
+			const targetFolder =
+				targetType === 'folder'
+					? targetPath
+					: targetPath.split('/').slice(0, -1).join('/');
+			const items = Array.from(e.dataTransfer.items);
+
+			const buildTree = async (
+				entry: FileSystemEntry,
+				parentPath: string = ''
+			): Promise<FileNode> => {
+				if (entry.isFile) {
+					const fileEntry = entry as FileSystemFileEntry;
+					const file = await new Promise<File>((resolve) =>
+						fileEntry.file(resolve)
+					);
+					return {
+						name: entry.name,
+						type: 'file',
+						content: file,
+					};
+				} else {
+					const dirEntry = entry as FileSystemDirectoryEntry;
+					const reader = dirEntry.createReader();
+					const entries = await new Promise<FileSystemEntry[]>(
+						(resolve) => {
+							reader.readEntries((entries) => resolve(entries));
+						}
+					);
+
+					const children = await Promise.all(
+						entries.map((entry) => buildTree(entry))
+					);
+
+					return {
+						name: entry.name,
+						type: 'folder',
+						children,
+					};
+				}
+			};
+
+			const rootNodes = await Promise.all(
+				items
+					.map((item) => item.webkitGetAsEntry())
+					.filter((entry): entry is FileSystemEntry => entry !== null)
+					.map((entry) => buildTree(entry))
+			);
+
+			onNodesCreated({
+				path: targetFolder,
+				nodes: rootNodes,
+			});
+
+			setDragState(null);
+			return;
+		}
+
 		if (dragState) {
 			// Prevent dropping a folder into its own descendant
 			if (
