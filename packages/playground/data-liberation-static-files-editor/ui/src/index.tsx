@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useCallback } from '@wordpress/element';
-import { FileNode, FilePickerTree } from './components/FilePickerTree';
+import {
+	CreatedNode,
+	FileNode,
+	FilePickerTree,
+} from './components/FilePickerTree';
 import { store as editorStore } from '@wordpress/editor';
 import { store as preferencesStore } from '@wordpress/preferences';
 import { dispatch, useSelect } from '@wordpress/data';
@@ -13,7 +17,7 @@ import './editor.css';
 // Pre-populated by plugin.php
 const WP_LOCAL_FILE_POST_TYPE = window.WP_LOCAL_FILE_POST_TYPE;
 
-const fileTreePromise = apiFetch({
+let fileTreePromise = apiFetch({
 	path: '/static-files-editor/v1/get-files-tree',
 });
 
@@ -28,10 +32,10 @@ function ConnectedFilePickerTree() {
 	);
 
 	const refreshFileTree = useCallback(async () => {
-		const tree = await apiFetch({
+		fileTreePromise = apiFetch({
 			path: '/static-files-editor/v1/get-files-tree',
 		});
-		setFileTree(tree);
+		setFileTree(await fileTreePromise);
 	}, []);
 
 	useEffect(() => {
@@ -73,8 +77,19 @@ function ConnectedFilePickerTree() {
 		});
 	};
 
-	const handleCreateFile = async () => {
-		const newFilePath = `${selectedPath}/untitled.md`.replace(/\/+/g, '/');
+	const handleNodeCreated = async (node: CreatedNode) => {
+		if (node.type === 'file') {
+			await createEmptyFile(node.path);
+		} else if (node.type === 'folder') {
+			// Create an empty .gitkeep file in the new directory
+			// to make sure it will actually be created in the filesystem.
+			// @TODO: Rethink this approach. Ideally we could just display the
+			//        directory in the tree, and let the user create files inside it.
+			await createEmptyFile(node.path + '/.gitkeep');
+		}
+	};
+
+	const createEmptyFile = async (newFilePath: string) => {
 		try {
 			const response = (await apiFetch({
 				path: '/static-files-editor/v1/get-or-create-post-for-file',
@@ -96,21 +111,6 @@ function ConnectedFilePickerTree() {
 		}
 	};
 
-	const handleCreateDirectory = async () => {
-		try {
-			await apiFetch({
-				path: '/static-files-editor/v1/create-directory',
-				method: 'POST',
-				data: {
-					path: `${selectedPath}/empty`.replace(/\/+/g, '/'),
-				},
-			});
-			await refreshFileTree();
-		} catch (error) {
-			console.error('Failed to create directory:', error);
-		}
-	};
-
 	if (isLoading) {
 		return <Spinner />;
 	}
@@ -121,20 +121,11 @@ function ConnectedFilePickerTree() {
 
 	return (
 		<div>
-			<div
-				style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}
-			>
-				<Button variant="primary" onClick={handleCreateFile}>
-					Create File
-				</Button>
-				<Button variant="secondary" onClick={handleCreateDirectory}>
-					Create Directory
-				</Button>
-			</div>
 			<FilePickerTree
 				files={fileTree}
 				onSelect={handleFileClick}
 				initialPath={selectedPath}
+				onNodeCreated={handleNodeCreated}
 			/>
 		</div>
 	);

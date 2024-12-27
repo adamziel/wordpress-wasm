@@ -71,7 +71,6 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 		);
 
 		$parser = new MarkdownParser( $environment );
-
 		$document          = $parser->parse( $this->markdown );
 		$this->frontmatter = array();
 		foreach ( $document->data->export() as $key => $value ) {

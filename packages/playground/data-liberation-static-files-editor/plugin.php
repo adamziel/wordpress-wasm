@@ -35,8 +35,9 @@ if(isset($_GET['dump'])) {
     });
 }
 
-require_once __DIR__ . '/WP_Static_File_Sync.php';
-require_once __DIR__ . '/secrets.php';
+if(file_exists(__DIR__ . '/secrets.php')) {
+    require_once __DIR__ . '/secrets.php';
+}
 
 class WP_Static_Files_Editor_Plugin {
 
@@ -58,7 +59,7 @@ class WP_Static_Files_Editor_Plugin {
 
     static public function initialize() {
         // Register hooks
-        // register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
+        register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
         add_action('init', function() {
             self::register_post_type();
@@ -132,7 +133,7 @@ class WP_Static_Files_Editor_Plugin {
             // Preload the initial files tree
             wp_add_inline_script('wp-api-fetch', 'wp.apiFetch.use(wp.apiFetch.createPreloadingMiddleware({
                 "/static-files-editor/v1/get-files-tree": {
-                    body: '.json_encode(WP_Static_Files_Editor_Plugin::get_files_tree_endpoint()).'
+                    body: '.json_encode(WP_Static_Files_Editor_Plugin::get_files_tree_endpoint()).',
                 }
             }));', 'after');
         });
@@ -254,15 +255,15 @@ class WP_Static_Files_Editor_Plugin {
             }
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             switch($extension) {
-                case 'md':
-                    $converter = new WP_Markdown_To_Blocks( $content );
-                    break;
                 case 'xhtml':
                     $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $content ) );
                     break;
                 case 'html':
-                default:
                     $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $content ) );
+                    break;
+                case 'md':
+                default:
+                    $converter = new WP_Markdown_To_Blocks( $content );
                     break;
             }
             $converter->convert();
@@ -276,6 +277,9 @@ class WP_Static_Files_Editor_Plugin {
             $updated = wp_update_post(array(
                 'ID' => $post_id,
                 'post_content' => $new_content,
+                'post_title' => $metadata['post_title'] ?? '',
+                'post_date_gmt' => $metadata['post_date_gmt'] ?? '',
+                'menu_order' => $metadata['menu_order'] ?? '',
                 // 'meta_input' => $metadata,
             ));
             if(is_wp_error($updated)) {
@@ -306,12 +310,13 @@ class WP_Static_Files_Editor_Plugin {
             $fs = self::get_fs();
             $path = get_post_meta($post_id, 'local_file_path', true);
             $extension = pathinfo($path, PATHINFO_EXTENSION);
-            $metadata = get_post_meta($post_id);
+            $metadata = [];
+            foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
+                $metadata[$key] = get_post_field($key, $post_id);
+            }
+            // @TODO: Also include actual post_meta. Which ones? All? The
+            //        ones explicitly set by the user in the editor?
 
-            // @TODO: Include specific post fields in the stored metadata
-            // foreach(WP_Imported_Entity::POST_FIELDS as $field) {
-            //     $metadata[$field] = get_post_field($field, $post_id);
-            // }
             $content = get_post_field('post_content', $post_id);
             switch($extension) {
                 // @TODO: Add support for HTML and XHTML

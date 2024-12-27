@@ -19,15 +19,16 @@ export type FileNode = {
 	children?: FileNode[];
 };
 
+export type CreatedNode = {
+	type: 'file' | 'folder';
+	path: string;
+};
+
 export type FilePickerControlProps = {
 	files: FileNode[];
 	initialPath?: string;
 	onSelect?: (path: string, node: FileNode) => void;
-	onNodeCreated?: (
-		type: 'file' | 'folder',
-		path: string,
-		name: string
-	) => void;
+	onNodeCreated?: (node: CreatedNode) => void;
 	isLoading?: boolean;
 	error?: string;
 };
@@ -87,10 +88,14 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	};
 
 	const handleCreateNode = (type: 'file' | 'folder') => {
-		if (!selectedPath) return;
-
-		// Find selected node
-		const pathParts = selectedPath.split('/');
+		if (!selectedPath) {
+			setTempNode({
+				type,
+				parentPath: '',
+			});
+			return;
+		}
+		const pathParts = selectedPath.split('/') || [];
 		let currentNode: FileNode | undefined = undefined;
 		let currentNodes = files;
 
@@ -100,20 +105,11 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			currentNodes = currentNode.children || [];
 		}
 
-		if (!currentNode) return;
-
 		// If selected node is a file, use its parent path
 		const parentPath =
-			currentNode.type === 'file'
-				? pathParts.slice(0, -1).join('/')
-				: selectedPath;
-
-		console.log({
-			parentPath,
-			currentNode,
-			selectedPath,
-			pathParts,
-		});
+			currentNode?.type === 'folder' && expanded[selectedPath]
+				? selectedPath
+				: pathParts.slice(0, -1).join('/');
 
 		expandNode(parentPath, true);
 		setTempNode({ type, parentPath });
@@ -121,7 +117,12 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 
 	const handleTempNodeComplete = (name: string) => {
 		if (!tempNode) return;
-		onNodeCreated(tempNode.type, tempNode.parentPath, name);
+		// @TODO: Replace with joinPaths()
+		const fullPath = `${tempNode.parentPath}/${name}`.replace(/\/+/g, '/');
+		onNodeCreated({
+			type: tempNode.type,
+			path: fullPath,
+		});
 		setTempNode(null);
 	};
 
@@ -132,6 +133,11 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	const [searchBuffer, setSearchBuffer] = useState('');
 	const searchBufferTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+		// Don't filter if we're creating a new file or folder –
+		// this would only blur and hide the filename input.
+		if (tempNode) {
+			return;
+		}
 		if (event.key.length === 1 && event.key.match(/\S/)) {
 			const newSearchBuffer = searchBuffer + event.key.toLowerCase();
 			setSearchBuffer(newSearchBuffer);
@@ -217,41 +223,48 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 
 	return (
 		<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
-			<ButtonGroup className={css['controls']}>
-				<Button
-					variant="secondary"
-					onClick={() => handleCreateNode('file')}
-					disabled={!selectedPath}
-				>
-					New File
-				</Button>
-				<Button
-					variant="secondary"
-					onClick={() => handleCreateNode('folder')}
-					disabled={!selectedPath}
-				>
-					New Folder
-				</Button>
-			</ButtonGroup>
+			<div
+				style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}
+			>
+				<ButtonGroup className={css['controls']}>
+					<Button
+						variant="secondary"
+						onClick={() => handleCreateNode('file')}
+						disabled={!selectedPath}
+					>
+						New File
+					</Button>
+					<Button
+						variant="secondary"
+						onClick={() => handleCreateNode('folder')}
+						disabled={!selectedPath}
+					>
+						New Folder
+					</Button>
+				</ButtonGroup>
+			</div>
 
 			<TreeGrid className={css['filePickerTree']}>
-				{files.map((file, index) => (
-					<NodeRow
-						key={file.name}
-						node={file}
-						level={0}
-						position={index + 1}
-						setSize={files.length}
-						expandedNodePaths={expanded}
-						expandNode={expandNode}
-						selectedNode={selectedPath}
-						selectPath={selectPath}
-						generatePath={generatePath}
-						tempNode={tempNode}
-						onTempNodeComplete={handleTempNodeComplete}
-						onTempNodeCancel={handleTempNodeCancel}
-					/>
-				))}
+				<NodeRow
+					key={'/'}
+					node={{
+						name: '',
+						type: 'folder',
+						children: files,
+					}}
+					isRoot={true}
+					level={-1}
+					position={1}
+					setSize={files.length}
+					expandedNodePaths={expanded}
+					expandNode={expandNode}
+					selectedNode={selectedPath}
+					selectPath={selectPath}
+					generatePath={generatePath}
+					tempNode={tempNode}
+					onTempNodeComplete={handleTempNodeComplete}
+					onTempNodeCancel={handleTempNodeCancel}
+				/>
 			</TreeGrid>
 		</div>
 	);
@@ -262,6 +275,7 @@ const NodeRow: React.FC<{
 	level: number;
 	position: number;
 	setSize: number;
+	isRoot: boolean;
 	expandedNodePaths: ExpandedNodePaths;
 	expandNode: (path: string, isOpen: boolean) => void;
 	selectPath: (path: string) => void;
@@ -277,6 +291,7 @@ const NodeRow: React.FC<{
 	level,
 	position,
 	setSize,
+	isRoot,
 	expandedNodePaths,
 	expandNode,
 	selectPath,
@@ -288,7 +303,7 @@ const NodeRow: React.FC<{
 	onTempNodeCancel,
 }) => {
 	const path = generatePath(node, parentPath);
-	const isExpanded = expandedNodePaths[path];
+	const isExpanded = isRoot || expandedNodePaths[path];
 
 	const toggleOpen = () => expandNode(path, !isExpanded);
 
@@ -334,54 +349,54 @@ const NodeRow: React.FC<{
 
 	return (
 		<>
-			<TreeGridRow
-				level={level}
-				positionInSet={position}
-				setSize={setSize}
-			>
-				<TreeGridCell>
-					{() => (
-						<Button
-							onClick={() => {
-								toggleOpen();
-								selectPath(path, node);
-							}}
-							onKeyDown={handleKeyDown}
-							className={classNames(css['fileNodeButton'], {
-								[css['selected']]: selectedNode === path,
-								'file-node-button': true,
-							})}
-							data-path={path}
-						>
-							<FileName
-								node={node}
-								isOpen={node.type === 'folder' && isExpanded}
-								level={level}
+			{!isRoot && (
+				<TreeGridRow
+					level={level}
+					positionInSet={position}
+					setSize={setSize}
+				>
+					<TreeGridCell>
+						{() => (
+							<Button
+								onClick={() => {
+									toggleOpen();
+									selectPath(path, node);
+								}}
+								onKeyDown={handleKeyDown}
+								className={classNames(css['fileNodeButton'], {
+									[css['selected']]: selectedNode === path,
+									'file-node-button': true,
+								})}
+								data-path={path}
+							>
+								<FileName
+									node={node}
+									isOpen={
+										node.type === 'folder' && isExpanded
+									}
+									level={level}
+								/>
+							</Button>
+						)}
+					</TreeGridCell>
+				</TreeGridRow>
+			)}
+			{tempNode && tempNode.parentPath === path && (
+				<TreeGridRow level={level + 1} positionInSet={1} setSize={1}>
+					<TreeGridCell>
+						{() => (
+							<TempNodeInput
+								type={tempNode.type}
+								onComplete={onTempNodeComplete}
+								onCancel={onTempNodeCancel}
+								level={level + 1}
 							/>
-						</Button>
-					)}
-				</TreeGridCell>
-			</TreeGridRow>
+						)}
+					</TreeGridCell>
+				</TreeGridRow>
+			)}
 			{isExpanded && (
 				<>
-					{tempNode && tempNode.parentPath === path && (
-						<TreeGridRow
-							level={level + 1}
-							positionInSet={1}
-							setSize={1}
-						>
-							<TreeGridCell>
-								{() => (
-									<TempNodeInput
-										type={tempNode.type}
-										onComplete={onTempNodeComplete}
-										onCancel={onTempNodeCancel}
-										level={level + 1}
-									/>
-								)}
-							</TreeGridCell>
-						</TreeGridRow>
-					)}
 					{node.children &&
 						node.children.map((child, index) => (
 							<NodeRow
