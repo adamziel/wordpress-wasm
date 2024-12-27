@@ -714,33 +714,29 @@ const NodeRow: React.FC<{
 											level={level}
 										/>
 									</Button>
+									<div className={css['moreActions']}>
+										<DropdownMenu
+											icon={more}
+											label="More actions"
+											controls={[
+												{
+													title: 'Rename',
+													onClick: () => {
+														startRenaming(path);
+													},
+												},
+												{
+													title: 'Delete',
+													onClick: () => {
+														onNodeDeleted(path);
+													},
+												},
+											]}
+										/>
+									</div>
 								</>
 							)
 						}
-					</TreeGridCell>
-					<TreeGridCell>
-						{() => (
-							<div>
-								<DropdownMenu
-									icon={more}
-									label="More actions"
-									controls={[
-										{
-											title: 'Rename',
-											onClick: () => {
-												startRenaming(path);
-											},
-										},
-										{
-											title: 'Delete',
-											onClick: () => {
-												onNodeDeleted(path);
-											},
-										},
-									]}
-								/>
-							</div>
-						)}
 					</TreeGridCell>
 				</TreeGridRow>
 			)}

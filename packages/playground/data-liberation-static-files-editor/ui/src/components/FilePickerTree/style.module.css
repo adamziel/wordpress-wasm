@@ -1,6 +1,8 @@
 .file-picker-tree {
 	width: 100%;
 
+	border-collapse: collapse;
+
 	tr:nth-child(even) {
 		background-color: #f7f7f7;
 	}
@@ -12,6 +14,29 @@
 	/* &:focus {
 		outline: 2px solid var(--wp-admin-theme-color);
 	} */
+
+	td {
+		position: relative;
+	}
+	.more-actions {
+		position: absolute;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0;
+		max-height: 100%;
+	}
+
+	tr:hover .more-actions {
+		opacity: 1;
+	}
+
+	tr:has(.selected, :focus, :active) .more-actions {
+		opacity: 1;
+		button {
+			color: #ffffff !important;
+		}
+	}
 }
 
 .file-node-button {
@@ -26,7 +51,8 @@
 	-webkit-appearance: none;
 	background: none;
 	transition: box-shadow 0.1s linear;
-	height: 30px;
+	height: 40px;
+
 	align-items: center;
 	box-sizing: border-box;
 	padding: 6px 12px;
