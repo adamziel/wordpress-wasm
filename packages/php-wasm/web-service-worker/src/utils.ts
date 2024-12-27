@@ -3,8 +3,12 @@ declare const self: ServiceWorkerGlobalScope;
 
 import { awaitReply, getNextRequestId } from './messaging';
 import { getURLScope, isURLScoped, setURLScope } from '@php-wasm/scopes';
+import { HttpCookieStore } from '@php-wasm/universal';
 
-export async function convertFetchEventToPHPRequest(event: FetchEvent) {
+export async function convertFetchEventToPHPRequest(
+	event: FetchEvent,
+	cookieStore: HttpCookieStore
+) {
 	let url = new URL(event.request.url);
 
 	if (!isURLScoped(url)) {
@@ -22,8 +26,28 @@ export async function convertFetchEventToPHPRequest(event: FetchEvent) {
 			? new Uint8Array(await event.request.clone().arrayBuffer())
 			: undefined;
 	const requestHeaders: Record<string, string> = {};
+
+	let providedCookies = '';
+	// @TODO: Why don't our types properly include Headers#entries()?
 	for (const pair of (event.request.headers as any).entries()) {
-		requestHeaders[pair[0]] = pair[1];
+		const [name, value] = pair as [string, string];
+		if (name.toLowerCase() === 'cookie') {
+			providedCookies = value;
+		} else {
+			requestHeaders[name] = value;
+		}
+	}
+
+	const credentialsAllowed =
+		event.request.credentials === 'include' ||
+		event.request.credentials === 'same-origin';
+	if (credentialsAllowed) {
+		const storedCookies = cookieStore.getCookieRequestHeader();
+		const effectiveCookies = [storedCookies];
+		if (providedCookies) {
+			effectiveCookies.push(providedCookies);
+		}
+		requestHeaders['Cookie'] = effectiveCookies.join('; ');
 	}
 
 	let phpResponse;
@@ -62,6 +86,23 @@ export async function convertFetchEventToPHPRequest(event: FetchEvent) {
 		console.error(e, { url: url.toString() });
 		throw e;
 	}
+
+	/**
+	 * We should not consider Set-Cookie headers unless credentials are allowed.
+	 * From https://fetch.spec.whatwg.org/#concept-request-credentials-mode :
+	 *   > "omit"
+	 *   > Excludes credentials from this request, and causes any credentials
+	 *   > sent back in the response to be ignored.
+	 */
+	if (credentialsAllowed) {
+		// @TODO: Make way to relay non-HttpOnly cookies from PHP to the client.
+		//        Those would be available to client JS in a classic WP setup.
+		cookieStore.rememberCookiesFromResponseHeaders(phpResponse.headers);
+	}
+	// Explicitly remove the Set-Cookie header because:
+	// - The browser is forbidden from relaying it via custom Response objects.
+	// - We can be sure it is not relayed by removing it ourselves.
+	delete phpResponse.headers['set-cookie'];
 
 	/**
 	 * Safari has a bug that prevents Service Workers from redirecting relative URLs.
