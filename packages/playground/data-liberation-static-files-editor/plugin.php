@@ -163,9 +163,10 @@ class WP_Static_Files_Editor_Plugin {
                 },
             ));
 
-            register_rest_route('static-files-editor/v1', '/rename-file', array(
+
+            register_rest_route('static-files-editor/v1', '/move-file', array(
                 'methods' => 'POST',
-                'callback' => array(self::class, 'rename_file_endpoint'),
+                'callback' => array(self::class, 'move_file_endpoint'),
                 'permission_callback' => function() {
                     return current_user_can('edit_posts');
                 },
@@ -580,32 +581,32 @@ class WP_Static_Files_Editor_Plugin {
         return array('success' => true);
     }
 
-    static public function rename_file_endpoint($request) {
-        $original_path = $request->get_param('originalPath');
-        $new_path = $request->get_param('newPath');
+    static public function move_file_endpoint($request) {
+        $from_path = $request->get_param('fromPath');
+        $to_path = $request->get_param('toPath');
         
-        if (!$original_path || !$new_path) {
-            return new WP_Error('missing_path', 'Both original and new paths are required');
+        if (!$from_path || !$to_path) {
+            return new WP_Error('missing_path', 'Both source and target paths are required');
         }
 
         // Find and update associated post
         $existing_posts = get_posts(array(
             'post_type' => WP_LOCAL_FILE_POST_TYPE,
             'meta_key' => 'local_file_path',
-            'meta_value' => $original_path,
+            'meta_value' => $from_path,
             'posts_per_page' => 1
         ));
 
         $fs = self::get_fs();
-        if (!$fs->rename($original_path, $new_path)) {
-            return new WP_Error('rename_failed', 'Failed to rename file');
+        if (!$fs->rename($from_path, $to_path)) {
+            return new WP_Error('move_failed', 'Failed to move file');
         }
 
         if (!empty($existing_posts)) {
-            update_post_meta($existing_posts[0]->ID, 'local_file_path', $new_path);
+            update_post_meta($existing_posts[0]->ID, 'local_file_path', $to_path);
             wp_update_post(array(
                 'ID' => $existing_posts[0]->ID,
-                'post_title' => basename($new_path)
+                'post_title' => basename($to_path)
             ));
         }
 

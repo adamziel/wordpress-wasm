@@ -78,25 +78,6 @@ function ConnectedFilePickerTree() {
 		await refreshFileTree();
 	};
 
-	const handleNodeRenamed = async (args: {
-		originalPath: string;
-		newPath: string;
-	}) => {
-		try {
-			await apiFetch({
-				path: '/static-files-editor/v1/rename-file',
-				method: 'POST',
-				data: {
-					originalPath: args.originalPath,
-					newPath: args.newPath,
-				},
-			});
-			await refreshFileTree();
-		} catch (error) {
-			console.error('Failed to rename file:', error);
-		}
-	};
-
 	const handleFileClick = async (filePath: string, node: FileNode) => {
 		if (node.type === 'folder') {
 			setSelectedPath(filePath);
@@ -151,6 +132,29 @@ function ConnectedFilePickerTree() {
 		}
 	};
 
+	const handleNodeMoved = async ({
+		fromPath,
+		toPath,
+	}: {
+		fromPath: string;
+		toPath: string;
+	}) => {
+		try {
+			console.log('Moving file from', fromPath, 'to', toPath);
+			await apiFetch({
+				path: '/static-files-editor/v1/move-file',
+				method: 'POST',
+				data: {
+					fromPath,
+					toPath,
+				},
+			});
+			await refreshFileTree();
+		} catch (error) {
+			console.error('Failed to move file:', error);
+		}
+	};
+
 	if (isLoading) {
 		return <Spinner />;
 	}
@@ -166,8 +170,8 @@ function ConnectedFilePickerTree() {
 				onSelect={handleFileClick}
 				initialPath={selectedPath}
 				onNodeCreated={handleNodeCreated}
-				onNodeRenamed={handleNodeRenamed}
 				onNodeDeleted={handleNodeDeleted}
+				onNodeMoved={handleNodeMoved}
 			/>
 		</div>
 	);
