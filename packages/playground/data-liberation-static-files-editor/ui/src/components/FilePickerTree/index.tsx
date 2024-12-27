@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from '@wordpress/element';
+import React, {
+	useEffect,
+	useRef,
+	useState,
+	createContext,
+	useContext,
+} from '@wordpress/element';
 import {
 	__experimentalTreeGrid as TreeGrid,
 	__experimentalTreeGridRow as TreeGridRow,
@@ -56,6 +62,30 @@ type DragState = {
 	hoverPath: string | null;
 	hoverType: 'file' | 'folder' | null;
 };
+
+type FilePickerContextType = {
+	expandedNodePaths: ExpandedNodePaths;
+	expandNode: (path: string, isOpen: boolean) => void;
+	selectPath: (path: string, node: FileNode) => void;
+	selectedNode: string | null;
+	generatePath: (node: FileNode, parentPath?: string) => string;
+	editedNode: EditedNode | null;
+	onEditedNodeComplete: (name: string) => void;
+	onEditedNodeCancel: () => void;
+	onNodeDeleted: (path: string) => void;
+	startRenaming: (path: string) => void;
+	onDragStart: (path: string, type: 'file' | 'folder') => void;
+	onDragOver: (
+		e: React.DragEvent,
+		path: string,
+		type: 'file' | 'folder'
+	) => void;
+	onDrop: (e: React.DragEvent, path: string, type: 'file' | 'folder') => void;
+	onDragEnd: () => void;
+	dragState: DragState | null;
+};
+
+const FilePickerContext = createContext<FilePickerContextType | null>(null);
 
 export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	isLoading = false,
@@ -159,15 +189,21 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 
 	const handleEditedNodeComplete = (name: string) => {
 		if (!editedNode) return;
-		// @TODO: Replace with joinPaths()
+		setEditedNode(null);
 		if (editedNode.reason === 'rename') {
-			const newPath = [
-				...editedNode.originalPath.split('/').slice(0, -1),
-				name,
-			].join('/');
+			// @TODO: Replace with joinPaths()
+			const fromPath = editedNode.originalPath.replace(/^\/+/, '');
+			const toPath = [...fromPath.split('/').slice(0, -1), name].join(
+				'/'
+			);
+
+			if (fromPath === toPath) {
+				return;
+			}
+
 			onNodeMoved({
-				fromPath: editedNode.originalPath,
-				toPath: newPath,
+				fromPath,
+				toPath,
 			});
 		} else {
 			const fullPath = `${editedNode.parentPath}/${name}`.replace(
@@ -179,7 +215,6 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				path: fullPath,
 			});
 		}
-		setEditedNode(null);
 	};
 
 	const handleEditedNodeCancel = () => {
@@ -358,59 +393,69 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		);
 	}
 
-	return (
-		<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
-			<div
-				style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}
-			>
-				<ButtonGroup className={css['controls']}>
-					<Button
-						variant="secondary"
-						onClick={() => handleCreateNode('file')}
-						disabled={!selectedPath}
-					>
-						New File
-					</Button>
-					<Button
-						variant="secondary"
-						onClick={() => handleCreateNode('folder')}
-						disabled={!selectedPath}
-					>
-						New Folder
-					</Button>
-				</ButtonGroup>
-			</div>
+	const contextValue = {
+		expandedNodePaths: expanded,
+		expandNode,
+		selectPath,
+		selectedNode: selectedPath,
+		generatePath,
+		editedNode,
+		onEditedNodeComplete: handleEditedNodeComplete,
+		onEditedNodeCancel: handleEditedNodeCancel,
+		onNodeDeleted,
+		startRenaming: handleRenameRequest,
+		onDragStart: handleDragStart,
+		onDragOver: handleDragOver,
+		onDrop: handleDrop,
+		onDragEnd: handleDragEnd,
+		dragState,
+	};
 
-			<TreeGrid className={css['filePickerTree']}>
-				<NodeRow
-					key={'/'}
-					node={{
-						name: '',
-						type: 'folder',
-						children: files,
+	return (
+		<FilePickerContext.Provider value={contextValue}>
+			<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
+				<div
+					style={{
+						marginBottom: '1rem',
+						display: 'flex',
+						gap: '0.5rem',
 					}}
-					isRoot={true}
-					level={-1}
-					position={1}
-					setSize={files.length}
-					expandedNodePaths={expanded}
-					expandNode={expandNode}
-					selectedNode={selectedPath}
-					selectPath={selectPath}
-					generatePath={generatePath}
-					editedNode={editedNode}
-					onEditedNodeComplete={handleEditedNodeComplete}
-					onEditedNodeCancel={handleEditedNodeCancel}
-					onNodeDeleted={onNodeDeleted}
-					startRenaming={handleRenameRequest}
-					onDragStart={handleDragStart}
-					onDragOver={handleDragOver}
-					onDrop={handleDrop}
-					onDragEnd={handleDragEnd}
-					dragState={dragState}
-				/>
-			</TreeGrid>
-		</div>
+				>
+					<ButtonGroup className={css['controls']}>
+						<Button
+							variant="secondary"
+							onClick={() => handleCreateNode('file')}
+							disabled={!selectedPath}
+						>
+							New File
+						</Button>
+						<Button
+							variant="secondary"
+							onClick={() => handleCreateNode('folder')}
+							disabled={!selectedPath}
+						>
+							New Folder
+						</Button>
+					</ButtonGroup>
+				</div>
+
+				<TreeGrid className={css['filePickerTree']}>
+					<NodeRow
+						key={'/'}
+						node={{
+							name: '',
+							type: 'folder',
+							children: files,
+						}}
+						isRoot={true}
+						level={-1}
+						position={1}
+						setSize={files.length}
+						parentPath=""
+					/>
+				</TreeGrid>
+			</div>
+		</FilePickerContext.Provider>
 	);
 };
 
@@ -420,54 +465,30 @@ const NodeRow: React.FC<{
 	position: number;
 	setSize: number;
 	isRoot: boolean;
-	expandedNodePaths: ExpandedNodePaths;
-	expandNode: (path: string, isOpen: boolean) => void;
-	selectPath: (path: string) => void;
-	selectedNode: string | null;
-	generatePath: (node: FileNode, parentPath?: string) => string;
-	parentPath?: string;
-	parentMapping?: string;
-	editedNode?: EditedNode | null;
-	onEditedNodeComplete?: (name: string) => void;
-	onEditedNodeCancel?: () => void;
-	onNodeDeleted?: (path: string) => void;
-	startRenaming?: (path: string) => void;
-	onDragStart?: (path: string, type: 'file' | 'folder') => void;
-	onDragOver?: (
-		e: React.DragEvent,
-		path: string,
-		type: 'file' | 'folder'
-	) => void;
-	onDrop?: (
-		e: React.DragEvent,
-		path: string,
-		type: 'file' | 'folder'
-	) => void;
-	onDragEnd?: () => void;
-	dragState?: DragState | null;
-}> = ({
-	node,
-	level,
-	position,
-	setSize,
-	isRoot,
-	expandedNodePaths,
-	expandNode,
-	selectPath,
-	generatePath,
-	parentPath = '',
-	selectedNode,
-	editedNode,
-	onEditedNodeComplete,
-	onEditedNodeCancel,
-	onNodeDeleted,
-	startRenaming,
-	onDragStart,
-	onDragOver,
-	onDrop,
-	onDragEnd,
-	dragState,
-}) => {
+	parentPath: string;
+}> = ({ node, level, position, setSize, isRoot, parentPath }) => {
+	const context = useContext(FilePickerContext);
+	if (!context)
+		throw new Error('NodeRow must be used within FilePickerContext');
+
+	const {
+		expandedNodePaths,
+		expandNode,
+		selectPath,
+		generatePath,
+		selectedNode,
+		editedNode,
+		onEditedNodeComplete,
+		onEditedNodeCancel,
+		onNodeDeleted,
+		startRenaming,
+		onDragStart,
+		onDragOver,
+		onDrop,
+		onDragEnd,
+		dragState,
+	} = context;
+
 	const path = generatePath(node, parentPath);
 	const isExpanded = isRoot || expandedNodePaths[path];
 	const isBeingDragged = dragState?.path === path;
@@ -659,22 +680,8 @@ const NodeRow: React.FC<{
 								level={level + 1}
 								position={index + 1}
 								setSize={node.children!.length}
-								expandedNodePaths={expandedNodePaths}
-								expandNode={expandNode}
-								selectedNode={selectedNode}
-								selectPath={selectPath}
-								generatePath={generatePath}
+								isRoot={false}
 								parentPath={path}
-								editedNode={editedNode}
-								onEditedNodeComplete={onEditedNodeComplete}
-								onEditedNodeCancel={onEditedNodeCancel}
-								onNodeDeleted={onNodeDeleted}
-								startRenaming={startRenaming}
-								onDragStart={onDragStart}
-								onDragOver={onDragOver}
-								onDrop={onDrop}
-								onDragEnd={onDragEnd}
-								dragState={dragState}
 							/>
 						))}
 				</>
