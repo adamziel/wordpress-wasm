@@ -136,6 +136,9 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
 	// for dealing with a local filesystem.
 
 	public function rename($old_path, $new_path) {
+        if($this->is_dir($old_path)) {
+            throw new Exception('Renaming directories is not supported yet');
+        }
         if(!$this->is_file($old_path)) {
             return false;
         }
