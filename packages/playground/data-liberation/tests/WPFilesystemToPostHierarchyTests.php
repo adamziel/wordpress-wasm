@@ -6,7 +6,7 @@ class WPFilesystemToPostHierarchyTests extends TestCase {
 
     public function test_with_create_index_pages_true() {
         $reader = WP_Filesystem_To_Post_Hierarchy::create(
-            new WordPress\Filesystem\WP_Filesystem(),
+            new WordPress\Filesystem\WP_Local_Filesystem(),
             [
                 'root_dir' => __DIR__ . '/fixtures/directory-tree-entity-reader',
                 'first_post_id' => 2,

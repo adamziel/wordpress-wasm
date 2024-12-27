@@ -4,9 +4,13 @@ require_once __DIR__ . '/WP_Git_Pack_Index.php';
 
 class WP_Git_Client {
     private $repoUrl;
+    private $author;
+    private $committer;
 
-    public function __construct($repoUrl) {
+    public function __construct($repoUrl, $options = []) {
         $this->repoUrl = rtrim($repoUrl, '/');
+        $this->author = $options['author'] ?? "John Doe <john@example.com>";
+        $this->committer = $options['committer'] ?? "John Doe <john@example.com>";
     }
 
     public function fetchRefs($prefix) {
@@ -54,6 +58,59 @@ class WP_Git_Client {
             yield $frame;
             $offset += $length;
         }
+    }
+
+    public function push($git_objects, $options = []) {
+        $empty_hash = "0000000000000000000000000000000000000000";
+        $parent_hash = $options['parent_hash'] ?? $empty_hash;
+        $tree_hash = $options['tree_hash'] ?? $empty_hash;
+        $branchName = $options['branch_name'];
+        $author = ($options['author'] ?? $this->author) . " " . time() . " +0000";
+        $committer = ($options['committer'] ?? $this->committer) . " " . time() . " +0000";
+        $message = $options['message'] ?? "Hello!";
+
+        $parent = '';
+        if($parent_hash !== $empty_hash) {
+            $parent = "parent $parent_hash\n";
+        }
+        $commit_object = WP_Git_Pack_Processor::create_object([
+            'type' => WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+            'content' => sprintf(
+                "tree %s\n%sauthor %s\ncommitter %s\n\n%s\n",
+                $tree_hash,
+                $parent,
+                $author,
+                $committer,
+                $message
+            ),
+            'tree' => $tree_hash,
+        ]);
+        $commit_sha = $commit_object['oid'];
+
+        $git_objects[] = $commit_object;
+        
+        $push_packet = WP_Git_Pack_Processor::encode_packet_line("$parent_hash $commit_sha refs/heads/$branchName\0report-status force-update\n");
+        $push_packet .= "0000";
+        $push_packet .= WP_Git_Pack_Processor::encode($git_objects);
+        $push_packet .= "0000";
+
+        $url = rtrim($this->repoUrl, '.git').'.git/git-receive-pack';
+        $response = $this->http_request($url, $push_packet, [
+            'Content-Type: application/x-git-receive-pack-request',
+            'Accept: application/x-git-receive-pack-result',
+        ]);
+
+        $response_chunks = iterator_to_array($this->parse_multiplexed_pack_data($response));
+        if(
+            trim($response_chunks[0]['data']) !== 'unpack ok' ||
+            trim($response_chunks[1]['data']) !== 'ok refs/heads/' . $branchName
+        ) {
+            throw new Exception('Push failed:' . $response);
+        }
+        return [
+            'new_head_hash' => $commit_sha,
+            'new_tree_hash' => $tree_hash,
+        ];
     }
 
     public function list_objects($ref_hash) {
@@ -187,4 +244,159 @@ class WP_Git_Client {
         }
     }
 
+    private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
+
+    /**
+     * Computes Git objects needed to commit a changeset.
+     * 
+     * @param WP_Git_Pack_Processor $oldIndex The index containing existing objects
+     * @param WP_Changeset $changeset The changes to commit
+     * @return string The Git objects with type, content and SHA
+     */
+    public function compute_push_objects(
+        WP_Git_Pack_Index $index,
+        WP_Changeset $changeset,
+        $branchName,
+        $parent_hash = null
+    ) {
+        $new_index = [];
+
+        $new_tree = new stdClass();
+        foreach (array_merge($changeset->create, $changeset->update) as $path => $content) {
+            $new_blob = WP_Git_Pack_Processor::create_object([
+                'type' => WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+                'content' => $content,
+            ]);
+            $new_index[] = $new_blob;
+            $this->set_oid($new_tree, $path, $new_blob['oid']);
+        }
+        
+        foreach ($changeset->delete as $path) {
+            $this->set_oid($new_tree, $path, self::DELETE_PLACEHOLDER);
+        }
+
+        if(!$parent_hash) {
+            $parent_hash = "0000000000000000000000000000000000000000";
+        }
+        $parent = '';
+        if($parent_hash) {
+            $parent = "parent $parent_hash\n";
+        }
+        $root_tree = $this->backfill_trees($index, $new_index, $new_tree, '/');
+        $commit = WP_Git_Pack_Processor::create_object([
+            'type' => WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+            'content' => sprintf(
+                "tree %s\n{$parent}author %s\ncommitter %s\n\n%s\n",
+                $root_tree['oid'],
+                "John Doe <john@example.com> " . time() . " +0000",
+                "John Doe <john@example.com> " . time() . " +0000",
+                "Hello!"
+            ),
+            'tree' => $root_tree['oid'],
+        ]);
+        $commit_sha = $commit['oid'];
+        $new_index[] = $commit;
+        // Make $new_index unique by 'oid' column
+        $seen_oids = [];
+        $new_index = array_filter($new_index, function($obj) use (&$seen_oids) {
+            if (isset($seen_oids[$obj['oid']])) {
+                return false;
+            }
+            $seen_oids[$obj['oid']] = true;
+            return true;
+        });
+        // $new_index = array_reverse($new_index);
+
+        var_dump($new_index);
+
+        $pktPush = WP_Git_Pack_Processor::encode_packet_line("$parent_hash $commit_sha refs/heads/$branchName\0report-status force-update\n");
+        $pktPush .= "0000";
+        $pktPush .= WP_Git_Pack_Processor::encode($new_index);
+        $pktPush .= "0000";
+    
+        return $pktPush;
+    }
+
+    private function backfill_trees(WP_Git_Pack_Index $current_index, &$new_index, $subtree_delta, $subtree_path = '/') {
+        $subtree_path = ltrim($subtree_path, '/');
+        $new_tree_content = [];
+
+        $indexed_tree = $current_index->get_by_path($subtree_path);
+        if($indexed_tree) {
+            foreach($indexed_tree['content'] as $object) {
+                // Backfill the unchanged objects from the currently indexed subtree.
+                $name = $object['name'];
+                if(!isset($subtree_delta->children[$name])) {
+                    $new_tree_content[$name] = $object;
+                }
+            }
+        }
+
+        // Index changed and new objects in the current subtree.
+        foreach($subtree_delta->children as $name => $subtree_child) {
+            // Ignore any deleted objects.
+            if(isset($subtree_child->oid) && $subtree_child->oid === self::DELETE_PLACEHOLDER) {
+                continue;
+            }
+
+            // Index blobs
+            switch($subtree_child->type) {
+                case WP_Git_Pack_Processor::OBJECT_TYPE_BLOB:
+                    $new_tree_content[$name] = [
+                        'mode' => WP_Git_Pack_Processor::FILE_MODE_REGULAR_NON_EXECUTABLE,
+                        'name' => $name,
+                        'sha1' => $subtree_child->oid,
+                    ];
+                    break;
+                case WP_Git_Pack_Processor::OBJECT_TYPE_TREE:
+                    $subtree_object = $this->backfill_trees($current_index, $new_index, $subtree_child, $subtree_path . '/' . $name);
+                    $new_tree_content[$name] = [
+                        'mode' => WP_Git_Pack_Processor::FILE_MODE_DIRECTORY,
+                        'name' => $name,
+                        'sha1' => $subtree_object['oid'],
+                    ];
+                    break;
+            }
+        }
+
+        $new_tree_object = WP_Git_Pack_Processor::create_object([
+            'type' => WP_Git_Pack_Processor::OBJECT_TYPE_TREE,
+            'content' => $new_tree_content,
+        ]);
+
+        $new_index[] = $new_tree_object;
+        return $new_tree_object;
+    }
+
+    private function set_oid($root_tree, $path, $oid) {
+        $blob = new stdClass();
+        $blob->type = WP_Git_Pack_Processor::OBJECT_TYPE_BLOB;
+        $blob->oid = $oid;
+
+        $subtree_path = dirname($path);
+        if($subtree_path === '.') {
+            $subtree = $root_tree;
+        } else {
+            $subtree = $this->get_subtree($root_tree, $subtree_path);
+        }
+        $filename = basename($path);
+        $subtree->children[$filename] = $blob;
+    }
+
+    private function get_subtree($root_tree, $path) {
+        $path = trim($path, '/');
+        $segments = explode('/', $path);
+        $subtree = $root_tree;
+        foreach ($segments as $segment) {
+            if (!isset($subtree->children[$segment])) {
+                $new_subtree = new stdClass();
+                $new_subtree->type = WP_Git_Pack_Processor::OBJECT_TYPE_TREE;
+                $new_subtree->children = [];
+                $subtree->children[$segment] = $new_subtree;
+            }
+            $subtree = $subtree->children[$segment];
+        }
+        return $subtree;
+    }
+    
 }

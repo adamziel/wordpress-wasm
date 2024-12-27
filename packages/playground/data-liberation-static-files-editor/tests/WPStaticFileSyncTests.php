@@ -1,14 +1,14 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use WordPress\Filesystem\WP_Filesystem;
+use WordPress\Filesystem\WP_Local_Filesystem;
 
 class WPStaticFileSyncTests extends TestCase {
 
     private $filesystem;
 
     public function setUp(): void {
-        $this->filesystem = new WP_Filesystem(__DIR__ . '/static-files-tests/');
+        $this->filesystem = new WP_Local_Filesystem(__DIR__ . '/static-files-tests/');
     }
 
     public function tearDown(): void {

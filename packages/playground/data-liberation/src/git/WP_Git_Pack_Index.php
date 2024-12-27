@@ -2,41 +2,13 @@
 
 class WP_Git_Pack_Index {
 
-    const OBJECT_TYPE_COMMIT = 1;
-    const OBJECT_TYPE_TREE = 2;
-    const OBJECT_TYPE_BLOB = 3;
-    const OBJECT_TYPE_TAG = 4;
-    const OBJECT_TYPE_RESERVED = 5;
-    const OBJECT_TYPE_OFS_DELTA = 6;
-    const OBJECT_TYPE_REF_DELTA = 7;
-
-    const OBJECT_NAMES = [
-        self::OBJECT_TYPE_COMMIT => 'commit',
-        self::OBJECT_TYPE_TREE => 'tree',
-        self::OBJECT_TYPE_BLOB => 'blob',
-        self::OBJECT_TYPE_TAG => 'tag',
-        self::OBJECT_TYPE_RESERVED => 'reserved',
-        self::OBJECT_TYPE_OFS_DELTA => 'ofs_delta',
-        self::OBJECT_TYPE_REF_DELTA => 'ref_delta',
-    ];
-
-    const FILE_MODE_DIRECTORY = '040000';
-    const FILE_MODE_REGULAR_NON_EXECUTABLE = '100644';
-    const FILE_MODE_REGULAR_EXECUTABLE = '100755';
-    const FILE_MODE_SYMBOLIC_LINK = '120000';
-    const FILE_MODE_COMMIT = '160000';
-
-    const FILE_MODE_NAMES = [
-        self::FILE_MODE_DIRECTORY => 'directory',
-        self::FILE_MODE_REGULAR_NON_EXECUTABLE => 'regular_non_executable',
-        self::FILE_MODE_REGULAR_EXECUTABLE => 'regular_executable',
-        self::FILE_MODE_SYMBOLIC_LINK => 'symbolic_link',
-        self::FILE_MODE_COMMIT => 'commit',
-    ];
-
     private $objects = [];
     private $by_oid = [];
     private $external_get_by_oid = null;
+
+    static public function from_pack_data($pack_data) {
+        return WP_Git_Pack_Processor::decode($pack_data);
+    }
 
     public function __construct(
         $objects = [],
@@ -70,7 +42,7 @@ class WP_Git_Pack_Index {
     public function get_by_path($path, $root_tree_oid=null) {
         if($root_tree_oid === null) {
             foreach($this->objects as $object) {
-                if($object['type'] === self::OBJECT_TYPE_COMMIT) {
+                if($object['type'] === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
                     $root_tree_oid = $object['tree'];
                     break;
                 }
@@ -81,7 +53,7 @@ class WP_Git_Pack_Index {
             return null;
         }
 
-        if($current_tree['type'] === self::OBJECT_TYPE_COMMIT) {
+        if($current_tree['type'] === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
             $current_tree = $this->get_by_oid($current_tree['tree']);
         }
 
@@ -111,7 +83,7 @@ class WP_Git_Pack_Index {
             return [];
         }
         foreach ($tree['content'] as $name => $object) {
-            if ($object['mode'] === self::FILE_MODE_DIRECTORY) {
+            if ($object['mode'] === WP_Git_Pack_Processor::FILE_MODE_DIRECTORY) {
                 yield from $this->get_descendants($object['sha1']);
             } else {
                 yield $object;
@@ -127,7 +99,7 @@ class WP_Git_Pack_Index {
 
         $descendants = [];
         foreach ($tree['content'] as $name => $object) {
-            if ($object['mode'] === self::FILE_MODE_DIRECTORY) {
+            if ($object['mode'] === WP_Git_Pack_Processor::FILE_MODE_DIRECTORY) {
                 $descendants[$name] = $this->get_descendants_tree($object['sha1']);
             } else {
                 $blob = $this->get_by_oid($object['sha1']);
@@ -138,314 +110,139 @@ class WP_Git_Pack_Index {
         return $descendants;
     }
 
-    static public function from_pack_data($pack_data) {
-        $parsed_pack = self::parse_pack_data($pack_data);
-        $objects = $parsed_pack['objects'];
-
-        $by_oid = [];
-        $by_offset = [];
-        $resolved_objects = 0;
-        // Index entities and resolve deltas
-        // Run until all objects are resolved
-        while($resolved_objects < count($objects)) {
-            $resolved_in_this_iteration = 0;
-            for($i = 0; $i < count($objects); $i++) {
-                // Skip already processed objects
-                if(
-                    isset($by_offset[$objects[$i]['header_offset']]) &&
-                    isset($by_oid[$objects[$i]['oid']])
-                ) {
-                    continue;
-                }
-
-                if($objects[$i]['type'] === self::OBJECT_TYPE_OFS_DELTA) {
-                    $target_offset = $objects[$i]['header_offset'] - $objects[$i]['ofs'];
-                    if(!isset($by_offset[$target_offset])) {
-                        continue;
-                    }
-                    // TODO: Make sure the base object will never be another delta.
-                    $base = $objects[$by_offset[$target_offset]];
-                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
-                    $objects[$i]['type'] = $base['type'];
-                } else if($objects[$i]['type'] === self::OBJECT_TYPE_REF_DELTA) {
-                    if(!isset($by_oid[$objects[$i]['reference']])) {
-                        continue;
-                    }
-                    $base = $objects[$by_oid[$objects[$i]['reference']]];
-                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
-                    $objects[$i]['type'] = $base['type'];
-                }
-                $oid = sha1(self::wrap_git_object($objects[$i]['type'], $objects[$i]['content']));
-                $objects[$i]['oid'] = $oid;
-                $by_oid[$oid] = $i;
-                $by_offset[$objects[$i]['header_offset']] = $i;
-                ++$resolved_in_this_iteration;
-                ++$resolved_objects;
-            }
-            if($resolved_in_this_iteration === 0) {
-                throw new Exception('Could not resolve objects');
-            }
-        }
-
-        // Resolve trees
-        foreach($objects as $k => $object) {
-            if( $object['type'] === self::OBJECT_TYPE_TREE ) {
-                $objects[$k]['content'] = self::parse_tree_bytes($object['content']);
-            } else if($object['type'] === self::OBJECT_TYPE_COMMIT) {
-                $objects[$k]['tree'] = substr($object['content'], 5, 40);
-            }
-        }
-
-        return new WP_Git_Pack_Index(
-            $objects,
-            $by_oid
-        );
-    }
-
-    static public function wrap_git_object($type, $object) {
-        $length = strlen($object);
-        $type_name = self::OBJECT_NAMES[$type];
-        return "$type_name $length\x00" . $object;
-    }
-
-    static private function applyDelta($base_bytes, $delta_bytes) {
-        $offset = 0;
-
-        $base_size = self::readVariableLength($delta_bytes, $offset);
-        if($base_size !== strlen($base_bytes)) {
-            // @TODO: Do not throw exceptions...? Or do?
-            throw new Exception('Base size mismatch');
-        }
-        $result_size = self::readVariableLength($delta_bytes, $offset);
-
-        $result = '';
-        while ($offset < strlen($delta_bytes)) {
-            $byte = ord($delta_bytes[$offset++]);
-            if ($byte & 0x80) {
-                $copyOffset = 0;
-                $copySize = 0;
-                if ($byte & 0x01) $copyOffset |= ord($delta_bytes[$offset++]);
-                if ($byte & 0x02) $copyOffset |= ord($delta_bytes[$offset++]) << 8;
-                if ($byte & 0x04) $copyOffset |= ord($delta_bytes[$offset++]) << 16;
-                if ($byte & 0x08) $copyOffset |= ord($delta_bytes[$offset++]) << 24;
-                if ($byte & 0x10) $copySize |= ord($delta_bytes[$offset++]);
-                if ($byte & 0x20) $copySize |= ord($delta_bytes[$offset++]) << 8;
-                if ($byte & 0x40) $copySize |= ord($delta_bytes[$offset++]) << 16;
-                if ($copySize === 0) $copySize = 0x10000;
-                $result .= substr($base_bytes, $copyOffset, $copySize);
-            } else {
-                $result .= substr($delta_bytes, $offset, $byte);
-                $offset += $byte;
-            }
-        }
-
-        if(strlen($result) !== $result_size) {
-            // @TODO: Do not throw exceptions...? Or do?
-            throw new Exception('Result size mismatch');
-        }
-
-        return $result;
-    }
-
-    static private function parse_tree_bytes($treeContent) {
-        $offset = 0;
-        $files = [];
-
-        while ($offset < strlen($treeContent)) {
-            if ($offset >= strlen($treeContent)) {
-                var_dump('uninitialized string offset');
-                break; // Prevent uninitialized string offset
-            }
-
-            // Read file mode
-            $modeEnd = strpos($treeContent, ' ', $offset);
-            if ($modeEnd === false || $modeEnd >= strlen($treeContent)) {
-                var_dump('invalid mode');
-                break; // Invalid mode
-            }
-            $mode = substr($treeContent, $offset, $modeEnd - $offset);
-            $offset = $modeEnd + 1;
-            
-            if(preg_match('/^0?4.*/', $mode)) {
-                $mode = self::FILE_MODE_DIRECTORY;
-            } else if(preg_match('/^1006.*/', $mode)) {
-                $mode = self::FILE_MODE_REGULAR_NON_EXECUTABLE;
-            } else if(preg_match('/^1007.*/', $mode)) {
-                $mode = self::FILE_MODE_REGULAR_EXECUTABLE;
-            } else if(preg_match('/^120.*/', $mode)) {
-                $mode = self::FILE_MODE_SYMBOLIC_LINK;
-            } else if(preg_match('/^160.*/', $mode)) {
-                $mode = self::FILE_MODE_COMMIT;
-            }
-
-            // Read file name
-            $nameEnd = strpos($treeContent, "\0", $offset);
-            if ($nameEnd === false || $nameEnd >= strlen($treeContent)) {
-                var_dump('invalid name');
-                break; // Invalid name
-            }
-            $name = substr($treeContent, $offset, $nameEnd - $offset);
-            $offset = $nameEnd + 1;
-
-            // Read SHA1
-            if ($offset + 20 > strlen($treeContent)) {
-                var_dump('invalid sha1');
-                break; // Prevent out-of-bounds access
-            }
-            $sha1 = bin2hex(substr($treeContent, $offset, 20));
-            $offset += 20;
-
-            $files[$name] = [
-                'mode' => $mode,
-                'name' => $name,
-                'sha1' => $sha1,
-            ];
-        }
-
-        return $files;
-    }
-
-    static private function readVariableLength($data, &$offset) {
-        $result = 0;
-        $shift = 0;
-        do {
-            $byte = ord($data[$offset++]);
-            $result |= ($byte & 0x7F) << $shift;
-            $shift += 7;
-        } while ($byte & 0x80);
-        return $result;
-    }
-
-    static private function parse_pack_data($packData) {
-        $offset = 0;
-    
-        // Basic sanity checks
-        if (strlen($packData) < 12) {
-            return false;
-        }
-    
-        $header = substr($packData, $offset, 4);
-        $offset += 4;
-        if ($header !== "PACK") {
-            return false;
-        }
-    
-        $version = unpack('N', substr($packData, $offset, 4))[1];
-        $offset += 4;
-    
-        $objectCount = unpack('N', substr($packData, $offset, 4))[1];
-        $offset += 4;
-    
-        $objects = [];
-    
-        for ($i = 0; $i < $objectCount; $i++) {
-            if ($offset >= strlen($packData)) {
-                break;
-            }
-
-            $header_offset = $offset;
-            $object = self::parse_pack_header($packData, $offset);
-            $object['header_offset'] = $header_offset;
-            $object['content'] = self::inflate_object($packData, $offset, $object['uncompressed_length']);
-            $objects[] = $object;
-        }
-        return [
-            'objects' => $objects,
-            'total_objects' => $objectCount,
-            'pack_version' => $version
-        ];
-    }
+    private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
 
     /**
-     * Incrementally inflate the next object’s compressed data until it yields 
-     * $uncompressedSize bytes, or we hit the end of the compressed stream. 
-     * Adjusts $offset so that after returning, $offset points to the next object header.
+     * Computes Git objects needed to commit a changeset.
+     * 
+     * Important! A remote git repo will only accept the objects
+     * produced by this method if:
+     * 
+     * * The paths in each tree are sorted alphabetically.
+     * * There may be no duplicate blobs.
+     * 
+     * @param WP_Git_Pack_Processor $oldIndex The index containing existing objects
+     * @param WP_Changeset $changeset The changes to commit
+     * @return string The Git objects with type, content and SHA
      */
-    static private function inflate_object(string $packData, int &$offset, int $uncompressedSize): ?string {
-        $inflateContext = inflate_init(ZLIB_ENCODING_DEFLATE);
-        if (!$inflateContext) {
-            return null;
-        }
-    
-        $inflated = '';
-        $packLen = strlen($packData);
-    
-        $bytes_read = 0;
-        while ($offset < $packLen) {
-            // Feed chunks into inflate. We don’t know how big each chunk is, 
-            // so let's just pick something arbitrary:
-            $chunk = substr($packData, $offset, 256);
-    
-            $res = inflate_add($inflateContext, $chunk);
-            switch(inflate_get_status($inflateContext)) {
-                case ZLIB_BUF_ERROR:
-                case ZLIB_DATA_ERROR:
-                case ZLIB_VERSION_ERROR:
-                case ZLIB_MEM_ERROR:
-                    throw new Exception('Inflate error');
-            }
-            if ($res === false) {
-                throw new Exception('Inflate error');
-            }
-            $bytes_read_for_this_chunk = inflate_get_read_len($inflateContext) - $bytes_read;
-            $offset += $bytes_read_for_this_chunk;
+    public function derive_commit_pack_data(
+        $updates = [],
+        $deletes = []
+    ) {
+        $new_index = [];
 
-            $bytes_read = inflate_get_read_len($inflateContext);
-            $inflated .= $res;
-    
-            if(inflate_get_status($inflateContext) === ZLIB_STREAM_END) {
-                break;
-            }
+        $new_tree = new stdClass();
+        foreach ($updates as $path => $content) {
+            $new_blob = WP_Git_Pack_Processor::create_object([
+                'type' => WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+                'content' => $content,
+            ]);
+            $new_index[] = $new_blob;
+            $this->set_oid($new_tree, $path, $new_blob['oid']);
         }
-        return $inflated;
+        
+        foreach ($deletes as $path) {
+            $this->set_oid($new_tree, $path, self::DELETE_PLACEHOLDER);
+        }
+        
+        $root_tree = $this->backfill_trees($this, $new_index, $new_tree, '/');
+        
+        // Make $new_index unique by 'oid' column
+        $seen_oids = [];
+        $new_index = array_filter($new_index, function($obj) use (&$seen_oids) {
+            if (isset($seen_oids[$obj['oid']])) {
+                return false;
+            }
+            $seen_oids[$obj['oid']] = true;
+            return true;
+        });
+
+        return [
+            'objects' => $new_index,
+            'root_tree_oid' => $root_tree['oid'],
+        ];
     }
 
-    static private function parse_pack_header(string $packData, int &$offset) {
-        // Object type is encoded in bits 654
-        $byte = ord($packData[$offset++]);
-        $type = ($byte >> 4) & 0b111;
-        // The length encoding get complicated.
-        // Last four bits of length is encoded in bits 3210
-        $uncompressed_length = $byte & 0b1111;
-        // Whether the next byte is part of the variable-length encoded number
-        // is encoded in bit 7
-        if ($byte & 0b10000000) {
-            $shift = 4;
-            $byte = ord($packData[$offset++]);
-            while ($byte & 0b10000000) {
-                $uncompressed_length |= ($byte & 0b01111111) << $shift;
-                $shift += 7;
-                $byte = ord($packData[$offset++]); 
-            }
-            $uncompressed_length |= ($byte & 0b01111111) << $shift;
-        }
-        // Handle deltified objects
-        $ofs = null;
-        $reference = null;
-        if ($type === self::OBJECT_TYPE_OFS_DELTA) {
-            // Git uses a specific formula: ofs = ((ofs + 1) << 7) + (c & 0x7f)
-            // for each continuation byte. The first byte doesn't do the "ofs+1" part.
-            // This code matches Git’s logic.
-            $ofs = 0;
-            // Read the first byte
-            $c = ord($packData[$offset++]);
-            $ofs = ($c & 0x7F);
+    private function backfill_trees(WP_Git_Pack_Index $current_index, &$new_index, $subtree_delta, $subtree_path = '/') {
+        $subtree_path = ltrim($subtree_path, '/');
+        $new_tree_content = [];
 
-            // If bit 7 (0x80) is set, we keep reading
-            while ($c & 0x80) {
-                $c = ord($packData[$offset++]);
-                $ofs = (($ofs + 1) << 7) + ($c & 0x7F);
+        $indexed_tree = $current_index->get_by_path($subtree_path);
+        if($indexed_tree) {
+            foreach($indexed_tree['content'] as $object) {
+                // Backfill the unchanged objects from the currently indexed subtree.
+                $name = $object['name'];
+                if(!isset($subtree_delta->children[$name])) {
+                    $new_tree_content[$name] = $object;
+                }
             }
-        } else if ($type === self::OBJECT_TYPE_REF_DELTA) {
-            $reference = substr($packData, $offset, 20);
-            $offset += 20;
         }
-        return [
-            'ofs' => $ofs,
-            'type' => $type,
-            'uncompressed_length' => $uncompressed_length,
-            'reference' => $reference
-        ];
+
+        // Index changed and new objects in the current subtree.
+        foreach($subtree_delta->children as $name => $subtree_child) {
+            // Ignore any deleted objects.
+            if(isset($subtree_child->oid) && $subtree_child->oid === self::DELETE_PLACEHOLDER) {
+                continue;
+            }
+
+            // Index blobs
+            switch($subtree_child->type) {
+                case WP_Git_Pack_Processor::OBJECT_TYPE_BLOB:
+                    $new_tree_content[$name] = [
+                        'mode' => WP_Git_Pack_Processor::FILE_MODE_REGULAR_NON_EXECUTABLE,
+                        'name' => $name,
+                        'sha1' => $subtree_child->oid,
+                    ];
+                    break;
+                case WP_Git_Pack_Processor::OBJECT_TYPE_TREE:
+                    $subtree_object = $this->backfill_trees($current_index, $new_index, $subtree_child, $subtree_path . '/' . $name);
+                    $new_tree_content[$name] = [
+                        'mode' => WP_Git_Pack_Processor::FILE_MODE_DIRECTORY,
+                        'name' => $name,
+                        'sha1' => $subtree_object['oid'],
+                    ];
+                    break;
+            }
+        }
+
+        $new_tree_object = WP_Git_Pack_Processor::create_object([
+            'type' => WP_Git_Pack_Processor::OBJECT_TYPE_TREE,
+            'content' => $new_tree_content,
+        ]);
+
+        $new_index[] = $new_tree_object;
+        return $new_tree_object;
+    }
+
+    private function set_oid($root_tree, $path, $oid) {
+        $blob = new stdClass();
+        $blob->type = WP_Git_Pack_Processor::OBJECT_TYPE_BLOB;
+        $blob->oid = $oid;
+
+        $subtree_path = dirname($path);
+        if($subtree_path === '.') {
+            $subtree = $root_tree;
+        } else {
+            $subtree = $this->get_subtree($root_tree, $subtree_path);
+        }
+        $filename = basename($path);
+        $subtree->children[$filename] = $blob;
+    }
+
+    private function get_subtree($root_tree, $path) {
+        $path = trim($path, '/');
+        $segments = explode('/', $path);
+        $subtree = $root_tree;
+        foreach ($segments as $segment) {
+            if (!isset($subtree->children[$segment])) {
+                $new_subtree = new stdClass();
+                $new_subtree->type = WP_Git_Pack_Processor::OBJECT_TYPE_TREE;
+                $new_subtree->children = [];
+                $subtree->children[$segment] = $new_subtree;
+            }
+            $subtree = $subtree->children[$segment];
+        }
+        return $subtree;
     }
 
 } 

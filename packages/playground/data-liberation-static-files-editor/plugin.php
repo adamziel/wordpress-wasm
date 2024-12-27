@@ -19,7 +19,7 @@
  * @TODO: Maybe use Playground's FilePickerTree React component? Or re-implement it with interactivity API?
  */
 
-use WordPress\Filesystem\WP_Filesystem;
+use WordPress\Filesystem\WP_Local_Filesystem;
 
 if ( ! defined( 'WP_STATIC_CONTENT_DIR' ) ) {
     define( 'WP_STATIC_CONTENT_DIR', WP_CONTENT_DIR . '/uploads/static-pages' );
@@ -36,6 +36,7 @@ if(isset($_GET['dump'])) {
 }
 
 require_once __DIR__ . '/WP_Static_File_Sync.php';
+require_once __DIR__ . '/secrets.php';
 
 class WP_Static_Files_Editor_Plugin {
 
@@ -43,10 +44,13 @@ class WP_Static_Files_Editor_Plugin {
 
     static private function get_fs() {
         if(!self::$fs) {
-            // self::$fs = new WP_Filesystem( WP_STATIC_CONTENT_DIR );
             self::$fs = new WP_Git_Filesystem(
-                new WP_Git_Client('https://github.com/WordPress/gutenberg'),
-                '/docs/how-to-guides/data-basics'
+                new WP_Git_Client(GIT_REPO_URL, [
+                    'author' => GIT_AUTHOR,
+                    'committer' => GIT_COMMITTER,
+                ]),
+                GIT_BRANCH,
+                GIT_DIRECTORY_ROOT
             );
         }
         return self::$fs;
@@ -54,9 +58,6 @@ class WP_Static_Files_Editor_Plugin {
 
     static public function initialize() {
         // Register hooks
-        // $static_sync = new WP_Static_File_Sync( self::get_fs() );
-        // $static_sync->initialize_sync();
-
         // register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
         add_action('init', function() {
@@ -173,7 +174,7 @@ class WP_Static_Files_Editor_Plugin {
             }
             
             // Check if this post is of type "local_file"
-            if ($post && $post->post_type === 'local_file') {
+            if ($post && $post->post_type === WP_LOCAL_FILE_POST_TYPE) {
                 // Get the latest content from the database first
                 $content = $post->post_content;
                 
@@ -190,7 +191,7 @@ class WP_Static_Files_Editor_Plugin {
         }, 10, 2);
 
         // Add filter for REST API responses
-        add_filter('rest_prepare_local_file', function($response, $post, $request) {
+        add_filter('rest_prepare_' . WP_LOCAL_FILE_POST_TYPE, function($response, $post, $request) {
             $new_content = self::refresh_post_from_local_file($post);
             if(!is_wp_error($new_content)) {
                 $response->data['content']['raw'] = $new_content;
@@ -247,6 +248,10 @@ class WP_Static_Files_Editor_Plugin {
                 return;
             }
             $content = $fs->read_file($path);
+            if(!is_string($content)) {
+                _doing_it_wrong(__METHOD__, 'File not found: ' . $path, '1.0.0');
+                return;
+            }
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             switch($extension) {
                 case 'md':
@@ -284,7 +289,6 @@ class WP_Static_Files_Editor_Plugin {
     }
 
     static private function save_post_data_to_local_file($post) {
-        return;
         try {
             if(!self::acquire_synchronization_lock()) {
                 return;
@@ -386,7 +390,7 @@ class WP_Static_Files_Editor_Plugin {
         $importer = WP_Stream_Importer::create(
             function () {
                 return new WP_Filesystem_Entity_Reader(
-                    new WP_Filesystem(WP_STATIC_CONTENT_DIR),
+                    new WP_Local_Filesystem(WP_STATIC_CONTENT_DIR),
                     array(
                         'post_type' => WP_LOCAL_FILE_POST_TYPE,
                     )
