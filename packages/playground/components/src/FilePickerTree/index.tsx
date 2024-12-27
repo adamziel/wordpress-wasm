@@ -156,10 +156,17 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		);
 	}
 
+	const sortedFiles = [...files].sort((a, b) => {
+		if (a.type === b.type) {
+			return a.name.localeCompare(b.name);
+		}
+		return a.type === 'folder' ? -1 : 1;
+	});
+
 	return (
 		<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
 			<TreeGrid className={css['filePickerTree']}>
-				{files.map((file, index) => (
+				{sortedFiles.map((file, index) => (
 					<NodeRow
 						key={file.name}
 						node={file}
@@ -246,6 +253,16 @@ const NodeRow: React.FC<{
 			}
 		}
 	};
+
+	const sortedChildren = node.children
+		? [...node.children].sort((a, b) => {
+				if (a.type === b.type) {
+					return a.name.localeCompare(b.name);
+				}
+				return a.type === 'folder' ? -1 : 1;
+		  })
+		: [];
+
 	return (
 		<>
 			<TreeGridRow
@@ -289,14 +306,13 @@ const NodeRow: React.FC<{
 				</TreeGridCell>
 			</TreeGridRow>
 			{isExpanded &&
-				node.children &&
-				node.children.map((child, index) => (
+				sortedChildren.map((child, index) => (
 					<NodeRow
 						key={child.name}
 						node={child}
 						level={level + 1}
 						position={index + 1}
-						setSize={node.children!.length}
+						setSize={sortedChildren.length}
 						expandedNodePaths={expandedNodePaths}
 						expandNode={expandNode}
 						selectedNode={selectedNode}

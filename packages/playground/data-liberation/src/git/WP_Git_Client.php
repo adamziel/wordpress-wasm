@@ -67,7 +67,7 @@ class WP_Git_Client {
         $branchName = $options['branch_name'];
         $author = ($options['author'] ?? $this->author) . " " . time() . " +0000";
         $committer = ($options['committer'] ?? $this->committer) . " " . time() . " +0000";
-        $message = $options['message'] ?? "Hello!";
+        $message = $options['message'] ?? "Changes from WordPress.";
 
         $parent = '';
         if($parent_hash !== $empty_hash) {

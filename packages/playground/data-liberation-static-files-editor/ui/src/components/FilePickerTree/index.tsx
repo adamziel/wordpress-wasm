@@ -622,6 +622,14 @@ const NodeRow: React.FC<{
 		}
 	};
 
+	const sortedChildren = node.children
+		? [...node.children].sort((a, b) => {
+				if (a.type === b.type) {
+					return a.name.localeCompare(b.name);
+				}
+				return a.type === 'folder' ? -1 : 1;
+		  })
+		: [];
 	return (
 		<>
 			{!isRoot && (
@@ -756,22 +764,18 @@ const NodeRow: React.FC<{
 						</TreeGridCell>
 					</TreeGridRow>
 				)}
-			{isExpanded && (
-				<>
-					{node.children &&
-						node.children.map((child, index) => (
-							<NodeRow
-								key={child.name}
-								node={child}
-								level={level + 1}
-								position={index + 1}
-								setSize={node.children!.length}
-								isRoot={false}
-								parentPath={path}
-							/>
-						))}
-				</>
-			)}
+			{isExpanded &&
+				sortedChildren?.map((child, index) => (
+					<NodeRow
+						key={child.name}
+						node={child}
+						level={level + 1}
+						position={index + 1}
+						setSize={sortedChildren.length}
+						isRoot={false}
+						parentPath={path}
+					/>
+				))}
 		</>
 	);
 };
