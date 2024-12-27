@@ -179,6 +179,14 @@ class WP_Static_Files_Editor_Plugin {
                     return current_user_can('edit_posts');
                 },
             ));
+
+            register_rest_route('static-files-editor/v1', '/delete-path', array(
+                'methods' => 'POST',
+                'callback' => array(self::class, 'delete_path_endpoint'),
+                'permission_callback' => function() {
+                    return current_user_can('edit_posts');
+                },
+            ));
         });
 
         // @TODO: the_content and rest_prepare_local_file filters run twice for REST API requests.
@@ -219,16 +227,18 @@ class WP_Static_Files_Editor_Plugin {
         }, 10, 3);
 
         // Delete the associated file when a post is deleted
-        add_action('before_delete_post', function($post_id) {
-            $post = get_post($post_id);
-            if ($post && $post->post_type === WP_LOCAL_FILE_POST_TYPE) {
-                $fs = self::get_fs();
-                $path = get_post_meta($post_id, 'local_file_path', true);
-                if ($path && $fs->is_file($path)) {
-                    $fs->rm($path);
-                }
-            }
-        });
+        // @TODO: Rethink this. We have a separate endpoint for deleting an entire path.
+        //        Do we need a separate hook at all?
+        // add_action('before_delete_post', function($post_id) {
+        //     $post = get_post($post_id);
+        //     if ($post && $post->post_type === WP_LOCAL_FILE_POST_TYPE) {
+        //         $fs = self::get_fs();
+        //         $path = get_post_meta($post_id, 'local_file_path', true);
+        //         if ($path && $fs->is_file($path)) {
+        //             $fs->rm($path);
+        //         }
+        //     }
+        // });
 
         // Update the file after post is saved
         add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
@@ -722,6 +732,39 @@ class WP_Static_Files_Editor_Plugin {
         }
 
         return $created_files;
+    }
+
+    static public function delete_path_endpoint($request) {
+        $path = $request->get_param('path');
+        if (!$path) {
+            return new WP_Error('missing_path', 'File path is required');
+        }
+
+        // Find and delete associated post
+        $existing_posts = get_posts(array(
+            'post_type' => WP_LOCAL_FILE_POST_TYPE,
+            'meta_key' => 'local_file_path',
+            'meta_value' => $path,
+            'posts_per_page' => 1
+        ));
+
+        if (!empty($existing_posts)) {
+            wp_delete_post($existing_posts[0]->ID, true);
+        }
+
+        // Delete the actual file
+        $fs = self::get_fs();
+        if($fs->is_dir($path)) {
+            if (!$fs->rmdir($path, ['recursive' => true])) {
+                return new WP_Error('delete_failed', 'Failed to delete directory');
+            }
+        } else {
+            if (!$fs->rm($path)) {
+                return new WP_Error('delete_failed', 'Failed to delete file');
+            }
+        }
+
+        return array('success' => true);
     }
 
 }

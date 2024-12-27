@@ -59,24 +59,16 @@ function ConnectedFilePickerTree() {
 	);
 
 	const handleNodeDeleted = async (path: string) => {
-		const { post_id } = (await apiFetch({
-			path: '/static-files-editor/v1/get-or-create-post-for-file',
-			method: 'POST',
-			data: { path },
-		})) as { post_id: string };
-		console.log({
-			post_id,
-			deleteUrl: `/wp/v2/${WP_LOCAL_FILE_POST_TYPE}/${post_id}`,
-		});
-
-		await apiFetch({
-			// ?force=true to skip the trash and delete the file immediately
-			path: `/wp/v2/${WP_LOCAL_FILE_POST_TYPE}/${post_id}?force=true`,
-			headers: {
-				'X-HTTP-Method-Override': 'DELETE',
-			},
-		});
-		await refreshFileTree();
+		try {
+			await apiFetch({
+				path: '/static-files-editor/v1/delete-path',
+				method: 'POST',
+				data: { path },
+			});
+			await refreshFileTree();
+		} catch (error) {
+			console.error('Failed to delete file:', error);
+		}
 	};
 
 	const handleFileClick = async (filePath: string, node: FileNode) => {
