@@ -1,6 +1,5 @@
 .file-picker-tree {
 	width: 100%;
-
 	border-collapse: collapse;
 
 	tr:nth-child(even) {

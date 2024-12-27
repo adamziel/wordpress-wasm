@@ -13,7 +13,7 @@ import { addLocalFilesTab } from './add-local-files-tab';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { Spinner, Button } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
-import './editor.css';
+import css from './style.module.css';
 
 // Pre-populated by plugin.php
 const WP_LOCAL_FILE_POST_TYPE = window.WP_LOCAL_FILE_POST_TYPE;
@@ -167,16 +167,14 @@ function ConnectedFilePickerTree() {
 	}
 
 	return (
-		<div>
-			<FilePickerTree
-				files={fileTree}
-				onSelect={handleFileClick}
-				initialPath={selectedPath}
-				onNodesCreated={handleNodesCreated}
-				onNodeDeleted={handleNodeDeleted}
-				onNodeMoved={handleNodeMoved}
-			/>
-		</div>
+		<FilePickerTree
+			files={fileTree}
+			onSelect={handleFileClick}
+			initialPath={selectedPath}
+			onNodesCreated={handleNodesCreated}
+			onNodeDeleted={handleNodeDeleted}
+			onNodeMoved={handleNodeMoved}
+		/>
 	);
 }
 
@@ -184,7 +182,7 @@ addLocalFilesTab({
 	name: 'local-files',
 	title: 'Local Files',
 	panel: (
-		<div>
+		<div className={css['file-picker-tree-container']}>
 			<ConnectedFilePickerTree />
 		</div>
 	),

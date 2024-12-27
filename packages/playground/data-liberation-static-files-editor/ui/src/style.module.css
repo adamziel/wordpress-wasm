@@ -1,0 +1,14 @@
+:global(.editor-visual-editor__post-title-wrapper) {
+	display: none;
+}
+
+.file-picker-tree-container,
+.file-picker-tree-container > div {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.file-picker-tree-container > div > div[role='application'] {
+	flex-grow: 1;
+}

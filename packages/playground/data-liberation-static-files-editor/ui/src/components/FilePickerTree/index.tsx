@@ -49,6 +49,7 @@ export type CreatedNode =
 export type FilePickerControlProps = {
 	files: FileNode[];
 	initialPath?: string;
+	className?: string;
 	onSelect?: (path: string, node: FileNode) => void;
 	onNodesCreated?: (tree: FileTree) => void;
 	onNodeDeleted?: (path: string) => void;
@@ -108,6 +109,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	error = undefined,
 	files,
 	initialPath,
+	className = '',
 	onSelect = () => {},
 	onNodesCreated = (tree: FileTree) => {
 		console.log('onNodesCreated', tree);
@@ -293,6 +295,12 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		targetType: 'file' | 'folder'
 	) => {
 		e.preventDefault();
+		// Prevent a parent element event handler from handling the drop
+		// again.
+		if (e.isPropagationStopped()) {
+			return;
+		}
+		e.stopPropagation();
 		// Handle file/directory upload
 		if (e.dataTransfer.items.length > 0) {
 			const targetFolder =
@@ -504,12 +512,20 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 
 	return (
 		<FilePickerContext.Provider value={contextValue}>
-			<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
+			<div
+				onKeyDown={handleKeyDown}
+				ref={thisContainerRef}
+				className={className}
+				onDrop={(e) => {
+					handleDrop?.(e, '/', 'folder');
+				}}
+			>
 				<div
 					style={{
 						marginBottom: '1rem',
 						display: 'flex',
 						gap: '0.5rem',
+						flexGrow: 0,
 					}}
 				>
 					<ButtonGroup className={css['controls']}>
