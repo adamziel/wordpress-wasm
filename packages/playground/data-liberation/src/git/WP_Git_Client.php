@@ -140,7 +140,7 @@ class WP_Git_Client {
         return implode('', $parsed_pack_data);
     }
 
-    private function parse_multiplexed_pack_data($bytes) {
+    static public function parse_multiplexed_pack_data($bytes) {
         $offset = 0;
         while ($offset < strlen($bytes)) {
             $lengthHex = substr($bytes, $offset, 4);

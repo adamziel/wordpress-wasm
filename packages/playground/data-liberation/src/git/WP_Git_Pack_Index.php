@@ -38,11 +38,17 @@ class WP_Git_Pack_Index {
     private $by_oid = [];
     private $external_get_by_oid = null;
 
-    private function __construct(
+    public function __construct(
         $objects = [],
         $by_oid = []
     ) {
         $this->objects = $objects;
+        if($by_oid === []) {
+            $by_oid = [];
+            foreach($objects as $k => $object) {
+                $by_oid[$object['oid']] = $k;
+            }
+        }
         $this->by_oid = $by_oid;
     }
 
@@ -161,7 +167,6 @@ class WP_Git_Pack_Index {
                     $base = $objects[$by_offset[$target_offset]];
                     $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
                     $objects[$i]['type'] = $base['type'];
-                    $objects[$i]['type_name'] = $base['type_name'];
                 } else if($objects[$i]['type'] === self::OBJECT_TYPE_REF_DELTA) {
                     if(!isset($by_oid[$objects[$i]['reference']])) {
                         continue;
@@ -169,9 +174,8 @@ class WP_Git_Pack_Index {
                     $base = $objects[$by_oid[$objects[$i]['reference']]];
                     $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
                     $objects[$i]['type'] = $base['type'];
-                    $objects[$i]['type_name'] = $base['type_name'];
                 }
-                $oid = sha1(self::wrap_git_object($objects[$i]['type_name'], $objects[$i]['content']));
+                $oid = sha1(self::wrap_git_object($objects[$i]['type'], $objects[$i]['content']));
                 $objects[$i]['oid'] = $oid;
                 $by_oid[$oid] = $i;
                 $by_offset[$objects[$i]['header_offset']] = $i;
@@ -198,9 +202,10 @@ class WP_Git_Pack_Index {
         );
     }
 
-    static private function wrap_git_object($type, $object) {
+    static public function wrap_git_object($type, $object) {
         $length = strlen($object);
-        return "$type $length\x00" . $object;
+        $type_name = self::OBJECT_NAMES[$type];
+        return "$type_name $length\x00" . $object;
     }
 
     static private function applyDelta($base_bytes, $delta_bytes) {
@@ -340,11 +345,8 @@ class WP_Git_Pack_Index {
 
             $header_offset = $offset;
             $object = self::parse_pack_header($packData, $offset);
-            $object['type_name'] = self::OBJECT_NAMES[$object['type']];
-            $object['content_offset'] = $offset;
             $object['header_offset'] = $header_offset;
-            $object['content'] = self::inflate_object($packData, $offset, $object['length']);
-            $object['compressed_length'] = $offset - $object['content_offset'];
+            $object['content'] = self::inflate_object($packData, $offset, $object['uncompressed_length']);
             $objects[] = $object;
         }
         return [
@@ -404,18 +406,18 @@ class WP_Git_Pack_Index {
         $type = ($byte >> 4) & 0b111;
         // The length encoding get complicated.
         // Last four bits of length is encoded in bits 3210
-        $length = $byte & 0b1111;
+        $uncompressed_length = $byte & 0b1111;
         // Whether the next byte is part of the variable-length encoded number
         // is encoded in bit 7
         if ($byte & 0b10000000) {
             $shift = 4;
             $byte = ord($packData[$offset++]);
             while ($byte & 0b10000000) {
-                $length |= ($byte & 0b01111111) << $shift;
+                $uncompressed_length |= ($byte & 0b01111111) << $shift;
                 $shift += 7;
                 $byte = ord($packData[$offset++]); 
             }
-            $length |= ($byte & 0b01111111) << $shift;
+            $uncompressed_length |= ($byte & 0b01111111) << $shift;
         }
         // Handle deltified objects
         $ofs = null;
@@ -441,7 +443,7 @@ class WP_Git_Pack_Index {
         return [
             'ofs' => $ofs,
             'type' => $type,
-            'length' => $length,
+            'uncompressed_length' => $uncompressed_length,
             'reference' => $reference
         ];
     }
