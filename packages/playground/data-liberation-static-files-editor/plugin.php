@@ -162,6 +162,14 @@ class WP_Static_Files_Editor_Plugin {
                     return current_user_can('edit_posts');
                 },
             ));
+
+            register_rest_route('static-files-editor/v1', '/rename-file', array(
+                'methods' => 'POST',
+                'callback' => array(self::class, 'rename_file_endpoint'),
+                'permission_callback' => function() {
+                    return current_user_can('edit_posts');
+                },
+            ));
         });
 
         // @TODO: the_content and rest_prepare_local_file filters run twice for REST API requests.
@@ -200,6 +208,18 @@ class WP_Static_Files_Editor_Plugin {
             }
             return $response;
         }, 10, 3);
+
+        // Delete the associated file when a post is deleted
+        add_action('before_delete_post', function($post_id) {
+            $post = get_post($post_id);
+            if ($post && $post->post_type === WP_LOCAL_FILE_POST_TYPE) {
+                $fs = self::get_fs();
+                $path = get_post_meta($post_id, 'local_file_path', true);
+                if ($path && $fs->is_file($path)) {
+                    $fs->rm($path);
+                }
+            }
+        });
 
         // Update the file after post is saved
         add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
@@ -555,6 +575,38 @@ class WP_Static_Files_Editor_Plugin {
         $fs = self::get_fs();
         if (!$fs->mkdir($path)) {
             return new WP_Error('mkdir_failed', 'Failed to create directory');
+        }
+
+        return array('success' => true);
+    }
+
+    static public function rename_file_endpoint($request) {
+        $original_path = $request->get_param('originalPath');
+        $new_path = $request->get_param('newPath');
+        
+        if (!$original_path || !$new_path) {
+            return new WP_Error('missing_path', 'Both original and new paths are required');
+        }
+
+        // Find and update associated post
+        $existing_posts = get_posts(array(
+            'post_type' => WP_LOCAL_FILE_POST_TYPE,
+            'meta_key' => 'local_file_path',
+            'meta_value' => $original_path,
+            'posts_per_page' => 1
+        ));
+
+        $fs = self::get_fs();
+        if (!$fs->rename($original_path, $new_path)) {
+            return new WP_Error('rename_failed', 'Failed to rename file');
+        }
+
+        if (!empty($existing_posts)) {
+            update_post_meta($existing_posts[0]->ID, 'local_file_path', $new_path);
+            wp_update_post(array(
+                'ID' => $existing_posts[0]->ID,
+                'post_title' => basename($new_path)
+            ));
         }
 
         return array('success' => true);

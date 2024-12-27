@@ -6,8 +6,9 @@ import {
 	Button,
 	Spinner,
 	ButtonGroup,
+	DropdownMenu,
 } from '@wordpress/components';
-import { Icon, chevronRight, chevronDown } from '@wordpress/icons';
+import { Icon, chevronRight, chevronDown, more } from '@wordpress/icons';
 import '@wordpress/components/build-style/style.css';
 import css from './style.module.css';
 import classNames from 'classnames';
@@ -29,15 +30,19 @@ export type FilePickerControlProps = {
 	initialPath?: string;
 	onSelect?: (path: string, node: FileNode) => void;
 	onNodeCreated?: (node: CreatedNode) => void;
+	onNodeRenamed?: (originalPath: string, newPath: string) => void;
+	onNodeDeleted?: (path: string) => void;
 	isLoading?: boolean;
 	error?: string;
 };
 
 type ExpandedNodePaths = Record<string, boolean>;
 
-type TempNode = {
-	type: 'file' | 'folder';
-	parentPath: string;
+type EditedNode = {
+	reason: 'rename' | 'create';
+	type?: 'file' | 'folder';
+	parentPath?: string;
+	originalPath?: string;
 };
 
 export const FilePickerTree: React.FC<FilePickerControlProps> = ({
@@ -48,6 +53,12 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	onSelect = () => {},
 	onNodeCreated = (...args) => {
 		console.log('onNodeCreated', args);
+	},
+	onNodeDeleted = (path: string) => {
+		console.log('onNodeDeleted', path);
+	},
+	onNodeRenamed = (args: { originalPath: string; newPath: string }) => {
+		console.log('onNodeRenamed', args);
 	},
 }) => {
 	initialPath = initialPath ? initialPath.replace(/^\/+/, '') : '/';
@@ -67,7 +78,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		initialPath ? initialPath : null
 	);
 
-	const [tempNode, setTempNode] = useState<TempNode | null>(null);
+	const [editedNode, setEditedNode] = useState<EditedNode | null>(null);
 
 	const expandNode = (path: string, isOpen: boolean) => {
 		setExpanded((prevState) => ({
@@ -87,9 +98,17 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			: node.name;
 	};
 
+	const handleRenameRequest = (path: string, newName: string) => {
+		setEditedNode({
+			reason: 'rename',
+			originalPath: path,
+		});
+	};
+
 	const handleCreateNode = (type: 'file' | 'folder') => {
 		if (!selectedPath) {
-			setTempNode({
+			setEditedNode({
+				reason: 'create',
 				type,
 				parentPath: '',
 			});
@@ -112,22 +131,40 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				: pathParts.slice(0, -1).join('/');
 
 		expandNode(parentPath, true);
-		setTempNode({ type, parentPath });
-	};
-
-	const handleTempNodeComplete = (name: string) => {
-		if (!tempNode) return;
-		// @TODO: Replace with joinPaths()
-		const fullPath = `${tempNode.parentPath}/${name}`.replace(/\/+/g, '/');
-		onNodeCreated({
-			type: tempNode.type,
-			path: fullPath,
+		setEditedNode({
+			reason: 'create',
+			type,
+			parentPath,
 		});
-		setTempNode(null);
 	};
 
-	const handleTempNodeCancel = () => {
-		setTempNode(null);
+	const handleEditedNodeComplete = (name: string) => {
+		if (!editedNode) return;
+		// @TODO: Replace with joinPaths()
+		if (editedNode.reason === 'rename') {
+			const newPath = [
+				...editedNode.originalPath.split('/').slice(0, -1),
+				name,
+			].join('/');
+			onNodeRenamed({
+				originalPath: editedNode.originalPath,
+				newPath,
+			});
+		} else {
+			const fullPath = `${editedNode.parentPath}/${name}`.replace(
+				/\/+/g,
+				'/'
+			);
+			onNodeCreated({
+				type: editedNode.type,
+				path: fullPath,
+			});
+		}
+		setEditedNode(null);
+	};
+
+	const handleEditedNodeCancel = () => {
+		setEditedNode(null);
 	};
 
 	const [searchBuffer, setSearchBuffer] = useState('');
@@ -135,7 +172,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
 		// Don't filter if we're creating a new file or folder –
 		// this would only blur and hide the filename input.
-		if (tempNode) {
+		if (editedNode) {
 			return;
 		}
 		if (event.key.length === 1 && event.key.match(/\S/)) {
@@ -261,9 +298,11 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 					selectedNode={selectedPath}
 					selectPath={selectPath}
 					generatePath={generatePath}
-					tempNode={tempNode}
-					onTempNodeComplete={handleTempNodeComplete}
-					onTempNodeCancel={handleTempNodeCancel}
+					editedNode={editedNode}
+					onEditedNodeComplete={handleEditedNodeComplete}
+					onEditedNodeCancel={handleEditedNodeCancel}
+					onNodeDeleted={onNodeDeleted}
+					startRenaming={handleRenameRequest}
 				/>
 			</TreeGrid>
 		</div>
@@ -283,9 +322,11 @@ const NodeRow: React.FC<{
 	generatePath: (node: FileNode, parentPath?: string) => string;
 	parentPath?: string;
 	parentMapping?: string;
-	tempNode?: TempNode | null;
-	onTempNodeComplete?: (name: string) => void;
-	onTempNodeCancel?: () => void;
+	editedNode?: EditedNode | null;
+	onEditedNodeComplete?: (name: string) => void;
+	onEditedNodeCancel?: () => void;
+	onNodeDeleted?: (path: string) => void;
+	startRenaming?: (path: string) => void;
 }> = ({
 	node,
 	level,
@@ -298,9 +339,11 @@ const NodeRow: React.FC<{
 	generatePath,
 	parentPath = '',
 	selectedNode,
-	tempNode,
-	onTempNodeComplete,
-	onTempNodeCancel,
+	editedNode,
+	onEditedNodeComplete,
+	onEditedNodeCancel,
+	onNodeDeleted,
+	startRenaming,
 }) => {
 	const path = generatePath(node, parentPath);
 	const isExpanded = isRoot || expandedNodePaths[path];
@@ -356,45 +399,90 @@ const NodeRow: React.FC<{
 					setSize={setSize}
 				>
 					<TreeGridCell>
-						{() => (
-							<Button
-								onClick={() => {
-									toggleOpen();
-									selectPath(path, node);
-								}}
-								onKeyDown={handleKeyDown}
-								className={classNames(css['fileNodeButton'], {
-									[css['selected']]: selectedNode === path,
-									'file-node-button': true,
-								})}
-								data-path={path}
-							>
-								<FileName
-									node={node}
-									isOpen={
-										node.type === 'folder' && isExpanded
-									}
+						{() =>
+							editedNode?.reason === 'rename' &&
+							editedNode.originalPath === path ? (
+								<FilenameForm
+									type={editedNode.type}
+									onComplete={onEditedNodeComplete}
+									onCancel={onEditedNodeCancel}
 									level={level}
+									initialValue={node.name}
 								/>
-							</Button>
-						)}
+							) : (
+								<Button
+									onClick={() => {
+										toggleOpen();
+										selectPath(path, node);
+									}}
+									onKeyDown={handleKeyDown}
+									className={classNames(
+										css['fileNodeButton'],
+										{
+											[css['selected']]:
+												selectedNode === path,
+											'file-node-button': true,
+										}
+									)}
+									data-path={path}
+								>
+									<FileName
+										node={node}
+										isOpen={
+											node.type === 'folder' && isExpanded
+										}
+										level={level}
+									/>
+								</Button>
+							)
+						}
 					</TreeGridCell>
-				</TreeGridRow>
-			)}
-			{tempNode && tempNode.parentPath === path && (
-				<TreeGridRow level={level + 1} positionInSet={1} setSize={1}>
 					<TreeGridCell>
 						{() => (
-							<TempNodeInput
-								type={tempNode.type}
-								onComplete={onTempNodeComplete}
-								onCancel={onTempNodeCancel}
-								level={level + 1}
-							/>
+							<div>
+								<DropdownMenu
+									icon={more}
+									label="More actions"
+									controls={[
+										{
+											title: 'Rename',
+											onClick: () => {
+												startRenaming(path);
+											},
+										},
+										{
+											title: 'Delete',
+											onClick: () => {
+												onNodeDeleted(path);
+											},
+										},
+									]}
+								/>
+							</div>
 						)}
 					</TreeGridCell>
 				</TreeGridRow>
 			)}
+			{editedNode &&
+				editedNode.reason === 'create' &&
+				editedNode.parentPath === path && (
+					<TreeGridRow
+						level={level + 1}
+						positionInSet={1}
+						setSize={1}
+					>
+						<TreeGridCell>
+							{() => (
+								<FilenameForm
+									type={editedNode.type}
+									onComplete={onEditedNodeComplete}
+									onCancel={onEditedNodeCancel}
+									level={level + 1}
+								/>
+							)}
+						</TreeGridCell>
+					</TreeGridRow>
+				)}
 			{isExpanded && (
 				<>
 					{node.children &&
@@ -411,9 +499,11 @@ const NodeRow: React.FC<{
 								selectPath={selectPath}
 								generatePath={generatePath}
 								parentPath={path}
-								tempNode={tempNode}
-								onTempNodeComplete={onTempNodeComplete}
-								onTempNodeCancel={onTempNodeCancel}
+								editedNode={editedNode}
+								onEditedNodeComplete={onEditedNodeComplete}
+								onEditedNodeCancel={onEditedNodeCancel}
+								onNodeDeleted={onNodeDeleted}
+								startRenaming={startRenaming}
 							/>
 						))}
 				</>
@@ -422,17 +512,22 @@ const NodeRow: React.FC<{
 	);
 };
 
-const TempNodeInput: React.FC<{
+const FilenameForm: React.FC<{
 	type: 'file' | 'folder';
 	onComplete: (name: string) => void;
 	onCancel: () => void;
 	level: number;
-}> = ({ type, onComplete, onCancel, level }) => {
+	initialValue?: string;
+}> = ({ type, onComplete, onCancel, level, initialValue = '' }) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		inputRef.current?.focus();
-	}, []);
+		if (inputRef.current) {
+			inputRef.current.value = initialValue;
+			inputRef.current.focus();
+			inputRef.current.select();
+		}
+	}, [initialValue]);
 
 	const handleBlur = () => {
 		const value = inputRef.current?.value.trim() || '';
@@ -462,7 +557,7 @@ const TempNodeInput: React.FC<{
 	}
 
 	return (
-		<div className={css['tempNodeInput']}>
+		<div className={css['editedNodeInput']}>
 			<span
 				aria-hidden="true"
 				dangerouslySetInnerHTML={{ __html: indent.join('') }}

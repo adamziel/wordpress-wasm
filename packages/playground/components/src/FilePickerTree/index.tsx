@@ -5,8 +5,9 @@ import {
 	__experimentalTreeGridCell as TreeGridCell,
 	Button,
 	Spinner,
+	DropdownMenu,
 } from '@wordpress/components';
-import { Icon, chevronRight, chevronDown } from '@wordpress/icons';
+import { Icon, chevronRight, chevronDown, more } from '@wordpress/icons';
 import '@wordpress/components/build-style/style.css';
 import css from './style.module.css';
 import classNames from 'classnames';
@@ -275,6 +276,15 @@ const NodeRow: React.FC<{
 								level={level}
 							/>
 						</Button>
+					)}
+				</TreeGridCell>
+				<TreeGridCell>
+					{() => (
+						<DropdownMenu
+							icon={more}
+							label="More actions"
+							controls={[]}
+						/>
 					)}
 				</TreeGridCell>
 			</TreeGridRow>

@@ -57,6 +57,46 @@ function ConnectedFilePickerTree() {
 		[]
 	);
 
+	const handleNodeDeleted = async (path: string) => {
+		const { post_id } = (await apiFetch({
+			path: '/static-files-editor/v1/get-or-create-post-for-file',
+			method: 'POST',
+			data: { path },
+		})) as { post_id: string };
+		console.log({
+			post_id,
+			deleteUrl: `/wp/v2/${WP_LOCAL_FILE_POST_TYPE}/${post_id}`,
+		});
+
+		await apiFetch({
+			// ?force=true to skip the trash and delete the file immediately
+			path: `/wp/v2/${WP_LOCAL_FILE_POST_TYPE}/${post_id}?force=true`,
+			headers: {
+				'X-HTTP-Method-Override': 'DELETE',
+			},
+		});
+		await refreshFileTree();
+	};
+
+	const handleNodeRenamed = async (args: {
+		originalPath: string;
+		newPath: string;
+	}) => {
+		try {
+			await apiFetch({
+				path: '/static-files-editor/v1/rename-file',
+				method: 'POST',
+				data: {
+					originalPath: args.originalPath,
+					newPath: args.newPath,
+				},
+			});
+			await refreshFileTree();
+		} catch (error) {
+			console.error('Failed to rename file:', error);
+		}
+	};
+
 	const handleFileClick = async (filePath: string, node: FileNode) => {
 		if (node.type === 'folder') {
 			setSelectedPath(filePath);
@@ -64,7 +104,7 @@ function ConnectedFilePickerTree() {
 		}
 
 		// 1. Create/get post for this file path
-		const response = (await apiFetch({
+		const { post_id } = (await apiFetch({
 			path: '/static-files-editor/v1/get-or-create-post-for-file',
 			method: 'POST',
 			data: { path: filePath },
@@ -72,7 +112,7 @@ function ConnectedFilePickerTree() {
 
 		// 2. Switch to the new post in the editor
 		onNavigateToEntityRecord({
-			postId: response.post_id,
+			postId: post_id,
 			postType: WP_LOCAL_FILE_POST_TYPE,
 		});
 	};
@@ -126,6 +166,8 @@ function ConnectedFilePickerTree() {
 				onSelect={handleFileClick}
 				initialPath={selectedPath}
 				onNodeCreated={handleNodeCreated}
+				onNodeRenamed={handleNodeRenamed}
+				onNodeDeleted={handleNodeDeleted}
 			/>
 		</div>
 	);
