@@ -15,7 +15,12 @@ import {
 	ButtonGroup,
 	DropdownMenu,
 } from '@wordpress/components';
-import { Icon, chevronRight, chevronDown, more } from '@wordpress/icons';
+import {
+	Icon,
+	chevronRight,
+	chevronDown,
+	moreVertical,
+} from '@wordpress/icons';
 import '@wordpress/components/build-style/style.css';
 import css from './style.module.css';
 import classNames from 'classnames';
@@ -716,7 +721,7 @@ const NodeRow: React.FC<{
 									</Button>
 									<div className={css['moreActions']}>
 										<DropdownMenu
-											icon={more}
+											icon={moreVertical}
 											label="More actions"
 											controls={[
 												{
