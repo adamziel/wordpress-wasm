@@ -42,15 +42,22 @@ export function addLocalFilesTab(tab: {
 	function patchArguments(args: any[]) {
 		let [type, props, ...children] = args;
 		const newProps = { ...props };
-		if ('tabs' in newProps) {
-			const hasLocalFilesTab = newProps.tabs.find(
-				(tab) => tab.name === 'local-files'
-			);
-			if (!hasLocalFilesTab) {
-				newProps.tabs.unshift(tab);
-			}
-			newProps.defaultTabId = 'local-files';
+		if (!('tabs' in newProps)) {
+			return [type, newProps, ...children];
 		}
+		const hasListViewTab = newProps.tabs.find(
+			(tab) => tab.name === 'list-view'
+		);
+		if (!hasListViewTab) {
+			return [type, newProps, ...children];
+		}
+		const hasLocalFilesTab = newProps.tabs.find(
+			(tab) => tab.name === 'local-files'
+		);
+		if (!hasLocalFilesTab) {
+			newProps.tabs.unshift(tab);
+		}
+		newProps.defaultTabId = 'local-files';
 		return [type, newProps, ...children];
 	}
 
