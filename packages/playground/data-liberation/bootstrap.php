@@ -52,6 +52,7 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
+require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Converter.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
