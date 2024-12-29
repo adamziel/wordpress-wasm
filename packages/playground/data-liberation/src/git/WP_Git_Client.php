@@ -1,16 +1,23 @@
 <?php
 
-require_once __DIR__ . '/WP_Git_Pack_Index.php';
+use WordPress\AsyncHttp\Client;
+use WordPress\AsyncHttp\Request;
+use WordPress\ByteReader\WP_String_Reader;
 
 class WP_Git_Client {
     private $repoUrl;
     private $author;
     private $committer;
+    /**
+     * @var Client
+     */
+    private $http_client;
 
     public function __construct($repoUrl, $options = []) {
         $this->repoUrl = rtrim($repoUrl, '/');
         $this->author = $options['author'] ?? "John Doe <john@example.com>";
         $this->committer = $options['committer'] ?? "John Doe <john@example.com>";
+        $this->http_client = $options['http_client'] ?? new Client();
     }
 
     public function fetchRefs($prefix) {
@@ -25,9 +32,9 @@ class WP_Git_Client {
             $this->encode_packet_line("ref-prefix $prefix\n") .
             "0000",
             [
-                'Accept: application/x-git-upload-pack-advertisement',
-                'Content-Type: application/x-git-upload-pack-request', 
-                'Git-Protocol: version=2'
+                'Accept' => 'application/x-git-upload-pack-advertisement',
+                'Content-Type' => 'application/x-git-upload-pack-request', 
+                'Git-Protocol' => 'version=2'
             ]
         );
 
@@ -96,8 +103,8 @@ class WP_Git_Client {
 
         $url = rtrim($this->repoUrl, '.git').'.git/git-receive-pack';
         $response = $this->http_request($url, $push_packet, [
-            'Content-Type: application/x-git-receive-pack-request',
-            'Accept: application/x-git-receive-pack-result',
+            'Content-Type' => 'application/x-git-receive-pack-request',
+            'Accept' => 'application/x-git-receive-pack-result',
         ]);
 
         $response_chunks = iterator_to_array($this->parse_multiplexed_pack_data($response));
@@ -162,22 +169,36 @@ class WP_Git_Client {
         return $index;
     }
 
-    private function http_request($url, $postData = null, $headers = []) {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-        if ($postData) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    public function get_last_error() {
+        $last_request = $this->http_client->get_request();
+        if(!$last_request) {
+            return null;
         }
+        return $last_request->error;
+    }
 
-        $response = curl_exec($ch);
-        curl_close($ch);
+    private function http_request($url, $postData = null, $headers = []) {
+        $request_info = [];
+        if($postData) {
+            $request_info['headers'] = $headers;
+            $request_info['method'] = 'POST';
+            $request_info['body_stream'] = WP_String_Reader::create($postData);
+        }
+        $request = new Request($url, $request_info);
+        $this->http_client->enqueue($request);
 
-        return $response;
+        $buffered_response = '';
+        while($this->http_client->await_next_event()) {
+            $event = $this->http_client->get_event();
+            switch($event) {
+                case Client::EVENT_BODY_CHUNK_AVAILABLE:
+                    $buffered_response .= $this->http_client->get_response_body_chunk();
+                    break;
+                case Client::EVENT_FAILED:
+                    return false;
+            }
+        }
+        return $buffered_response;
     }
 
     private function encode_packet_line($data) {

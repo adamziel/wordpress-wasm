@@ -21,6 +21,7 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Rea
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_GZ_File_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Ranged_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_String_Reader.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
