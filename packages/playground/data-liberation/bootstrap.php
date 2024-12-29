@@ -86,6 +86,7 @@ require_once __DIR__ . '/src/import/WP_Import_Utils.php';
 require_once __DIR__ . '/src/git/WP_Git_Client.php';
 require_once __DIR__ . '/src/git/WP_Git_Pack_Processor.php';
 require_once __DIR__ . '/src/git/WP_Git_Pack_Index.php';
+require_once __DIR__ . '/src/git/WP_Git_Cached_Index.php';
 require_once __DIR__ . '/src/git/WP_Git_Filesystem.php';
 
 require_once __DIR__ . '/src/WP_Data_Liberation_HTML_Processor.php';

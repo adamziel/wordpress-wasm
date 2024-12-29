@@ -58,9 +58,14 @@ class WP_Git_Pack_Processor {
         return $pack . $packSha;
     }
 
-    static private function deflate(string $content): string {
+    static public function deflate(string $content): string {
         $context = deflate_init(ZLIB_ENCODING_DEFLATE, ['level' => 9]);
         return deflate_add($context, $content, ZLIB_FINISH);
+    }
+
+    static public function inflate(string $content): string {
+        $context = inflate_init(ZLIB_ENCODING_DEFLATE);
+        return inflate_add($context, $content, ZLIB_FINISH);
     }
 
     static private function object_header(int $type, int $size): string {
@@ -101,7 +106,7 @@ class WP_Git_Pack_Processor {
      *     }
      * }
      */
-    static private function encode_tree_bytes($tree) {
+    static public function encode_tree_bytes($tree) {
         $tree_bytes = '';
         foreach ($tree as $value) {
             $tree_bytes .= $value['mode'] . " " . $value['name'] . "\0" . hex2bin($value['sha1']);
