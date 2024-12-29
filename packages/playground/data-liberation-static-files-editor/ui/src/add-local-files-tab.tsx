@@ -73,3 +73,38 @@ export function addLocalFilesTab(tab: {
 		return originalJSX(...patchArguments(args));
 	};
 }
+
+export function addLoadingOverlay(Overlay: React.ReactElement) {
+	function patchArguments(args: any[]) {
+		let [type, props, ...children] = args;
+		if (!props || typeof props.className !== 'string') {
+			return [type, props, ...children];
+		}
+		const hasContentAreaClass = props.className.includes(
+			'interface-interface-skeleton__content'
+		);
+		if (!hasContentAreaClass) {
+			return [type, props, ...children];
+		}
+		const newProps = { ...props };
+		if (!Array.isArray(newProps.children)) {
+			newProps.children = [newProps.children];
+		}
+		if (!newProps.children.includes(Overlay)) {
+			newProps.children.unshift(Overlay);
+		}
+		return [type, newProps, ...newProps.children];
+	}
+
+	// Monkey-patch window.React.createElement
+	const originalCreateElement = window.React.createElement as any;
+	(window.React as any).createElement = function (...args: any[]) {
+		return originalCreateElement(...patchArguments(args));
+	};
+
+	// Monkey-patch window.ReactJSXRuntime.jsx
+	const originalJSX = window.ReactJSXRuntime.jsx;
+	window.ReactJSXRuntime.jsx = (...args: any[]) => {
+		return originalJSX(...patchArguments(args));
+	};
+}

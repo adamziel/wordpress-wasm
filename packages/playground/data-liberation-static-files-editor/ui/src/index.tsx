@@ -1,19 +1,21 @@
 import React, { useEffect, useState, useCallback } from '@wordpress/element';
-import {
-	CreatedNode,
-	FileNode,
-	FilePickerTree,
-	FileTree,
-} from './components/FilePickerTree';
+import { FileNode, FilePickerTree } from './components/FilePickerTree';
 import { store as editorStore } from '@wordpress/editor';
 import { store as preferencesStore } from '@wordpress/preferences';
-import { dispatch, useSelect } from '@wordpress/data';
+import {
+	register,
+	createReduxStore,
+	dispatch,
+	useDispatch,
+	useSelect,
+} from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
-import { addLocalFilesTab } from './add-local-files-tab';
+import { addLoadingOverlay, addLocalFilesTab } from './add-local-files-tab';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { Spinner, Button } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
+import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import css from './style.module.css';
+import { FileTree } from 'components/FilePickerTree/types';
 
 // Pre-populated by plugin.php
 const WP_LOCAL_FILE_POST_TYPE = window.WP_LOCAL_FILE_POST_TYPE;
@@ -21,6 +23,31 @@ const WP_LOCAL_FILE_POST_TYPE = window.WP_LOCAL_FILE_POST_TYPE;
 let fileTreePromise = apiFetch({
 	path: '/static-files-editor/v1/get-files-tree',
 });
+
+// Create a custom store for transient UI state
+const STORE_NAME = 'static-files-editor/ui';
+const uiStore = createReduxStore(STORE_NAME, {
+	reducer(state = { isPostLoading: false }, action) {
+		switch (action.type) {
+			case 'SET_POST_LOADING':
+				return { ...state, isPostLoading: action.isLoading };
+			default:
+				return state;
+		}
+	},
+	actions: {
+		setPostLoading(isLoading) {
+			return { type: 'SET_POST_LOADING', isLoading };
+		},
+	},
+	selectors: {
+		isPostLoading(state) {
+			return state.isPostLoading;
+		},
+	},
+});
+
+register(uiStore);
 
 function ConnectedFilePickerTree() {
 	const [fileTree, setFileTree] = useState<any>(null);
@@ -31,6 +58,63 @@ function ConnectedFilePickerTree() {
 	const [selectedPath, setSelectedPath] = useState(
 		meta?.local_file_path || '/'
 	);
+	// interface-interface-skeleton__content
+	useEffect(() => {
+		async function refreshPostId() {
+			setPostLoading(true);
+			const { post_id } = (await apiFetch({
+				path: '/static-files-editor/v1/get-or-create-post-for-file',
+				method: 'POST',
+				data: { path: selectedPath },
+			})) as { post_id: string };
+			setSelectedPostId(post_id);
+		}
+		refreshPostId();
+	}, [selectedPath]);
+
+	const initialPostId = useSelect(
+		(select) => select(editorStore).getCurrentPostId(),
+		[]
+	);
+	const [selectedPostId, setSelectedPostId] = useState(initialPostId);
+
+	const { post, hasLoadedPost, onNavigateToEntityRecord } = useSelect(
+		(select) => {
+			const { getEntityRecord, isResolving, hasFinishedResolution } =
+				select(coreStore);
+			return {
+				onNavigateToEntityRecord:
+					select(blockEditorStore).getSettings()
+						.onNavigateToEntityRecord,
+				post: getEntityRecord(
+					'postType',
+					WP_LOCAL_FILE_POST_TYPE,
+					selectedPostId
+				),
+				hasLoadedPost: hasFinishedResolution('getEntityRecord', [
+					'postType',
+					WP_LOCAL_FILE_POST_TYPE,
+					selectedPostId,
+				]),
+			};
+		},
+		[selectedPostId]
+	);
+
+	const { setPostLoading } = useDispatch(STORE_NAME);
+
+	useEffect(() => {
+		// Only navigate once the post has been loaded. Otherwise the editor
+		// will disappear for a second – the <Editor> component renders its
+		// children conditionally on having the post available.
+		setPostLoading(!hasLoadedPost);
+		if (hasLoadedPost && post) {
+			onNavigateToEntityRecord({
+				postId: selectedPostId,
+				postType: WP_LOCAL_FILE_POST_TYPE,
+			});
+		}
+	}, [hasLoadedPost, post, setPostLoading]);
 
 	const refreshFileTree = useCallback(async () => {
 		fileTreePromise = apiFetch({
@@ -52,12 +136,6 @@ function ConnectedFilePickerTree() {
 			});
 	}, []);
 
-	const onNavigateToEntityRecord = useSelect(
-		(select) =>
-			select(blockEditorStore).getSettings().onNavigateToEntityRecord,
-		[]
-	);
-
 	const handleNodeDeleted = async (path: string) => {
 		try {
 			await apiFetch({
@@ -72,23 +150,7 @@ function ConnectedFilePickerTree() {
 	};
 
 	const handleFileClick = async (filePath: string, node: FileNode) => {
-		if (node.type === 'folder') {
-			setSelectedPath(filePath);
-			return;
-		}
-
-		// 1. Create/get post for this file path
-		const { post_id } = (await apiFetch({
-			path: '/static-files-editor/v1/get-or-create-post-for-file',
-			method: 'POST',
-			data: { path: filePath },
-		})) as { post_id: string };
-
-		// 2. Switch to the new post in the editor
-		onNavigateToEntityRecord({
-			postId: post_id,
-			postType: WP_LOCAL_FILE_POST_TYPE,
-		});
+		setSelectedPath(filePath);
 	};
 
 	const handleNodesCreated = async (tree: FileTree) => {
@@ -187,6 +249,36 @@ addLocalFilesTab({
 		</div>
 	),
 });
+
+function PostLoadingOverlay() {
+	const isLoading = useSelect(
+		(select) => select(STORE_NAME).isPostLoading(),
+		[]
+	);
+	if (!isLoading) {
+		return null;
+	}
+	return (
+		<div
+			style={{
+				position: 'absolute',
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				backgroundColor: 'rgba(0, 0, 0, 0.5)',
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				zIndex: 1000,
+			}}
+		>
+			<Spinner />
+		</div>
+	);
+}
+
+addLoadingOverlay(<PostLoadingOverlay />);
 
 dispatch(preferencesStore).set('welcomeGuide', false);
 dispatch(preferencesStore).set('enableChoosePatternModal', false);
