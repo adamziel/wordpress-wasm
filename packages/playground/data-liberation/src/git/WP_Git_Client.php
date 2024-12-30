@@ -150,7 +150,11 @@ class WP_Git_Client {
         return WP_Git_Pack_Processor::decode($pack_data);
     }
     
-    public function force_pull($branch_name, $path = '/') {
+    public function force_pull($branch_name=null, $path = '/') {
+        if(!$branch_name) {
+            $branch_name = $this->index->get_ref_head('HEAD', ['resolve_ref' => false]);
+            $branch_name = $this->localize_ref_name($branch_name);
+        }
         $path = '/' . ltrim($path, '/');
         $remote_refs = $this->fetchRefs('refs/heads/' . $branch_name);
         $remote_head = $remote_refs['refs/heads/' . $branch_name];

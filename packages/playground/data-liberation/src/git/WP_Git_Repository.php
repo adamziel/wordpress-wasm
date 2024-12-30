@@ -414,10 +414,7 @@ class WP_Git_Repository {
         }
         $contents = trim($this->fs->read_file($path));
         if($options['resolve_ref'] ?? true) {
-            if(strpos($contents, 'ref: ') === 0) {
-                $branch = trim(substr($contents, 5));
-                return $this->get_ref_head($branch, $options);
-            }
+            return $this->get_ref_head($contents, $options);
         }
         return $contents;
     }

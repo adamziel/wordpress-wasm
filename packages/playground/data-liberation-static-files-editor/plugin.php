@@ -46,17 +46,27 @@ class WP_Static_Files_Editor_Plugin {
     static private function get_fs() {
         if(!self::$fs) {
             $dot_git_path = WP_CONTENT_DIR . '/.static-pages.git';
+            if(!is_dir($dot_git_path)) {
+                mkdir($dot_git_path, 0777, true);
+            }
             $local_fs = new WP_Local_Filesystem($dot_git_path);
             $repo = new WP_Git_Repository($local_fs);
             $repo->add_remote('origin', GIT_REPO_URL);
             $repo->set_ref_head('HEAD', 'refs/heads/' . GIT_BRANCH);
             $repo->set_config_value('user.name', GIT_USER_NAME);
             $repo->set_config_value('user.email', GIT_USER_EMAIL);
+
+            $client = new WP_Git_Client($repo);
+            if(false === $client->force_pull()) {
+                _doing_it_wrong(__METHOD__, 'Failed to pull from remote repository', '1.0.0');
+            }
+
             self::$fs = new WP_Git_Filesystem(
                 $repo,
                 [
                     'root' => GIT_DIRECTORY_ROOT,
                     'auto_push' => true,
+                    'client' => $client,
                 ]
             );
         }
@@ -68,6 +78,7 @@ class WP_Static_Files_Editor_Plugin {
         register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
         add_action('init', function() {
+            self::get_fs();
             self::register_post_type();
         });
 
@@ -86,7 +97,7 @@ class WP_Static_Files_Editor_Plugin {
                 $post_id = wp_insert_post(array(
                     'post_title' => 'My first note',
                     'post_type' => WP_LOCAL_FILE_POST_TYPE,
-                    'post_status' => 'draft'
+                    'post_status' => 'publish'
                 ));
             } else {
                 $post_id = $posts[0]->ID;
@@ -440,7 +451,8 @@ class WP_Static_Files_Editor_Plugin {
         $importer = WP_Stream_Importer::create(
             function () {
                 return new WP_Filesystem_Entity_Reader(
-                    new WP_Local_Filesystem(WP_STATIC_CONTENT_DIR),
+                    self::get_fs(),
+                    // new WP_Local_Filesystem(WP_STATIC_CONTENT_DIR)
                     array(
                         'post_type' => WP_LOCAL_FILE_POST_TYPE,
                     )
