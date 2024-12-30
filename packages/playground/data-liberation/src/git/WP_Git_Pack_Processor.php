@@ -155,11 +155,6 @@ class WP_Git_Pack_Processor {
         return sprintf("%04x", $length) . $payload;
     }
     
-    static private function encode_flush(): string {
-        return "0000";
-    }
-
-
     static public function decode($pack_bytes) {
         $parsed_pack = self::parse_pack_data($pack_bytes);
         $objects = $parsed_pack['objects'];
@@ -269,7 +264,23 @@ class WP_Git_Pack_Processor {
         return $result;
     }
 
-    static private function parse_tree_bytes($treeContent) {
+    static public function parse_commit_message($commit_message) {
+        $lines = explode("\n", $commit_message);
+        $parsed = [];
+        foreach($lines as $k => $line) {
+            if(!trim($line)) {
+                $parsed['message'] = array_slice($lines, $k + 1);
+                break;
+            }
+            $type_len = strpos($line, ' ');
+            $type = substr($line, 0, $type_len);
+            $value = substr($line, $type_len + 1);
+            $parsed[$type] = $value;
+        }
+        return $parsed;
+    }
+
+    static public function parse_tree_bytes($treeContent) {
         $offset = 0;
         $files = [];
 
