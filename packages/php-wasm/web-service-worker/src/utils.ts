@@ -67,6 +67,7 @@ export async function convertFetchEventToPHPRequest(
 						'User-agent': self.navigator.userAgent,
 						'Content-type': contentType,
 					},
+					credentials: event.request.credentials,
 				},
 			],
 		};
