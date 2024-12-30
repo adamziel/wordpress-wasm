@@ -217,16 +217,14 @@ class WP_Blocks_To_Markdown {
                 return "\n---\n\n";
 
             default:
-                $markdown = [];
-                if($inner_html){
-                    $markdown[] = "```block";
-                    $markdown[] = "<!-- {$block_name} -->";
-                    $markdown[] = $inner_html;
-                    $markdown[] = "<!-- /{$block_name} -->";
-                    $markdown[] = "```";
-                } else {
-                    $markdown[] = "<!-- {$block_name} /-->";
+                // Short-circuit empty entries produced by the block parser.
+                if(!$block_name) {
+                    return '';
                 }
+                $markdown = [];
+                $markdown[] = "```block";
+                $markdown[] = serialize_block($block);
+                $markdown[] = "```";
                 return implode("\n", $markdown);
         }
     }

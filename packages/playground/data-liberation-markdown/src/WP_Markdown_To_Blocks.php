@@ -165,8 +165,13 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 						if ( method_exists( $node, 'getInfo' ) && $node->getInfo() ) {
 							$attrs['language'] = preg_replace( '/[ \t\r\n\f].*/', '', $node->getInfo() );
 						}
-						$this->push_block( 'code', $attrs );
-						$this->append_content( '<pre class="wp-block-code"><code>' . trim( str_replace( "\n", '<br>', htmlspecialchars( $node->getLiteral() ) ) ) . '</code></pre>' );
+                        if('block' === $attrs['language']) {
+                            // This is a special case for preserving block literals that could not be expressed as markdown.
+                            $this->append_content( "\n" . $node->getLiteral() . "\n" );
+                        } else {
+                            $this->push_block( 'code', $attrs );
+                            $this->append_content( '<pre class="wp-block-code"><code>' . trim( str_replace( "\n", '<br>', htmlspecialchars( $node->getLiteral() ) ) ) . '</code></pre>' );
+                        }
 						break;
 
 					case ExtensionBlock\HtmlBlock::class:
