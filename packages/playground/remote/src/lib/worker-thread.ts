@@ -38,6 +38,8 @@ import transportDummy from './playground-mu-plugin/playground-includes/wp_http_d
 /* @ts-ignore */
 import playgroundWebMuPlugin from './playground-mu-plugin/0-playground.php?raw';
 import {
+	HttpCookieStore,
+	PHPRequest,
 	PHPResponse,
 	PHPWorker,
 	SupportedPHPVersion,
@@ -78,7 +80,15 @@ export type WorkerBootOptions = {
 	corsProxyUrl?: string;
 };
 
-/** @inheritDoc PHPClient */
+export interface PHPRequestWithCredentialsMode extends PHPRequest {
+	/**
+	 * The fetch credentials mode to use for the request.
+	 * Default: 'same-origin'.
+	 */
+	credentials?: RequestCredentials;
+}
+
+/** @inheritDoc PHPWorker */
 export class PlaygroundWorkerEndpoint extends PHPWorker {
 	booted = false;
 
@@ -98,6 +108,8 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 	loadedWordPressVersion: string | undefined;
 
 	unmounts: Record<string, () => any> = {};
+
+	#cookieStore: HttpCookieStore = new HttpCookieStore();
 
 	constructor(monitor: EmscriptenDownloadMonitor) {
 		super(undefined, monitor);
@@ -446,6 +458,50 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 			setAPIError(e as Error);
 			throw e;
 		}
+	}
+
+	/** @inheritDoc @php-wasm/universal!PHPRequestHandler.request */
+	override async request(
+		request: PHPRequestWithCredentialsMode
+	): Promise<PHPResponse> {
+		const credentialsMode: RequestCredentials =
+			// Default to same-origin.
+			// https://fetch.spec.whatwg.org/#concept-request-credentials-mode
+			request.credentials ?? 'same-origin';
+		const credentialsAllowed =
+			credentialsMode === 'include' || credentialsMode === 'same-origin';
+
+		const incomingHeaders = request.headers ?? {};
+		const headers: Record<string, string> = {};
+		for (const [name, value] of Object.entries(incomingHeaders)) {
+			if (name.toLowerCase() === 'cookie') {
+				if (!credentialsAllowed) {
+					// Skip cookies entirely if credentials are not allowed
+					continue;
+				}
+
+				const storedCookies =
+					this.#cookieStore.getCookieRequestHeader();
+				const providedCookies = value;
+				headers[name] =
+					storedCookies + (storedCookies && '; ') + providedCookies;
+			} else {
+				headers[name] = value;
+			}
+		}
+
+		const phpResponse = await super.request({
+			...request,
+			headers,
+		});
+
+		if (credentialsAllowed) {
+			this.#cookieStore.rememberCookiesFromResponseHeaders(
+				phpResponse.headers
+			);
+		}
+
+		return phpResponse;
 	}
 
 	// These methods are only here for the time traveling Playground demo.
