@@ -269,7 +269,7 @@ class WP_Git_Pack_Processor {
         $parsed = [];
         foreach($lines as $k => $line) {
             if(!trim($line)) {
-                $parsed['message'] = array_slice($lines, $k + 1);
+                $parsed['message'] = implode("\n", array_slice($lines, $k + 1));
                 break;
             }
             $type_len = strpos($line, ' ');
