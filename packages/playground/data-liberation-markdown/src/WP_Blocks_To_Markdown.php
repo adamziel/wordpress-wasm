@@ -217,7 +217,17 @@ class WP_Blocks_To_Markdown {
                 return "\n---\n\n";
 
             default:
-                return '';
+                $markdown = [];
+                if($inner_html){
+                    $markdown[] = "```block";
+                    $markdown[] = "<!-- {$block_name} -->";
+                    $markdown[] = $inner_html;
+                    $markdown[] = "<!-- /{$block_name} -->";
+                    $markdown[] = "```";
+                } else {
+                    $markdown[] = "<!-- {$block_name} /-->";
+                }
+                return implode("\n", $markdown);
         }
     }
 

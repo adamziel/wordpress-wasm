@@ -2,7 +2,7 @@
 
 use WordPress\Filesystem\WP_Abstract_Filesystem;
 
-class WP_Git_Cached_Index {
+class WP_Git_Repository {
 
     private $fs;
 
@@ -15,6 +15,7 @@ class WP_Git_Cached_Index {
     private $parsed_commit;
     private $parsed_tree;
     private $last_error;
+    private $parsed_config;
 
     private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
 
@@ -37,6 +38,47 @@ class WP_Git_Cached_Index {
                 $this->fs->mkdir($path);
             }
         }
+    }
+
+    public function add_remote($name, $url) {
+        $this->set_config_section('remote "' . $name . '"', [
+            'url' => $url,
+            'fetch' => '+refs/heads/*:refs/remotes/' . $name . '/*',
+        ]);
+    }
+
+    public function get_remote($name) {
+        $this->parse_config();
+        $key = 'remote "' . $name . '"';
+        return $this->parsed_config[$key] ?? null;
+    }
+
+    private function set_config_section($section, $key_value_pairs) {
+        $this->parse_config();
+        $this->parsed_config[$section] = $key_value_pairs;
+        $this->write_config();
+    }
+
+    private function parse_config() {
+        if(!$this->parsed_config) {
+            if(!$this->fs->is_file('config')) {
+                $this->parsed_config = [];
+                return;
+            }
+            $this->parsed_config = parse_ini_string($this->fs->read_file('config'), true, INI_SCANNER_RAW);
+        }
+    }
+
+    private function write_config() {
+        $this->parse_config();
+        $lines = [];
+        foreach($this->parsed_config as $section => $key_value_pairs) {
+            $lines[] = "[{$section}]";
+            foreach($key_value_pairs as $key => $value) {
+                $lines[] = "    {$key} = {$value}";
+            }
+        }
+        $this->fs->put_contents('config', implode("\n", $lines));
     }
 
     public function read_object($oid) {

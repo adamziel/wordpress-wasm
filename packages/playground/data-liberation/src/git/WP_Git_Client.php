@@ -5,31 +5,25 @@ use WordPress\AsyncHttp\Request;
 use WordPress\ByteReader\WP_String_Reader;
 
 class WP_Git_Client {
-    private $repoUrl;
-    private $author;
-    private $committer;
     /**
      * @var Client
      */
     private $http_client;
     /**
-     * @var WP_Git_Cached_Index
+     * @var WP_Git_Repository
      */
     private $index;
     private $remote_name = 'origin';
 
-    public function __construct(WP_Git_Cached_Index $index, $repoUrl, $options = []) {
-        $this->repoUrl = rtrim($repoUrl, '/');
-        $this->author = $options['author'] ?? "John Doe <john@example.com>";
-        $this->committer = $options['committer'] ?? "John Doe <john@example.com>";
+    public function __construct(WP_Git_Repository $index, $options = []) {
+        $this->remote_name = $options['remote_name'] ?? 'origin';
         $this->http_client = $options['http_client'] ?? new Client();
         $this->index = $index;
     }
 
     public function fetchRefs($prefix) {
-        $url = $this->repoUrl . '/git-upload-pack';
         $response = $this->http_request(
-            $url,
+            '/git-upload-pack',
             $this->encode_packet_line("command=ls-refs\n") .
             $this->encode_packet_line("agent=git/2.37.3\n") .
             $this->encode_packet_line("object-format=sha1\n") .
@@ -111,8 +105,7 @@ class WP_Git_Client {
         $push_packet .= WP_Git_Pack_Processor::encode($pack_objects);
         $push_packet .= "0000";
 
-        $url = rtrim($this->repoUrl, '.git').'.git/git-receive-pack';
-        $response = $this->http_request($url, $push_packet, [
+        $response = $this->http_request('/git-receive-pack', $push_packet, [
             'Content-Type' => 'application/x-git-receive-pack-request',
             'Accept' => 'application/x-git-receive-pack-result',
         ]);
@@ -148,7 +141,7 @@ class WP_Git_Client {
             $this->encode_packet_line("done\n") .
             $this->encode_packet_line("done\n");
 
-        $response = $this->http_request($this->repoUrl . '/git-upload-pack', $body, [
+        $response = $this->http_request('/git-upload-pack', $body, [
             'Accept: application/x-git-upload-pack-advertisement',
             'Content-Type: application/x-git-upload-pack-request', 
         ]);
@@ -203,7 +196,7 @@ class WP_Git_Client {
         $body .= "0000";
         $body .= $this->encode_packet_line("done\n");
 
-        $response = $this->http_request($this->repoUrl . '/git-upload-pack', $body, [
+        $response = $this->http_request('/git-upload-pack', $body, [
             'Accept: application/x-git-upload-pack-advertisement',
             'Content-Type: application/x-git-upload-pack-request', 
         ]);
@@ -220,7 +213,13 @@ class WP_Git_Client {
         return $last_request->error;
     }
 
-    private function http_request($url, $postData = null, $headers = []) {
+    private function http_request($path, $postData = null, $headers = []) {
+        $remote = $this->index->get_remote($this->remote_name);
+        if(!$remote) {
+            $this->last_error = 'Remote "' . $this->remote_name . '" not found';
+            return false;
+        }
+        $url = $remote['url'] . $path;
         $request_info = [];
         if($postData) {
             $request_info['headers'] = $headers;

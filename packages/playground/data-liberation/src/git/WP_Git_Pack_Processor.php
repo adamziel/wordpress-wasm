@@ -163,7 +163,7 @@ class WP_Git_Pack_Processor {
      */
     static public function decode($pack_bytes, $pack_index=null) {
         if(null === $pack_index) {
-            $pack_index = new WP_Git_Cached_Index(new WP_In_Memory_Filesystem());
+            $pack_index = new WP_Git_Repository(new WP_In_Memory_Filesystem());
         }
 
         $parsed_pack = self::parse_pack_data($pack_bytes);
