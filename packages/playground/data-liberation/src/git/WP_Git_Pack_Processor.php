@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Filesystem\WP_In_Memory_Filesystem;
+
 class WP_Git_Pack_Processor {
 
     const OBJECT_TYPE_COMMIT = 1;
@@ -68,7 +70,7 @@ class WP_Git_Pack_Processor {
         return inflate_add($context, $content, ZLIB_FINISH);
     }
 
-    static private function object_header(int $type, int $size): string {
+    static public function object_header(int $type, int $size): string {
         // First byte: type in bits 4-6, size bits 0-3
         $firstByte = $size & 0b1111;
         $firstByte |= ($type & 0b111) << 4;
@@ -155,7 +157,15 @@ class WP_Git_Pack_Processor {
         return sprintf("%04x", $length) . $payload;
     }
     
-    static public function decode($pack_bytes) {
+    /**
+     * @TODO: A streaming version of this would enable cloning large repositories
+     *        without crashing when we run out of memory.
+     */
+    static public function decode($pack_bytes, $pack_index=null) {
+        if(null === $pack_index) {
+            $pack_index = new WP_Git_Cached_Index(new WP_In_Memory_Filesystem());
+        }
+
         $parsed_pack = self::parse_pack_data($pack_bytes);
         $objects = $parsed_pack['objects'];
 
@@ -205,18 +215,11 @@ class WP_Git_Pack_Processor {
         }
 
         // Resolve trees
-        foreach($objects as $k => $object) {
-            if( $object['type'] === self::OBJECT_TYPE_TREE ) {
-                $objects[$k]['content'] = self::parse_tree_bytes($object['content']);
-            } else if($object['type'] === self::OBJECT_TYPE_COMMIT) {
-                $objects[$k]['tree'] = substr($object['content'], 5, 40);
-            }
+        foreach($objects as $object) {
+            $pack_index->add_object($object['type'], $object['content']);
         }
 
-        return new WP_Git_Pack_Index(
-            $objects,
-            $by_oid
-        );
+        return $pack_index;
     }
 
     static private function wrap_git_object($type, $object) {

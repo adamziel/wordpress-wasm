@@ -12,12 +12,18 @@ class WP_Git_Client {
      * @var Client
      */
     private $http_client;
+    /**
+     * @var WP_Git_Cached_Index
+     */
+    private $index;
+    private $remote_name = 'origin';
 
-    public function __construct($repoUrl, $options = []) {
+    public function __construct(WP_Git_Cached_Index $index, $repoUrl, $options = []) {
         $this->repoUrl = rtrim($repoUrl, '/');
         $this->author = $options['author'] ?? "John Doe <john@example.com>";
         $this->committer = $options['committer'] ?? "John Doe <john@example.com>";
         $this->http_client = $options['http_client'] ?? new Client();
+        $this->index = $index;
     }
 
     public function fetchRefs($prefix) {
@@ -52,6 +58,12 @@ class WP_Git_Client {
             $newline_pos = strpos($frame, "\n");
             $name = substr($frame, $space_pos + 1, $newline_pos - $space_pos - 1);
             $refs[$name] = $hash;
+
+            $localized_refname = $name;
+            if(str_starts_with($name, 'refs/heads/')) {
+                $localized_refname = substr($name, strlen('refs/heads/'));
+            }
+            $this->index->set_ref_head('refs/remotes/' . $this->remote_name . '/' . $localized_refname, $hash);
         }
         return $refs;
     }
@@ -67,38 +79,36 @@ class WP_Git_Client {
         }
     }
 
-    public function push($git_objects, $options = []) {
-        $empty_hash = "0000000000000000000000000000000000000000";
-        $parent_hash = $options['parent_hash'] ?? $empty_hash;
-        $tree_hash = $options['tree_hash'] ?? $empty_hash;
-        $branchName = $options['branch_name'];
-        $author = ($options['author'] ?? $this->author) . " " . time() . " +0000";
-        $committer = ($options['committer'] ?? $this->committer) . " " . time() . " +0000";
-        $message = $options['message'] ?? "Changes from WordPress.";
+    public function force_push_one_commit() {
+        $push_ref_name = $this->index->get_ref_head('HEAD', ['resolve_ref' => false]);
+        $push_ref_name = $this->localize_ref_name($push_ref_name);
 
-        $parent = '';
-        if($parent_hash !== $empty_hash) {
-            $parent = "parent $parent_hash\n";
+        $push_commit = $this->index->get_ref_head('refs/heads/' . $push_ref_name);
+        $this->index->read_object($push_commit);
+        $parent_hash = $this->index->get_parsed_commit()['parent'] ?? '0000000000000000000000000000000000000000';
+
+        $remote_commit = $this->index->get_ref_head('refs/remotes/' . $this->remote_name . '/' . $push_ref_name);
+        // @TODO: Do find_objects_added_since to enable pushing multiple commits at once.
+        //        OR! perhaps supporting "have" and "want" would solve this.
+        $delta = $this->index->find_objects_added_in($push_commit, $remote_commit);
+
+        // @TODO: Implement streaming push bytes instead of buffering everything like this.
+        $pack_objects = [];
+        foreach($delta as $oid) {
+            // @TODO: just stream the saved object instead of re-reading and re-encoding it.
+            $body = '';
+            do {
+                $body .= $this->index->get_body_chunk();
+            } while($this->index->next_body_chunk());
+            $pack_objects[] = [
+                'type' => $this->index->get_type(),
+                'content' => $body,
+            ];
         }
-        $commit_object = WP_Git_Pack_Processor::create_object([
-            'type' => WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
-            'content' => sprintf(
-                "tree %s\n%sauthor %s\ncommitter %s\n\n%s\n",
-                $tree_hash,
-                $parent,
-                $author,
-                $committer,
-                $message
-            ),
-            'tree' => $tree_hash,
-        ]);
-        $commit_sha = $commit_object['oid'];
 
-        $git_objects[] = $commit_object;
-        
-        $push_packet = WP_Git_Pack_Processor::encode_packet_line("$parent_hash $commit_sha refs/heads/$branchName\0report-status force-update\n");
+        $push_packet = WP_Git_Pack_Processor::encode_packet_line("$parent_hash $push_commit refs/heads/$push_ref_name\0report-status force-update\n");
         $push_packet .= "0000";
-        $push_packet .= WP_Git_Pack_Processor::encode($git_objects);
+        $push_packet .= WP_Git_Pack_Processor::encode($pack_objects);
         $push_packet .= "0000";
 
         $url = rtrim($this->repoUrl, '.git').'.git/git-receive-pack';
@@ -110,14 +120,22 @@ class WP_Git_Client {
         $response_chunks = iterator_to_array($this->parse_multiplexed_pack_data($response));
         if(
             trim($response_chunks[0]['data']) !== 'unpack ok' ||
-            trim($response_chunks[1]['data']) !== 'ok refs/heads/' . $branchName
+            trim($response_chunks[1]['data']) !== 'ok refs/heads/' . $push_ref_name
         ) {
             throw new Exception('Push failed:' . $response);
         }
-        return [
-            'new_head_hash' => $commit_sha,
-            'new_tree_hash' => $tree_hash,
-        ];
+        $this->index->set_ref_head('refs/remotes/' . $this->remote_name . '/' . $push_ref_name, $push_commit);
+        return true;
+    }
+
+    private function localize_ref_name($ref_name) {
+        if(str_starts_with($ref_name, 'ref: ')) {
+            $ref_name = trim(substr($ref_name, 5));
+        }
+        if(str_starts_with($ref_name, 'refs/heads/')) {
+            return substr($ref_name, strlen('refs/heads/'));
+        }
+        return $ref_name;
     }
 
     public function list_objects($ref_hash) {
@@ -136,9 +154,47 @@ class WP_Git_Client {
         ]);
 
         $pack_data = $this->accumulate_pack_data_from_multiplexed_chunks($response);
-        return WP_Git_Pack_Index::from_pack_data($pack_data);
+        return WP_Git_Pack_Processor::decode($pack_data);
     }
     
+    public function force_pull($branch_name, $path = '/') {
+        $path = '/' . ltrim($path, '/');
+        $remote_refs = $this->fetchRefs('refs/heads/' . $branch_name);
+        $remote_head = $remote_refs['refs/heads/' . $branch_name];
+        $remote_index = $this->list_objects($remote_head);
+
+        $remote_branch_ref = 'refs/heads/' . $branch_name;
+        $remote_index->set_ref_head($remote_branch_ref, $remote_head);
+        $remote_index->set_ref_head('HEAD', 'ref: ' . $remote_branch_ref);
+
+        $local_index = $this->index;
+        $local_ref = $local_index->get_ref_head('refs/heads/' . $branch_name);
+
+        $all_path_related_oids = $remote_index->find_path_descendants($path);
+        $subpath = $path;
+        do {
+            $subpath = dirname($subpath);
+            $remote_index->read_by_path($subpath);
+            $all_path_related_oids[] = $remote_index->get_oid();
+        } while($subpath !== '/');
+        $all_path_related_oids[] = $remote_head;
+        $all_path_related_oids = array_flip($all_path_related_oids);
+
+        // @TODO: Support "want" and "have" here
+        $new_oids = $remote_index->find_objects_added_in($remote_head, $local_ref, [
+            'old_tree_index' => $local_index,
+        ]);
+        $objects_to_fetch = [];
+        foreach($new_oids as $oid) {
+            if(!isset($all_path_related_oids[$oid])) {
+                continue;
+            }
+            $objects_to_fetch[] = $oid;
+        }
+        $this->fetchObjects($objects_to_fetch);
+        $this->index->set_ref_head('refs/heads/' . $branch_name, $remote_head);
+    }
+
     public function fetchObjects($refs) {
         $body = '';
         foreach($refs as $ref) {
@@ -152,21 +208,8 @@ class WP_Git_Client {
             'Content-Type: application/x-git-upload-pack-request', 
         ]);
         $pack_data = $this->accumulate_pack_data_from_multiplexed_chunks($response);
-        return WP_Git_Pack_Index::from_pack_data($pack_data);
-    }
-
-    public function backfillBlobs($index, $root = '/') {
-        $sub_root = $index->get_by_path($root);
-
-        $blobs_shas = [];
-        foreach($index->get_descendants($sub_root['oid']) as $blob) {
-            $blobs_shas[] = $blob['sha1'];
-        }
-        $blobs_index = $this->fetchObjects($blobs_shas);
-        $index->set_external_get_by_oid(function($oid) use ($blobs_index) {
-            return $blobs_index->get_by_oid($oid);
-        });
-        return $index;
+        WP_Git_Pack_Processor::decode($pack_data, $this->index);
+        return true;
     }
 
     public function get_last_error() {

@@ -10,7 +10,7 @@ class WP_Git_Cached_Index {
     private $type;
     private $content_inflate_handle;
     private $object_content_chunk;
-    private $called_next_object_chunk;
+    private $called_next_body_chunk;
     private $buffered_object_content;
     private $parsed_commit;
     private $parsed_tree;
@@ -22,14 +22,20 @@ class WP_Git_Cached_Index {
         WP_Abstract_Filesystem $fs
     ) {
         $this->fs = $fs;
-        if(!$this->fs->is_dir('objects')) {
-            $this->fs->mkdir('objects');
-        }
-        if(!$this->fs->is_dir('refs')) {
-            $this->fs->mkdir('refs');
-        }
-        if(!$this->fs->is_dir('refs/heads')) {
-            $this->fs->mkdir('refs/heads');
+        $this->initialize_filesystem();
+    }
+
+    private function initialize_filesystem() {
+        $paths = [
+            'objects',
+            'refs',
+            'refs/heads',
+            'refs/remotes',
+        ];
+        foreach($paths as $path) {
+            if(!$this->fs->is_dir($path)) {
+                $this->fs->mkdir($path);
+            }
         }
     }
 
@@ -50,8 +56,8 @@ class WP_Git_Cached_Index {
         // for the specific get_* methods below.
         $header = false;
         $content = '';
-        while($this->next_object_chunk()) {
-            $content .= $this->get_object_content_chunk();
+        while($this->next_body_chunk()) {
+            $content .= $this->get_body_chunk();
             $null_byte_position = strpos($content, "\x00");
             if($null_byte_position === false) {
                 continue;
@@ -111,12 +117,12 @@ class WP_Git_Cached_Index {
         return true;
     }
 
-    public function next_object_chunk() {
+    public function next_body_chunk() {
         if(false === $this->fs->next_file_chunk()) {
             $this->last_error = $this->fs->get_error_message();
             return false;
         }
-        $this->called_next_object_chunk = true;
+        $this->called_next_body_chunk = true;
         $chunk = $this->fs->get_file_chunk();
         $next_chunk = inflate_add($this->content_inflate_handle, $chunk);
         if(false === $next_chunk) {
@@ -128,7 +134,7 @@ class WP_Git_Cached_Index {
         return true;
     }
 
-    public function get_object_content_chunk() {
+    public function get_body_chunk() {
         return $this->object_content_chunk;
     }
 
@@ -139,15 +145,19 @@ class WP_Git_Cached_Index {
     }
 
     public function get_parsed_commit() {
-        if(null === $this->parsed_commit) {
+        if(null === $this->parsed_commit && $this->oid) {
             $commit_contents = $this->read_entire_object_contents();
             $this->parsed_commit = WP_Git_Pack_Processor::parse_commit_message($commit_contents);
+            if(!$this->parsed_commit) {
+                $this->last_error = 'Failed to parse commit';
+                $this->parsed_commit = [];
+            }
         }
         return $this->parsed_commit;
     }
 
     public function get_parsed_tree() {
-        if(null === $this->parsed_tree) {
+        if(null === $this->parsed_tree && $this->oid) {
             $tree_contents = $this->read_entire_object_contents();
             $this->parsed_tree = WP_Git_Pack_Processor::parse_tree_bytes($tree_contents);
         }
@@ -157,7 +167,7 @@ class WP_Git_Cached_Index {
     public function read_entire_object_contents() {
         // If we've advanced the stream, we can't reuse it to read the entire
         // object anymore. Let's re-initialize the stream.
-        if($this->called_next_object_chunk) {
+        if($this->called_next_body_chunk) {
             $this->read_object($this->oid);
         }
         if(null !== $this->buffered_object_content) {
@@ -167,8 +177,8 @@ class WP_Git_Cached_Index {
         // for later use. We'll likely need it again before we're
         // done with the current object.
         $this->buffered_object_content = $this->object_content_chunk;
-        while($this->next_object_chunk()) {
-            $this->buffered_object_content .= $this->get_object_content_chunk();
+        while($this->next_body_chunk()) {
+            $this->buffered_object_content .= $this->get_body_chunk();
         }
         return $this->buffered_object_content;
     }
@@ -199,11 +209,14 @@ class WP_Git_Cached_Index {
 
         $path_segments = explode('/', $path);
         foreach ($path_segments as $segment) {
-            if (!isset($this->parsed_tree[$segment])) {
-                return null;
+            $parsed_tree = $this->get_parsed_tree();
+            if (!isset($parsed_tree[$segment])) {
+                $this->reset();
+                return false;
             }
-            $next_oid = $this->parsed_tree[$segment]['sha1'];
+            $next_oid = $parsed_tree[$segment]['sha1'];
             if(false === $this->read_object($next_oid)) {
+                $this->reset();
                 return false;
             }
         }
@@ -215,9 +228,33 @@ class WP_Git_Cached_Index {
         return $this->last_error;
     }
 
-    public function find_objects_added_in($new_tree_oid, $old_tree_oid=null) {
-        if($new_tree_oid === $old_tree_oid) {
-            return false;
+    public function find_path_descendants($path) {
+        if(!$this->read_by_path($path)) {
+            return [];
+        }
+        $stack = [$this->oid];
+        $oids = [];
+        while(!empty($stack)) {
+            $oid = array_pop($stack);
+            if(!$this->read_object($oid)) {
+                return false;
+            }
+            if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_TREE) {
+                $tree = $this->get_parsed_tree();
+                foreach($tree as $object) {
+                    $oids[] = $object['sha1'];
+                }
+            } else if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_BLOB) {
+                $oids[] = $this->get_oid();
+            }
+        }
+        return $oids;
+    }
+
+    public function find_objects_added_in($new_tree_oid, $old_tree_oid=null, $options=[]) {
+        $old_tree_index = $options['old_tree_index'] ?? $this;
+        if($old_tree_index === null) {
+            $old_tree_index = $this;
         }
 
         // Resolve the actual tree oid if $new_tree_oid is a commit
@@ -234,93 +271,127 @@ class WP_Git_Cached_Index {
 
         // Resolve the actual tree oid if $old_tree_oid is a commit
         if($old_tree_oid) {
-            if(false === $this->read_object($old_tree_oid)) {
+            if(false === $old_tree_index->read_object($old_tree_oid)) {
                 $this->last_error = 'Failed to read object: ' . $old_tree_oid;
                 return false;
             }
-            if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
-                $old_tree_oid = $this->get_parsed_commit()['tree'];
+            if($old_tree_index->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
+                $old_tree_oid = $old_tree_index->get_parsed_commit()['tree'];
             }
         }
 
+        if($new_tree_oid === $old_tree_oid) {
+            return false;
+        }
+        
         $stack = [[$new_tree_oid, $old_tree_oid]];
         
         while(!empty($stack)) {
             list($current_new_oid, $current_old_oid) = array_pop($stack);
+
+            // Object is unchanged
+            if($current_new_oid === $current_old_oid) {
+                continue;
+            }
             
             if(false === $this->read_object($current_new_oid)) {
                 $this->last_error = 'Failed to read object: ' . $current_new_oid;
                 return false;
             }
+            if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_BLOB) {
+                yield $this->get_oid();
+                continue;
+            } else if($this->get_type() !== WP_Git_Pack_Processor::OBJECT_TYPE_TREE) {
+                _doing_it_wrong(__METHOD__, 'Invalid object type in find_objects_added_in: ' . $this->get_type(), '1.0.0');
+                return false;
+            }
+
             $new_tree = $this->get_parsed_tree();
+            yield $this->get_oid();
             
             $old_tree = [];
             if($current_old_oid) {
-                if(false === $this->read_object($current_old_oid)) {
+                if(false === $old_tree_index->read_object($current_old_oid)) {
                     $this->last_error = 'Failed to read object: ' . $current_old_oid;
                     return false;
                 }
-                $old_tree = $this->get_parsed_tree();
+                $old_tree = $old_tree_index->get_parsed_tree();
             }
 
             foreach($new_tree as $name => $object) {
-                // Object is new
-                if(!isset($old_tree[$name])) {
-                    if(false === $this->read_object($object['sha1'])) {
-                        $this->last_error = 'Failed to read object: ' . $object['sha1'];
-                        return false;
-                    }
-                    yield $object['sha1'];
-                    if($object['mode'] === WP_Git_Pack_Processor::FILE_MODE_DIRECTORY) {
-                        $stack[] = [$object['sha1'], null];
-                    }
-                    continue;
-                }
-
-                // Object is unchanged
-                if($object['sha1'] === $old_tree[$name]['sha1']) {
-                    continue;
-                }
-
-                if(false === $this->read_object($object['sha1'])) {
-                    $this->last_error = 'Failed to read object: ' . $object['sha1'];
-                    return false;
-                }
-                
-                yield $object['sha1'];
-
-                if($object['mode'] === WP_Git_Pack_Processor::FILE_MODE_DIRECTORY) {
-                    // Object is a changed directory - add to stack for recursive processing
-                    $stack[] = [$object['sha1'], $old_tree[$name]['sha1']];
-                }
+                $stack[] = [$object['sha1'], $old_tree[$name]['sha1'] ?? null];
             }
         }
     }
 
     public function set_ref_head($ref, $oid) {
-        if($ref !== 'HEAD' && !str_starts_with($ref, 'refs/heads/')) {
-            _doing_it_wrong(__METHOD__, 'Invalid head: ' . $ref, '1.0.0');
+        $path = $this->resolve_ref_file_path($ref);
+        if(!$path) {
             return false;
         }
-        return $this->fs->put_contents($ref, $oid);
+        return $this->fs->put_contents($path, $oid);
     }
 
-    public function get_ref_head($ref='HEAD') {
-        if($ref === 'HEAD') {
-            $ref = $this->get_HEAD_ref();
-        } else if(!str_starts_with($ref, 'refs/heads/')) {
-            _doing_it_wrong(__METHOD__, 'Invalid head: ' . $ref, '1.0.0');
+    public function get_ref_head($ref='HEAD', $options=[]) {
+        if($this->oid_exists($ref)) {
+            return $ref;
+        }
+        $path = $this->resolve_ref_file_path($ref);
+        if(!$path) {
+            $this->last_error = 'Failed to resolve ref file path: ' . $ref;
             return false;
         }
-        return trim($this->fs->read_file($ref));
+        if(!$this->fs->is_file($path)) {
+            $this->last_error = 'Ref file not found: ' . $path;
+            return false;
+        }
+        $contents = trim($this->fs->read_file($path));
+        if($options['resolve_ref'] ?? true) {
+            if(strpos($contents, 'ref: ') === 0) {
+                $branch = trim(substr($contents, 5));
+                return $this->get_ref_head($branch, $options);
+            }
+        }
+        return $contents;
     }
 
-    private function get_HEAD_ref() {
-        $ref_contents = $this->fs->read_file('HEAD');
-        if(strpos($ref_contents, 'ref: ') !== 0) {
-            return null;
+    private function resolve_ref_file_path($ref) {
+        $ref = trim($ref);
+        if(str_starts_with($ref, 'ref: ')) {
+            $ref = trim(substr($ref, 5));
         }
-        return trim(substr($ref_contents, 5));
+        if(
+            str_contains($ref, '/') &&
+            !str_starts_with($ref, 'refs/heads/') && 
+            !str_starts_with($ref, 'refs/remotes/')
+        ) {
+            _doing_it_wrong(__METHOD__, 'Invalid ref name: ' . $ref, '1.0.0');
+            return false;
+        }
+        if(str_contains($ref, '../')) {
+            _doing_it_wrong(__METHOD__, 'Invalid ref name: ' . $ref, '1.0.0');
+            return false;
+        }
+
+        // Make sure all the directories leading up to the ref exist
+        // @TODO: Support recursive mode in mkdir()
+        $segments = explode('/', dirname($ref));
+        $path = '';
+        foreach($segments as $segment) {
+            $path .= '/' . $segment;
+            if(!$this->fs->is_dir($path)) {
+                $this->fs->mkdir($path);
+            }
+        }
+        return $ref;
+    }
+
+    public function branch_exists($ref) {
+        $path = $this->resolve_ref_file_path($ref);
+        if(!$path) {
+            return false;
+        }
+        return $this->fs->is_file($path);
     }
 
     public function add_object($type, $content) {
@@ -421,17 +492,19 @@ class WP_Git_Cached_Index {
         if($this->get_ref_head('HEAD')) {
             $commit_message[] = "parent " . $this->get_ref_head('HEAD');
         }
-        $commit_message[] = "author " . $commit_meta['author'];
-        $commit_message[] = "committer " . $commit_meta['committer'];
+        $commit_message[] = "author " . $commit_meta['author'] . " " . time() . " +0000";
+        $commit_message[] = "committer " . $commit_meta['committer'] . " " . time() . " +0000";
         $commit_message[] = "\n" . $commit_meta['message'];
         $commit_message = implode("\n", $commit_message);
         $commit_oid = $this->add_object(WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT, $commit_message);
 
         // Update HEAD
-        $head_ref = $this->get_HEAD_ref();
-        if(false === $this->set_ref_head($head_ref, $commit_oid)) {
-            $this->last_error = 'Failed to set HEAD';
-            return false;
+        $head_ref = $this->get_ref_head('HEAD', ['resolve_ref' => false]);
+        if($this->branch_exists($head_ref)) {
+            if(false === $this->set_ref_head($head_ref, $commit_oid)) {
+                $this->last_error = 'Failed to set HEAD';
+                return false;
+            }
         }
         $this->reset();
         return $commit_oid;
@@ -443,7 +516,7 @@ class WP_Git_Cached_Index {
         $this->type = null;
         $this->parsed_commit = null;
         $this->parsed_tree = null;
-        $this->called_next_object_chunk = false;
+        $this->called_next_body_chunk = false;
         $this->buffered_object_content = null;
         $this->object_content_chunk = null;
         $this->last_error = null;
@@ -488,6 +561,10 @@ class WP_Git_Cached_Index {
                 ];
             }
         }
+
+        // Git seems to require alphabetical order for the tree objects.
+        // Or at least GitHub rejects the push if the tree objects are not sorted.
+        ksort($tree_objects);
 
         // Create new tree object
         return $this->add_object(

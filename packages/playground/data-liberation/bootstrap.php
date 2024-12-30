@@ -13,6 +13,7 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Local_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_In_Memory_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
 
@@ -85,7 +86,6 @@ require_once __DIR__ . '/src/import/WP_Import_Utils.php';
 
 require_once __DIR__ . '/src/git/WP_Git_Client.php';
 require_once __DIR__ . '/src/git/WP_Git_Pack_Processor.php';
-require_once __DIR__ . '/src/git/WP_Git_Pack_Index.php';
 require_once __DIR__ . '/src/git/WP_Git_Cached_Index.php';
 require_once __DIR__ . '/src/git/WP_Git_Filesystem.php';
 

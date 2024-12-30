@@ -70,7 +70,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         );
     }
 
-    public function start_streaming_file($path) {
+    public function open_file_stream($path) {
         throw new Exception('Not implemented');
     }
 
@@ -86,7 +86,11 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         throw new Exception('Not implemented');
     }
 
-    public function close_file_reader() {
+    public function close_file_stream() {
+        throw new Exception('Not implemented');
+    }
+
+    public function get_streamed_file_length() {
         throw new Exception('Not implemented');
     }
 
