@@ -102,8 +102,7 @@
 declare const self: ServiceWorkerGlobalScope;
 
 import { getURLScope, isURLScoped, removeURLScope } from '@php-wasm/scopes';
-// @TODO: Consider moving HttpCookieStore definition to web-specific package.
-import { applyRewriteRules, HttpCookieStore } from '@php-wasm/universal';
+import { applyRewriteRules } from '@php-wasm/universal';
 import {
 	awaitReply,
 	convertFetchEventToPHPRequest,
@@ -316,11 +315,6 @@ self.addEventListener('fetch', (event) => {
 	return event.respondWith(cacheFirstFetch(event.request));
 });
 
-// @TODO: Persist these cookie stores for the life of the browser session
-// so Playground can tolerate a service worker being terminated and restarted
-// while the app is in use.
-const scopedCookieStores = new Map<string, HttpCookieStore>();
-
 /**
  * A request to a PHP Worker Thread or to a regular static asset,
  * but initiated by a scoped referer (e.g. fetch() from a block editor iframe).
@@ -332,15 +326,7 @@ async function handleScopedRequest(event: FetchEvent, scope: string) {
 		return emptyHtml();
 	}
 
-	if (!scopedCookieStores.has(scope)) {
-		scopedCookieStores.set(scope, new HttpCookieStore());
-	}
-	const cookieStore = scopedCookieStores.get(scope) as HttpCookieStore;
-
-	const workerResponse = await convertFetchEventToPHPRequest(
-		event,
-		cookieStore
-	);
+	const workerResponse = await convertFetchEventToPHPRequest(event);
 
 	if (
 		workerResponse.status === 404 &&
