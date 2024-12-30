@@ -109,6 +109,14 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 
 	unmounts: Record<string, () => any> = {};
 
+	/**
+	 * A cookie store to remember cookies between requests.
+	 *
+	 * Web browsers don't permit relaying `Set-Cookie` headers
+	 * via Response objects so the browser can store cookies from
+	 * PHP responses. So we need to remember cookies ourselves.
+	 * Ref: https://fetch.spec.whatwg.org/#forbidden-response-header-name
+	 */
 	#cookieStore: HttpCookieStore = new HttpCookieStore();
 
 	constructor(monitor: EmscriptenDownloadMonitor) {
@@ -495,6 +503,8 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 			headers,
 		});
 
+		// Paraphrased from https://fetch.spec.whatwg.org/#http-network-fetch:
+		// > If `includeCredentials` is true, then apply set-cookie headers.
 		if (credentialsAllowed) {
 			this.#cookieStore.rememberCookiesFromResponseHeaders(
 				phpResponse.headers
