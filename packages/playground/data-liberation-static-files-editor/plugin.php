@@ -45,13 +45,19 @@ class WP_Static_Files_Editor_Plugin {
 
     static private function get_fs() {
         if(!self::$fs) {
+            $dot_git_path = WP_CONTENT_DIR . '/.static-pages.git';
+            $local_fs = new WP_Local_Filesystem($dot_git_path);
+            $repo = new WP_Git_Repository($local_fs);
+            $repo->add_remote('origin', GIT_REPO_URL);
+            $repo->set_ref_head('HEAD', 'refs/heads/' . GIT_BRANCH);
+            $repo->set_config_value('user.name', GIT_USER_NAME);
+            $repo->set_config_value('user.email', GIT_USER_EMAIL);
             self::$fs = new WP_Git_Filesystem(
-                new WP_Git_Client(GIT_REPO_URL, [
-                    'author' => GIT_AUTHOR,
-                    'committer' => GIT_COMMITTER,
-                ]),
-                GIT_BRANCH,
-                GIT_DIRECTORY_ROOT
+                $repo,
+                [
+                    'root' => GIT_DIRECTORY_ROOT,
+                    'auto_push' => true,
+                ]
             );
         }
         return self::$fs;

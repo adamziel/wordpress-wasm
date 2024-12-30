@@ -41,10 +41,9 @@ class WP_Git_Repository {
     }
 
     public function add_remote($name, $url) {
-        $this->set_config_section('remote "' . $name . '"', [
-            'url' => $url,
-            'fetch' => '+refs/heads/*:refs/remotes/' . $name . '/*',
-        ]);
+        $this->set_config_value(['remote', $name, 'url'], $url);
+        // @TODO: support fetch option
+        // $this->set_config_value(['remote', $name, 'fetch'], '+refs/heads/*:refs/remotes/' . $name . '/*');
     }
 
     public function get_remote($name) {
@@ -53,10 +52,36 @@ class WP_Git_Repository {
         return $this->parsed_config[$key] ?? null;
     }
 
-    private function set_config_section($section, $key_value_pairs) {
+    public function set_config_value($key, $value) {
         $this->parse_config();
-        $this->parsed_config[$section] = $key_value_pairs;
+        list($section, $key) = $this->parse_config_key($key);
+
+        if(!isset($this->parsed_config[$section])) {
+            $this->parsed_config[$section] = [];
+        }
+        $this->parsed_config[$section][$key] = $value;
         $this->write_config();
+    }
+
+    public function get_config_value($key) {
+        $this->parse_config();
+        list($section, $key) = $this->parse_config_key($key);
+        return $this->parsed_config[$section][$key] ?? null;
+    }
+
+    private function parse_config_key($key) {
+        if(is_string($key)) {
+            $key = explode('.', $key);
+        }
+        $section_name = array_shift($key);
+        $trailing_key = array_pop($key);
+        $section_subkey = implode('.', $key);
+
+        $section = $section_name;
+        if($section_subkey) {
+            $section .= ' "' . $section_subkey . '"';
+        }
+        return [$section, $trailing_key];
     }
 
     private function parse_config() {
@@ -469,8 +494,12 @@ class WP_Git_Repository {
     }
 
     public function commit($changeset, $commit_meta=[]) {
-        $commit_meta['author'] = $commit_meta['author'] ?? 'John Doe <john@example.com>';
-        $commit_meta['committer'] = $commit_meta['committer'] ?? 'John Doe <john@example.com>';
+        if(!isset($commit_meta['author'])) {
+            $commit_meta['author'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
+        }
+        if(!isset($commit_meta['committer'])) {
+            $commit_meta['committer'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
+        }
         $commit_meta['message'] = $commit_meta['message'] ?? 'Changes';
 
         // First process all blob updates
