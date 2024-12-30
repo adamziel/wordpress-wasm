@@ -481,20 +481,24 @@ export class PlaygroundWorkerEndpoint extends PHPWorker {
 
 		const incomingHeaders = request.headers ?? {};
 		const headers: Record<string, string> = {};
+		let incomingCookies = '';
 		for (const [name, value] of Object.entries(incomingHeaders)) {
 			if (name.toLowerCase() === 'cookie') {
-				if (!credentialsAllowed) {
-					// Skip cookies entirely if credentials are not allowed
-					continue;
-				}
-
-				const storedCookies =
-					this.#cookieStore.getCookieRequestHeader();
-				const providedCookies = value;
-				headers[name] =
-					storedCookies + (storedCookies && '; ') + providedCookies;
+				incomingCookies = value;
 			} else {
 				headers[name] = value;
+			}
+		}
+
+		if (credentialsAllowed) {
+			const storedCookies = this.#cookieStore.getCookieRequestHeader();
+			const cookieSegments = [];
+			storedCookies && cookieSegments.push(storedCookies);
+			incomingCookies && cookieSegments.push(incomingCookies);
+			const cookieHeader = cookieSegments.join('; ');
+
+			if (cookieHeader) {
+				headers['cookie'] = cookieHeader;
 			}
 		}
 
