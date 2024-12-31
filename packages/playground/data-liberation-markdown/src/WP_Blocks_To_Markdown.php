@@ -78,7 +78,19 @@ class WP_Blocks_To_Markdown {
                 return "![" . ($attributes['alt'] ?? '') . "](" . ($attributes['url'] ?? '') . ")\n\n";
 
             case 'core/heading':
-                $level = $attributes['level'] ?? 1;
+                $level = $attributes['level'] ?? null;
+                if(null === $level) {
+                    $processor = WP_Data_Liberation_HTML_Processor::create_fragment($inner_html);
+                    if($processor->next_tag()) {
+                        $tag = $processor->get_tag();
+                        if(strlen($tag) > 1 && is_numeric($tag[1])) {
+                            $level = (int)$tag[1];
+                        }
+                    }
+                    if(null === $level) {
+                        $level = 1;
+                    }
+                }
                 $content = $this->html_to_markdown($inner_html);
                 return str_repeat('#', $level) . ' ' . $content . "\n\n";
 

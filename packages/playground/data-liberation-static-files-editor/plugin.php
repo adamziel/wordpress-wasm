@@ -393,6 +393,14 @@ class WP_Static_Files_Editor_Plugin {
                     break;
             }
             $converter->convert();
+
+            if(method_exists($fs, 'set_next_commit_message')) {
+                if($post->post_type === 'revision') {
+                    $fs->set_next_commit_message('Autosave of ' . $root_post->post_title);
+                } else {
+                    $fs->set_next_commit_message('User saved ' . $post->post_title);
+                }
+            }
             $fs->put_contents($path, $converter->get_result());
         } finally {
             self::release_synchronization_lock();

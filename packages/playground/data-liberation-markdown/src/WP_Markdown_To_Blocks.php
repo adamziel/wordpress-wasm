@@ -181,6 +181,7 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 
 					case ExtensionBlock\ThematicBreak::class:
 						$this->push_block( 'separator' );
+						$this->append_content( '<hr class="wp-block-separator has-alpha-channel-opacity"/>' );
 						break;
 
 					case Block\Paragraph::class:

@@ -13,6 +13,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
     private $root;
     private $auto_push;
     private $client;
+    private $next_commit_message;
 
     public function __construct(
         WP_Git_Repository $repo,
@@ -165,7 +166,15 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         );
 	}
 
+    public function set_next_commit_message($message) {
+        $this->next_commit_message = $message;
+    }
+
     private function commit($changeset, $commit_meta=[]) {
+        if($this->next_commit_message) {
+            $commit_meta['message'] = $this->next_commit_message;
+            $this->next_commit_message = null;
+        }
         if(false === $this->repo->commit($changeset, $commit_meta)) {
             return false;
         }
