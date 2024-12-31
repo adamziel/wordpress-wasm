@@ -131,7 +131,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 					$file_path                  = $this->pending_directory_index;
 					$this->parent_ids[ $depth ] = $this->emit_post_entity(
 						array(
-							'content' => $this->filesystem->read_file( $file_path ),
+							'content' => $this->filesystem->get_contents( $file_path ),
 							'local_file_path' => $file_path,
 							'parent_id' => $parent_id,
 							'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),
@@ -148,7 +148,7 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 				$file_path = array_shift( $this->pending_files );
 				$this->emit_post_entity(
 					array(
-						'content' => $this->filesystem->read_file( $file_path ),
+						'content' => $this->filesystem->get_contents( $file_path ),
 						'local_file_path' => $file_path,
 						'parent_id' => $parent_id,
 						'title_fallback' => WP_Import_Utils::slug_to_title( basename( $file_path ) ),

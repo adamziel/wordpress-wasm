@@ -84,6 +84,7 @@ class WP_Git_Client {
         $remote_commit = $this->index->get_ref_head('refs/remotes/' . $this->remote_name . '/' . $push_ref_name);
         // @TODO: Do find_objects_added_since to enable pushing multiple commits at once.
         //        OR! perhaps supporting "have" and "want" would solve this.
+        // $delta = $this->index->find_objects_added_in($push_commit, $parent_hash);
         $delta = $this->index->find_objects_added_in($push_commit, $remote_commit);
 
         // @TODO: Implement streaming push bytes instead of buffering everything like this.
@@ -100,7 +101,7 @@ class WP_Git_Client {
             ];
         }
 
-        $push_packet = WP_Git_Pack_Processor::encode_packet_line("$parent_hash $push_commit refs/heads/$push_ref_name\0report-status force-update\n");
+        $push_packet = WP_Git_Pack_Processor::encode_packet_line("$remote_commit $push_commit refs/heads/$push_ref_name\0report-status force-update\n");
         $push_packet .= "0000";
         $push_packet .= WP_Git_Pack_Processor::encode($pack_objects);
         $push_packet .= "0000";

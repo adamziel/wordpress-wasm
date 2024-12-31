@@ -69,6 +69,9 @@ class WP_Static_Files_Editor_Plugin {
                     'client' => $client,
                 ]
             );
+            if(!self::$fs->is_dir('/.autosaves')) {
+                self::$fs->mkdir('/.autosaves');
+            }
         }
         return self::$fs;
     }
@@ -259,20 +262,62 @@ class WP_Static_Files_Editor_Plugin {
 
         // Update the file after post is saved
         add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
-            self::save_post_data_to_local_file($post);
+            try {
+                if(!self::acquire_synchronization_lock()) {
+                    return;
+                }
+                $post_id = $post->ID;
+                if (
+                    empty($post->ID) ||
+                    $post->post_status !== 'publish' ||
+                    $post->post_type !== WP_LOCAL_FILE_POST_TYPE
+                ) {
+                    return;
+                }
+
+                $path = get_post_meta($post_id, 'local_file_path', true);
+                $content = self::convert_post_to_string($path, $post);
+
+                $fs = self::get_fs();
+                $fs->put_contents($path, $content, [
+                    'message' => 'User saved ' . $post->post_title,
+                ]);
+            } finally {
+                self::release_synchronization_lock();
+            }
         }, 10, 3);
 
         // Also update file when autosave occurs
         add_action('wp_creating_autosave', function($autosave) {
-            $autosave = (object)$autosave;
-            if ($autosave->post_type !== 'revision') {
-                return;
+            try {
+                if(!self::acquire_synchronization_lock()) {
+                    return;
+                }
+                $autosave = (object)$autosave;
+                if (
+                    empty($autosave->ID) ||
+                    $autosave->post_status !== 'inherit' ||
+                    $autosave->post_type !== 'revision'
+                ) {
+                    return;
+                }
+                $parent_post = get_post($autosave->post_parent);
+                if ($parent_post->post_type !== WP_LOCAL_FILE_POST_TYPE) {
+                    return;
+                }
+
+                $path = wp_join_paths(
+                    '/.autosaves/',
+                    get_post_meta($parent_post->ID, 'local_file_path', true)
+                );
+                $fs = self::get_fs();
+                $content = self::convert_post_to_string($path, $autosave);
+                $fs->put_contents($path, $content, [
+                    'amend' => true,
+                ]);
+            } finally {
+                self::release_synchronization_lock();
             }
-            $parent_post = get_post($autosave->post_parent);
-            if ($parent_post->post_type !== WP_LOCAL_FILE_POST_TYPE) {
-                return;
-            }
-            self::save_post_data_to_local_file($autosave);
         }, 10, 1);
     }
 
@@ -312,7 +357,7 @@ class WP_Static_Files_Editor_Plugin {
                 _doing_it_wrong(__METHOD__, 'File not found: ' . $path, '1.0.0');
                 return;
             }
-            $content = $fs->read_file($path);
+            $content = $fs->get_contents($path);
             if(!is_string($content)) {
                 _doing_it_wrong(__METHOD__, 'File not found: ' . $path, '1.0.0');
                 return;
@@ -356,55 +401,29 @@ class WP_Static_Files_Editor_Plugin {
         }
     }
 
-    static private function save_post_data_to_local_file($post) {
-        try {
-            if(!self::acquire_synchronization_lock()) {
-                return;
-            }
-            $post_id = $post->ID;
-            if (
-                empty($post->ID) ||
-                ($post->post_status !== 'publish' && $post->post_status !== 'inherit') ||
-                ($post->post_type !== WP_LOCAL_FILE_POST_TYPE && $post->post_type !== 'revision')
-            ) {
-                return;
-            }
+    static private function convert_post_to_string($path, $post) {
+        $post_id = $post->ID;
 
-            $root_post = $post->post_type === 'revision' ? get_post($post->post_parent) : $post;
-
-            $fs = self::get_fs();
-            $path = get_post_meta($root_post->ID, 'local_file_path', true);
-            $extension = pathinfo($path, PATHINFO_EXTENSION);
-            $metadata = [];
-            foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
-                $metadata[$key] = get_post_field($key, $root_post->ID);
-            }
-            // @TODO: Also include actual post_meta. Which ones? All? The
-            //        ones explicitly set by the user in the editor?
-
-            $content = get_post_field('post_content', $post_id);
-            switch($extension) {
-                // @TODO: Add support for HTML and XHTML
-                case 'html':
-                case 'xhtml':
-                case 'md':
-                default:
-                    $converter = new WP_Blocks_To_Markdown( $content, $metadata );
-                    break;
-            }
-            $converter->convert();
-
-            if(method_exists($fs, 'set_next_commit_message')) {
-                if($post->post_type === 'revision') {
-                    $fs->set_next_commit_message('Autosave of ' . $root_post->post_title);
-                } else {
-                    $fs->set_next_commit_message('User saved ' . $post->post_title);
-                }
-            }
-            $fs->put_contents($path, $converter->get_result());
-        } finally {
-            self::release_synchronization_lock();
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        $metadata = [];
+        foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
+            $metadata[$key] = get_post_field($key, $post->ID);
         }
+        // @TODO: Also include actual post_meta. Which ones? All? The
+        //        ones explicitly set by the user in the editor?
+
+        $content = get_post_field('post_content', $post_id);
+        switch($extension) {
+            // @TODO: Add support for HTML and XHTML
+            case 'html':
+            case 'xhtml':
+            case 'md':
+            default:
+                $converter = new WP_Blocks_To_Markdown( $content, $metadata );
+                break;
+        }
+        $converter->convert();
+        return $converter->get_result();
     }
 
     static public function get_local_files_tree($subdirectory = '') {

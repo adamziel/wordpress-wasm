@@ -76,7 +76,7 @@ class WPStaticFileSyncTests extends TestCase {
         $fs = $this->filesystem;
         $this->assertFalse($fs->is_file('/pride-and-prejudice.md'));
         $this->assertTrue($fs->is_file('/pride-and-prejudice/index.md'));
-        $this->assertEquals('Pride and Prejudice', $fs->read_file('/pride-and-prejudice/index.md'));
+        $this->assertEquals('Pride and Prejudice', $fs->get_contents('/pride-and-prejudice/index.md'));
     }
 
     public function test_ensure_is_directory_index_returns_the_index_file_if_it_already_exists() {
@@ -91,7 +91,7 @@ class WPStaticFileSyncTests extends TestCase {
 
         $fs = $this->filesystem;
         $this->assertTrue($fs->is_file('/pride-and-prejudice/index.md'));
-        $this->assertEquals('Pride and Prejudice', $fs->read_file('/pride-and-prejudice/index.md'));
+        $this->assertEquals('Pride and Prejudice', $fs->get_contents('/pride-and-prejudice/index.md'));
     }
 
     private function setup_directory_tree($structure, $path_so_far = '/') {

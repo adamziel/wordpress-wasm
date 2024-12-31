@@ -50,7 +50,7 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
             $source_content_converter = null;
             $post_tree_node = $this->post_tree->get_current_node();
             if($post_tree_node['type'] === 'file') {
-                $content = $this->filesystem->read_file($post_tree_node['local_file_path']);
+                $content = $this->filesystem->get_contents($post_tree_node['local_file_path']);
                 $extension = pathinfo($post_tree_node['local_file_path'], PATHINFO_EXTENSION);
                 switch($extension) {
                     case 'md':

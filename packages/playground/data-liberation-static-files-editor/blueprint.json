@@ -7,6 +7,10 @@
 		"WP_DEBUG_LOG": true,
 		"WP_DEBUG_DISPLAY": true
 	},
+	"plugins": ["gutenberg"],
+	"siteOptions": {
+		"wp_page_for_privacy_policy": null
+	},
 	"steps": [
 		{
 			"step": "activatePlugin",

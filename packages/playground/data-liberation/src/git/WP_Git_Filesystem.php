@@ -13,7 +13,6 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
     private $root;
     private $auto_push;
     private $client;
-    private $next_commit_message;
 
     public function __construct(
         WP_Git_Repository $repo,
@@ -77,7 +76,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         throw new Exception('Not implemented');
     }
 
-    public function read_file($path) {
+    public function get_contents($path) {
         if(!$this->is_file($path)) {
             return false;
         }
@@ -98,7 +97,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
             return $this->commit(
                 [
                     'updates' => [
-                        $this->resolve_path($new_path) => $this->read_file($old_path),
+                        $this->resolve_path($new_path) => $this->get_contents($old_path),
                     ],
                     'deletes' => [
                         $this->resolve_path($old_path),
@@ -156,26 +155,20 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         );
 	}
 
-	public function put_contents($path, $data) {
+	public function put_contents($path, $data, $options=[]) {
         return $this->commit(
             [
                 'updates' => [
                     $this->resolve_path($path) => $data,
                 ],
+                'amend' => isset($options['amend']) && $options['amend'],
+                'message' => isset($options['message']) ? $options['message'] : null,
             ]
         );
 	}
 
-    public function set_next_commit_message($message) {
-        $this->next_commit_message = $message;
-    }
-
-    private function commit($changeset, $commit_meta=[]) {
-        if($this->next_commit_message) {
-            $commit_meta['message'] = $this->next_commit_message;
-            $this->next_commit_message = null;
-        }
-        if(false === $this->repo->commit($changeset, $commit_meta)) {
+    private function commit($options) {
+        if(false === $this->repo->commit($options)) {
             return false;
         }
         if($this->auto_push) {

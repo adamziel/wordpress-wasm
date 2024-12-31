@@ -234,9 +234,11 @@ class WP_Blocks_To_Markdown {
                     return '';
                 }
                 $markdown = [];
+                $markdown[] = "";
                 $markdown[] = "```block";
                 $markdown[] = serialize_block($block);
                 $markdown[] = "```";
+                $markdown[] = "";
                 return implode("\n", $markdown);
         }
     }

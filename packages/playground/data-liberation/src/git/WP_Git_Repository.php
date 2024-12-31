@@ -91,7 +91,7 @@ class WP_Git_Repository {
                 $this->parsed_config = [];
                 return;
             }
-            $this->parsed_config = parse_ini_string($this->fs->read_file('config'), true, INI_SCANNER_RAW);
+            $this->parsed_config = parse_ini_string($this->fs->get_contents('config'), true, INI_SCANNER_RAW);
         }
     }
 
@@ -413,7 +413,7 @@ class WP_Git_Repository {
             $this->last_error = 'Ref file not found: ' . $path;
             return false;
         }
-        $contents = trim($this->fs->read_file($path));
+        $contents = trim($this->fs->get_contents($path));
         if($options['resolve_ref'] ?? true) {
             return $this->get_ref_head($contents, $options);
         }
