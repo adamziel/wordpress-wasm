@@ -15,23 +15,32 @@ export function extractWordPressI18nGettext({
 }) {
 	const extractor = new GettextExtractor();
 
+	const comments = {
+		otherLineLeading: true,
+		sameLineLeading: true,
+		sameLineTrailing: true,
+		regex: /translators.*/is,
+	};
 	const jsParser = extractor.createJsParser([
 		JsExtractors.callExpression('__', {
 			arguments: {
 				text: 0,
 			},
+			comments,
 		}),
 		JsExtractors.callExpression('_x', {
 			arguments: {
 				text: 0,
 				context: 1,
 			},
+			comments,
 		}),
 		JsExtractors.callExpression('_n', {
 			arguments: {
 				text: 0,
 				textPlural: 1,
 			},
+			comments,
 		}),
 		JsExtractors.callExpression('_nx', {
 			arguments: {
@@ -39,6 +48,7 @@ export function extractWordPressI18nGettext({
 				textPlural: 1,
 				context: 3,
 			},
+			comments,
 		}),
 	]);
 
