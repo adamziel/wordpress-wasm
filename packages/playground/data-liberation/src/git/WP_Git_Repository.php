@@ -18,6 +18,7 @@ class WP_Git_Repository {
     private $parsed_config;
 
     private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
+    private const NULL_OID = '0000000000000000000000000000000000000000';
 
     public function __construct(
         WP_Abstract_Filesystem $fs
@@ -213,8 +214,8 @@ class WP_Git_Repository {
 
     public function get_parsed_commit() {
         if(null === $this->parsed_commit && $this->oid) {
-            $commit_contents = $this->read_entire_object_contents();
-            $this->parsed_commit = WP_Git_Pack_Processor::parse_commit_message($commit_contents);
+            $commit_body = $this->read_entire_object_contents();
+            $this->parsed_commit = WP_Git_Pack_Processor::parse_commit_body($commit_body);
             if(!$this->parsed_commit) {
                 $this->last_error = 'Failed to parse commit';
                 $this->parsed_commit = [];
@@ -490,19 +491,11 @@ class WP_Git_Repository {
         return "$type_name $length\x00" . $object;
     }
 
-    public function commit($changeset, $commit_meta=[]) {
-        if(!isset($commit_meta['author'])) {
-            $commit_meta['author'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
-        }
-        if(!isset($commit_meta['committer'])) {
-            $commit_meta['committer'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
-        }
-        $commit_meta['message'] = $commit_meta['message'] ?? 'Changes';
-
+    public function commit($options=[]) {
         // First process all blob updates
-        $updates = $changeset['updates'] ?? [];
-        $deletes = $changeset['deletes'] ?? [];
-        $move_trees = $changeset['move_trees'] ?? [];
+        $updates = $options['updates'] ?? [];
+        $deletes = $options['deletes'] ?? [];
+        $move_trees = $options['move_trees'] ?? [];
 
         // Track which trees need updating
         $changed_trees = [
@@ -551,20 +544,24 @@ class WP_Git_Repository {
             ];
         }
 
+        $is_amend = isset($options['amend']) && $options['amend'];
+
         // Process trees bottom-up recursively
         $root_tree_oid = $this->commit_tree('/', $changed_trees);
 
         // Create a new commit object
-        $commit_message = [];
-        $commit_message[] = "tree " . $root_tree_oid;
+        $options['tree'] = $root_tree_oid;
         if($this->get_ref_head('HEAD')) {
-            $commit_message[] = "parent " . $this->get_ref_head('HEAD');
+            $options['parent'] = $this->get_ref_head('HEAD');
+            if($is_amend && !$options['message']) {
+                $this->read_object($options['parent']);
+                $options['message'] = $this->get_parsed_commit()['message'];
+            }
         }
-        $commit_message[] = "author " . $commit_meta['author'] . " " . time() . " +0000";
-        $commit_message[] = "committer " . $commit_meta['committer'] . " " . time() . " +0000";
-        $commit_message[] = "\n" . $commit_meta['message'];
-        $commit_message = implode("\n", $commit_message);
-        $commit_oid = $this->add_object(WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT, $commit_message);
+        $commit_oid = $this->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+            $this->create_commit_string($options)
+        );
 
         // Update HEAD
         $head_ref = $this->get_ref_head('HEAD', ['resolve_ref' => false]);
@@ -574,8 +571,125 @@ class WP_Git_Repository {
                 return false;
             }
         }
+
+        if(isset($options['amend']) && $options['amend'] && isset($options['parent'])) {
+            $commit_oid = $this->squash($commit_oid, $options['parent']);
+        }
+
         $this->reset();
         return $commit_oid;
+    }
+
+    public function squash($squash_into_commit_oid, $squash_until_ancestor_oid) {
+        // Find the parent of the squashed range
+        $this->read_object($squash_until_ancestor_oid);
+        $new_base_oid = $this->get_parsed_commit()['parent'] ?? self::NULL_OID;
+
+        // Reparent the commits from HEAD until $squash_into_commit_oid onto the parent
+        // of the squashed range.
+        $new_head = $this->reparent_commit_range(
+            $this->get_ref_head('HEAD'),
+            $squash_into_commit_oid,
+            $new_base_oid
+        );
+
+        // Finally, set the HEAD of the current branch to the new squashed commit.
+        $current_branch = $this->get_ref_head('HEAD', ['resolve_ref' => false]);
+        $this->set_ref_head($current_branch, $new_head);
+        
+        return $new_head;
+    }
+
+    /**
+     * This is not a rebase()! It won't replay the changes while resolving conflicts.
+     * It just changes the parent of the specified commit range to $new_base_oid.
+     */
+    public function reparent_commit_range($head_oid, $last_ancestor_oid, $new_base_oid) {
+        // @TODO: Error handling. Exceptions would make it very convenient – maybe let's
+        //        use them internally?
+        $commits_to_rebase = [];
+        $moving_head = $head_oid;
+        while($this->read_object($moving_head)) {
+            $commits_to_rebase[] = $this->oid;
+            if($this->oid === $last_ancestor_oid) {
+                break;
+            }
+            $parent = $this->get_parsed_commit()['parent'] ?? self::NULL_OID;
+            if(self::NULL_OID === $parent ) {
+                _doing_it_wrong(
+                    __METHOD__,
+                    '$last_ancestor_oid must be an ancestor of $head_oid for reparenting to work, but ' . $last_ancestor_oid . ' is not an ancestor of ' . $this->oid . '.',
+                    '1.0.0'
+                );
+                return false;
+            }
+            $moving_head = $parent;
+        }
+
+        // Rebase $squash_into_commit_oid and its descenrants onto the parent
+        // of the squashed range.
+        $new_parent_oid = $new_base_oid;
+        for($i=count($commits_to_rebase)-1; $i>=0; $i--) {
+            $this->read_object($commits_to_rebase[$i]);
+            $parsed_old_commit = $this->get_parsed_commit();
+            $new_parent_oid = $this->add_object(
+                WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+                $this->derive_commit_string($parsed_old_commit, [
+                    'parent' => $new_parent_oid,
+                ])
+            );
+        }
+        $new_head_oid = $new_parent_oid;
+
+        return $new_head_oid;
+    }
+
+    private function derive_commit_string($parsed_commit, $updates) {
+        /**
+         * Keep the author and author_date as they are.
+         *
+         * The Git Book says:
+         *
+         * > You may be wondering what the difference is between author and committer. The
+         * > author is the person who originally wrote the patch, whereas the committer is
+         * > the person who last applied the patch. So, if you send in a patch to a project
+         * > and one of the core members applies the patch, both of you get credit — you as
+         * > the author and the core member as the committer
+         * 
+         * See http://git-scm.com/book/ch2-3.html for more information.
+         */
+        unset($updates['author']);
+        unset($updates['author_date']);
+        return $this->create_commit_string(array_merge($parsed_commit, $updates));
+    }
+
+    private function create_commit_string($options) {
+        if(!isset($options['tree'])) {
+            _doing_it_wrong(__METHOD__, '"tree" commit meta field is required', '1.0.0');
+            return false;
+        }
+        if(!isset($options['author'])) {
+            $options['author'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
+        }
+        if(!isset($options['author_date'])) {
+            $options['author_date'] = time() . ' +0000';
+        }
+        if(!isset($options['committer'])) {
+            $options['committer'] = $this->get_config_value('user.name') . ' <' . $this->get_config_value('user.email') . '>';
+        }
+        if(!isset($options['committer_date'])) {
+            $options['committer_date'] = time() . ' +0000';
+        }
+        $options['message'] = $options['message'] ?? 'Changes';
+        $commit_message = [];
+        $commit_message[] = "tree " . $options['tree'];
+        if(isset($options['parent']) && $options['parent'] !== self::NULL_OID) {
+            $commit_message[] = "parent " . $options['parent'];
+        }
+        $commit_message[] = "author " . $options['author'] . " " . $options['author_date'];
+        $commit_message[] = "committer " . $options['committer'] . " " . $options['committer_date'];
+        $commit_message[] = "\n" . $options['message'];
+        return implode("\n", $commit_message);
     }
 
     private function reset() {

@@ -267,7 +267,7 @@ class WP_Git_Pack_Processor {
         return $result;
     }
 
-    static public function parse_commit_message($commit_message) {
+    static public function parse_commit_body($commit_message) {
         $lines = explode("\n", $commit_message);
         $parsed = [];
         foreach($lines as $k => $line) {
@@ -278,7 +278,18 @@ class WP_Git_Pack_Processor {
             $type_len = strpos($line, ' ');
             $type = substr($line, 0, $type_len);
             $value = substr($line, $type_len + 1);
-            $parsed[$type] = $value;
+
+            if($type === 'author') {
+                $author_date_starts = strpos($value, '>') + 1;
+                $parsed['author'] = substr($value, 0, $author_date_starts);
+                $parsed['author_date'] = substr($value, $author_date_starts + 1);
+            } else if($type === 'committer') {
+                $committer_date_starts = strpos($value, '>') + 1;
+                $parsed['committer'] = substr($value, 0, $committer_date_starts);
+                $parsed['committer_date'] = substr($value, $committer_date_starts + 1);
+            } else {
+                $parsed[$type] = $value;
+            }
         }
         return $parsed;
     }
