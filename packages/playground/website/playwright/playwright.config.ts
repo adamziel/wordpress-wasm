@@ -22,7 +22,7 @@ export const playwrightConfig: PlaywrightTestConfig = {
 		trace: 'on-first-retry',
 		actionTimeout: 120000,
 		navigationTimeout: 120000,
-		screenshot: 'only-on-failure',
+		screenshot: 'on',
 	},
 
 	timeout: 300000,
