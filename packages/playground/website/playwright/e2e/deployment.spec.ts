@@ -5,6 +5,10 @@ import { startVersionSwitchingServer as startServer } from '../version-switching
 
 const port = 7999;
 const blueprint = {
+	// Explicitly disable login because we have had trouble with
+	// our older WP reference build refusing to login because the
+	// admin email verification had expired.
+	login: false,
 	steps: [
 		{
 			step: 'setSiteOptions',
@@ -14,11 +18,6 @@ const blueprint = {
 				// https://github.com/WordPress/wordpress-develop/blob/f008049c49195dbfa954631fecc7fbfff0cc8ca2/src/wp-login.php#L1379-L1388
 				admin_email_lifespan: '2147483647',
 			},
-		},
-		{
-			step: 'login',
-			username: 'admin',
-			password: 'password',
 		},
 	],
 };
@@ -68,7 +67,7 @@ for (const cachingEnabled of [true, false]) {
 	 * The PR for fixing this issue is here:
 	 * https://github.com/WordPress/wordpress-playground/pull/2065
 	 */
-	test.skip(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
+	test(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
 		cachingEnabled ? 'enabled' : 'disabled'
 	})`, async ({ website, page, wordpress }) => {
 		server!.setHttpCacheEnabled(cachingEnabled);
