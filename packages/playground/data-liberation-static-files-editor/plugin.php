@@ -261,15 +261,23 @@ class WP_Static_Files_Editor_Plugin {
         add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
             self::save_post_data_to_local_file($post);
         }, 10, 3);
+
+        // Also update file when autosave occurs
+        add_action('wp_creating_autosave', function($autosave) {
+            $autosave = (object)$autosave;
+            if ($autosave->post_type !== 'revision') {
+                return;
+            }
+            $parent_post = get_post($autosave->post_parent);
+            if ($parent_post->post_type !== WP_LOCAL_FILE_POST_TYPE) {
+                return;
+            }
+            self::save_post_data_to_local_file($autosave);
+        }, 10, 1);
     }
 
     static private $synchronizing = false;
     static private function acquire_synchronization_lock() {
-        // Ignore auto-saves or revisions
-        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-            // return false;
-        }
-
         // Skip if in maintenance mode
         if (wp_is_maintenance_mode()) {
             return false;
@@ -353,22 +361,23 @@ class WP_Static_Files_Editor_Plugin {
             if(!self::acquire_synchronization_lock()) {
                 return;
             }
-
             $post_id = $post->ID;
             if (
                 empty($post->ID) ||
-                $post->post_status !== 'publish' ||
-                $post->post_type !== WP_LOCAL_FILE_POST_TYPE
+                ($post->post_status !== 'publish' && $post->post_status !== 'inherit') ||
+                ($post->post_type !== WP_LOCAL_FILE_POST_TYPE && $post->post_type !== 'revision')
             ) {
                 return;
             }
 
+            $root_post = $post->post_type === 'revision' ? get_post($post->post_parent) : $post;
+
             $fs = self::get_fs();
-            $path = get_post_meta($post_id, 'local_file_path', true);
+            $path = get_post_meta($root_post->ID, 'local_file_path', true);
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             $metadata = [];
             foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
-                $metadata[$key] = get_post_field($key, $post_id);
+                $metadata[$key] = get_post_field($key, $root_post->ID);
             }
             // @TODO: Also include actual post_meta. Which ones? All? The
             //        ones explicitly set by the user in the editor?
@@ -388,7 +397,6 @@ class WP_Static_Files_Editor_Plugin {
         } finally {
             self::release_synchronization_lock();
         }
-
     }
 
     static public function get_local_files_tree($subdirectory = '') {
