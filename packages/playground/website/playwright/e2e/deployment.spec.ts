@@ -4,33 +4,16 @@ import { test, expect } from '../playground-fixtures.ts';
 import { startVersionSwitchingServer as startServer } from '../version-switching-server.ts';
 
 const port = 7999;
-const blueprint = {
-	preferredVersions: {
-		php: '8.0',
-		wp: 'latest',
-	},
-	// Explicitly disable login because we have had trouble with
-	// our older WP reference build refusing to login because the
-	// admin email verification had expired.
-	login: false,
-	steps: [
-		{
-			step: 'setSiteOptions',
-			options: {
-				// Set the admin email lifespan to the maximum value to prevent
-				// the admin email from expiring and causing the login step to fail.
-				// https://github.com/WordPress/wordpress-develop/blob/f008049c49195dbfa954631fecc7fbfff0cc8ca2/src/wp-login.php#L1379-L1388
-				admin_email_lifespan: '2147483647',
-			},
-		},
-	],
-};
 const url = new URL(`http://localhost:${port}`);
-// TODO: Say why
-url.searchParams.set(
-	'blueprint-url',
-	`data:application/json;base64,${btoa(JSON.stringify(blueprint))}`
-);
+// Disable login because an old WP build used in this test
+// blocks auto-login. This is because it has an admin user
+// with an expired email verification window. If we do not
+// disable auto-login, the old Playground build encounters
+// a build error.
+url.searchParams.set('login', 'no');
+// Specify the theme so we can assert against expected default content.
+// This theme is also what the reference screenshots are based on.
+url.searchParams.set('theme', 'twentytwentyfour');
 
 const maxDiffPixels = 4000;
 
@@ -81,7 +64,6 @@ for (const cachingEnabled of [true, false]) {
 		await expect(page).toHaveScreenshot('website-old.png', {
 			maxDiffPixels,
 		});
-		return;
 
 		server!.switchToNewVersion();
 		// Reload the page instead of navigating to the URL again
@@ -92,7 +74,9 @@ for (const cachingEnabled of [true, false]) {
 		await expect(
 			website.page.getByLabel('Open Site Manager')
 		).toBeVisible();
-		await expect(wordpress.locator('body')).toContainText('Edit site');
+		await expect(wordpress.locator('body')).toContainText(
+			'My WordPress Website'
+		);
 	});
 }
 
