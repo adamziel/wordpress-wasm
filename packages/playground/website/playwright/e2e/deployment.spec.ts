@@ -9,7 +9,7 @@ const url = new URL(`http://localhost:${port}`);
 // blocks auto-login. This is because it has an admin user
 // with an expired email verification window. If we do not
 // disable auto-login, the old Playground build encounters
-// a build error.
+// a boot error.
 url.searchParams.set('login', 'no');
 // Specify the theme so we can assert against expected default content.
 // This theme is also what the reference screenshots are based on.
