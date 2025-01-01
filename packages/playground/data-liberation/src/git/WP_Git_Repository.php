@@ -280,7 +280,7 @@ class WP_Git_Repository {
             $this->last_error = 'Failed to initialize inflate handle';
             return false;
         }
-        if(!$this->fs->open_file_stream($this->get_object_path($this->oid))) {
+        if(!$this->fs->open_read_stream($this->get_object_path($this->oid))) {
             return false;
         }
         return true;
@@ -292,7 +292,7 @@ class WP_Git_Repository {
             return true;
         }
         if(false === $this->fs->next_file_chunk()) {
-            $this->last_error = $this->fs->get_error_message();
+            $this->last_error = $this->fs->get_last_error();
             return false;
         }
         $chunk = $this->fs->get_file_chunk();
@@ -314,7 +314,7 @@ class WP_Git_Repository {
     }
 
     private function close_object_stream() {
-        $this->fs->close_file_stream();
+        $this->fs->close_read_stream();
         $this->content_inflate_handle = null;
         return true;
     }

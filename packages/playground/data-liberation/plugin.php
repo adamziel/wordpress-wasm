@@ -352,7 +352,7 @@ function data_liberation_import_step( $session, $importer = null ) {
 		$importer = data_liberation_create_importer( $metadata );
 	}
 	if ( ! $importer ) {
-		return;
+		return new WP_Error('import_failed', 'Failed to create importer');
 	}
 
 	/**
@@ -372,10 +372,10 @@ function data_liberation_import_step( $session, $importer = null ) {
 			// frontloading stage.
 			if ( $importer->get_stage() === WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS ) {
 				if ( $fetched_files > 0 ) {
-					break;
+					return new WP_Error('import_failed', 'Frontloading failed');
 				}
 			} else {
-				break;
+				return new WP_Error('import_failed', 'Frontloading failed');
 			}
 		}
 		if ( $time_taken >= $hard_time_limit_seconds ) {
@@ -383,10 +383,11 @@ function data_liberation_import_step( $session, $importer = null ) {
 			// @TODO: Make it easily configurable
 			// @TODO: Bump the number of download attempts for the placeholders,
 			//        set the status to `error` in each interrupted download.
-			break;
+			return new WP_Error('import_failed', 'Time limit exceeded');
 		}
 
-		if ( true !== $importer->next_step() ) {
+		if ( ! $importer->next_step() ) {
+            // Time to advance to the next stage.
 			$session->set_reentrancy_cursor( $importer->get_reentrancy_cursor() );
 
 			$should_advance_to_next_stage = null !== $importer->get_next_stage();
@@ -394,11 +395,12 @@ function data_liberation_import_step( $session, $importer = null ) {
 				if ( WP_Stream_Importer::STAGE_FRONTLOAD_ASSETS === $importer->get_stage() ) {
 					$resolved_all_failures = $session->count_unfinished_frontloading_placeholders() === 0;
 					if ( ! $resolved_all_failures ) {
-						break;
+						return new WP_Error('import_failed', 'Downloads failed');
 					}
 				}
 			}
 			if ( ! $importer->advance_to_next_stage() ) {
+                // We're done.
 				break;
 			}
 			$session->set_stage( $importer->get_stage() );
@@ -409,7 +411,9 @@ function data_liberation_import_step( $session, $importer = null ) {
 		switch ( $importer->get_stage() ) {
 			case WP_Stream_Importer::STAGE_INDEX_ENTITIES:
 				// Bump the total number of entities to import.
-				$session->create_frontloading_placeholders( $importer->get_indexed_assets_urls() );
+				$session->create_frontloading_placeholders(
+                    $importer->get_indexed_assets_urls()
+                );
 				$session->bump_total_number_of_entities(
 					$importer->get_indexed_entities_counts()
 				);

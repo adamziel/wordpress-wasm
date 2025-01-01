@@ -62,9 +62,15 @@ const uiStore = createReduxStore(STORE_NAME, {
 
 register(uiStore);
 
-const isStaticPagePath = (path: string) => {
-	const extension = path.split('.').pop()?.toLowerCase();
-	return ['md', 'html'].includes(extension);
+const isStaticAssetPath = (path: string) => {
+	let extension = undefined;
+	const lastDot = path.lastIndexOf('.');
+	if (lastDot !== -1) {
+		extension = path.substring(lastDot + 1).toLowerCase();
+	}
+	// We treat every extension except of the well-known ones
+	// as a static asset.
+	return extension && !['md', 'html', 'xhtml'].includes(extension);
 };
 
 function ConnectedFilePickerTree() {
@@ -79,7 +85,16 @@ function ConnectedFilePickerTree() {
 
 	useEffect(() => {
 		async function refreshPostId() {
-			if (isStaticPagePath(selectedPath)) {
+			console.log(
+				'refreshPostId',
+				selectedPath,
+				isStaticAssetPath(selectedPath)
+			);
+			if (isStaticAssetPath(selectedPath)) {
+				setPostLoading(false);
+				setSelectedPostId(null);
+				setPreviewPath(selectedPath);
+			} else {
 				setPostLoading(true);
 				if (!selectedPostId) {
 					const { post_id } = (await apiFetch({
@@ -90,10 +105,6 @@ function ConnectedFilePickerTree() {
 					setSelectedPostId(post_id);
 				}
 				setPreviewPath(null);
-			} else {
-				setPostLoading(false);
-				setSelectedPostId(null);
-				setPreviewPath(selectedPath);
 			}
 		}
 		refreshPostId();
@@ -180,7 +191,7 @@ function ConnectedFilePickerTree() {
 
 	const handleFileClick = async (filePath: string, node: FileNode) => {
 		setSelectedPath(filePath);
-		if (isStaticPagePath(filePath)) {
+		if (node.post_id && !isStaticAssetPath(filePath)) {
 			setSelectedPostId(node.post_id);
 		} else {
 			setSelectedPostId(null);
@@ -220,7 +231,10 @@ function ConnectedFilePickerTree() {
 
 			await refreshFileTree();
 
-			if (response.created_files.length > 0) {
+			if (
+				response.created_files.length === 1 &&
+				response.created_files[0].post_type === WP_LOCAL_FILE_POST_TYPE
+			) {
 				onNavigateToEntityRecord({
 					postId: response.created_files[0].post_id,
 					postType: WP_LOCAL_FILE_POST_TYPE,
@@ -266,9 +280,15 @@ function ConnectedFilePickerTree() {
 		if (type === 'file') {
 			const url = `${window.wpApiSettings.root}static-files-editor/v1/download-file?path=${path}&_wpnonce=${window.wpApiSettings.nonce}`;
 			const filename = path.split('/').pop();
+			// For dragging & dropping to desktop
 			e.dataTransfer.setData(
 				'DownloadURL',
 				`text/plain:${filename}:${url}`
+			);
+			// For dragging & dropping into the editor canvas
+			e.dataTransfer.setData(
+				'text/html',
+				`<img src="${url}" alt="${filename}" />`
 			);
 		}
 	};

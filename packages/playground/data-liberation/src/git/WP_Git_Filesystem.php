@@ -13,6 +13,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
     private $root;
     private $auto_push;
     private $client;
+    private $write_stream;
 
     public function __construct(
         WP_Git_Repository $repo,
@@ -52,7 +53,7 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         return WP_Git_Pack_Processor::OBJECT_TYPE_BLOB === $this->repo->get_type();
     }
 
-    public function open_file_stream($path) {
+    public function open_read_stream($path) {
         return $this->repo->read_by_path($path);
     }
 
@@ -64,13 +65,13 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         return $this->repo->get_body_chunk();
     }
 
-    public function get_error_message() {
+    public function get_last_error() {
         // @TODO: Manage our own errors in addition to passing
         //        through the underlying repo's errors.
         return $this->repo->get_last_error();
     }
 
-    public function close_file_stream() {
+    public function close_read_stream() {
         // @TODO: Implement this
     }
 
@@ -121,8 +122,12 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
 	}
 
 	public function mkdir($path) {
-        // Git doesn't support empty directories, let's not do anything.
-		return true;
+        // Git doesn't support empty directories so we must create an empty file.
+        return $this->commit([
+            'updates' => [
+                $this->resolve_path($path) . '/.gitkeep' => '',
+            ],
+        ]);
 	}
 
 	public function rm($path) {
@@ -157,17 +162,49 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         );
 	}
 
-	public function put_contents($path, $data, $options=[]) {
-        return $this->commit(
-            [
-                'updates' => [
-                    $this->resolve_path($path) => $data,
-                ],
-                'amend' => isset($options['amend']) && $options['amend'],
-                'message' => isset($options['message']) ? $options['message'] : null,
-            ]
-        );
-	}
+    public function open_write_stream($path) {
+        if($this->write_stream) {
+            _doing_it_wrong(__METHOD__, 'Cannot open a new write stream while another write stream is open.', '1.0.0');
+            return false;
+        }
+        $temp_file = tempnam(sys_get_temp_dir(), 'git_write_stream');
+        if(false === $temp_file) {
+            return false;
+        }
+        $this->write_stream = [
+            'repo_path' => $this->resolve_path($path),
+            'local_path' => $temp_file,
+            'fp' => fopen($temp_file, 'wb'),
+        ];
+        return true;
+    }
+
+    public function append_bytes($data) {
+        if(!$this->write_stream) {
+            return false;
+        }
+        fwrite($this->write_stream['fp'], $data);
+        return true;
+    }
+
+    public function close_write_stream($options = []) {
+        if(!$this->write_stream) {
+            return false;
+        }
+        fclose($this->write_stream['fp']);
+        $repo_path = $this->write_stream['repo_path'];
+        $local_path = $this->write_stream['local_path'];
+        unset($this->write_stream);
+        // Flush changes to the repo
+        return $this->commit([
+            'updates' => [
+                // @TODO: Stream instead of file_get_contents
+                $repo_path => file_get_contents($local_path),
+            ],
+            'amend' => isset($options['amend']) && $options['amend'],
+            'message' => isset($options['message']) ? $options['message'] : null,
+        ]);
+    }
 
     private function commit($options) {
         if(false === $this->repo->commit($options)) {

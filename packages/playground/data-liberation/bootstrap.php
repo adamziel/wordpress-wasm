@@ -17,6 +17,8 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_In_Memor
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_SQLite_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Chroot.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Uploaded_Directory_Tree_Filesystem.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Byte_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Reader.php';

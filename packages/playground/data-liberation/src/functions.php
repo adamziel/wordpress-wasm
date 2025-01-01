@@ -131,69 +131,6 @@ function urldecode_n( $input, $decode_n ) {
 }
 
 /**
- * A generator that recursively list files in a directory.
- *
- * Example:
- *
- * ```php
- * foreach(wp_list_files_recursive('./docs') as $event) {
- *
- *    echo $event->type . " " . ($event->isFile ? 'file' : 'directory') . ' ' . $event->path . "\n";
- * }
- * // Output:
- * // entering directory ./docs
- * // listing file ./docs/file1.txt
- * // listing file ./docs/file2.txt
- * // entering directory ./docs/subdir
- * // listing file ./docs/subdir/file3.txt
- * // exiting directory ./docs/subdir
- * // exiting directory ./docs
- * ```
- *
- * @param string $dir
- * @param integer $depth
- * @yield WP_File_Visitor_Event
- * @return Iterator<WP_File_Visitor_Event>
- */
-function wp_visit_file_tree( $dir ) {
-	$directories = array();
-	$files       = array();
-	$dh          = opendir( $dir );
-	while ( true ) {
-		$file = readdir( $dh );
-		if ( $file === false ) {
-			break;
-		}
-		if ( '.' === $file || '..' === $file ) {
-			continue;
-		}
-		$file_path = $dir . '/' . $file;
-		if ( is_dir( $file_path ) ) {
-			$directories[] = $file_path;
-			continue;
-		}
-
-		$files[] = new SplFileInfo( $file_path );
-	}
-	closedir( $dh );
-
-	yield new WP_File_Visitor_Event(
-		WP_File_Visitor_Event::EVENT_ENTER,
-		new SplFileInfo( $dir ),
-		$files
-	);
-
-	foreach ( $directories as $directory ) {
-		yield from wp_visit_file_tree( $directory );
-	}
-
-	yield new WP_File_Visitor_Event(
-		WP_File_Visitor_Event::EVENT_EXIT,
-		new SplFileInfo( $dir )
-	);
-}
-
-/**
  * Import a WXR file. Used by the CLI.
  *
  * @param string $path The path to the WXR file.
@@ -300,4 +237,32 @@ function wp_join_paths() {
 	$path = implode('/', $paths);
 
 	return preg_replace( '#/+#', '/', $path );
+}
+
+function wp_canonicalize_path($path) {
+    // Convert to absolute path
+    if (!str_starts_with($path, '/')) {
+        $path = '/' . $path;
+    }
+
+    // Resolve . and ..
+    $parts = explode('/', $path);
+    $normalized = [];
+    foreach ($parts as $part) {
+        if ($part === '.' || $part === '') {
+            continue;
+        }
+        if ($part === '..') {
+            array_pop($normalized);
+            continue;
+        }
+        $normalized[] = $part;
+    }
+
+    // Reconstruct path
+    $result = '/' . implode('/', $normalized);
+    if($result === '/.') {
+        $result = '/';
+    }
+    return $result === '' ? '/' : $result;
 }

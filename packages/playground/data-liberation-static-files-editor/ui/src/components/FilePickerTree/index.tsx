@@ -5,6 +5,7 @@ import {
 	useState,
 	createContext,
 	useContext,
+	createRoot,
 } from '@wordpress/element';
 import {
 	__experimentalTreeGrid as TreeGrid,
@@ -82,7 +83,7 @@ type DragState = {
 	path: string;
 	hoverPath: string | null;
 	hoverType: 'file' | 'folder' | null;
-	isExternal?: boolean;
+	isExternal: boolean;
 };
 
 type FilePickerContextType = {
@@ -112,6 +113,34 @@ type FilePickerContextType = {
 };
 
 const FilePickerContext = createContext<FilePickerContextType | null>(null);
+
+function createDragImage(node: FileNode): HTMLElement {
+	const dragImage = ReactElementToHTML(<FileName node={node} />);
+	dragImage.style.cssText = `
+		position: fixed;
+		top: -1000px;
+		left: -1000px;
+		padding: 6px 12px;
+		background: white;
+		border-radius: 2px;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: -apple-system, system-ui, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+		font-size: 13px;
+		white-space: nowrap;
+	`;
+	document.body.appendChild(dragImage);
+	return dragImage;
+}
+
+function ReactElementToHTML(element: React.ReactElement): HTMLElement {
+	const container = document.createElement('div');
+	const root = createRoot(container);
+	root.render(element);
+	return container;
+}
 
 export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	isLoading = false,
@@ -256,13 +285,25 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		path: string,
 		type: 'file' | 'folder'
 	) => {
-		onDragStart(e, path, type);
+		e.stopPropagation();
+		const dragImage = createDragImage({
+			name: path.split('/').pop() || '',
+			type: type,
+		});
+		e.dataTransfer.setDragImage(dragImage, 10, 10);
+
+		// Clean up the drag image element after a short delay
+		setTimeout(() => {
+			document.body.removeChild(dragImage);
+		}, 0);
+
 		setDragState({
 			path,
 			hoverPath: null,
 			hoverType: null,
-			isExternal: false,
 		});
+
+		onDragStart?.(e, path, type);
 	};
 
 	const isDescendantPath = (parentPath: string, childPath: string) => {
@@ -281,9 +322,9 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			e.dataTransfer.dropEffect = 'copy';
 			setDragState({
 				path: '',
+				isExternal: true,
 				hoverPath: path,
 				hoverType: type,
-				isExternal: true,
 			});
 			return;
 		}
@@ -316,19 +357,51 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			return;
 		}
 		e.stopPropagation();
-		// Handle file/directory upload
+
+		// Internal drag&drop within the FilePickerTree
+		if (dragState && !dragState.isExternal) {
+			// Prevent dropping a folder into its own descendant
+			if (
+				dragState.path &&
+				targetType === 'folder' &&
+				isDescendantPath(dragState.path, targetPath)
+			) {
+				return;
+			}
+
+			const fromPath = dragState.path.replace(/^\/+/, '');
+
+			const targetParentPath =
+				targetType === 'file'
+					? targetPath.split('/').slice(0, -1).join('/')
+					: targetPath;
+
+			const toPath = [targetParentPath, dragState.path.split('/').pop()]
+				.join('/')
+				.replace(/^\/+/, '');
+
+			setDragState(null);
+
+			if (fromPath === toPath) {
+				return;
+			}
+
+			onNodeMoved({
+				fromPath,
+				toPath,
+			});
+			return;
+		}
+
+		// Drag&Drop from desktop into the FilePickerTree
 		if (e.dataTransfer.items.length > 0) {
 			const targetFolder =
 				targetType === 'folder'
 					? targetPath
 					: targetPath.split('/').slice(0, -1).join('/');
-			const items = Array.from(e.dataTransfer.items).filter(
-				(item) => item.kind !== 'DownloadURL'
-			);
-
+			const items = Array.from(e.dataTransfer.items);
 			const buildTree = async (
-				entry: FileSystemEntry,
-				parentPath: string = ''
+				entry: FileSystemEntry
 			): Promise<FileNode> => {
 				if (entry.isFile) {
 					const fileEntry = entry as FileSystemFileEntry;
@@ -375,39 +448,6 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 
 			setDragState(null);
 			return;
-		}
-
-		if (dragState) {
-			// Prevent dropping a folder into its own descendant
-			if (
-				dragState.path &&
-				targetType === 'folder' &&
-				isDescendantPath(dragState.path, targetPath)
-			) {
-				return;
-			}
-
-			const fromPath = dragState.path.replace(/^\/+/, '');
-
-			const targetParentPath =
-				targetType === 'file'
-					? targetPath.split('/').slice(0, -1).join('/')
-					: targetPath;
-
-			const toPath = [targetParentPath, dragState.path.split('/').pop()]
-				.join('/')
-				.replace(/^\/+/, '');
-
-			setDragState(null);
-
-			if (fromPath === toPath) {
-				return;
-			}
-
-			onNodeMoved({
-				fromPath,
-				toPath,
-			});
 		}
 	};
 
@@ -740,7 +780,7 @@ const NodeRow: React.FC<{
 											position: 'relative',
 										}}
 									>
-										<FileName
+										<FileButtonContent
 											node={node}
 											isOpen={
 												node.type === 'folder' &&
@@ -873,11 +913,11 @@ const FilenameForm: React.FC<{
 	);
 };
 
-const FileName: React.FC<{
+const FileButtonContent: React.FC<{
 	node: FileNode;
 	level: number;
 	isOpen?: boolean;
-}> = ({ node, level, isOpen }) => {
+}> = ({ node, level, isOpen = false }) => {
 	const indent: string[] = [];
 	for (let i = 0; i < level; i++) {
 		indent.push('&nbsp;&nbsp;&nbsp;&nbsp;');
@@ -893,6 +933,16 @@ const FileName: React.FC<{
 			) : (
 				<div style={{ width: 16 }}>&nbsp;</div>
 			)}
+			<FileName node={node} />
+		</>
+	);
+};
+
+const FileName: React.FC<{
+	node: FileNode;
+}> = ({ node }) => {
+	return (
+		<>
 			<Icon width={16} icon={node.type === 'folder' ? folder : file} />
 			<span className={css['fileName']}>{node.name}</span>
 		</>
