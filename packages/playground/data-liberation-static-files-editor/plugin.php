@@ -490,18 +490,33 @@ class WP_Static_Files_Editor_Plugin {
         $converter->convert();
         return $converter->get_result();
     }
-
     static public function get_local_files_tree($subdirectory = '') {
         $tree = [];
         $fs = self::get_fs();
         
+        // Get all file paths and post IDs in one query
+        $file_posts = get_posts(array(
+            'post_type' => WP_LOCAL_FILE_POST_TYPE,
+            'meta_key' => 'local_file_path',
+            'posts_per_page' => -1,
+            'fields' => 'id=>meta'
+        ));
+
+        $path_to_post_id = array();
+        foreach($file_posts as $post) {
+            $file_path = get_post_meta($post->ID, 'local_file_path', true);
+            if ($file_path) {
+                $path_to_post_id[$file_path] = $post->ID;
+            }
+        }
+        
         $base_dir = $subdirectory ? $subdirectory : '/';
-        self::build_local_file_tree_recursive($fs, $base_dir, $tree);
+        self::build_local_file_tree_recursive($fs, $base_dir, $tree, $path_to_post_id);
         
         return $tree;
     }
     
-    static private function build_local_file_tree_recursive($fs, $dir, &$tree) {
+    static private function build_local_file_tree_recursive($fs, $dir, &$tree, $path_to_post_id) {
         $items = $fs->ls($dir);
         if ($items === false) {
             return;
@@ -525,12 +540,18 @@ class WP_Static_Files_Editor_Plugin {
                 
                 // Recursively build children
                 $last_index = count($tree) - 1;
-                self::build_local_file_tree_recursive($fs, $path, $tree[$last_index]['children']);
+                self::build_local_file_tree_recursive($fs, $path, $tree[$last_index]['children'], $path_to_post_id);
             } else {
-                $tree[] = array(
+                $node = array(
                     'type' => 'file',
                     'name' => $item,
                 );
+
+                if (isset($path_to_post_id[$path])) {
+                    $node['post_id'] = $path_to_post_id[$path];
+                }
+
+                $tree[] = $node;
             }
         }
     }

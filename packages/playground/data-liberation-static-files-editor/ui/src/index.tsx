@@ -62,6 +62,11 @@ const uiStore = createReduxStore(STORE_NAME, {
 
 register(uiStore);
 
+const isStaticPagePath = (path: string) => {
+	const extension = path.split('.').pop()?.toLowerCase();
+	return ['md', 'html'].includes(extension);
+};
+
 function ConnectedFilePickerTree() {
 	const [fileTree, setFileTree] = useState<any>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -74,17 +79,19 @@ function ConnectedFilePickerTree() {
 
 	useEffect(() => {
 		async function refreshPostId() {
-			const extension = selectedPath.split('.').pop()?.toLowerCase();
-			if (extension === 'md' || extension === 'html') {
+			if (isStaticPagePath(selectedPath)) {
 				setPostLoading(true);
-				const { post_id } = (await apiFetch({
-					path: '/static-files-editor/v1/get-or-create-post-for-file',
-					method: 'POST',
-					data: { path: selectedPath },
-				})) as { post_id: string };
-				setSelectedPostId(post_id);
+				if (!selectedPostId) {
+					const { post_id } = (await apiFetch({
+						path: '/static-files-editor/v1/get-or-create-post-for-file',
+						method: 'POST',
+						data: { path: selectedPath },
+					})) as { post_id: string };
+					setSelectedPostId(post_id);
+				}
 				setPreviewPath(null);
 			} else {
+				setPostLoading(false);
 				setSelectedPostId(null);
 				setPreviewPath(selectedPath);
 			}
@@ -100,7 +107,7 @@ function ConnectedFilePickerTree() {
 
 	const { post, hasLoadedPost, onNavigateToEntityRecord } = useSelect(
 		(select) => {
-			const { getEntityRecord, isResolving, hasFinishedResolution } =
+			const { getEntityRecord, hasFinishedResolution } =
 				select(coreStore);
 			return {
 				onNavigateToEntityRecord:
@@ -173,6 +180,11 @@ function ConnectedFilePickerTree() {
 
 	const handleFileClick = async (filePath: string, node: FileNode) => {
 		setSelectedPath(filePath);
+		if (isStaticPagePath(filePath)) {
+			setSelectedPostId(node.post_id);
+		} else {
+			setSelectedPostId(null);
+		}
 	};
 
 	const handleNodesCreated = async (tree: FileTree) => {
