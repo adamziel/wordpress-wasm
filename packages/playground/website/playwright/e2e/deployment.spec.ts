@@ -66,7 +66,7 @@ for (const cachingEnabled of [true, false]) {
 		});
 
 		server!.switchToNewVersion();
-		await page.goto(url.toString());
+		await page.goto(url.href);
 		await website.waitForNestedIframes();
 		await expect(
 			website.page.getByLabel('Open Site Manager')
