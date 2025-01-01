@@ -53,27 +53,29 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
     }
 
     public function open_file_stream($path) {
-        throw new Exception('Not implemented');
+        return $this->repo->read_by_path($path);
     }
 
     public function next_file_chunk() {
-        throw new Exception('Not implemented');
+        return $this->repo->next_body_chunk();
     }
 
     public function get_file_chunk() {
-        throw new Exception('Not implemented');
+        return $this->repo->get_body_chunk();
     }
 
     public function get_error_message() {
-        throw new Exception('Not implemented');
+        // @TODO: Manage our own errors in addition to passing
+        //        through the underlying repo's errors.
+        return $this->repo->get_last_error();
     }
 
     public function close_file_stream() {
-        throw new Exception('Not implemented');
+        // @TODO: Implement this
     }
 
     public function get_streamed_file_length() {
-        throw new Exception('Not implemented');
+        return $this->repo->get_length();
     }
 
     public function get_contents($path) {

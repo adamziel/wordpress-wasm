@@ -51,6 +51,11 @@ export type FilePickerControlProps = {
 	initialPath?: string;
 	className?: string;
 	onSelect?: (path: string, node: FileNode) => void;
+	onDragStart?: (
+		e: React.DragEvent,
+		path: string,
+		type: 'file' | 'folder'
+	) => void;
 	onNodesCreated?: (tree: FileTree) => void;
 	onNodeDeleted?: (path: string) => void;
 	onNodeMoved?: ({
@@ -91,7 +96,11 @@ type FilePickerContextType = {
 	onEditedNodeCancel: () => void;
 	onNodeDeleted: (path: string) => void;
 	startRenaming: (path: string) => void;
-	onDragStart: (path: string, type: 'file' | 'folder') => void;
+	onDragStart: (
+		e: React.DragEvent,
+		path: string,
+		type: 'file' | 'folder'
+	) => void;
 	onDragOver: (
 		e: React.DragEvent,
 		path: string,
@@ -111,6 +120,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	initialPath,
 	className = '',
 	onSelect = () => {},
+	onDragStart = () => {},
 	onNodesCreated = (tree: FileTree) => {
 		console.log('onNodesCreated', tree);
 	},
@@ -241,7 +251,12 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		setEditedNode(null);
 	};
 
-	const handleDragStart = (path: string, type: 'file' | 'folder') => {
+	const handleDragStart = (
+		e: React.DragEvent,
+		path: string,
+		type: 'file' | 'folder'
+	) => {
+		onDragStart(e, path, type);
 		setDragState({
 			path,
 			hoverPath: null,
@@ -307,7 +322,9 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				targetType === 'folder'
 					? targetPath
 					: targetPath.split('/').slice(0, -1).join('/');
-			const items = Array.from(e.dataTransfer.items);
+			const items = Array.from(e.dataTransfer.items).filter(
+				(item) => item.kind !== 'DownloadURL'
+			);
 
 			const buildTree = async (
 				entry: FileSystemEntry,
@@ -377,10 +394,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 					? targetPath.split('/').slice(0, -1).join('/')
 					: targetPath;
 
-			const toPath = [
-				targetParentPath.split('/'),
-				dragState.path.split('/').pop(),
-			]
+			const toPath = [targetParentPath, dragState.path.split('/').pop()]
 				.join('/')
 				.replace(/^\/+/, '');
 
@@ -706,8 +720,8 @@ const NodeRow: React.FC<{
 										)}
 										data-path={path}
 										draggable={true}
-										onDragStart={() =>
-											onDragStart?.(path, node.type)
+										onDragStart={(e) =>
+											onDragStart?.(e, path, node.type)
 										}
 										onDragOver={(e) =>
 											onDragOver?.(e, path, node.type)

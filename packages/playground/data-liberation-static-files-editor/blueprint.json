@@ -9,7 +9,7 @@
 	},
 	"plugins": ["gutenberg"],
 	"siteOptions": {
-		"wp_page_for_privacy_policy": null
+		"wp_page_for_privacy_policy": ""
 	},
 	"steps": [
 		{

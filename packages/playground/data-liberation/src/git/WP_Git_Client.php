@@ -194,6 +194,9 @@ class WP_Git_Client {
     }
 
     public function fetchObjects($refs) {
+        if(empty($refs)) {
+            return true;
+        }
         $body = '';
         foreach($refs as $ref) {
             $body .= $this->encode_packet_line("want {$ref} multi_ack_detailed no-done side-band-64k thin-pack ofs-delta agent=git/2.37.3\n");

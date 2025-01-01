@@ -4,18 +4,118 @@ use WordPress\Filesystem\WP_Abstract_Filesystem;
 
 class WP_Git_Repository {
 
+    /**
+     * The filesystem root where the repository index files are stored.
+     *
+     * @var WP_Abstract_Filesystem
+     */
     private $fs;
 
+    /**
+     * The SHA-1 ID of the current object.
+     *
+     * @var string
+     */
     private $oid;
+
+    /**
+     * The type of the current object. One of:
+     * 
+     * - WP_Git_Pack_Processor::OBJECT_TYPE_BLOB
+     * - WP_Git_Pack_Processor::OBJECT_TYPE_TREE
+     * - WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT
+     *
+     * @var string
+     */
     private $type;
-    private $content_inflate_handle;
-    private $object_content_chunk;
-    private $called_next_body_chunk;
-    private $buffered_object_content;
+
+    /**
+     * Structured data parsed from the currently processed
+     * commit object. 
+     *
+     * @var array {
+     *   @type string $tree
+     *   @type string $parent
+     *   @type string $author
+     *   @type string $committer
+     *   @type string $message
+     * }
+     */
     private $parsed_commit;
+
+    /**
+     * Structured data parsed from the currently processed
+     * tree object.
+     *
+     * @var array {
+     *   @type array {
+     *     @type string $mode
+     *     @type string $oid
+     *     @type string $path
+     *   }
+     * }
+     */
     private $parsed_tree;
-    private $last_error;
+
+    /**
+     * Structured data parsed from the repository `config` file.
+     *
+     * @var array
+     */
     private $parsed_config;
+
+    /**
+     * PHP inflate context to decompress the currently streamed
+     * object content.
+     *
+     * @var InflateContext
+     */
+    private $content_inflate_handle;
+
+    /**
+     * A decompressed chunk of the currently streamed
+     * object.
+     *
+     * @var string
+     */
+    private $object_content_chunk;
+
+    /**
+     * $consumer_called_next_chunk prevents the first object body
+     * chunk from being returned until the consumer has called
+     * next_body_chunk() at least once.
+     * 
+     * The API consumer expects the following streaming interface:
+     * 
+     * 1. read_object()
+     * 1. next_body_chunk()
+     * 1. get_body_chunk()
+     * 
+     * However, internally we need to start streaming the object
+     * in read_object(). This immediately populates the first
+     * object body chunk even before the consumer calls next_body_chunk().
+     *
+     * If the consumer just calls get_body_chunk() immediately after
+     * read_object(), they'll effectively skip the first chunk.
+     *
+     * This boolean flag prevents that from happening. get_body_chunk()
+     * will return an empty string until next_body_chunk() has been called
+     * at least once.
+     * 
+     * @var bool
+     */
+    private $consumer_called_next_chunk = false;
+
+    /**
+     * Memoized body of the last object read by read_object().
+     * 
+     * It prevents read_entire_object_contents() from re-reading
+     * the object from the filesystem on every call.
+     * 
+     * @var string|null
+     */
+    private $buffered_object_content;
+    private $last_error;
 
     private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
     private const NULL_OID = '0000000000000000000000000000000000000000';
@@ -140,6 +240,7 @@ class WP_Git_Repository {
         }
 
         $this->object_content_chunk = substr($content, strlen($header) + 1);
+        $this->consumer_called_next_chunk = false;
 
         // Parse the header
         $type_length = strpos($header, ' ');
@@ -186,11 +287,14 @@ class WP_Git_Repository {
     }
 
     public function next_body_chunk() {
+        if($this->consumer_called_next_chunk === false) {
+            $this->consumer_called_next_chunk = true;
+            return true;
+        }
         if(false === $this->fs->next_file_chunk()) {
             $this->last_error = $this->fs->get_error_message();
             return false;
         }
-        $this->called_next_body_chunk = true;
         $chunk = $this->fs->get_file_chunk();
         $next_chunk = inflate_add($this->content_inflate_handle, $chunk);
         if(false === $next_chunk) {
@@ -203,6 +307,9 @@ class WP_Git_Repository {
     }
 
     public function get_body_chunk() {
+        if($this->consumer_called_next_chunk === false) {
+            return '';
+        }
         return $this->object_content_chunk;
     }
 
@@ -235,7 +342,7 @@ class WP_Git_Repository {
     public function read_entire_object_contents() {
         // If we've advanced the stream, we can't reuse it to read the entire
         // object anymore. Let's re-initialize the stream.
-        if($this->called_next_body_chunk) {
+        if($this->consumer_called_next_chunk) {
             $this->read_object($this->oid);
         }
         if(null !== $this->buffered_object_content) {
@@ -244,7 +351,7 @@ class WP_Git_Repository {
         // Load the entire object into memory and keep the result
         // for later use. We'll likely need it again before we're
         // done with the current object.
-        $this->buffered_object_content = $this->object_content_chunk;
+        $this->buffered_object_content = '';
         while($this->next_body_chunk()) {
             $this->buffered_object_content .= $this->get_body_chunk();
         }
@@ -698,7 +805,7 @@ class WP_Git_Repository {
         $this->type = null;
         $this->parsed_commit = null;
         $this->parsed_tree = null;
-        $this->called_next_body_chunk = false;
+        $this->consumer_called_next_chunk = false;
         $this->buffered_object_content = null;
         $this->object_content_chunk = null;
         $this->last_error = null;

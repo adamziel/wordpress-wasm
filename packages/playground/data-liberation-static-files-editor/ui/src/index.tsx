@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from '@wordpress/element';
+import React from 'react';
+import { useEffect, useState, useCallback } from '@wordpress/element';
 import { FileNode, FilePickerTree } from './components/FilePickerTree';
 import { store as editorStore } from '@wordpress/editor';
 import { store as preferencesStore } from '@wordpress/preferences';
@@ -220,6 +221,25 @@ function ConnectedFilePickerTree() {
 		}
 	};
 
+	/**
+	 * Enable drag and drop of files from the file picker tree to desktop.
+	 */
+	const handleDragStart = (
+		e: React.DragEvent,
+		path: string,
+		type: 'file' | 'folder'
+	) => {
+		// Directory downloads are not supported yet.
+		if (type === 'file') {
+			const url = `${window.wpApiSettings.root}static-files-editor/v1/download-file?path=${path}&_wpnonce=${window.wpApiSettings.nonce}`;
+			const filename = path.split('/').pop();
+			e.dataTransfer.setData(
+				'DownloadURL',
+				`text/plain:${filename}:${url}`
+			);
+		}
+	};
+
 	if (isLoading) {
 		return <Spinner />;
 	}
@@ -236,6 +256,7 @@ function ConnectedFilePickerTree() {
 			onNodesCreated={handleNodesCreated}
 			onNodeDeleted={handleNodeDeleted}
 			onNodeMoved={handleNodeMoved}
+			onDragStart={handleDragStart}
 		/>
 	);
 }

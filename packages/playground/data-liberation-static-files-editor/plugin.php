@@ -207,6 +207,23 @@ class WP_Static_Files_Editor_Plugin {
                     return current_user_can('edit_posts');
                 },
             ));
+
+            register_rest_route('static-files-editor/v1', '/download-file', array(
+                'methods' => 'GET',
+                'callback' => array(self::class, 'download_file_endpoint'),
+                'permission_callback' => function() {
+                    return current_user_can('edit_posts');
+                },
+                'args' => array(
+                    'path' => array(
+                        'required' => true,
+                        'type' => 'string',
+                        'sanitize_callback' => function($param) {
+                            return '/' . ltrim($param, '/');
+                        }
+                    )
+                )
+            ));
         });
 
         // @TODO: the_content and rest_prepare_local_file filters run twice for REST API requests.
@@ -319,6 +336,44 @@ class WP_Static_Files_Editor_Plugin {
                 self::release_synchronization_lock();
             }
         }, 10, 1);
+    }
+
+    static public function download_file_endpoint($request) {
+        $path = $request->get_param('path');
+        $fs = self::get_fs();
+
+        if($fs->is_dir($path)) {
+            return new WP_Error('file_error', 'Directory download is not supported yet.');
+        }
+
+        // Get file info
+        $filename = basename($path);
+        $filesize = $fs->get_streamed_file_length($path);
+
+        // Set headers for file download
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . $filesize);
+        header('Cache-Control: no-cache');
+
+        // Stream file contents
+        if(!$fs->open_file_stream($path)) {
+            return new WP_Error('file_error', 'Could not read file');
+        }
+
+        echo $fs->get_file_chunk();
+
+        while($fs->next_file_chunk()) {
+            echo $fs->get_file_chunk();
+        }
+
+        $fs->close_file_stream();
+
+        if(!$fs->get_error_message()) {
+            exit;
+        }
+
+        return new WP_Error('file_error', 'Could not read file');
     }
 
     static private $synchronizing = false;
