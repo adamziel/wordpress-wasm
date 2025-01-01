@@ -66,10 +66,7 @@ for (const cachingEnabled of [true, false]) {
 		});
 
 		server!.switchToNewVersion();
-		// Reload the page instead of navigating to the URL again
-		// because it didn't seem to actually cause a reload when
-		// navigating to the same URL containing a hash component.
-		await page.reload();
+		await page.goto(url.toString());
 		await website.waitForNestedIframes();
 		await expect(
 			website.page.getByLabel('Open Site Manager')
@@ -94,7 +91,7 @@ test.skip(
 		server!.switchToMidVersion();
 
 		const urlWithWordPress65 = new URL(url);
-		urlWithWordPress65.searchParams.append('wp', '6.5');
+		urlWithWordPress65.searchParams.set('wp', '6.5');
 		await page.goto(urlWithWordPress65.href);
 		await website.waitForNestedIframes();
 
@@ -152,12 +149,16 @@ test('offline mode – the app should load even when the server goes offline', a
 	await website.waitForNestedIframes();
 
 	await expect(website.page.getByLabel('Open Site Manager')).toBeVisible();
-	expect(wordpress.locator('body')).toContainText('Edit site');
+	await expect(wordpress.locator('body')).toContainText(
+		'My WordPress Website'
+	);
 
 	server!.kill();
 	await page.reload();
 	await website.waitForNestedIframes();
 
 	await expect(website.page.getByLabel('Open Site Manager')).toBeVisible();
-	expect(wordpress.locator('body')).toContainText('Edit site');
+	await expect(wordpress.locator('body')).toContainText(
+		'My WordPress Website'
+	);
 });
