@@ -391,7 +391,7 @@ class WP_Static_Files_Editor_Plugin {
 
         // Set headers for file download
         header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header("Content-Disposition: attachment; filename=UTF-8''" . urlencode($filename));
         header('Content-Length: ' . $filesize);
         header('Cache-Control: no-cache');
 
