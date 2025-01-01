@@ -74,7 +74,7 @@ export function addLocalFilesTab(tab: {
 	};
 }
 
-export function addLoadingOverlay(Overlay: React.ReactElement) {
+export function addComponentToEditorContentArea(Component: React.ReactElement) {
 	function patchArguments(args: any[]) {
 		let [type, props, ...children] = args;
 		if (!props || typeof props.className !== 'string') {
@@ -90,8 +90,8 @@ export function addLoadingOverlay(Overlay: React.ReactElement) {
 		if (!Array.isArray(newProps.children)) {
 			newProps.children = [newProps.children];
 		}
-		if (!newProps.children.includes(Overlay)) {
-			newProps.children.unshift(Overlay);
+		if (!newProps.children.includes(Component)) {
+			newProps.children.unshift(Component);
 		}
 		return [type, newProps, ...newProps.children];
 	}

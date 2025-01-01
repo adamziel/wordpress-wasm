@@ -11,7 +11,11 @@ import {
 	useSelect,
 } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
-import { addLoadingOverlay, addLocalFilesTab } from './add-local-files-tab';
+import {
+	addComponentToEditorContentArea,
+	addLoadingOverlay,
+	addLocalFilesTab,
+} from './add-local-files-tab';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { Spinner, Button } from '@wordpress/components';
 import { useEntityProp, store as coreStore } from '@wordpress/core-data';
@@ -28,10 +32,12 @@ let fileTreePromise = apiFetch({
 // Create a custom store for transient UI state
 const STORE_NAME = 'static-files-editor/ui';
 const uiStore = createReduxStore(STORE_NAME, {
-	reducer(state = { isPostLoading: false }, action) {
+	reducer(state = { isPostLoading: false, previewPath: null }, action) {
 		switch (action.type) {
 			case 'SET_POST_LOADING':
 				return { ...state, isPostLoading: action.isLoading };
+			case 'SET_PREVIEW_PATH':
+				return { ...state, previewPath: action.path };
 			default:
 				return state;
 		}
@@ -40,10 +46,16 @@ const uiStore = createReduxStore(STORE_NAME, {
 		setPostLoading(isLoading) {
 			return { type: 'SET_POST_LOADING', isLoading };
 		},
+		setPreviewPath(path) {
+			return { type: 'SET_PREVIEW_PATH', path };
+		},
 	},
 	selectors: {
 		isPostLoading(state) {
 			return state.isPostLoading;
+		},
+		getPreviewPath(state) {
+			return state.previewPath;
 		},
 	},
 });
@@ -59,16 +71,23 @@ function ConnectedFilePickerTree() {
 	const [selectedPath, setSelectedPath] = useState(
 		meta?.local_file_path || '/'
 	);
-	// interface-interface-skeleton__content
+
 	useEffect(() => {
 		async function refreshPostId() {
-			setPostLoading(true);
-			const { post_id } = (await apiFetch({
-				path: '/static-files-editor/v1/get-or-create-post-for-file',
-				method: 'POST',
-				data: { path: selectedPath },
-			})) as { post_id: string };
-			setSelectedPostId(post_id);
+			const extension = selectedPath.split('.').pop()?.toLowerCase();
+			if (extension === 'md' || extension === 'html') {
+				setPostLoading(true);
+				const { post_id } = (await apiFetch({
+					path: '/static-files-editor/v1/get-or-create-post-for-file',
+					method: 'POST',
+					data: { path: selectedPath },
+				})) as { post_id: string };
+				setSelectedPostId(post_id);
+				setPreviewPath(null);
+			} else {
+				setSelectedPostId(null);
+				setPreviewPath(selectedPath);
+			}
 		}
 		refreshPostId();
 	}, [selectedPath]);
@@ -102,20 +121,22 @@ function ConnectedFilePickerTree() {
 		[selectedPostId]
 	);
 
-	const { setPostLoading } = useDispatch(STORE_NAME);
+	const { setPostLoading, setPreviewPath } = useDispatch(STORE_NAME);
 
 	useEffect(() => {
 		// Only navigate once the post has been loaded. Otherwise the editor
 		// will disappear for a second – the <Editor> component renders its
 		// children conditionally on having the post available.
-		setPostLoading(!hasLoadedPost);
-		if (hasLoadedPost && post) {
-			onNavigateToEntityRecord({
-				postId: selectedPostId,
-				postType: WP_LOCAL_FILE_POST_TYPE,
-			});
+		if (selectedPostId) {
+			setPostLoading(!hasLoadedPost);
+			if (hasLoadedPost && post) {
+				onNavigateToEntityRecord({
+					postId: selectedPostId,
+					postType: WP_LOCAL_FILE_POST_TYPE,
+				});
+			}
 		}
-	}, [hasLoadedPost, post, setPostLoading]);
+	}, [hasLoadedPost, post, setPostLoading, selectedPostId]);
 
 	const refreshFileTree = useCallback(async () => {
 		fileTreePromise = apiFetch({
@@ -271,6 +292,50 @@ addLocalFilesTab({
 	),
 });
 
+function FilePreviewOverlay() {
+	const previewPath = useSelect(
+		(select) => select(STORE_NAME).getPreviewPath(),
+		[]
+	);
+
+	if (!previewPath) {
+		return null;
+	}
+
+	const extension = previewPath.split('.').pop()?.toLowerCase();
+	const isPreviewable = ['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(
+		extension || ''
+	);
+
+	return (
+		<div
+			style={{
+				position: 'absolute',
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				backgroundColor: 'white',
+				padding: '20px',
+				zIndex: 1000,
+			}}
+		>
+			<h2>{previewPath.split('/').pop()}</h2>
+			{isPreviewable ? (
+				<img
+					src={`${window.wpApiSettings.root}static-files-editor/v1/download-file?path=${previewPath}&_wpnonce=${window.wpApiSettings.nonce}`}
+					alt={previewPath}
+					style={{ maxWidth: '100%', maxHeight: '80vh' }}
+				/>
+			) : (
+				<div>Preview not available for this file type</div>
+			)}
+		</div>
+	);
+}
+
+addComponentToEditorContentArea(<FilePreviewOverlay />);
+
 function PostLoadingOverlay() {
 	const isLoading = useSelect(
 		(select) => select(STORE_NAME).isPostLoading(),
@@ -299,7 +364,7 @@ function PostLoadingOverlay() {
 	);
 }
 
-addLoadingOverlay(<PostLoadingOverlay />);
+addComponentToEditorContentArea(<PostLoadingOverlay />);
 
 dispatch(preferencesStore).set('welcomeGuide', false);
 dispatch(preferencesStore).set('enableChoosePatternModal', false);
