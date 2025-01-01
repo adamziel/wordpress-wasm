@@ -29,6 +29,10 @@ if( ! defined( 'WP_LOCAL_FILE_POST_TYPE' )) {
     define( 'WP_LOCAL_FILE_POST_TYPE', 'local_file' );
 }
 
+if( ! defined( 'WP_AUTOSAVES_DIRECTORY' )) {
+    define( 'WP_AUTOSAVES_DIRECTORY', '.autosaves' );
+}
+
 if(isset($_GET['dump'])) {
     add_action('init', function() {
         WP_Static_Files_Editor_Plugin::import_static_pages();
@@ -57,8 +61,14 @@ class WP_Static_Files_Editor_Plugin {
             $repo->set_config_value('user.email', GIT_USER_EMAIL);
 
             $client = new WP_Git_Client($repo);
-            if(false === $client->force_pull()) {
-                _doing_it_wrong(__METHOD__, 'Failed to pull from remote repository', '1.0.0');
+            
+            // Only force pull at most once every 10 minutes
+            $last_pull_time = get_transient('wp_git_last_pull_time');
+            if (!$last_pull_time) {
+                if (false === $client->force_pull()) {
+                    _doing_it_wrong(__METHOD__, 'Failed to pull from remote repository', '1.0.0');
+                }
+                set_transient('wp_git_last_pull_time', time(), 10 * MINUTE_IN_SECONDS);
             }
 
             self::$fs = new WP_Git_Filesystem(
@@ -69,8 +79,8 @@ class WP_Static_Files_Editor_Plugin {
                     'client' => $client,
                 ]
             );
-            if(!self::$fs->is_dir('/.autosaves')) {
-                self::$fs->mkdir('/.autosaves');
+            if(!self::$fs->is_dir('/' . WP_AUTOSAVES_DIRECTORY)) {
+                self::$fs->mkdir('/' . WP_AUTOSAVES_DIRECTORY);
             }
         }
         return self::$fs;
@@ -324,7 +334,7 @@ class WP_Static_Files_Editor_Plugin {
                 }
 
                 $path = wp_join_paths(
-                    '/.autosaves/',
+                    '/' . WP_AUTOSAVES_DIRECTORY . '/',
                     get_post_meta($parent_post->ID, 'local_file_path', true)
                 );
                 $fs = self::get_fs();
@@ -498,6 +508,11 @@ class WP_Static_Files_Editor_Plugin {
         }
         
         foreach ($items as $item) {
+            // Exclude the autosaves directory from the files tree
+            if($dir === '/' && $item === WP_AUTOSAVES_DIRECTORY) {
+                continue;
+            }
+
             $path = $dir === '/' ? "/$item" : "$dir/$item";
             
             if ($fs->is_dir($path)) {
