@@ -4,6 +4,51 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
+## [v1.0.19] (2024-12-30) 
+
+
+
+
+## [v1.0.18] (2024-12-23) 
+
+### Enhancements
+
+- [Data Liberation] Add HTML to Blocks converter. ([#2095](https://github.com/WordPress/wordpress-playground/pull/2095))
+- [Data Liberation] Add Markdown parsing libraries. ([#2092](https://github.com/WordPress/wordpress-playground/pull/2092))
+- [Data Liberation] Build markdown importer as phar. ([#2094](https://github.com/WordPress/wordpress-playground/pull/2094))
+- [Data Liberation] Move Markdown importer to a separate package. ([#2093](https://github.com/WordPress/wordpress-playground/pull/2093))
+
+### Blueprints
+
+- Prevent WSOD when autologin is enabled and a plugin logs a notice. ([#2079](https://github.com/WordPress/wordpress-playground/pull/2079))
+
+### Tools
+
+
+#### GitHub integration
+
+- [Website] GitHub export modal: Correctly compute the root path when exporting the entire site. ([#2103](https://github.com/WordPress/wordpress-playground/pull/2103))
+
+### Website
+
+- Enable separate source maps for all package builds. ([#2088](https://github.com/WordPress/wordpress-playground/pull/2088))
+
+### Bug Fixes
+
+- Fix README.md typos. ([#2091](https://github.com/WordPress/wordpress-playground/pull/2091))
+
+### Various
+
+- Add small comment about lazy init of WXR reader. ([#2102](https://github.com/WordPress/wordpress-playground/pull/2102))
+- [Blueprints] Prevent plugin activation error if plugin redirects during activation or produces an output. ([#2066](https://github.com/WordPress/wordpress-playground/pull/2066))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak @brandonpayton @zaerl
+
+
 ## [v1.0.17] (2024-12-17) 
 
 ### Tools
