@@ -22,7 +22,7 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
      * @return WP_Block_Markup_Url_Processor
      */
 	public static function create_from_html( $html, $base_url_string = null ) {
-		$processor                  = static::create_fragment( $html );
+		$processor                  = new static( $html );
 		$processor->base_url_string = $base_url_string;
 		$processor->base_url_object = $base_url_string ? WP_URL::parse( $base_url_string ) : null;
 		return $processor;
