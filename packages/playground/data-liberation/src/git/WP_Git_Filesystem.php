@@ -210,7 +210,32 @@ class WP_Git_Filesystem extends WP_Abstract_Filesystem {
         if(false === $this->repo->commit($options)) {
             return false;
         }
+        /**
+         * Auto push if enabled
+         *
+         * This is a risky, best-effort PoC for automatic synchronization
+         * of changes with the remote repository. There's no conflict
+         * resolution here, only force overwriting of changes both locally
+         * and in the remote repository.
+         *
+         * Let's re-work this once the notes management prototype is more mature.
+         */
         if($this->auto_push) {
+            if($this->client->force_push_one_commit()) {
+                return true;
+            }
+
+            // If push failed, force pull and retry
+            if(false === $this->client->force_pull()) {
+                // If this failed, we're out of luck
+                return false;
+            }
+
+            // If pull succeeded, try committing and pushing again
+            if(false === $this->repo->commit($options)) {
+                return false;
+            }
+
             if(false === $this->client->force_push_one_commit()) {
                 return false;
             }

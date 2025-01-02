@@ -54,7 +54,7 @@
 
 	align-items: center;
 	box-sizing: border-box;
-	padding: 6px 12px;
+	padding: 6px 40px 6px 12px;
 	border-radius: 2px;
 
 	width: 100%;
@@ -82,8 +82,22 @@
 	}
 }
 
+.file-node-image {
+	flex-shrink: 0;
+	width: 40px !important;
+	height: 40px !important;
+	object-fit: cover !important;
+	margin-left: auto;
+	margin-right: 28px;
+}
+
 .file-name {
 	margin-left: 10px;
+	/* @TODO: Make this dynamic */
+	max-width: 210px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .path-picker-control {

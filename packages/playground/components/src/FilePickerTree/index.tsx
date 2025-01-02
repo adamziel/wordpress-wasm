@@ -292,10 +292,18 @@ const NodeRow: React.FC<{
 								isOpen={node.type === 'folder' && isExpanded}
 								level={level}
 							/>
+							{/* @TODO: Source the path from the server to reduce code duplication and
+                                       also account for varying site path, no permalinks etc. */}
+							{isImage && (
+								<img
+									style={{ maxWidth: 32, maxHeight: 32 }}
+									src={`/wp-json/static-files-editor/v1/download-file?path=${path}`}
+								/>
+							)}
 						</Button>
 					)}
 				</TreeGridCell>
-				<TreeGridCell>
+				<TreeGridCell className={css['fileNodeActions']}>
 					{() => (
 						<DropdownMenu
 							icon={more}
@@ -347,6 +355,12 @@ const FileName: React.FC<{
 			)}
 			<Icon width={16} icon={node.type === 'folder' ? folder : file} />
 			<span className={css['fileName']}>{node.name}</span>
+			{node.post_type === 'attachment' && (
+				<img
+					className={css['fileSize']}
+					src={`https://placehold.co/16x16`}
+				/>
+			)}
 		</>
 	);
 };

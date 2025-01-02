@@ -706,6 +706,25 @@ const NodeRow: React.FC<{
 				return a.type === 'folder' ? -1 : 1;
 		  })
 		: [];
+
+	// @TODO: Make the server return a reliable information such as
+	//        "type" => "image" or "type" => "document" instead of
+	//        infering things on the frontend.
+	const isImage =
+		node.post_type === 'attachment' ||
+		node.name.endsWith('.jpg') ||
+		node.name.endsWith('.jpeg') ||
+		node.name.endsWith('.png') ||
+		node.name.endsWith('.gif') ||
+		node.name.endsWith('.bmp') ||
+		node.name.endsWith('.tiff') ||
+		node.name.endsWith('.ico') ||
+		node.name.endsWith('.webp');
+
+	console.log({
+		node,
+		isImage,
+	});
 	return (
 		<>
 			{!isRoot && (
@@ -787,6 +806,12 @@ const NodeRow: React.FC<{
 											}
 											level={level}
 										/>
+										{isImage && (
+											<img
+												className={css['fileNodeImage']}
+												src={`/wp-json/static-files-editor/v1/download-file?path=${path}`}
+											/>
+										)}
 									</Button>
 									<div className={css['moreActions']}>
 										<DropdownMenu

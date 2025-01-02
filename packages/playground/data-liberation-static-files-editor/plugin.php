@@ -152,6 +152,10 @@ class WP_Static_Files_Editor_Plugin {
             }
         });
 
+        add_filter( 'big_image_size_threshold', function($threshold) {
+            return WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION;
+        });
+
         // Handle media uploads
         add_filter('wp_generate_attachment_metadata', function($metadata, $attachment_id) {
             try {
@@ -159,10 +163,19 @@ class WP_Static_Files_Editor_Plugin {
                     return $metadata;
                 }
 
-                $file_path = get_attached_file($attachment_id);
+                // Don't process thumbnails, only original images
+                $file_path = wp_get_original_image_path($attachment_id);
                 if(!$file_path) {
                     return $metadata;
                 }
+
+                // Skip if the file was already processed
+                $local_file_path = get_post_meta($attachment_id, 'local_file_path', true);
+                if($local_file_path) {
+                    return $metadata;
+                }
+
+                $file_path = self::resize_to_max_dimensions_if_files_is_an_image($file_path);
 
                 $main_fs = self::get_fs();
                 $local_fs = new WP_Local_Filesystem(dirname($file_path));
@@ -170,7 +183,10 @@ class WP_Static_Files_Editor_Plugin {
                 $file_name = basename($file_path);
                 $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $file_name);
 
-                $file_path = self::resize_to_max_dimensions_if_files_is_an_image($file_path);
+                // Skip if the file was already processed
+                if($main_fs->is_file($target_path)) {
+                    return $metadata;
+                }
 
                 // Set local_file_path metadata for the attachment
                 update_post_meta($attachment_id, 'local_file_path', $target_path);
@@ -196,20 +212,31 @@ class WP_Static_Files_Editor_Plugin {
                     return $metadata;
                 }
 
-                $file_path = get_attached_file($attachment_id);
+                // Don't process thumbnails, only original images
+                $file_path = wp_get_original_image_path($attachment_id);
                 if(!$file_path) {
                     return $metadata;
                 }
 
+                // Skip if the file isn't synchronized with the local filesystem
                 $local_file_path = get_post_meta($attachment_id, 'local_file_path', true);
                 if(!$local_file_path) {
                     return $metadata;
                 }
 
+                $file_path = self::resize_to_max_dimensions_if_files_is_an_image($file_path);
+
                 $main_fs = self::get_fs();
                 $local_fs = new WP_Local_Filesystem(dirname($file_path));
 
                 $file_name = basename($file_path);
+                $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $file_name);
+
+                // Skip if the file was already processed
+                if($main_fs->is_file($target_path)) {
+                    return $metadata;
+                }
+
                 // Copy the updated file to the static media directory
                 $local_fs->copy($file_name, $local_file_path, [
                     'to_fs' => $main_fs,
@@ -222,6 +249,11 @@ class WP_Static_Files_Editor_Plugin {
             } finally {
                 self::release_synchronization_lock();
             }
+        }, 10, 2);
+
+        // Disable thumbnail generation for local file attachments
+        add_filter('intermediate_image_sizes_advanced', function($sizes, $metadata) {
+            return array();
         }, 10, 2);
 
         // Rewrite attachment URLs to use the static files download endpoint
@@ -388,20 +420,6 @@ class WP_Static_Files_Editor_Plugin {
             return $response;
         }, 10, 3);
 
-        // Delete the associated file when a post is deleted
-        // @TODO: Rethink this. We have a separate endpoint for deleting an entire path.
-        //        Do we need a separate hook at all?
-        // add_action('before_delete_post', function($post_id) {
-        //     $post = get_post($post_id);
-        //     if ($post && $post->post_type === WP_LOCAL_FILE_POST_TYPE) {
-        //         $fs = self::get_fs();
-        //         $path = get_post_meta($post_id, 'local_file_path', true);
-        //         if ($path && $fs->is_file($path)) {
-        //             $fs->rm($path);
-        //         }
-        //     }
-        // });
-
         // Update the file after post is saved
         add_action('save_post_' . WP_LOCAL_FILE_POST_TYPE, function($post_id, $post, $update) {
             try {
@@ -485,6 +503,14 @@ class WP_Static_Files_Editor_Plugin {
             }
 
             $editor->resize(WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION, WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION, false);
+
+            // Rotate the image if needed
+            if(function_exists('exif_read_data')) {
+                $exif = @exif_read_data($image_path);
+                if($exif && isset($exif['Orientation'])) {
+                    $editor->rotate(exif_imagetype($image_path));
+                }
+            }
             
             // Try saving to original path first
             $result = $editor->save($image_path);
