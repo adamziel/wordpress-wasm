@@ -82,10 +82,10 @@ class WP_Blocks_To_Markdown {
                         $attributes['alt'] = $processor->get_attribute('alt');
                     }
                 }
-                $escaped_url = $attributes['url'] ?? '';
-                // @TODO: Figure out the correct markdown escaping for these things
-                $escaped_url = str_replace(' ', '%20', $escaped_url);
-                $escaped_url = str_replace(')', '%29', $escaped_url);
+
+                $escaped_url = self::escape_url(
+                    $attributes['url'] ?? ''
+                );
 
                 $escaped_alt = $attributes['alt'] ?? '';
                 $escaped_alt = str_replace(['[', ']'], '', $escaped_alt);
@@ -261,6 +261,7 @@ class WP_Blocks_To_Markdown {
         $processor = WP_Data_Liberation_HTML_Processor::create_fragment($html);
         $markdown = '';
         
+        $last_href = null;
         while ($processor->next_token()) {
             if ($processor->get_token_type() === '#text') {
                 $markdown .= $processor->get_modifiable_text();
@@ -269,7 +270,6 @@ class WP_Blocks_To_Markdown {
                 continue;
             }
             
-            $last_href = null;
             $tag_name = $processor->get_tag();
             $sign = $processor->is_tag_closer() ? '-' : (
                 $processor->expects_closer() ? '+' : ''
@@ -303,12 +303,15 @@ class WP_Blocks_To_Markdown {
                     break;
                     
                 case '+A':
-                    $last_href = $processor->get_attribute('href') ?? '';
+                    $last_href = self::escape_url(
+                        $processor->get_attribute('href') ?? ''
+                    );
                     $markdown .= '[';
                     break;
 
                 case '-A':
                     $markdown .= "]($last_href)";
+                    $last_href = null;
                     break;
                     
                 case 'BR':
@@ -324,6 +327,13 @@ class WP_Blocks_To_Markdown {
         $markdown = preg_replace('/ +/', ' ', $markdown);
         $markdown = preg_replace('/\n+/', "\n", $markdown);
         return $markdown;
+    }
+
+    // @TODO: Figure out the correct markdown escaping for URLs
+    static private function escape_url($url) {
+        $escaped_url = str_replace(' ', '%20', $url);
+        $escaped_url = str_replace(')', '%29', $escaped_url);
+        return $escaped_url;
     }
 
     private function has_parent($parent) {
