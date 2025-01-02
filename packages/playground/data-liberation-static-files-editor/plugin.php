@@ -153,13 +153,17 @@ class WP_Static_Files_Editor_Plugin {
         });
 
         // Handle media uploads
-        add_filter('wp_handle_upload', function($upload) {
+        add_filter('wp_generate_attachment_metadata', function($metadata, $attachment_id) {
             try {
                 if(!self::acquire_synchronization_lock()) {
-                    return $upload;
+                    return $metadata;
                 }
-                $file_path= $upload['file'];
-                
+
+                $file_path = get_attached_file($attachment_id);
+                if(!$file_path) {
+                    return $metadata;
+                }
+
                 $main_fs = self::get_fs();
                 $local_fs = new WP_Local_Filesystem(dirname($file_path));
 
@@ -167,6 +171,9 @@ class WP_Static_Files_Editor_Plugin {
                 $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $file_name);
 
                 $file_path = self::resize_to_max_dimensions_if_files_is_an_image($file_path);
+
+                // Set local_file_path metadata for the attachment
+                update_post_meta($attachment_id, 'local_file_path', $target_path);
 
                 // Copy the file to the static media directory
                 $local_fs->copy($file_name, $target_path, [
@@ -176,17 +183,55 @@ class WP_Static_Files_Editor_Plugin {
                 // Force pull after every write operation
                 self::$client->force_pull();
 
-                // Update attachment URL to point to static path
-                $upload['url'] = rest_url('static-files-editor/v1/download-file?path=' . urlencode($target_path));
-
-                // Set local_file_path metadata for the attachment
-                update_post_meta($upload['attachment_id'], 'local_file_path', $target_path);
-
-                return $upload;
+                return $metadata;
             } finally {
                 self::release_synchronization_lock();
             }
-        });
+        }, 10, 2);
+
+        // Handle attachment updates (e.g. image rotations)
+        add_action('wp_update_attachment_metadata', function($metadata, $attachment_id) {
+            try {
+                if(!self::acquire_synchronization_lock()) {
+                    return $metadata;
+                }
+
+                $file_path = get_attached_file($attachment_id);
+                if(!$file_path) {
+                    return $metadata;
+                }
+
+                $local_file_path = get_post_meta($attachment_id, 'local_file_path', true);
+                if(!$local_file_path) {
+                    return $metadata;
+                }
+
+                $main_fs = self::get_fs();
+                $local_fs = new WP_Local_Filesystem(dirname($file_path));
+
+                $file_name = basename($file_path);
+                // Copy the updated file to the static media directory
+                $local_fs->copy($file_name, $local_file_path, [
+                    'to_fs' => $main_fs,
+                ]);
+
+                // Force pull after every write operation
+                self::$client->force_pull();
+
+                return $metadata;
+            } finally {
+                self::release_synchronization_lock();
+            }
+        }, 10, 2);
+
+        // Rewrite attachment URLs to use the static files download endpoint
+        add_filter('wp_get_attachment_url', function($url, $attachment_id) {
+            $local_file_path = get_post_meta($attachment_id, 'local_file_path', true);
+            if ($local_file_path) {
+                return rest_url('static-files-editor/v1/download-file?path=' . urlencode($local_file_path));
+            }
+            return $url;
+        }, 10, 2);
 
         // Register the admin page
         add_action('admin_menu', function() {
