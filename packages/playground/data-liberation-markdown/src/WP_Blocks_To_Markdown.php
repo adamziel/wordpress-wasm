@@ -75,6 +75,13 @@ class WP_Blocks_To_Markdown {
                 return "{$fence}{$language}\n{$code}\n{$fence}\n\n";
 
             case 'core/image':
+                if(!isset($attributes['url'])) {
+                    $processor = WP_Data_Liberation_HTML_Processor::create_fragment($inner_html);
+                    if($processor->next_tag('img')) {
+                        $attributes['url'] = $processor->get_attribute('src');
+                        $attributes['alt'] = $processor->get_attribute('alt');
+                    }
+                }
                 return "![" . ($attributes['alt'] ?? '') . "](" . ($attributes['url'] ?? '') . ")\n\n";
 
             case 'core/heading':

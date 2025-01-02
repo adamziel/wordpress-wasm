@@ -23,8 +23,12 @@ use WordPress\Filesystem\WP_Local_Filesystem;
 use WordPress\Filesystem\WP_Filesystem_Visitor;
 use WordPress\Filesystem\WP_Uploaded_Directory_Tree_Filesystem;
 
-if ( ! defined( 'WP_STATIC_CONTENT_DIR' ) ) {
-    define( 'WP_STATIC_CONTENT_DIR', WP_CONTENT_DIR . '/uploads/static-pages' );
+if ( ! defined( 'WP_STATIC_PAGES_DIR' ) ) {
+    define( 'WP_STATIC_PAGES_DIR', WP_CONTENT_DIR . '/uploads/static-pages' );
+}
+
+if ( ! defined( 'WP_STATIC_MEDIA_DIR' ) ) {
+    define( 'WP_STATIC_MEDIA_DIR', WP_STATIC_PAGES_DIR . '/media' );
 }
 
 if( ! defined( 'WP_LOCAL_FILE_POST_TYPE' )) {
@@ -52,11 +56,10 @@ class WP_Static_Files_Editor_Plugin {
 
     static private function get_fs() {
         if(!self::$fs) {
-            $dot_git_path = WP_CONTENT_DIR . '/.static-pages.git';
-            if(!is_dir($dot_git_path)) {
-                mkdir($dot_git_path, 0777, true);
+            if(!is_dir(WP_STATIC_PAGES_DIR)) {
+                mkdir(WP_STATIC_PAGES_DIR, 0777, true);
             }
-            $local_fs = new WP_Local_Filesystem($dot_git_path);
+            $local_fs = new WP_Local_Filesystem(WP_STATIC_PAGES_DIR);
             $repo = new WP_Git_Repository($local_fs);
             $repo->add_remote('origin', GIT_REPO_URL);
             $repo->set_ref_head('HEAD', 'refs/heads/' . GIT_BRANCH);
@@ -517,6 +520,8 @@ class WP_Static_Files_Editor_Plugin {
         //        ones explicitly set by the user in the editor?
 
         $content = get_post_field('post_content', $post_id);
+        $content = self::unwordpressify_static_assets_urls($content);
+
         switch($extension) {
             // @TODO: Add support for HTML and XHTML
             case 'html':
@@ -528,6 +533,48 @@ class WP_Static_Files_Editor_Plugin {
         }
         $converter->convert();
         return $converter->get_result();
+    }
+
+    /**
+     * Convert references to files served via download_file_endpoint
+     * to an absolute path referring to the corresponding static files
+     * in the local filesystem.
+     */
+    static private function unwordpressify_static_assets_urls($content) {
+        $site_url = WP_URL::parse(get_site_url());
+        $expected_endpoint_path = '/wp-json/static-files-editor/v1/download-file';
+        $p = WP_Block_Markup_Url_Processor::create_from_html($content, $site_url);
+        while($p->next_url()) {
+            $url = $p->get_parsed_url();
+            if(!is_child_url_of($url, get_site_url())) {
+                continue;
+            }
+
+            // Account for sites with no nice permalink structure
+            if($url->searchParams->has('rest_route')) {
+                $url = WP_URL::parse($url->searchParams->get('rest_route'), $site_url);
+            }
+
+            // Naively check for the endpoint that serves the file.
+            // WordPress can use a custom REST API prefix which this
+            // check doesn't account for. It assumes the endpoint path
+            // is unique enough to not conflict with other paths.
+            //
+            // It may need to be revisited if any conflicts arise in
+            // the future.
+            if(!str_ends_with($url->pathname, $expected_endpoint_path)) {
+                continue;
+            }
+
+            // At this point we're certain the URL intends to download
+            // a static file managed by this plugin.
+
+            // Let's replace the URL in the content with the relative URL.
+            $original_url = $url->searchParams->get('path');
+            $p->set_raw_url($original_url);
+        }
+
+        return $p->get_updated_html();
     }
 
     static public function get_local_files_tree($subdirectory = '') {
@@ -608,7 +655,7 @@ class WP_Static_Files_Editor_Plugin {
      * @TODO: Error handling
      */
     static public function import_static_pages() {
-        if ( ! is_dir( WP_STATIC_CONTENT_DIR ) ) {
+        if ( ! is_dir( WP_STATIC_PAGES_DIR ) ) {
             return;
         }
 

@@ -13,11 +13,10 @@ import {
 import apiFetch from '@wordpress/api-fetch';
 import {
 	addComponentToEditorContentArea,
-	addLoadingOverlay,
 	addLocalFilesTab,
 } from './add-local-files-tab';
 import { store as blockEditorStore } from '@wordpress/block-editor';
-import { Spinner, Button } from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import css from './style.module.css';
 import { FileTree } from 'components/FilePickerTree/types';
@@ -79,42 +78,39 @@ function ConnectedFilePickerTree() {
 
 	// Get the current post's file path from meta
 	const [meta] = useEntityProp('postType', WP_LOCAL_FILE_POST_TYPE, 'meta');
-	const [selectedPath, setSelectedPath] = useState(
-		meta?.local_file_path || '/'
-	);
-
-	useEffect(() => {
-		async function refreshPostId() {
-			console.log(
-				'refreshPostId',
-				selectedPath,
-				isStaticAssetPath(selectedPath)
-			);
-			if (isStaticAssetPath(selectedPath)) {
-				setPostLoading(false);
-				setSelectedPostId(null);
-				setPreviewPath(selectedPath);
-			} else {
-				setPostLoading(true);
-				if (!selectedPostId) {
-					const { post_id } = (await apiFetch({
-						path: '/static-files-editor/v1/get-or-create-post-for-file',
-						method: 'POST',
-						data: { path: selectedPath },
-					})) as { post_id: string };
-					setSelectedPostId(post_id);
-				}
-				setPreviewPath(null);
-			}
-		}
-		refreshPostId();
-	}, [selectedPath]);
 
 	const initialPostId = useSelect(
 		(select) => select(editorStore).getCurrentPostId(),
 		[]
 	);
-	const [selectedPostId, setSelectedPostId] = useState(initialPostId);
+
+	const [selectedNode, setSelectedNode] = useState({
+		path: meta?.local_file_path || '/',
+		postId: initialPostId,
+		type: 'folder' as 'file' | 'folder',
+	});
+
+	useEffect(() => {
+		async function refreshPostId() {
+			if (isStaticAssetPath(selectedNode.path)) {
+				setPostLoading(false);
+				setSelectedNode((prev) => ({ ...prev, postId: null }));
+				setPreviewPath(selectedNode.path);
+			} else if (selectedNode.type === 'file') {
+				setPostLoading(true);
+				if (!selectedNode.postId) {
+					const { post_id } = (await apiFetch({
+						path: '/static-files-editor/v1/get-or-create-post-for-file',
+						method: 'POST',
+						data: { path: selectedNode.path },
+					})) as { post_id: string };
+					setSelectedNode((prev) => ({ ...prev, postId: post_id }));
+				}
+				setPreviewPath(null);
+			}
+		}
+		refreshPostId();
+	}, [selectedNode.path]);
 
 	const { post, hasLoadedPost, onNavigateToEntityRecord } = useSelect(
 		(select) => {
@@ -127,16 +123,16 @@ function ConnectedFilePickerTree() {
 				post: getEntityRecord(
 					'postType',
 					WP_LOCAL_FILE_POST_TYPE,
-					selectedPostId
+					selectedNode.postId
 				),
 				hasLoadedPost: hasFinishedResolution('getEntityRecord', [
 					'postType',
 					WP_LOCAL_FILE_POST_TYPE,
-					selectedPostId,
+					selectedNode.postId,
 				]),
 			};
 		},
-		[selectedPostId]
+		[selectedNode.postId]
 	);
 
 	const { setPostLoading, setPreviewPath } = useDispatch(STORE_NAME);
@@ -145,16 +141,16 @@ function ConnectedFilePickerTree() {
 		// Only navigate once the post has been loaded. Otherwise the editor
 		// will disappear for a second – the <Editor> component renders its
 		// children conditionally on having the post available.
-		if (selectedPostId) {
+		if (selectedNode.postId) {
 			setPostLoading(!hasLoadedPost);
 			if (hasLoadedPost && post) {
 				onNavigateToEntityRecord({
-					postId: selectedPostId,
+					postId: selectedNode.postId,
 					postType: WP_LOCAL_FILE_POST_TYPE,
 				});
 			}
 		}
-	}, [hasLoadedPost, post, setPostLoading, selectedPostId]);
+	}, [hasLoadedPost, post, setPostLoading, selectedNode.postId]);
 
 	const refreshFileTree = useCallback(async () => {
 		fileTreePromise = apiFetch({
@@ -190,12 +186,11 @@ function ConnectedFilePickerTree() {
 	};
 
 	const handleFileClick = async (filePath: string, node: FileNode) => {
-		setSelectedPath(filePath);
-		if (node.post_id && !isStaticAssetPath(filePath)) {
-			setSelectedPostId(node.post_id);
-		} else {
-			setSelectedPostId(null);
-		}
+		setSelectedNode({
+			path: filePath,
+			postId: node.post_id,
+			type: node.type,
+		});
 	};
 
 	const handleNodesCreated = async (tree: FileTree) => {
@@ -305,7 +300,7 @@ function ConnectedFilePickerTree() {
 		<FilePickerTree
 			files={fileTree}
 			onSelect={handleFileClick}
-			initialPath={selectedPath}
+			initialPath={selectedNode.path}
 			onNodesCreated={handleNodesCreated}
 			onNodeDeleted={handleNodeDeleted}
 			onNodeMoved={handleNodeMoved}
