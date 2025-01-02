@@ -242,7 +242,6 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
                             $this->append_content( '</p>' );
                             $this->pop_block();
                         }
-                        // @TODO: Find a way to plug in the attachment ID here
                         $image_block = <<<BLOCK
 <!-- wp:image -->
 <figure class="wp-block-image size-full">

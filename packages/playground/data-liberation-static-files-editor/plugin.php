@@ -21,7 +21,7 @@ if ( ! defined( 'WP_STATIC_PAGES_DIR' ) ) {
 }
 
 if ( ! defined( 'WP_STATIC_MEDIA_DIR' ) ) {
-    define( 'WP_STATIC_MEDIA_DIR', WP_STATIC_PAGES_DIR . '/media' );
+    define( 'WP_STATIC_MEDIA_DIR', 'media' );
 }
 
 if( ! defined( 'WP_LOCAL_FILE_POST_TYPE' )) {
@@ -136,7 +136,6 @@ class WP_Static_Files_Editor_Plugin {
         // Register hooks
         register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
-
         add_action('init', function() {
             self::get_fs();
             self::register_post_type();
@@ -145,6 +144,36 @@ class WP_Static_Files_Editor_Plugin {
             global $pagenow;
             if ($pagenow === 'admin.php' && isset($_GET['page']) && $_GET['page'] === 'static_files_editor') {
                 self::menu_item_callback();
+            }
+        });
+
+        // Handle media uploads
+        add_filter('wp_handle_upload', function($upload) {
+            try {
+                if(!self::acquire_synchronization_lock()) {
+                    return $upload;
+                }
+
+                $file = $upload['file'];
+                
+                $main_fs = self::get_fs();
+                $local_fs = new WP_Local_Filesystem(dirname($file));
+
+                $filename = basename($file);
+                $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $filename);
+                $local_fs->copy($filename, $target_path, [
+                    'to_fs' => $main_fs,
+                ]);
+
+                // Update attachment URL to point to static path
+                $upload['url'] = rest_url('static-files-editor/v1/download-file?path=' . urlencode($target_path));
+
+                // Set local_file_path metadata for the attachment
+                update_post_meta($upload['attachment_id'], 'local_file_path', $target_path);
+
+                return $upload;
+            } finally {
+                self::release_synchronization_lock();
             }
         });
 
@@ -581,6 +610,8 @@ class WP_Static_Files_Editor_Plugin {
     /**
      * Convert references to files served via path to the 
      * corresponding download_file_endpoint references.
+     * 
+     * @TODO: Plug in the attachment IDs into image blocks
      */
     static private function wordpressify_static_assets_urls($content) {
         $site_url = WP_URL::parse(get_site_url());
