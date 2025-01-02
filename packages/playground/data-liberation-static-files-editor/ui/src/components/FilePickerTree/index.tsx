@@ -655,7 +655,11 @@ const NodeRow: React.FC<{
 	const toggleOpen = () => expandNode(path, !isExpanded);
 
 	const handleKeyDown = (event: any) => {
-		if (event.key === 'ArrowLeft') {
+		if (event.key === 'Backspace') {
+			onNodeDeleted(path);
+			event.preventDefault();
+			event.stopPropagation();
+		} else if (event.key === 'ArrowLeft') {
 			if (isExpanded) {
 				toggleOpen();
 			} else {
