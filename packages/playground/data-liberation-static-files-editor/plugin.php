@@ -3,13 +3,14 @@
  * Plugin Name: Data Liberation – WordPress Static files editor
  * 
  * @TODO: Page metadata editor in Gutenberg
- * @TODO: Choose the local file storage format (MD, HTML, etc.) in Gutenberg page options.
  * @TODO: HTML, XHTML, and Blocks renderers
  * @TODO: Integrity check – is the database still in sync with the files?
  *        If not, what should we do?
  *        * Overwrite the database with the local files? This is a local files editor after all.
  *        * Display a warning in wp-admin and let the user decide what to do?
  * @TODO: Consider tricky scenarios – moving a parent to trash and then restoring it.
+ * @TODO: Call resize_to_max_dimensions_if_files_is_an_image for the images dragged directly
+ *        into the file picker
  */
 
 use WordPress\Filesystem\WP_Local_Filesystem;
@@ -30,6 +31,10 @@ if( ! defined( 'WP_LOCAL_FILE_POST_TYPE' )) {
 
 if( ! defined( 'WP_AUTOSAVES_DIRECTORY' )) {
     define( 'WP_AUTOSAVES_DIRECTORY', '.autosaves' );
+}
+
+if( ! defined( 'WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION' )) {
+    define( 'WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION', 1280 );
 }
 
 if(isset($_GET['dump'])) {
@@ -153,17 +158,23 @@ class WP_Static_Files_Editor_Plugin {
                 if(!self::acquire_synchronization_lock()) {
                     return $upload;
                 }
-
-                $file = $upload['file'];
+                $file_path= $upload['file'];
                 
                 $main_fs = self::get_fs();
-                $local_fs = new WP_Local_Filesystem(dirname($file));
+                $local_fs = new WP_Local_Filesystem(dirname($file_path));
 
-                $filename = basename($file);
-                $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $filename);
-                $local_fs->copy($filename, $target_path, [
+                $file_name = basename($file_path);
+                $target_path = wp_join_paths(WP_STATIC_MEDIA_DIR, $file_name);
+
+                $file_path = self::resize_to_max_dimensions_if_files_is_an_image($file_path);
+
+                // Copy the file to the static media directory
+                $local_fs->copy($file_name, $target_path, [
                     'to_fs' => $main_fs,
                 ]);
+
+                // Force pull after every write operation
+                self::$client->force_pull();
 
                 // Update attachment URL to point to static path
                 $upload['url'] = rest_url('static-files-editor/v1/download-file?path=' . urlencode($target_path));
@@ -407,6 +418,46 @@ class WP_Static_Files_Editor_Plugin {
         }, 10, 1);
     }
 
+    /**
+     * Resize image to a maximum width and height.
+     * 
+     * @param string $image_path The path to the image file
+     * @return string The path to the resized image file
+     */
+    static public function resize_to_max_dimensions_if_files_is_an_image($image_path) {
+        // Only resize if this is an image file
+        // getimagesize() returns false for non-images (and 
+        // also image formats it can't handle)
+        $image_size = @getimagesize($image_path);
+        if ($image_size === false) {
+            return $image_path;
+        }
+    
+        if ($image_size[0] > WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION || $image_size[1] > WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION) {
+            $editor = wp_get_image_editor($image_path);
+            if (is_wp_error($editor)) {
+                return $image_path;
+            }
+
+            $editor->resize(WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION, WP_STATIC_FILES_EDITOR_IMAGE_MAX_DIMENSION, false);
+            
+            // Try saving to original path first
+            $result = $editor->save($image_path);
+            
+            // If saving fails (read-only), save to temp file
+            if (is_wp_error($result)) {
+                $temp_path = wp_tempnam(basename($image_path));
+                $result = $editor->save($temp_path);
+                if (is_wp_error($result)) {
+                    return $image_path;
+                }
+                $image_path = $temp_path;
+            }
+        }
+        
+        return $image_path;
+    }
+
     static public function download_file_endpoint($request) {
         $path = $request->get_param('path');
         $fs = self::get_fs();
@@ -445,7 +496,7 @@ class WP_Static_Files_Editor_Plugin {
         return new WP_Error('file_error', 'Could not read file');
     }
 
-    static private $synchronizing = false;
+    static private $synchronizing = 0;
     static private function acquire_synchronization_lock() {
         // Skip if in maintenance mode
         if (wp_is_maintenance_mode()) {
@@ -457,15 +508,15 @@ class WP_Static_Files_Editor_Plugin {
         }
 
         // @TODO: Synchronize between threads
-        if(self::$synchronizing) {
+        if(self::$synchronizing > 0) {
             return false;
         }
-        self::$synchronizing = true;
+        ++self::$synchronizing;
         return true;
     }
 
     static private function release_synchronization_lock() {
-        self::$synchronizing = false;
+        self::$synchronizing = max(0, self::$synchronizing - 1);
     }
 
     static private function refresh_post_from_local_file($post) {
@@ -741,11 +792,13 @@ class WP_Static_Files_Editor_Plugin {
         // Prevent ID conflicts
         self::reset_db_data();
 
-        return self::do_import_static_pages();
+        return self::do_import_static_pages([
+            'from_filesystem' => self::get_fs(),
+        ]);
     }
 
     static private function do_import_static_pages($options = array()) {
-        $fs = $options['filesystem'] ?? self::get_fs();
+        $fs = $options['from_filesystem'];
         $importer = WP_Stream_Importer::create(
             function () use ($fs, $options) {
                 return new WP_Filesystem_Entity_Reader(
@@ -987,7 +1040,7 @@ class WP_Static_Files_Editor_Plugin {
             }
 
             $result = self::do_import_static_pages(array(
-                'filesystem' => $uploaded_fs,
+                'from_filesystem' => $uploaded_fs,
                 'post_tree_options' => array(
                     'root_parent_id' => $parent_id,
                     'create_index_pages' => false,
