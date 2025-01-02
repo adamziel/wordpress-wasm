@@ -221,7 +221,7 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 						$html = new WP_HTML_Tag_Processor( '<img>' );
 						$html->next_tag();
 						if ( $node->getUrl() ) {
-							$html->set_attribute( 'src', $node->getUrl() );
+							$html->set_attribute( 'src', urldecode($node->getUrl()) );
 						}
 						if ( $node->getTitle() ) {
 							$html->set_attribute( 'title', $node->getTitle() );
@@ -235,7 +235,26 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 							$children[0]->setLiteral( '' );
 						}
 
-						$this->append_content( $html->get_updated_html() );
+                        $image_tag = $html->get_updated_html();
+                        // @TODO: Decide between inline image and the image block
+                        $in_paragraph = $this->current_block()->block_name === 'paragraph';
+                        if ( $in_paragraph ) {
+                            $this->append_content( '</p>' );
+                            $this->pop_block();
+                        }
+                        // @TODO: Find a way to plug in the attachment ID here
+                        $image_block = <<<BLOCK
+<!-- wp:image -->
+<figure class="wp-block-image size-full">
+    $image_tag
+</figure>
+<!-- /wp:image -->
+BLOCK;
+						$this->append_content( $image_block );
+                        if ( $in_paragraph ) {
+                            $this->push_block('paragraph');
+                            $this->append_content( '<p>' );
+                        }
 						break;
 
 					case ExtensionInline\Link::class:

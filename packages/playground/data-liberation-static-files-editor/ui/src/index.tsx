@@ -269,10 +269,10 @@ function ConnectedFilePickerTree() {
 	const handleDragStart = (
 		e: React.DragEvent,
 		path: string,
-		type: 'file' | 'folder'
+		node: FileNode
 	) => {
 		// Directory downloads are not supported yet.
-		if (type === 'file') {
+		if (node.type === 'file') {
 			const url = `${window.wpApiSettings.root}static-files-editor/v1/download-file?path=${path}&_wpnonce=${window.wpApiSettings.nonce}`;
 			const filename = path.split('/').pop();
 			// For dragging & dropping to desktop
@@ -280,11 +280,38 @@ function ConnectedFilePickerTree() {
 				'DownloadURL',
 				`text/plain:${filename}:${url}`
 			);
-			// For dragging & dropping into the editor canvas
-			e.dataTransfer.setData(
-				'text/html',
-				`<img src="${url}" alt="${filename}" />`
-			);
+			if ('post_type' in node && node.post_type === 'attachment') {
+				// Create DOM elements to safely construct HTML
+
+				const figure = document.createElement('figure');
+				figure.className = 'wp-block-image size-full';
+
+				const img = document.createElement('img');
+				img.src = url;
+				img.alt = '';
+				img.className = `wp-image-${node.post_id}`;
+
+				figure.appendChild(img);
+
+				// Wrap in WordPress block comments
+				// For dragging & dropping into the editor canvas
+				e.dataTransfer.setData(
+					'text/html',
+					`<!-- wp:image {"id":${JSON.stringify(
+						node.post_id
+					).replaceAll(
+						'-->',
+						''
+					)},"sizeSlug":"full","linkDestination":"none"} -->
+${figure.outerHTML}
+<!-- /wp:image -->`
+				);
+			} else if (isStaticAssetPath(path)) {
+				const img = document.createElement('img');
+				img.src = url;
+				img.alt = filename;
+				e.dataTransfer.setData('text/html', img.outerHTML);
+			}
 		}
 	};
 

@@ -97,17 +97,9 @@ type FilePickerContextType = {
 	onEditedNodeCancel: () => void;
 	onNodeDeleted: (path: string) => void;
 	startRenaming: (path: string) => void;
-	onDragStart: (
-		e: React.DragEvent,
-		path: string,
-		type: 'file' | 'folder'
-	) => void;
-	onDragOver: (
-		e: React.DragEvent,
-		path: string,
-		type: 'file' | 'folder'
-	) => void;
-	onDrop: (e: React.DragEvent, path: string, type: 'file' | 'folder') => void;
+	onDragStart: (e: React.DragEvent, path: string, node: FileNode) => void;
+	onDragOver: (e: React.DragEvent, path: string, node: FileNode) => void;
+	onDrop: (e: React.DragEvent, path: string, node: FileNode) => void;
 	onDragEnd: () => void;
 	dragState: DragState | null;
 };
@@ -301,6 +293,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			path,
 			hoverPath: null,
 			hoverType: null,
+			isExternal: false,
 		});
 
 		onDragStart?.(e, path, type);
@@ -313,7 +306,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	const handleDragOver = (
 		e: React.DragEvent,
 		path: string,
-		type: 'file' | 'folder'
+		node: FileNode
 	) => {
 		e.preventDefault();
 
@@ -324,7 +317,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				path: '',
 				isExternal: true,
 				hoverPath: path,
-				hoverType: type,
+				hoverType: node.type,
 			});
 			return;
 		}
@@ -340,7 +333,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			setDragState({
 				...dragState,
 				hoverPath: path,
-				hoverType: type,
+				hoverType: node.type,
 			});
 		}
 	};
@@ -348,7 +341,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	const handleDrop = async (
 		e: React.DragEvent,
 		targetPath: string,
-		targetType: 'file' | 'folder'
+		targetNode: FileNode
 	) => {
 		e.preventDefault();
 		// Prevent a parent element event handler from handling the drop
@@ -363,7 +356,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			// Prevent dropping a folder into its own descendant
 			if (
 				dragState.path &&
-				targetType === 'folder' &&
+				targetNode.type === 'folder' &&
 				isDescendantPath(dragState.path, targetPath)
 			) {
 				return;
@@ -372,7 +365,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 			const fromPath = dragState.path.replace(/^\/+/, '');
 
 			const targetParentPath =
-				targetType === 'file'
+				targetNode.type === 'file'
 					? targetPath.split('/').slice(0, -1).join('/')
 					: targetPath;
 
@@ -396,7 +389,7 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		// Drag&Drop from desktop into the FilePickerTree
 		if (e.dataTransfer.items.length > 0) {
 			const targetFolder =
-				targetType === 'folder'
+				targetNode.type === 'folder'
 					? targetPath
 					: targetPath.split('/').slice(0, -1).join('/');
 			const items = Array.from(e.dataTransfer.items);
@@ -571,7 +564,11 @@ export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 				ref={thisContainerRef}
 				className={className}
 				onDrop={(e) => {
-					handleDrop?.(e, '/', 'folder');
+					handleDrop?.(e, '/', {
+						name: '',
+						type: 'folder',
+						children: [],
+					});
 				}}
 			>
 				<div
@@ -761,14 +758,12 @@ const NodeRow: React.FC<{
 										data-path={path}
 										draggable={true}
 										onDragStart={(e) =>
-											onDragStart?.(e, path, node.type)
+											onDragStart?.(e, path, node)
 										}
 										onDragOver={(e) =>
-											onDragOver?.(e, path, node.type)
+											onDragOver?.(e, path, node)
 										}
-										onDrop={(e) =>
-											onDrop?.(e, path, node.type)
-										}
+										onDrop={(e) => onDrop?.(e, path, node)}
 										onDragEnd={onDragEnd}
 										style={{
 											opacity: isBeingDragged ? 0.5 : 1,

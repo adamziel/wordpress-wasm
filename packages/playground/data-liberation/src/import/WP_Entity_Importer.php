@@ -451,6 +451,8 @@ class WP_Entity_Importer {
 			return false;
 		}
 
+        $meta = array();
+
 		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
 		$parent_id   = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
 
@@ -548,6 +550,12 @@ class WP_Entity_Importer {
 
 			$postdata[ $key ] = $data[ $key ];
 		}
+        if(!isset($postdata['post_date'])) {
+            $postdata['post_date'] = date('Y-m-d H:i:s');
+        }
+        if(!isset($postdata['post_date_gmt'])) {
+            $postdata['post_date_gmt'] = date('Y-m-d H:i:s');
+        }
 
 		$postdata = apply_filters( 'wp_import_post_data_processed', $postdata, $data );
 
@@ -782,7 +790,6 @@ class WP_Entity_Importer {
 	 * @TODO: Explore other interfaces for attachment import.
 	 */
 	public function import_attachment( $filepath, $post_id ) {
-
 		$filename = basename( $filepath );
 		// Check if attachment with this guid already exists
 		$existing_attachment = get_posts(
@@ -863,7 +870,7 @@ class WP_Entity_Importer {
 				$value = maybe_unserialize( $meta_item['value'] );
 			}
 
-			add_post_meta( $post_id, $key, $value );
+			update_post_meta( $post_id, $key, $value );
 			do_action( 'import_post_meta', $post_id, $key, $value );
 
 			// if the post has a featured image, take note of this in case of remap

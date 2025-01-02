@@ -3,8 +3,6 @@
  * Plugin Name: Data Liberation – WordPress Static files editor
  * 
  * @TODO: Page metadata editor in Gutenberg
- * @TODO: A special "filename" field in wp-admin and in Gutenberg. Either source from the page title or
- *        pin it to a specific, user-defined value.
  * @TODO: Choose the local file storage format (MD, HTML, etc.) in Gutenberg page options.
  * @TODO: HTML, XHTML, and Blocks renderers
  * @TODO: Integrity check – is the database still in sync with the files?
@@ -12,11 +10,6 @@
  *        * Overwrite the database with the local files? This is a local files editor after all.
  *        * Display a warning in wp-admin and let the user decide what to do?
  * @TODO: Consider tricky scenarios – moving a parent to trash and then restoring it.
- * @TODO: Consider using hierarchical taxonomy to model the directory/file structure – instead of
- *        using the post_parent field. Could be more flexible (no need for index.md files) and require
- *        less complex operations in the code (no need to update a subtree of posts when moving a post,
- *        no need to periodically "flatten" the parent directory).
- * @TODO: Maybe use Playground's FilePickerTree React component? Or re-implement it with interactivity API?
  */
 
 use WordPress\Filesystem\WP_Local_Filesystem;
@@ -143,6 +136,7 @@ class WP_Static_Files_Editor_Plugin {
         // Register hooks
         register_activation_hook( __FILE__, array(self::class, 'import_static_pages') );
 
+
         add_action('init', function() {
             self::get_fs();
             self::register_post_type();
@@ -254,7 +248,11 @@ class WP_Static_Files_Editor_Plugin {
                 'methods' => 'GET',
                 'callback' => array(self::class, 'download_file_endpoint'),
                 'permission_callback' => function() {
-                    return current_user_can('edit_posts');
+                    // @TODO: Restrict access to this endpoint to editors, but
+                    //        don't require a nonce. Nonces are troublesome for
+                    //        static assets that don't have a dynamic URL.
+                    // return current_user_can('edit_posts');
+                    return true;
                 },
                 'args' => array(
                     'path' => array(
@@ -478,9 +476,10 @@ class WP_Static_Files_Editor_Plugin {
                     $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $content ) );
                     break;
                 case 'md':
-                default:
                     $converter = new WP_Markdown_To_Blocks( $content );
                     break;
+                default:
+                    return false;
             }
             $converter->convert();
 
@@ -489,6 +488,7 @@ class WP_Static_Files_Editor_Plugin {
                 $metadata[$key] = $value[0];
             }
             $new_content = $converter->get_block_markup();
+            $new_content = self::wordpressify_static_assets_urls($new_content);
 
             $updated = wp_update_post(array(
                 'ID' => $post_id,
@@ -527,9 +527,10 @@ class WP_Static_Files_Editor_Plugin {
             case 'html':
             case 'xhtml':
             case 'md':
-            default:
                 $converter = new WP_Blocks_To_Markdown( $content, $metadata );
                 break;
+            default:
+                return '';
         }
         $converter->convert();
         return $converter->get_result();
@@ -577,6 +578,35 @@ class WP_Static_Files_Editor_Plugin {
         return $p->get_updated_html();
     }
 
+    /**
+     * Convert references to files served via path to the 
+     * corresponding download_file_endpoint references.
+     */
+    static private function wordpressify_static_assets_urls($content) {
+        $site_url = WP_URL::parse(get_site_url());
+        $expected_endpoint_path = '/wp-json/static-files-editor/v1/download-file';
+        $p = WP_Block_Markup_Url_Processor::create_from_html($content, $site_url);
+        while($p->next_url()) {
+            $url = $p->get_parsed_url();
+            if(!is_child_url_of($url, get_site_url())) {
+                continue;
+            }
+
+            // @TODO: Also work with <a> tags, account
+            //        for .md and directory links etc.
+            if($p->get_tag() !== 'IMG') {
+                continue;
+            }
+
+            $new_url = WP_URL::parse($url->pathname, $site_url);
+            $new_url->pathname = $expected_endpoint_path;
+            $new_url->searchParams->set('path', $p->get_raw_url());
+            $p->set_raw_url($new_url->__toString());
+        }
+
+        return $p->get_updated_html();
+    }
+
     static public function get_local_files_tree($subdirectory = '') {
         $tree = [];
         $fs = self::get_fs();
@@ -589,21 +619,33 @@ class WP_Static_Files_Editor_Plugin {
             'fields' => 'id=>meta'
         ));
 
-        $path_to_post_id = array();
+        $path_to_post = array();
         foreach($file_posts as $post) {
             $file_path = get_post_meta($post->ID, 'local_file_path', true);
             if ($file_path) {
-                $path_to_post_id[$file_path] = $post->ID;
+                $path_to_post[$file_path] = $post;
+            }
+        }
+
+        $attachments = get_posts(array(
+            'post_type' => 'attachment',
+            'posts_per_page' => -1,
+            'meta_key' => 'local_file_path',
+        ));
+        foreach($attachments as $attachment) {
+            $attachment_path = get_post_meta($attachment->ID, 'local_file_path', true);
+            if ($attachment_path) {
+                $path_to_post[$attachment_path] = $attachment;
             }
         }
         
         $base_dir = $subdirectory ? $subdirectory : '/';
-        self::build_local_file_tree_recursive($fs, $base_dir, $tree, $path_to_post_id);
+        self::build_local_file_tree_recursive($fs, $base_dir, $tree, $path_to_post);
         
         return $tree;
     }
     
-    static private function build_local_file_tree_recursive($fs, $dir, &$tree, $path_to_post_id) {
+    static private function build_local_file_tree_recursive($fs, $dir, &$tree, $path_to_post) {
         $items = $fs->ls($dir);
         if ($items === false) {
             return;
@@ -633,15 +675,16 @@ class WP_Static_Files_Editor_Plugin {
                 
                 // Recursively build children
                 $last_index = count($tree) - 1;
-                self::build_local_file_tree_recursive($fs, $path, $tree[$last_index]['children'], $path_to_post_id);
+                self::build_local_file_tree_recursive($fs, $path, $tree[$last_index]['children'], $path_to_post);
             } else {
                 $node = array(
                     'type' => 'file',
                     'name' => $item,
                 );
 
-                if (isset($path_to_post_id[$path])) {
-                    $node['post_id'] = $path_to_post_id[$path];
+                if (isset($path_to_post[$path])) {
+                    $node['post_id'] = $path_to_post[$path]->ID;
+                    $node['post_type'] = $path_to_post[$path]->post_type;
                 }
 
                 $tree[] = $node;
@@ -655,10 +698,6 @@ class WP_Static_Files_Editor_Plugin {
      * @TODO: Error handling
      */
     static public function import_static_pages() {
-        if ( ! is_dir( WP_STATIC_PAGES_DIR ) ) {
-            return;
-        }
-
         if ( defined('WP_IMPORTING') && WP_IMPORTING ) {
             return;
         }
@@ -671,20 +710,26 @@ class WP_Static_Files_Editor_Plugin {
         // Prevent ID conflicts
         self::reset_db_data();
 
-        self::do_import_static_pages();
+        return self::do_import_static_pages();
     }
 
     static private function do_import_static_pages($options = array()) {
+        $fs = $options['filesystem'] ?? self::get_fs();
         $importer = WP_Stream_Importer::create(
-            function () use ($options) {
+            function () use ($fs, $options) {
                 return new WP_Filesystem_Entity_Reader(
-                    self::get_fs(),
+                    $fs,
                     array(
                         'post_type' => WP_LOCAL_FILE_POST_TYPE,
                         'post_tree_options' => $options['post_tree_options'] ?? array(),
                     )
                 );
-            }
+            },
+            array(
+                'attachment_downloader_options' => array(
+                    'source_from_filesystem' => $fs,
+                ),
+            )
         );
 
         $import_session = WP_Import_Session::create(
@@ -693,7 +738,7 @@ class WP_Static_Files_Editor_Plugin {
             )
         );
 
-        data_liberation_import_step( $import_session, $importer );
+        return data_liberation_import_step( $import_session, $importer );
     }
 
     static private function register_post_type() {
@@ -910,33 +955,13 @@ class WP_Static_Files_Editor_Plugin {
                 }
             }
 
-            $importer = WP_Stream_Importer::create(
-                function () use ($parent_id, $uploaded_fs) {
-                    return new WP_Filesystem_Entity_Reader(
-                        $uploaded_fs,
-                        array(
-                            'post_type' => WP_LOCAL_FILE_POST_TYPE,
-                            'post_tree_options' => array(
-                                'root_parent_id' => $parent_id,
-                                'create_index_pages' => false,
-                            ),
-                        )
-                    );
-                },
-                array(
-                    'attachment_downloader_options' => array(
-                        'source_from_filesystem' => $uploaded_fs,
-                    ),
-                )
-            );
-            
-            $import_session = WP_Import_Session::create(
-                array (
-                    'data_source' => 'static_pages'
-                )
-            );
-
-            $result = data_liberation_import_step( $import_session, $importer );
+            $result = self::do_import_static_pages(array(
+                'filesystem' => $uploaded_fs,
+                'post_tree_options' => array(
+                    'root_parent_id' => $parent_id,
+                    'create_index_pages' => false,
+                ),
+            ));
             if(is_wp_error($result)) {
                 return $result;
             }

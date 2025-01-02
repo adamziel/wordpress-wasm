@@ -82,7 +82,14 @@ class WP_Blocks_To_Markdown {
                         $attributes['alt'] = $processor->get_attribute('alt');
                     }
                 }
-                return "![" . ($attributes['alt'] ?? '') . "](" . ($attributes['url'] ?? '') . ")\n\n";
+                $escaped_url = $attributes['url'] ?? '';
+                // @TODO: Figure out the correct markdown escaping for these things
+                $escaped_url = str_replace(' ', '%20', $escaped_url);
+                $escaped_url = str_replace(')', '%29', $escaped_url);
+
+                $escaped_alt = $attributes['alt'] ?? '';
+                $escaped_alt = str_replace(['[', ']'], '', $escaped_alt);
+                return "![" . $escaped_alt . "](" . $escaped_url . ")\n\n";
 
             case 'core/heading':
                 $level = $attributes['level'] ?? null;

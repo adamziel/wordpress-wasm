@@ -97,6 +97,14 @@ class WP_Filesystem_Entity_Reader extends WP_Entity_Reader {
                                 'attachment_url' => 'file://' . $post_tree_node['local_file_path'],
                             )
                         );
+                        $this->entities[] = new WP_Imported_Entity(
+                            'post_meta',
+                            array(
+                                'post_id' => $post_tree_node['post_id'],
+                                'key' => 'local_file_path',
+                                'value' => $post_tree_node['local_file_path'],
+                            )
+                        );
                         // We're done emiting the entity.
                         // wp_generate_attachment_metadata() et al. will be called by the
                         // importer at the database insertion step.
