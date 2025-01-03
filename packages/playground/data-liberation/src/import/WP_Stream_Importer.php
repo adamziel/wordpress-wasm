@@ -129,15 +129,14 @@ class WP_Stream_Importer {
 	protected $active_downloads = array();
 	protected $downloader;
 
-	/**
-	 * @var WP_Topological_Sorter
-	 */
-	private $topological_sorter;
-
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
-			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
+			function ( $cursor = null ) use ( $wxr_path, $options ) {
+				if ( isset( $options['topo_sorted'] ) && false === $options['topo_sorted'] ) {
+					return WP_WXR_Entity_Reader::create( new WP_File_Reader( $wxr_path ), $cursor );
+				}
+
+				return WP_WXR_Sorted_Reader::create( new WP_File_Reader( $wxr_path ), $cursor, $options );
 			},
 			$options,
 			$cursor
@@ -146,8 +145,12 @@ class WP_Stream_Importer {
 
 	public static function create_for_wxr_url( $wxr_url, $options = array(), $cursor = null ) {
 		return static::create(
-			function ( $cursor = null ) use ( $wxr_url ) {
-				return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+			function ( $cursor = null ) use ( $wxr_url, $options ) {
+				if ( isset( $options['topo_sorted'] ) && false === $options['topo_sorted'] ) {
+					return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+				}
+
+				return WP_WXR_Sorted_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor, $options );
 			},
 			$options,
 			$cursor
@@ -260,6 +263,10 @@ class WP_Stream_Importer {
 		// Remove the trailing slash to make concatenation easier later.
 		$options['uploads_url'] = rtrim( $options['uploads_url'], '/' );
 
+		if ( ! isset( $options['topo_sorted'] ) ) {
+			$options['topo_sorted'] = true;
+		}
+
 		return $options;
 	}
 
@@ -305,6 +312,12 @@ class WP_Stream_Importer {
 				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
+				if ( ! $this->options['topo_sorted'] ) {
+					// The entities are not topologically sorted, skip to next stage.
+					$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
+					return false;
+				}
+
 				if ( true === $this->topological_sort_next_entity() ) {
 					return true;
 				}
@@ -325,7 +338,7 @@ class WP_Stream_Importer {
 				return false;
 			case self::STAGE_FINISHED:
 				// Flush away the topological sorter session.
-				$this->topological_sorter->delete_session();
+				// $this->topological_sorter->delete_session();
 				return false;
 		}
 	}
@@ -357,10 +370,6 @@ class WP_Stream_Importer {
 
 		if ( null === $this->entity_iterator ) {
 			$this->entity_iterator = $this->create_entity_iterator();
-		}
-
-		if ( null === $this->topological_sorter ) {
-			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
 		// Mark all mapping candidates as seen.
@@ -527,11 +536,12 @@ class WP_Stream_Importer {
 	}
 
 	/**
-	 * Sort the entities topologically.
+	 * Sort the entities topologically. This is a stage made to heat up the
+	 * sorter internal database with all the entities before we start importing.
 	 *
 	 * @param int $count The number of entities to process in one go.
 	 */
-	private function topological_sort_next_entity( $count = 10000 ) {
+	private function topological_sort_next_entity( $count = 1000 ) {
 		if ( null !== $this->next_stage ) {
 			return false;
 		}
@@ -540,30 +550,17 @@ class WP_Stream_Importer {
 			$this->entity_iterator = $this->create_entity_iterator();
 		}
 
-		if ( null === $this->topological_sorter ) {
-			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
-		}
-
 		if ( ! $this->entity_iterator->valid() ) {
 			$this->entity_iterator  = null;
 			$this->resume_at_entity = null;
 			return false;
 		}
 
-		/**
-		 * Internalize the loop to avoid computing the reentrancy cursor
-		 * on every entity in the imported data stream.
-		 */
 		for ( $i = 0; $i < $count; ++$i ) {
-			if ( ! $this->entity_iterator->valid() ) {
+			// Add the entity to the topological sorter.
+			if ( ! $this->entity_iterator->add_next_entity() ) {
 				break;
 			}
-
-			$entity = $this->entity_iterator->current();
-			$data   = $entity->get_data();
-			// $offset = $this->entity_iterator->get_last_xml_byte_offset_outside_of_entity();
-			$this->topological_sorter->map_entity( $entity->get_type(), $data );
-			$this->entity_iterator->next();
 		}
 
 		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
@@ -588,10 +585,6 @@ class WP_Stream_Importer {
 				$this->entity_iterator->set_entities_iterator( $this->create_entity_iterator() );
 			}
 			$this->downloader = new WP_Attachment_Downloader( $this->options['uploads_path'] );
-		}
-
-		if ( null === $this->topological_sorter ) {
-			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 		}
 
 		// Clear the frontloading events from the previous pass.
@@ -699,8 +692,8 @@ class WP_Stream_Importer {
 			$this->importer        = new WP_Entity_Importer();
 		}
 
-		if ( null === $this->topological_sorter ) {
-			$this->topological_sorter = new WP_Topological_Sorter( $this->options );
+		if ( $this->options['topo_sorted'] ) {
+			$this->entity_iterator->emit_cursor = true;
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
@@ -768,15 +761,20 @@ class WP_Stream_Importer {
 				break;
 		}
 
-		$post_id = $this->importer->import_entity( $entity );
-		if ( false !== $post_id ) {
+		$entity_id = $this->importer->import_entity( $entity );
+		if ( false !== $entity_id ) {
 			$this->count_imported_entity( $entity->get_type() );
+
+			if ( isset( $this->options['topo_sorted'] ) ) {
+				// An entity has been imported, update the mapping for following ones.
+				$this->entity_iterator->update_mapped_id( $entity, $entity_id );
+			}
 		} else {
 			// @TODO: Store error.
 		}
 		foreach ( $attachments as $filepath ) {
 			// @TODO: Monitor failures.
-			$attachment_id = $this->importer->import_attachment( $filepath, $post_id );
+			$attachment_id = $this->importer->import_attachment( $filepath, $entity_id );
 			if ( false !== $attachment_id ) {
 				// @TODO: How to count attachments?
 				$this->count_imported_entity( 'post' );

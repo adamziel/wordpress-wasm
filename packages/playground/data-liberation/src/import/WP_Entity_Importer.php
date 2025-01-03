@@ -70,11 +70,6 @@ class WP_Entity_Importer {
 	protected $featured_images = array();
 
 	/**
-	 * @var WP_Topological_Sorter
-	 */
-	private $topological_sorter;
-
-	/**
 	 * Constructor
 	 *
 	 * @param array $options {
@@ -113,9 +108,6 @@ class WP_Entity_Importer {
 				'default_author'            => null,
 			)
 		);
-
-		WP_Topological_Sorter::activate();
-		$this->topological_sorter = new WP_Topological_Sorter( $this->options );
 	}
 
 	public function import_entity( WP_Imported_Entity $entity ) {
@@ -267,7 +259,8 @@ class WP_Entity_Importer {
 		 * @param array $userdata Raw data imported for the user.
 		 */
 		do_action( 'wxr_importer_processed_user', $user_id, $userdata );
-		// $this->topological_sorter->map_entity( 'user', $userdata, $user_id );
+
+		return $user_id;
 	}
 
 	public function import_term( $data ) {
@@ -278,7 +271,6 @@ class WP_Entity_Importer {
 		 * @param array $meta Meta data.
 		 */
 		$data = apply_filters( 'wxr_importer_pre_process_term', $data );
-		$data = $this->topological_sorter->get_mapped_entity( 'term', $data );
 		if ( empty( $data ) ) {
 			return false;
 		}
@@ -424,7 +416,8 @@ class WP_Entity_Importer {
 		 * @param array $data Raw data imported for the term.
 		 */
 		do_action( 'wxr_importer_processed_term', $term_id, $data );
-		$this->topological_sorter->map_entity( 'term', $data, $term_id );
+
+		return $term_id;
 	}
 
 	public function import_term_meta( $meta_item, $term_id ) {
@@ -439,7 +432,6 @@ class WP_Entity_Importer {
 		 * @param int $term_id Term the meta is attached to.
 		 */
 		$meta_item = apply_filters( 'wxr_importer_pre_process_term_meta', $meta_item, $term_id );
-		$meta_item = $this->topological_sorter->get_mapped_entity( 'term_meta', $meta_item, $term_id );
 		if ( empty( $meta_item ) ) {
 			return false;
 		}
@@ -458,7 +450,8 @@ class WP_Entity_Importer {
 		$term_meta_id = add_term_meta( $meta_item['term_id'], wp_slash( $meta_item['meta_key'] ), wp_slash_strings_only( $value ) );
 
 		do_action( 'wxr_importer_processed_term_meta', $term_meta_id, $meta_item, $meta_item['term_id'] );
-		$this->topological_sorter->map_entity( 'term_meta', $meta_item, $meta_item['meta_key'] );
+
+		return $term_meta_id;
 	}
 
 	/**
@@ -528,7 +521,6 @@ class WP_Entity_Importer {
 		 * @param array $terms Terms on the post.
 		 */
 		$data = apply_filters( 'wxr_importer_pre_process_post', $data, $parent_id );
-		$data = $this->topological_sorter->get_mapped_entity( 'post', $data, $parent_id );
 		if ( empty( $data ) ) {
 			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
@@ -698,7 +690,7 @@ class WP_Entity_Importer {
 		$this->mark_post_exists( $data, $post_id );
 
 		// Add terms to the post
-		if ( ! empty( $data['terms'] ) ) {
+		/*if ( ! empty( $data['terms'] ) ) {
 			$terms_to_set = array();
 
 			foreach ( $data['terms'] as $term ) {
@@ -714,7 +706,7 @@ class WP_Entity_Importer {
 					if ( ! is_wp_error( $new_term ) ) {
 						$term_id = $new_term['term_id'];
 
-						$this->topological_sorter->map_entity( 'term', $new_term, $term_id );
+						$this->topological_sorter->update_mapped_id( $new_term, $term_id );
 					} else {
 						continue;
 					}
@@ -726,7 +718,7 @@ class WP_Entity_Importer {
 				// Add the post terms to the post
 				wp_set_post_terms( $post_id, $ids, $tax );
 			}
-		}
+		}*/
 
 		$this->logger->info(
 			sprintf(
@@ -755,7 +747,6 @@ class WP_Entity_Importer {
 		 * @param array $terms Raw term data, already processed.
 		 */
 		do_action( 'wxr_importer_processed_post', $post_id, $data );
-		$this->topological_sorter->map_entity( 'post', $data, $post_id );
 
 		return $post_id;
 	}
@@ -989,7 +980,6 @@ class WP_Entity_Importer {
 		 * @param int $post_id Post the meta is attached to.
 		 */
 		$meta_item = apply_filters( 'wxr_importer_pre_process_post_meta', $meta_item, $post_id );
-		$meta_item = $this->topological_sorter->get_mapped_entity( 'post_meta', $meta_item, $post_id );
 		if ( empty( $meta_item ) ) {
 			return false;
 		}
@@ -1008,13 +998,15 @@ class WP_Entity_Importer {
 			$value = $this->mapping['user'][ $value ];
 		}
 
+		$post_meta_id = false;
+
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string
 			if ( ! $value ) {
 				$value = maybe_unserialize( $meta_item['meta_value'] );
 			}
 
-			add_post_meta( $post_id, wp_slash( $key ), wp_slash_strings_only( $value ) );
+			$post_meta_id = add_post_meta( $post_id, wp_slash( $key ), wp_slash_strings_only( $value ) );
 			do_action( 'import_post_meta', $post_id, $key, $value );
 
 			// if the post has a featured image, take note of this in case of remap
@@ -1024,9 +1016,8 @@ class WP_Entity_Importer {
 		}
 
 		do_action( 'wxr_importer_processed_post_meta', $post_id, $meta_item );
-		$this->topological_sorter->map_entity( 'post_meta', $meta_item, $key );
 
-		return true;
+		return $post_meta_id;
 	}
 
 	/**
@@ -1057,7 +1048,6 @@ class WP_Entity_Importer {
 		 * @param int $post_id Post the comment is attached to.
 		 */
 		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id, $parent_id );
-		$comment = $this->topological_sorter->get_mapped_entity( 'comment', $comment, $post_id, $parent_id );
 		if ( empty( $comment ) ) {
 			return false;
 		}
@@ -1119,7 +1109,7 @@ class WP_Entity_Importer {
 		}
 
 		// Run standard core filters
-		if ( ! $comment['comment_post_ID'] ) {
+		if ( ! isset( $comment['comment_post_ID'] ) ) {
 			$comment['comment_post_ID'] = $post_id;
 		}
 
@@ -1164,12 +1154,12 @@ class WP_Entity_Importer {
 		 * @param array $post_id Parent post ID.
 		 */
 		do_action( 'wxr_importer_processed_comment', $comment_id, $comment, $post_id );
-		$this->topological_sorter->map_entity( 'comment', $comment, $comment_id, $post_id );
+
+		return $comment_id;
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
 		$meta_item = apply_filters( 'wxr_importer_pre_process_comment_meta', $meta_item, $comment_id );
-		$meta_item = $this->topological_sorter->get_mapped_entity( 'comment_meta', $meta_item, $comment_id );
 		if ( empty( $meta_item ) ) {
 			return false;
 		}
@@ -1183,7 +1173,8 @@ class WP_Entity_Importer {
 		$comment_meta_id = add_comment_meta( $meta_item['comment_id'], wp_slash( $meta_item['meta_key'] ), wp_slash( $value ) );
 
 		do_action( 'wxr_importer_processed_comment_meta', $comment_meta_id, $meta_item, $meta_item['comment_id'] );
-		$this->topological_sorter->map_entity( 'comment_meta', $meta_item, $comment_meta_id, $meta_item['comment_id'] );
+
+		return $comment_meta_id;
 	}
 
 	/**

@@ -64,17 +64,20 @@ function data_liberation_init() {
 add_action( 'init', 'data_liberation_init' );
 
 function data_liberation_activate() {
-	// Activate the topological sorter. Create tables and options.
-	WP_Topological_Sorter::activate();
-	update_option( WP_Topological_Sorter::OPTION_NAME, WP_Topological_Sorter::DB_VERSION );
+	// Create tables and option.
+	WP_WXR_Sorted_Reader::create_or_update_db();
+	update_option( 'data_liberation_db_version', WP_WXR_Sorted_Reader::DB_VERSION );
 }
 
 // Run when the plugin is activated.
 register_activation_hook( __FILE__, 'data_liberation_activate' );
 
 function data_liberation_deactivate() {
-	// Deactivate the topological sorter. Flush away all data.
-	WP_Topological_Sorter::deactivate();
+	// Flush away all data.
+	WP_WXR_Sorted_Reader::delete_db();
+
+	// Delete the option.
+	delete_option( 'data_liberation_db_version' );
 
 	// @TODO: Cancel any active import sessions and cleanup other data.
 }
@@ -83,10 +86,10 @@ function data_liberation_deactivate() {
 register_deactivation_hook( __FILE__, 'data_liberation_deactivate' );
 
 function data_liberation_load() {
-	if ( WP_Topological_Sorter::DB_VERSION !== (int) get_site_option( WP_Topological_Sorter::OPTION_NAME ) ) {
+	if ( WP_WXR_Sorted_Reader::DB_VERSION !== (int) get_site_option( 'data_liberation_db_version' ) ) {
 		// Update the database with dbDelta, if needed in the future.
-		WP_Topological_Sorter::activate();
-		update_option( WP_Topological_Sorter::OPTION_NAME, WP_Topological_Sorter::DB_VERSION );
+		WP_WXR_Sorted_Reader::create_or_update_db();
+		update_option( 'data_liberation_db_version', WP_WXR_Sorted_Reader::DB_VERSION );
 	}
 }
 
@@ -458,7 +461,7 @@ function data_liberation_create_importer( $import ) {
 			}
 			$importer = WP_Stream_Importer::create_for_wxr_file(
 				$wxr_path,
-				array(),
+				$import,
 				$import['cursor'] ?? null
 			);
 			break;
@@ -466,7 +469,7 @@ function data_liberation_create_importer( $import ) {
 		case 'wxr_url':
 			$importer = WP_Stream_Importer::create_for_wxr_url(
 				$import['wxr_url'],
-				array(),
+				$import,
 				$import['cursor'] ?? null
 			);
 			break;

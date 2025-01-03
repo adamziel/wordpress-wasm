@@ -133,7 +133,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 * @since WP_VERSION
 	 * @var WP_XML_Processor
 	 */
-	private $xml;
+	protected $xml;
 
 	/**
 	 * The name of the XML tag containing information about the WordPress entity
@@ -206,7 +206,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 * @since WP_VERSION
 	 * @var int|null
 	 */
-	private $last_post_id = null;
+	protected $last_post_id = null;
 
 	/**
 	 * The ID of the last processed comment.
@@ -214,7 +214,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 * @since WP_VERSION
 	 * @var int|null
 	 */
-	private $last_comment_id = null;
+	protected $last_comment_id = null;
 
 	/**
 	 * The ID of the last processed term.
@@ -222,7 +222,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 * @since WP_VERSION
 	 * @var int|null
 	 */
-	private $last_term_id = null;
+	protected $last_term_id = null;
 
 	/**
 	 * Buffer for accumulating text content between tags.
@@ -367,7 +367,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		),
 	);
 
-	public static function create( WP_Byte_Reader $upstream = null, $cursor = null ) {
+	public static function create( WP_Byte_Reader $upstream = null, $cursor = null, $options = array() ) {
 		$xml_cursor = null;
 		if ( null !== $cursor ) {
 			$cursor = json_decode( $cursor, true );
@@ -383,7 +383,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		}
 
 		$xml    = WP_XML_Processor::create_for_streaming( '', $xml_cursor );
-		$reader = new WP_WXR_Entity_Reader( $xml );
+		$reader = new static( $xml );
 		if ( null !== $cursor ) {
 			$reader->last_post_id    = $cursor['last_post_id'];
 			$reader->last_comment_id = $cursor['last_comment_id'];
@@ -414,10 +414,6 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 */
 	protected function __construct( WP_XML_Processor $xml ) {
 		$this->xml = $xml;
-	}
-
-	public function get_last_xml_byte_offset_outside_of_entity() {
-		return $this->last_xml_byte_offset_outside_of_entity;
 	}
 
 	public function get_reentrancy_cursor() {
@@ -593,7 +589,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 *
 	 * @return bool Whether another entity was found.
 	 */
-	private function read_next_entity() {
+	protected function read_next_entity() {
 		if ( $this->xml->is_finished() ) {
 			$this->after_entity();
 			return false;

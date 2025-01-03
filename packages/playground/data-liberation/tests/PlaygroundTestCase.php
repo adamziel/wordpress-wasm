@@ -48,4 +48,18 @@ abstract class PlaygroundTestCase extends TestCase {
 		$wpdb->query( "DELETE FROM {$wpdb->users} WHERE ID != 1" );
 		$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE user_id != 1" );
 	}
+
+	protected function skip_to_stage( WP_Stream_Importer $importer, string $stage ) {
+		do {
+			while ( $importer->next_step() ) {
+				// noop
+			}
+			if ( $importer->get_next_stage() === $stage ) {
+				break;
+			}
+		} while ( $importer->advance_to_next_stage() );
+
+		$this->assertEquals( $stage, $importer->get_next_stage() );
+		$this->assertTrue( $importer->advance_to_next_stage() );
+	}
 }

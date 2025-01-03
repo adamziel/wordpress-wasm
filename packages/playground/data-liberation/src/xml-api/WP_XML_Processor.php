@@ -709,6 +709,12 @@ class WP_XML_Processor {
 		return $this->token_starts_at + $this->upstream_bytes_forgotten;
 	}
 
+	public function reset_to( $cursor ) {
+		$this->parser_state = self::STATE_READY;
+
+		return $this->initialize_from_cursor( $cursor );
+	}
+
 	protected function initialize_from_cursor( $cursor ) {
 		if ( ! is_string( $cursor ) ) {
 			_doing_it_wrong( __METHOD__, 'Cursor must be a JSON-encoded string.', '1.0.0' );
