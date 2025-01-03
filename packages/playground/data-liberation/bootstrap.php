@@ -92,6 +92,7 @@ require_once __DIR__ . '/src/git/WP_Git_Client.php';
 require_once __DIR__ . '/src/git/WP_Git_Pack_Processor.php';
 require_once __DIR__ . '/src/git/WP_Git_Repository.php';
 require_once __DIR__ . '/src/git/WP_Git_Filesystem.php';
+require_once __DIR__ . '/src/git/WP_Git_Diff_Engine.php';
 
 require_once __DIR__ . '/src/WP_Data_Liberation_HTML_Processor.php';
 require_once __DIR__ . '/src/utf8_decoder.php';

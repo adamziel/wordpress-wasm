@@ -117,13 +117,20 @@ class WP_Git_Repository {
     private $buffered_object_content;
     private $last_error;
 
+    /**
+     * @var WP_Git_Diff_Engine
+     */
+    private $diff_engine;
+
     private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
     private const NULL_OID = '0000000000000000000000000000000000000000';
 
     public function __construct(
-        WP_Abstract_Filesystem $fs
+        WP_Abstract_Filesystem $fs,
+        $options = []
     ) {
         $this->fs = $fs;
+        $this->diff_engine = $options['diff_engine'] ?? new WP_Git_Diff_Engine();
         $this->initialize_filesystem();
     }
 
@@ -685,6 +692,119 @@ class WP_Git_Repository {
 
         $this->reset();
         return $commit_oid;
+    }
+
+    public function diff_commits($current_oid, $previous_oid) {
+        if(false === $this->read_object($current_oid)) {
+            return false;            
+        }
+        $current_commit = $this->get_parsed_commit();
+        $current_tree_oid = $current_commit['tree'];
+
+        if(false === $this->read_object($previous_oid)) {
+            return false;
+        }
+        $previous_commit = $this->get_parsed_commit();
+        $previous_tree_oid = $previous_commit['tree'];
+
+        return $this->diff_trees($current_tree_oid, $previous_tree_oid);
+    }
+
+    public function diff_trees($current_oid, $previous_oid) {
+        if(false === $this->read_object($current_oid)) {
+            return false;
+        }
+        $current_tree = $this->get_parsed_tree();
+
+        if(false === $this->read_object($previous_oid)) {
+            return false;
+        }
+        $previous_tree = $this->get_parsed_tree();
+
+        $diff = [];
+        foreach($current_tree as $name => $current_entry) {
+            if(!isset($previous_tree[$name])) {
+                $diff[$name] = $current_entry;
+                continue;
+            }
+            $previous_entry = $previous_tree[$name];
+            if($current_entry['sha1'] === $previous_entry['sha1']) {
+                continue;
+            }
+
+            if($current_entry['mode'] !== $previous_entry['mode']) {
+                /*
+                 * @TODO: Account for a scenario when just one text file changes and
+                 *        also the mode changed from executable to non-executable.
+                 *        We could do a text diff in that case.
+                 */
+                $diff[$name] = $current_entry;
+                continue;
+            }
+
+            $diff[$name] = [
+                'name' => $name,
+                'mode' => 'diff',
+                'sha1' => $current_entry['sha1'],
+            ];
+
+            if($current_entry['mode'] === WP_Git_Pack_Processor::FILE_MODE_DIRECTORY) {
+                $diff[$name]['diff'] = $this->diff_trees($current_entry['sha1'], $previous_entry['sha1']);
+            } else {
+                $diff[$name]['diff'] = $this->diff_blobs(
+                    $current_entry,
+                    $previous_entry
+                );
+            }
+        }
+
+        foreach($previous_tree as $name => $previous_entry) {
+            if(!isset($current_tree[$name])) {
+                $diff[$name] = self::DELETE_PLACEHOLDER;
+            }
+        }
+        return $diff;
+    }
+
+    public function diff_blobs($current_blob_entry, $previous_blob_entry) {
+        if(false === $this->read_object($current_blob_entry['sha1'])) {
+            return false;
+        }
+        // @TODO: Support streaming diffs for large files
+        $current_blob = $this->read_entire_object_contents();
+        $current_blob_is_binary = $this->guess_if_binary_blob($current_blob_entry, $current_blob);
+
+        if(false === $this->read_object($previous_blob_entry['sha1'])) {
+            return false;
+        }
+        $previous_blob = $this->read_entire_object_contents();
+        $previous_blob_is_binary = $this->guess_if_binary_blob($previous_blob_entry, $previous_blob);
+
+        if($current_blob_is_binary && $previous_blob_is_binary) {
+            return ['type' => 'binary'];
+        } else if($current_blob_is_binary ^ $previous_blob_is_binary) {
+            return ['type' => 'completely_new_blob'];
+        } else {
+            return [
+                'type' => 'text_diff',
+                'diff' => $this->diff_engine->diff($current_blob, $previous_blob)
+            ];
+        }
+    }
+
+    static private function guess_if_binary_blob($blob_entry, $blob_contents) {
+        $name = $blob_entry['name'];
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        if(in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp', 'tiff', 'tif', 'raw', 'heic', 'heif', 'avif'])) {
+            return true;
+        }
+
+        // Naively assume null bytes only occur in binary files
+        if(strpos($blob_contents, "\0") !== false) {
+            return true;
+        }
+
+        return false;
     }
 
     public function squash($squash_into_commit_oid, $squash_until_ancestor_oid) {
