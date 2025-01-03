@@ -734,7 +734,7 @@ class WP_Git_Repository {
 
             if($current_entry['mode'] !== $previous_entry['mode']) {
                 /*
-                 * @TODO: Account for a scenario when just one text file changes and
+                 * @TODO: Account for a scenario when just one text line changes and
                  *        also the mode changed from executable to non-executable.
                  *        We could do a text diff in that case.
                  */
