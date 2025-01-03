@@ -130,7 +130,7 @@ class WP_Git_Repository {
         $options = []
     ) {
         $this->fs = $fs;
-        $this->diff_engine = $options['diff_engine'] ?? new WP_Git_Diff_Engine();
+        $this->diff_engine = $options['diff_engine'] ?? new WP_Git_Merge_Engine();
         $this->initialize_filesystem();
     }
 
