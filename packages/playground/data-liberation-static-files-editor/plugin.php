@@ -196,9 +196,6 @@ class WP_Static_Files_Editor_Plugin {
                     'to_fs' => $main_fs,
                 ]);
 
-                // Force pull after every write operation
-                self::$client->force_pull();
-
                 return $metadata;
             } finally {
                 self::release_synchronization_lock();
@@ -241,9 +238,6 @@ class WP_Static_Files_Editor_Plugin {
                 $local_fs->copy($file_name, $local_file_path, [
                     'to_fs' => $main_fs,
                 ]);
-
-                // Force pull after every write operation
-                self::$client->force_pull();
 
                 return $metadata;
             } finally {
@@ -1059,10 +1053,6 @@ class WP_Static_Files_Editor_Plugin {
                 ));
             }
 
-            // Pull new changes from the remote repository after
-            // performing a write operation.
-            self::$client->force_pull();
-
             return array('success' => true);
         } finally {
             self::release_synchronization_lock();
@@ -1149,10 +1139,6 @@ class WP_Static_Files_Editor_Plugin {
                 }
             }
 
-            // Pull new changes from the remote repository after
-            // performing a write operation.
-            self::$client->force_pull();
-
             return array(
                 'created_files' => $created_files
             );
@@ -1194,10 +1180,6 @@ class WP_Static_Files_Editor_Plugin {
                     return new WP_Error('delete_failed', 'Failed to delete file');
                 }
             }
-
-            // Pull new changes from the remote repository after
-            // performing a write operation.
-            self::$client->force_pull();
 
             return array('success' => true);
         } finally {
