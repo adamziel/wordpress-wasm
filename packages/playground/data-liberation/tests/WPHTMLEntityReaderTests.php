@@ -13,7 +13,15 @@ class WPHTMLEntityReaderTests extends TestCase {
 <h1>It is our pleasure to announce that WordPress 6.8 was released</h1>
 <p>Last week, WordPress 6.8 was released.</p>
 HTML;
-        $reader = new WP_HTML_Entity_Reader( WP_HTML_Processor::create_fragment( $html ), 1 );
+        $html_processor = WP_HTML_Processor::create_fragment( $html );
+		$converter = new WP_HTML_With_Blocks_to_Blocks( $html_processor );
+		$this->assertTrue( $converter->convert() );
+
+        $reader = new WP_HTML_Entity_Reader(
+            $converter->get_block_markup(),
+            $converter->get_all_metadata(),
+            1
+        );
         $entities = [];
         while ( $reader->next_entity() ) {
             $data = $reader->get_entity()->get_data();

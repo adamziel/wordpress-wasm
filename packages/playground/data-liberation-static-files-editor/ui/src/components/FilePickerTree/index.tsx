@@ -721,10 +721,6 @@ const NodeRow: React.FC<{
 		node.name.endsWith('.ico') ||
 		node.name.endsWith('.webp');
 
-	console.log({
-		node,
-		isImage,
-	});
 	return (
 		<>
 			{!isRoot && (

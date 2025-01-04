@@ -429,10 +429,10 @@ class WP_Static_Files_Editor_Plugin {
                     return;
                 }
 
-                $path = get_post_meta($post_id, 'local_file_path', true);
-                $content = self::convert_post_to_string($path, $post);
+                $content = self::convert_post_to_string($post);
 
                 $fs = self::get_fs();
+                $path = get_post_meta($post_id, 'local_file_path', true);
                 $fs->put_contents($path, $content, [
                     'message' => 'User saved ' . $post->post_title,
                 ]);
@@ -460,12 +460,13 @@ class WP_Static_Files_Editor_Plugin {
                     return;
                 }
 
+                $content = self::convert_post_to_string($autosave);
+
                 $path = wp_join_paths(
                     '/' . WP_AUTOSAVES_DIRECTORY . '/',
                     get_post_meta($parent_post->ID, 'local_file_path', true)
                 );
                 $fs = self::get_fs();
-                $content = self::convert_post_to_string($path, $autosave);
                 $fs->put_contents($path, $content, [
                     'amend' => true,
                 ]);
@@ -524,7 +525,7 @@ class WP_Static_Files_Editor_Plugin {
     }
 
     static public function download_file_endpoint($request) {
-        $path = $request->get_param('path');
+        $path = wp_canonicalize_path($request->get_param('path'));
         $fs = self::get_fs();
 
         if($fs->is_dir($path)) {
@@ -613,27 +614,15 @@ class WP_Static_Files_Editor_Plugin {
                 return false;
             }
             $extension = pathinfo($path, PATHINFO_EXTENSION);
-            switch($extension) {
-                case 'xhtml':
-                    $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $content ) );
-                    break;
-                case 'html':
-                    $converter = new WP_HTML_To_Blocks( WP_HTML_Processor::create_fragment( $content ) );
-                    break;
-                case 'md':
-                    $converter = new WP_Markdown_To_Blocks( $content );
-                    break;
-                default:
-                    return false;
+            $converter = self::parse_local_file($content, $extension);
+            if(!$converter) {
+                return false;
             }
-            $converter->convert();
 
-            $metadata = [];
-            foreach($converter->get_all_metadata() as $key => $value) {
-                $metadata[$key] = $value[0];
-            }
-            $new_content = $converter->get_block_markup();
-            $new_content = self::wordpressify_static_assets_urls($new_content);
+            $new_content = self::wordpressify_static_assets_urls(
+                $converter->get_block_markup()
+            );
+            $metadata = $converter->get_all_metadata(['first_value_only' => true]);
 
             $updated = wp_update_post(array(
                 'ID' => $post_id,
@@ -653,10 +642,38 @@ class WP_Static_Files_Editor_Plugin {
         }
     }
 
-    static private function convert_post_to_string($path, $post) {
-        $post_id = $post->ID;
+    static private function parse_local_file($content, $format) {
+        switch($format) {
+            case 'xhtml':
+                $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $content ) );
+                break;
+            case 'html':
+                $converter = new WP_HTML_With_Blocks_to_Blocks( $content );
+                break;
+            case 'md':
+                $converter = new WP_Markdown_To_Blocks( $content );
+                break;
+            default:
+                return false;
+        }
+        if(!$converter->convert()) {
+            throw new Exception('Failed to convert post to string');
+            return false;
+        }
+        return $converter;
+    }
 
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
+    static private function convert_post_to_string($post, $format=null) {
+        if($format === null) {
+            $path = get_post_meta($post->ID, 'local_file_path', true);
+            if($path) {
+                $format = pathinfo($path, PATHINFO_EXTENSION);
+            }
+        }
+        if($format === null) {
+            $format = 'html';
+        }
+
         $metadata = [];
         foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
             $metadata[$key] = get_post_field($key, $post->ID);
@@ -664,20 +681,34 @@ class WP_Static_Files_Editor_Plugin {
         // @TODO: Also include actual post_meta. Which ones? All? The
         //        ones explicitly set by the user in the editor?
 
-        $content = get_post_field('post_content', $post_id);
-        $content = self::unwordpressify_static_assets_urls($content);
+        return self::convert_post_data_to_string(
+            $post->post_content,
+            $metadata,
+            $format
+        );
+    }
 
-        switch($extension) {
-            // @TODO: Add support for HTML and XHTML
-            case 'html':
-            case 'xhtml':
+    static private function convert_post_data_to_string($block_markup, $metadata, $format) {
+        $content = self::unwordpressify_static_assets_urls(
+            $block_markup
+        );
+
+        switch($format) {
             case 'md':
                 $converter = new WP_Blocks_To_Markdown( $content, $metadata );
                 break;
+            case 'xhtml':
+                // @TODO: Add proper support for XHTML – perhaps via the serialize() method?
+                throw new Exception('Serializing to XHTML is not supported yet');
+            case 'html':
             default:
-                return '';
+                $converter = new WP_Block_HTML_Serializer( $content, $metadata );
+                break;
         }
-        $converter->convert();
+        if(!$converter->convert()) {
+            throw new Exception('Failed to convert post to string');
+            return false;
+        }
         return $converter->get_result();
     }
 
@@ -953,8 +984,7 @@ class WP_Static_Files_Editor_Plugin {
                 return new WP_Error('synchronization_lock_failed', 'Failed to acquire synchronization lock');
             }
 
-            $file_path = $request->get_param('path');
-            $file_path = '/' . ltrim($file_path, '/');
+            $file_path = wp_canonicalize_path($request->get_param('path'));
             $create_file = $request->get_param('create_file');
                 
             if (!$file_path) {
@@ -1025,32 +1055,60 @@ class WP_Static_Files_Editor_Plugin {
             if(!self::acquire_synchronization_lock()) {
                 return;
             }
-            $from_path = $request->get_param('fromPath');
-            $to_path = $request->get_param('toPath');
+            $from_path = wp_canonicalize_path($request->get_param('fromPath'));
+            $to_path = wp_canonicalize_path($request->get_param('toPath'));
             
             if (!$from_path || !$to_path) {
                 return new WP_Error('missing_path', 'Both source and target paths are required');
             }
 
+            $fs = self::get_fs();
+            if(!$fs->is_file($from_path)) {
+                return new WP_Error('move_failed', sprintf('Failed to move file – source path is not a file (%s)', $from_path));
+            }
+
             // Find and update associated post
+            $previous_content = $fs->get_contents($from_path);
             $existing_posts = get_posts(array(
                 'post_type' => WP_LOCAL_FILE_POST_TYPE,
                 'meta_key' => 'local_file_path',
                 'meta_value' => $from_path,
                 'posts_per_page' => 1
             ));
+            $existing_post = count($existing_posts) > 0 ? $existing_posts[0] : null;
 
-            $fs = self::get_fs();
-            if (!$fs->rename($from_path, $to_path)) {
-                return new WP_Error('move_failed', 'Failed to move file');
+            $moved = false;
+
+            if ($existing_post) {
+                // Regenerate the content from scratch if we're changing the file format.
+                $previous_extension = pathinfo($from_path, PATHINFO_EXTENSION);
+                $new_extension = pathinfo($to_path, PATHINFO_EXTENSION);
+                if($existing_post->post_type === WP_LOCAL_FILE_POST_TYPE && $previous_extension !== $new_extension) {
+                    $converter = self::parse_local_file(
+                        $previous_content,
+                        $previous_extension
+                    );
+                    $new_content = self::convert_post_data_to_string(
+                        $converter->get_block_markup(),
+                        $converter->get_all_metadata(['first_value_only' => true]),
+                        $new_extension
+                    );
+                    $fs->put_contents(
+                        $to_path,
+                        $new_content
+                    );
+                    $fs->rm($from_path);
+                    $moved = true;
+                }
+
+                // Update the local file path
+                if(false === update_post_meta($existing_post->ID, 'local_file_path', $to_path)) {
+                    throw new Exception('Failed to update local file path');
+                }
             }
 
-            if (!empty($existing_posts)) {
-                update_post_meta($existing_posts[0]->ID, 'local_file_path', $to_path);
-                wp_update_post(array(
-                    'ID' => $existing_posts[0]->ID,
-                    'post_title' => basename($to_path)
-                ));
+            if(!$moved) {
+                $fs->rename($from_path, $to_path);
             }
 
             return array('success' => true);
@@ -1148,7 +1206,7 @@ class WP_Static_Files_Editor_Plugin {
     }
 
     static public function delete_path_endpoint($request) {
-        $path = $request->get_param('path');
+        $path = wp_canonicalize_path($request->get_param('path'));
         if (!$path) {
             return new WP_Error('missing_path', 'File path is required');
         }

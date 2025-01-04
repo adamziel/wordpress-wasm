@@ -64,6 +64,8 @@ require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL.php';
 require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
+require_once __DIR__ . '/src/block-markup/WP_HTML_With_Blocks_to_Blocks.php';
+require_once __DIR__ . '/src/block-markup/WP_Block_HTML_Serializer.php';
 
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';

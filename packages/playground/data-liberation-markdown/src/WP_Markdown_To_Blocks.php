@@ -45,8 +45,14 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 		return true;
 	}
 
-	public function get_all_metadata() {
-		return $this->frontmatter;
+	public function get_all_metadata($options=[]) {
+        $metadata = $this->frontmatter;
+		if(isset($options['first_value_only']) && $options['first_value_only']) {
+			$metadata = array_map(function($value) {
+				return $value[0];
+			}, $metadata);
+		}
+		return $metadata;
 	}
 
 	public function get_meta_value( $key ) {

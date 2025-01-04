@@ -8,6 +8,7 @@ class WP_Blocks_To_Markdown {
     private $state;
     private $parents = [];
     private $metadata;
+    private $markdown;
 
     public function __construct($block_markup, $metadata = []) {
         $this->block_markup = $block_markup;
@@ -18,12 +19,14 @@ class WP_Blocks_To_Markdown {
         $this->metadata = $metadata;
     }
 
-    private $markdown;
-
     public function convert() {
+        if(null !== $this->markdown) {
+            return false;
+        }
         $this->markdown = '';
         $this->markdown .= $this->frontmatter();
         $this->markdown .= $this->blocks_to_markdown(parse_blocks($this->block_markup));
+        return true;
     }
 
     public function get_result() {

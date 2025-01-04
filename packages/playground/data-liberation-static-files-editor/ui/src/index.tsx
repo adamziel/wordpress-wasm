@@ -150,7 +150,13 @@ function ConnectedFilePickerTree() {
 				});
 			}
 		}
-	}, [hasLoadedPost, post, setPostLoading, selectedNode.postId]);
+	}, [
+		hasLoadedPost,
+		post,
+		setPostLoading,
+		selectedNode.postId,
+		selectedNode.path,
+	]);
 
 	const refreshFileTree = useCallback(async () => {
 		fileTreePromise = apiFetch({
