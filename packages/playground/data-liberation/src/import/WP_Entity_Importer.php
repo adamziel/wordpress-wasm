@@ -95,7 +95,7 @@ class WP_Entity_Importer {
 		$this->mapping['term_id']   = array();
 		$this->requires_remapping   = $empty_types;
 		$this->exists               = $empty_types;
-		$this->logger               = isset( $options['logger'] ) ? $options['logger'] : new WP_Logger();
+		$this->logger               = new Logger();
 
 		$this->options = wp_parse_args(
 			$options,
@@ -126,8 +126,6 @@ class WP_Entity_Importer {
 			case WP_Imported_Entity::TYPE_TAG:
 			case WP_Imported_Entity::TYPE_CATEGORY:
 				return $this->import_term( $data );
-			case WP_Imported_Entity::TYPE_TERM_META:
-				return $this->import_term_meta( $data, $data['term_id'] );
 			case WP_Imported_Entity::TYPE_USER:
 				return $this->import_user( $data );
 			case WP_Imported_Entity::TYPE_SITE_OPTION:
@@ -390,40 +388,6 @@ class WP_Entity_Importer {
 		return $term_id;
 	}
 
-	public function import_term_meta( $meta_item, $term_id ) {
-		if ( empty( $meta_item ) ) {
-			return true;
-		}
-
-		/**
-		 * Pre-process term meta data.
-		 *
-		 * @param array $meta_item Meta data. (Return empty to skip.)
-		 * @param int $term_id Term the meta is attached to.
-		 */
-		$meta_item = apply_filters( 'wxr_importer_pre_process_term_meta', $meta_item, $term_id );
-		if ( empty( $meta_item ) ) {
-			return false;
-		}
-
-		// Have we already processed this?
-		if ( isset( $element['_already_mapped'] ) ) {
-			$this->logger->debug( 'Skipping term meta, already processed' );
-			return;
-		}
-
-		if ( ! isset( $meta_item['term_id'] ) ) {
-			$meta_item['term_id'] = $term_id;
-		}
-
-		$value        = maybe_unserialize( $meta_item['meta_value'] );
-		$term_meta_id = add_term_meta( $meta_item['term_id'], wp_slash( $meta_item['meta_key'] ), wp_slash_strings_only( $value ) );
-
-		do_action( 'wxr_importer_processed_term_meta', $term_meta_id, $meta_item, $meta_item['term_id'] );
-
-		return $term_meta_id;
-	}
-
 	/**
 	 * Prefill existing post data.
 	 *
@@ -480,8 +444,6 @@ class WP_Entity_Importer {
 	 * Note that new/updated terms, comments and meta are imported for the last of the above.
 	 */
 	public function import_post( $data ) {
-		$parent_id = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
-
 		/**
 		 * Pre-process post data.
 		 *
@@ -490,7 +452,7 @@ class WP_Entity_Importer {
 		 * @param array $comments Comments on the post.
 		 * @param array $terms Terms on the post.
 		 */
-		$data = apply_filters( 'wxr_importer_pre_process_post', $data, $parent_id );
+		$data = apply_filters( 'wxr_importer_pre_process_post', $data );
 		if ( empty( $data ) ) {
 			$this->logger->debug( 'Skipping post, empty data' );
 			return false;
@@ -659,37 +621,6 @@ class WP_Entity_Importer {
 		}
 		$this->mark_post_exists( $data, $post_id );
 
-		// Add terms to the post
-		/*if ( ! empty( $data['terms'] ) ) {
-			$terms_to_set = array();
-
-			foreach ( $data['terms'] as $term ) {
-				// Back compat with WXR 1.0 map 'tag' to 'post_tag'
-				$taxonomy    = ( 'tag' === $term['taxonomy'] ) ? 'post_tag' : $term['taxonomy'];
-				$term_exists = term_exists( $term['slug'], $taxonomy );
-				$term_id     = is_array( $term_exists ) ? $term_exists['term_id'] : $term_exists;
-
-				if ( ! $term_id ) {
-					// @TODO: Add a unit test with a WXR with one post and X tags without root declated tags.
-					$new_term = wp_insert_term( $term['slug'], $taxonomy, $term );
-
-					if ( ! is_wp_error( $new_term ) ) {
-						$term_id = $new_term['term_id'];
-
-						$this->topological_sorter->update_mapped_id( $new_term, $term_id );
-					} else {
-						continue;
-					}
-				}
-				$terms_to_set[ $taxonomy ][] = intval( $term_id );
-			}
-
-			foreach ( $terms_to_set as $tax => $ids ) {
-				// Add the post terms to the post
-				wp_set_post_terms( $post_id, $ids, $tax );
-			}
-		}*/
-
 		$this->logger->info(
 			sprintf(
 				/* translators: 1: post title, 2: post type name */
@@ -717,7 +648,6 @@ class WP_Entity_Importer {
 		 * @param array $terms Raw term data, already processed.
 		 */
 		do_action( 'wxr_importer_processed_post', $post_id, $data );
-
 		return $post_id;
 	}
 
@@ -1287,5 +1217,59 @@ class WP_Entity_Importer {
 		}
 
 		return $a['comment_id'] - $b['comment_id'];
+	}
+}
+
+/**
+ * @TODO how to treat this? Should this class even exist?
+ *       how does WordPress handle different levels? It
+ *       seems useful for usage in wp-cli, Blueprints,
+ *       and other non-web environments.
+ */
+// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
+class Logger {
+	/**
+	 * Log a debug message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function debug( $message ) {
+		// echo( '[DEBUG] ' . $message );
+	}
+
+	/**
+	 * Log an info message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function info( $message ) {
+		// echo( '[INFO] ' . $message );
+	}
+
+	/**
+	 * Log a warning message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function warning( $message ) {
+		echo( '[WARNING] ' . $message );
+	}
+
+	/**
+	 * Log an error message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function error( $message ) {
+		echo( '[ERROR] ' . $message );
+	}
+
+	/**
+	 * Log a notice message.
+	 *
+	 * @param string $message Message to log
+	 */
+	public function notice( $message ) {
+		// echo( '[NOTICE] ' . $message );
 	}
 }
