@@ -93,6 +93,111 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 		$this->assertEquals( 0, (int) $count );
 	}
 
+	public function test_small_import_right_order_of_import() {
+		global $wpdb;
+
+		$file_path    = __DIR__ . '/wxr/small-export.xml';
+		$importer     = $this->import_wxr_file( $file_path );
+		$count        = 0;
+		$imported_ids = array(
+			'category' => array(),
+			'post'     => array(),
+			'post_tag' => array(),
+			'unknown'  => array(),
+		);
+		$expected_ids = array(
+			'category' => array(
+				'alpha',
+				'bar',
+				'beta',
+				'chi',
+				'delta',
+				'epsilon',
+				'eta',
+				'foo',
+				'foo-bar',
+				'gamma',
+				'iota',
+				'kappa',
+				'lambda',
+				'mu',
+				'nu',
+				'omega',
+				'omicron',
+				'phi',
+				'pi',
+				'psi',
+				'rho',
+				'sigma',
+				'tau',
+				'theta',
+				'uncategorized',
+				'unused-category',
+				'upsilon',
+				'xi',
+				'zeta',
+				'eternity',
+			),
+			'post' => array(
+				'http://127.0.0.1:9400/?p=1',
+				'http://127.0.0.1:9400/?page_id=2',
+				'http://127.0.0.1:9400/?page_id=4',
+				'http://127.0.0.1:9400/?page_id=6',
+				'http://127.0.0.1:9400/?page_id=9',
+				'http://127.0.0.1:9400/?page_id=11',
+				'http://127.0.0.1:9400/?p=13',
+				'http://127.0.0.1:9400/?p=15',
+				'http://127.0.0.1:9400/?p=17',
+				'http://127.0.0.1:9400/?p=19',
+				'http://127.0.0.1:9400/?p=22',
+			),
+			'post_tag' => array(
+				'tag1',
+				'tag2',
+				'tag3',
+			),
+			'unknown' => array(),
+		);
+
+		$import_fn = function ( $data, $id = null ) use ( &$imported_ids, &$count ) {
+			if ( array_key_exists( 'post_id', $data ) ) {
+				$imported_ids['post'][] = $data['guid'];
+			} elseif ( array_key_exists( 'taxonomy', $data ) ) {
+				$imported_ids[ $data['taxonomy'] ][] = $data['slug'];
+			} else {
+				$imported_ids['unknown'][] = $data;
+			}
+
+			++$count;
+
+			return $data;
+		};
+
+		add_filter( 'wxr_importer_pre_process_post', $import_fn, 10, 2 );
+		add_filter( 'wxr_importer_pre_process_term', $import_fn );
+
+		do {
+			while ( $importer->next_step() ) {
+				// noop
+			}
+		} while ( $importer->advance_to_next_stage() );
+
+		$this->assertEquals( $expected_ids, $imported_ids );
+
+		$categories = get_terms(array(
+			'taxonomy' => 'category',
+			'hide_empty' => false,
+		));
+
+		$this->assertEquals( $expected_ids['category'], $imported_ids['category'] );
+		// $this->assertEquals( 1, 2 );
+
+		remove_filter( 'wxr_importer_pre_process_post', $import_fn );
+		remove_filter( 'wxr_importer_pre_process_term', $import_fn );
+
+		$this->assertEquals( 44, $count );
+	}
+
 	private function small_import_counts() {
 		$types = WP_WXR_Sorted_Reader::ENTITY_TYPES;
 
