@@ -953,6 +953,7 @@ class WP_Entity_Importer {
 		}
 
 		$original_id = isset( $comment['comment_id'] ) ? (int) $comment['comment_id'] : 0;
+		$parent_id   = isset( $comment['comment_parent'] ) ? (int) $comment['comment_parent'] : 0;
 		$author_id   = isset( $comment['comment_user_id'] ) ? (int) $comment['comment_user_id'] : 0;
 
 		// if this is a new post we can skip the comment_exists() check
