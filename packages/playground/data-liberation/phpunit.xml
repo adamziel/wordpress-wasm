@@ -24,6 +24,7 @@
       <file>tests/WPXMLProcessorTests.php</file>
       <file>tests/UrldecodeNTests.php</file>
       <file>tests/WPStreamImporterTests.php</file>
+      <file>tests/WPGitServerTests.php</file>
     </testsuite>
   </testsuites>
 </phpunit>

@@ -982,5 +982,47 @@ class WP_Git_Repository {
         );
     }
 
+    public function list_refs($prefix = '') {
+        $refs = [];
+
+        /**
+         * Only allow listing refs in the refs/ directory to avoid
+         * accidentally working with, say, the main .git directory.
+         * 
+         * This is a starter implementation. We may need to revisit this
+         * for full compliance with Git.
+         */
+        $path = ltrim(wp_canonicalize_path($prefix), '/');
+        $first_path = $this->fs->is_dir($path) ? $path : dirname($path);
+        $stack = [];
+        if(str_starts_with($first_path, 'refs/')) {
+            $stack = [$first_path];
+        }
+        if($prefix === '') {
+            $stack = ['refs/heads/'];
+        }
+        while(!empty($stack)) {
+            $path = array_shift($stack);
+            if ($this->fs->is_dir($path)) {
+                $ref_files = $this->fs->ls($path);
+                foreach ($ref_files as $ref_file) {
+                    $full_path = wp_join_paths($path, $ref_file);
+                    array_push($stack, $full_path);
+                }
+            } else if(str_starts_with($path, $prefix)) {
+                $hash = trim($this->fs->get_contents($path));
+                if ($hash) {
+                    $ref_name = trim($path, '/');
+                    $refs[$ref_name] = $hash;
+                }
+            }
+        }
+
+        if($prefix === '' || str_starts_with('HEAD', $prefix)) {
+            $refs['HEAD'] = $this->get_ref_head('HEAD');
+        }
+
+        return $refs;
+    }
 
 }

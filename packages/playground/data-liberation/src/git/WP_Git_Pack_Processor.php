@@ -222,6 +222,33 @@ class WP_Git_Pack_Processor {
         return $pack_index;
     }
 
+    static public function decode_next_packet_line($pack_bytes, &$offset) {
+        $packet_length_bytes = substr($pack_bytes, $offset, 4);
+        $offset += 4;
+        if(
+            strlen($packet_length_bytes) !== 4 ||
+            !preg_match('/^[0-9a-f]{4}$/', $packet_length_bytes)
+        ) {
+            return false;
+        }
+        switch($packet_length_bytes) {
+            case '0000':
+                return ['type' => '#flush'];
+            case '0001':
+                return ['type' => '#delimiter'];
+            case '0002':
+                return ['type' => '#response-end'];
+            default:
+                $length = intval($packet_length_bytes, 16);
+                $payload = substr($pack_bytes, $offset, $length);
+                if(str_ends_with($payload, "\n")) {
+                    $payload = substr($payload, 0, -1);
+                }
+                $offset += $length;
+                return ['type' => '#packet', 'payload' => $payload];
+        }
+    }
+
     static private function wrap_git_object($type, $object) {
         $length = strlen($object);
         $type_name = self::OBJECT_NAMES[$type];
