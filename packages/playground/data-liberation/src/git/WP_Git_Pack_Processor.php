@@ -152,6 +152,18 @@ class WP_Git_Pack_Processor {
         return "$type_name $length\x00" . $object;
     }
 
+    static public function encode_packet_lines(array $payloads): string {
+        $lines = [];
+        foreach($payloads as $payload) {
+            if($payload === '0000' || $payload === '0001' || $payload === '0002') {
+                $lines[] = $payload;
+            } else {
+                $lines[] = self::encode_packet_line($payload);
+            }
+        }
+        return implode('', $lines);
+    }
+
     static public function encode_packet_line(string $payload): string {
         $length = strlen($payload) + 4;
         return sprintf("%04x", $length) . $payload;
@@ -239,7 +251,7 @@ class WP_Git_Pack_Processor {
             case '0002':
                 return ['type' => '#response-end'];
             default:
-                $length = intval($packet_length_bytes, 16);
+                $length = intval($packet_length_bytes, 16) - 4 ;
                 $payload = substr($pack_bytes, $offset, $length);
                 if(str_ends_with($payload, "\n")) {
                     $payload = substr($payload, 0, -1);
