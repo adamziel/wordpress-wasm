@@ -679,8 +679,19 @@ class WP_Git_Repository {
 
         $is_amend = isset($options['amend']) && $options['amend'];
 
+        $this->read_object($this->get_ref_head('refs/heads/main'));
+        $old_tree_oid = $this->get_parsed_commit()['tree'];
+
         // Process trees bottom-up recursively
         $root_tree_oid = $this->commit_tree('/', $changed_trees);
+
+        if(
+            $root_tree_oid === $old_tree_oid &&
+            !$is_amend
+        ) {
+            // Nothing has changed, skip creating a new empty commit.
+            return $this->oid;
+        }
 
         // Create a new commit object
         $options['tree'] = $root_tree_oid;
