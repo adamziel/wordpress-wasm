@@ -620,6 +620,10 @@ class WP_Git_Repository {
         return "$type_name $length\x00" . $object;
     }
 
+    /**
+     * @TODO: Don't commit without a "force" option if the
+     *        changeset didn't actually change the root tree oid.
+     */
     public function commit($options=[]) {
         // First process all blob updates
         $updates = $options['updates'] ?? [];
