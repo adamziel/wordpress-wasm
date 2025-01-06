@@ -71,6 +71,7 @@ class WP_Git_Server {
             default:
                 throw new Exception('Unknown path: ' . $path);
         }
+        $response->end();
     }
 
     private function send_protocol_v2_headers(ResponseWriter $response, $service) {
@@ -305,7 +306,7 @@ class WP_Git_Server {
             }
         }
         $acks = array_unique($acks);
-        if(count($parsed['arguments']['have']) > 0) {
+        if(isset($parsed['arguments']['have']) && count($parsed['arguments']['have']) > 0) {
             $response->write(WP_Git_Pack_Processor::encode_packet_line("acknowledgments\n"));
             if(count($acks) > 0) {
                 foreach($acks as $ack) {
