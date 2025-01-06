@@ -47,11 +47,5 @@ export async function encodeAsMultipart(
 }
 
 function fileToUint8Array(file: File): Promise<Uint8Array> {
-	return new Promise((resolve) => {
-		const reader = new FileReader();
-		reader.onload = () => {
-			resolve(new Uint8Array(reader.result as ArrayBuffer));
-		};
-		reader.readAsArrayBuffer(file);
-	});
+	return file.arrayBuffer().then((fileBuffer) => new Uint8Array(fileBuffer));
 }
