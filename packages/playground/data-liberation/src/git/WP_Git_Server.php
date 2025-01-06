@@ -379,6 +379,7 @@ class WP_Git_Server {
         $response->send_header('Cache-Control', 'no-cache');
 
         $old_oid = $parsed['old_oid'];
+        // @TODO: Verify the old_oid is the ref_name tip
         $new_oid = $parsed['new_oid'];
         $ref_name = $parsed['ref_name'];
 
