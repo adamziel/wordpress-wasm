@@ -422,4 +422,124 @@ RESPONSE
     //     );
     // }
 
+    public function test_handle_push_request() {
+        // Create test objects
+        $readme_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+            "# New Content"
+        );
+        
+        $tree_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_TREE,
+            WP_Git_Pack_Processor::encode_tree_bytes([
+                [
+                    'mode' => WP_Git_Pack_Processor::FILE_MODE_REGULAR_NON_EXECUTABLE,
+                    'name' => 'README.md',
+                    'sha1' => $readme_oid
+                ]
+            ])
+        );
+
+        $commit_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+            "tree $tree_oid\nparent 0000000000000000000000000000000000000000\nauthor Test <test@example.com> 1234567890 +0000\ncommitter Test <test@example.com> 1234567890 +0000\n\nPush test\n"
+        );
+
+        $test_cases = [
+            'basic push' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=push\n",
+                    "0000",
+                    "0000000000000000000000000000000000000000 $commit_oid refs/heads/main\n",
+                    "0000"
+                ]),
+                'expected_ref' => 'refs/heads/main',
+                'expected_oid' => $commit_oid
+            ],
+            'delete ref' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=push\n",
+                    "0000",
+                    "$commit_oid 0000000000000000000000000000000000000000 refs/heads/main\n",
+                    "0000"
+                ]),
+                'expected_ref' => 'refs/heads/main',
+                'expected_oid' => null
+            ]
+        ];
+
+        foreach ($test_cases as $name => $test) {
+            /** @var BufferingResponseWriter */
+            $response = $this->getMockBuilder(BufferingResponseWriter::class)
+                ->onlyMethods(['end'])
+                ->getMock();
+
+            $this->server->handle_push_request($test['request'], $response);
+            
+            $response_body = $response->get_buffered_body();
+            
+            if ($test['expected_oid'] === null) {
+                // Should be deleted
+                $this->assertFalse(
+                    $this->repository->get_ref_head($test['expected_ref']),
+                    "$name: Ref should be deleted"
+                );
+            } else {
+                // Should be updated
+                $this->assertEquals(
+                    $test['expected_oid'],
+                    $this->repository->get_ref_head($test['expected_ref']),
+                    "$name: Ref should be updated to new commit"
+                );
+            }
+
+            // Should contain "ok" response
+            $this->assertStringContainsString(
+                "ok " . $test['expected_ref'] . "\n",
+                $response_body,
+                "$name: Response should contain success message"
+            );
+        }
+    }
+
+    public function test_handle_push_request_with_packfile() {
+        // Create a packfile with new objects
+        $readme_content = "# Pushed Content";
+        $pack_data = WP_Git_Pack_Processor::encode([
+            [
+                'type' => WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+                'content' => $readme_content
+            ]
+        ]);
+
+        $readme_oid = sha1("blob " . strlen($readme_content) . "\0" . $readme_content);
+
+        $request = WP_Git_Pack_Processor::encode_packet_lines([
+            "command=push\n",
+            "0000",
+            "0000000000000000000000000000000000000000 $readme_oid refs/heads/test\n",
+            "packfile\n"
+        ]) . $pack_data . "0000";
+
+        /** @var BufferingResponseWriter */
+        $response = $this->getMockBuilder(BufferingResponseWriter::class)
+            ->onlyMethods(['end'])
+            ->getMock();
+
+        $this->server->handle_push_request($request, $response);
+
+        // Verify the object was stored
+        $this->assertTrue(
+            $this->repository->read_object($readme_oid),
+            "Object should be stored in repository"
+        );
+
+        // Verify the ref was updated
+        $this->assertEquals(
+            $readme_oid,
+            $this->repository->get_ref_head('refs/heads/test'),
+            "Ref should be updated to new object"
+        );
+    }
+
 }

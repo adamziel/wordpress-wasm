@@ -36,6 +36,10 @@ class WP_Git_Pack_Processor {
         self::FILE_MODE_COMMIT => 'commit',
     ];
 
+    const CHANNEL_PACK = "\x01";
+    const CHANNEL_PROGRESS = "\x02";
+    const CHANNEL_ERROR = "\x03";
+
     // Helper: Build a barebones pack with the given objects (no compression).
     // Objects must be in an order that satisfies dependencies if you skip deltas.
     static public function encode(array $objects): string {
@@ -160,12 +164,14 @@ class WP_Git_Pack_Processor {
         return implode('', $lines);
     }
 
-    static public function encode_packet_line(string $payload): string {
-        if($payload === '0000' || $payload === '0001' || $payload === '0002') {
-            return $payload;
+    static public function encode_packet_line(string $payload, $channel=''): string {
+        $payload = $channel . $payload;
+        if($payload !== '0000' && $payload !== '0001' && $payload !== '0002') {
+            $length = sprintf("%04x", strlen($payload) + 4);
+        } else {
+            $length = '';
         }
-        $length = strlen($payload) + 4;
-        return sprintf("%04x", $length) . $payload;
+        return $length . $payload;
     }
     
     /**
@@ -177,7 +183,7 @@ class WP_Git_Pack_Processor {
             $pack_index = new WP_Git_Repository(new WP_In_Memory_Filesystem());
         }
 
-        $parsed_pack = self::parse_pack_data($pack_bytes);
+        $parsed_pack = self::parse_pack_data($pack_bytes, $pack_index);
 
         // Resolve trees
         foreach($parsed_pack['objects'] as $object) {
@@ -292,15 +298,13 @@ class WP_Git_Pack_Processor {
 
         while ($offset < strlen($treeContent)) {
             if ($offset >= strlen($treeContent)) {
-                var_dump('uninitialized string offset');
-                break; // Prevent uninitialized string offset
+                throw new Exception('uninitialized string offset');
             }
 
             // Read file mode
             $modeEnd = strpos($treeContent, ' ', $offset);
             if ($modeEnd === false || $modeEnd >= strlen($treeContent)) {
-                var_dump('invalid mode');
-                break; // Invalid mode
+                throw new Exception('invalid mode');
             }
             $mode = substr($treeContent, $offset, $modeEnd - $offset);
             $offset = $modeEnd + 1;
@@ -320,16 +324,14 @@ class WP_Git_Pack_Processor {
             // Read file name
             $nameEnd = strpos($treeContent, "\0", $offset);
             if ($nameEnd === false || $nameEnd >= strlen($treeContent)) {
-                var_dump('invalid name');
-                break; // Invalid name
+                throw new Exception('invalid name');
             }
             $name = substr($treeContent, $offset, $nameEnd - $offset);
             $offset = $nameEnd + 1;
 
             // Read SHA1
             if ($offset + 20 > strlen($treeContent)) {
-                var_dump('invalid sha1');
-                break; // Prevent out-of-bounds access
+                throw new Exception('invalid sha1');
             }
             $sha1 = bin2hex(substr($treeContent, $offset, 20));
             $offset += 20;
@@ -355,7 +357,7 @@ class WP_Git_Pack_Processor {
         return $result;
     }
 
-    static public function parse_pack_data($packData) {
+    static public function parse_pack_data($packData, $pack_index=null) {
         $offset = 0;
     
         // Basic sanity checks
@@ -415,10 +417,19 @@ class WP_Git_Pack_Processor {
                     $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
                     $objects[$i]['type'] = $base['type'];
                 } else if($objects[$i]['type'] === self::OBJECT_TYPE_REF_DELTA) {
-                    if(!isset($by_oid[$objects[$i]['reference']])) {
+                    if(isset($by_oid[$objects[$i]['reference']])) {
+                        $base = $objects[$by_oid[$objects[$i]['reference']]];
+                    } else if($pack_index) {
+                        if(false === $pack_index->read_object($objects[$i]['reference'])) {
+                            throw new Exception('Failed to read object: ' . $objects[$i]['reference']);
+                        }
+                        $base = [
+                            'type' => $pack_index->get_type(),
+                            'content' => $pack_index->read_entire_object_contents(),
+                        ];
+                    } else {
                         continue;
                     }
-                    $base = $objects[$by_oid[$objects[$i]['reference']]];
                     $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
                     $objects[$i]['type'] = $base['type'];
                 }
@@ -522,6 +533,7 @@ class WP_Git_Pack_Processor {
             }
         } else if ($type === self::OBJECT_TYPE_REF_DELTA) {
             $reference = substr($packData, $offset, 20);
+            $reference = bin2hex($reference);
             $offset += 20;
         }
         return [

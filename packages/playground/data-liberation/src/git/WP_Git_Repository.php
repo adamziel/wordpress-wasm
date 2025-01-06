@@ -521,6 +521,14 @@ class WP_Git_Repository {
         return $this->fs->put_contents($path, $oid);
     }
 
+    public function delete_ref($ref) {
+        $path = $this->resolve_ref_file_path($ref);
+        if(!$path) {
+            return false;
+        }
+        return $this->fs->rm($path);
+    }
+
     public function get_ref_head($ref='HEAD', $options=[]) {
         if($this->oid_exists($ref)) {
             return $ref;
@@ -989,7 +997,7 @@ class WP_Git_Repository {
         );
     }
 
-    public function list_refs($prefix = '') {
+    public function list_refs($prefixes = ['']) {
         $refs = [];
 
         /**
@@ -999,15 +1007,15 @@ class WP_Git_Repository {
          * This is a starter implementation. We may need to revisit this
          * for full compliance with Git.
          */
-        $path = ltrim(wp_canonicalize_path($prefix), '/');
-        $first_path = $this->fs->is_dir($path) ? $path : dirname($path);
-        $stack = [];
-        if(str_starts_with($first_path, 'refs/')) {
-            $stack = [$first_path];
+        $stack = ['refs/heads/'];
+        foreach ($prefixes as $prefix) {
+            $path = ltrim(wp_canonicalize_path($prefix), '/');
+            $first_path = $this->fs->is_dir($path) ? $path : dirname($path);
+            if(str_starts_with($first_path, 'refs/')) {
+                $stack[] = $first_path;
+            }
         }
-        if($prefix === '') {
-            $stack = ['refs/heads/'];
-        }
+
         while(!empty($stack)) {
             $path = array_shift($stack);
             if ($this->fs->is_dir($path)) {
@@ -1016,17 +1024,27 @@ class WP_Git_Repository {
                     $full_path = wp_join_paths($path, $ref_file);
                     array_push($stack, $full_path);
                 }
-            } else if(str_starts_with($path, $prefix)) {
-                $hash = trim($this->fs->get_contents($path));
-                if ($hash) {
-                    $ref_name = trim($path, '/');
-                    $refs[$ref_name] = $hash;
+            } else if($this->fs->is_file($path)) {
+                // Check if path matches any of the prefixes
+                foreach ($prefixes as $prefix) {
+                    if(str_starts_with($path, $prefix)) {
+                        $hash = trim($this->fs->get_contents($path));
+                        if ($hash) {
+                            $ref_name = trim($path, '/');
+                            $refs[$ref_name] = $hash;
+                        }
+                        break;
+                    }
                 }
             }
         }
 
-        if($prefix === '' || str_starts_with('HEAD', $prefix)) {
-            $refs['HEAD'] = $this->get_ref_head('HEAD');
+        // Check if we should include HEAD
+        foreach ($prefixes as $prefix) {
+            if($prefix === '' || str_starts_with('HEAD', $prefix)) {
+                $refs['HEAD'] = $this->get_ref_head('HEAD');
+                break;
+            }
         }
 
         return $refs;

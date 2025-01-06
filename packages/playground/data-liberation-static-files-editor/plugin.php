@@ -302,7 +302,7 @@ class WP_Static_Files_Editor_Plugin {
                 array('wp-components', 'wp-block-editor', 'wp-edit-post'),
                 '1.0.0'
             );
-            
+
             wp_enqueue_script('static-files-editor');
             wp_enqueue_style('static-files-editor');
 

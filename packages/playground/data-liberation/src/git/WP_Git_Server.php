@@ -17,27 +17,16 @@ class WP_Git_Server {
     }
 
     public function handle_request($path, $request_bytes, $response) {
+        error_log("Request: " . $path);
+
         switch($path) {
             case '/HEAD':
                 $response->write(WP_Git_Pack_Processor::encode_packet_line(sha1("a") . " HEAD\n"));
                 $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
-                $response->end();
                 break;
             // @TODO handle service=git-upload-pack
             case '/info/refs?service=git-upload-pack':
-                $parsed = $this->parse_message($request_bytes);
-                $response->send_header(
-                    'Content-Type',
-                    'application/x-git-upload-pack-advertisement'
-                );
-                $response->send_header(
-                    'Cache-Control',
-                    'no-cache'
-                );
-                $response->send_header(
-                    'Git-Protocol',
-                    'version=2'
-                );
+                $this->send_protocol_v2_headers($response, 'git-upload-pack');
                 $response->write(WP_Git_Pack_Processor::encode_packet_lines([
                     "# service=git-upload-pack\n",
                     "0000",
@@ -49,10 +38,20 @@ class WP_Git_Server {
                     "object-format=sha1\n",
                     "0000"
                 ]));
-                flush();
-                $response->end();
+                break;
+            case '/info/refs?service=git-receive-pack':
+                $this->send_protocol_v2_headers($response, 'git-receive-pack');
+                $response->write(WP_Git_Pack_Processor::encode_packet_lines([
+                    "# service=git-receive-pack\n",
+                    "0000",
+                ]));
+                $this->respond_with_ls_refs($response, [
+                    'capabilities' => 'report-status report-status-v2 delete-refs side-band-64k ofs-delta atomic object-format=sha1 quiet agent=github/spokes-receive-pack-bff11521ff0f3fc96efd2ba7a18ecebb89dc6949 session-id=26DD:527D3:3A481E46:3BF47E4D:677BF4BA push-options',
+                ]);
+                $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
                 break;
             case '/git-upload-pack':
+                $this->send_protocol_v2_headers($response, 'git-upload-pack');
                 $parsed = $this->parse_message($request_bytes);
                 switch($parsed['capabilities']['command']) {
                     case 'ls-refs':
@@ -66,10 +65,27 @@ class WP_Git_Server {
                 }
                 break;
             case '/git-receive-pack':
-                throw new Exception('Not implemented yet');
+                $this->send_protocol_v2_headers($response, 'git-receive-pack');
+                $this->handle_push_request($request_bytes, $response);
+                break;
             default:
                 throw new Exception('Unknown path: ' . $path);
         }
+    }
+
+    private function send_protocol_v2_headers(ResponseWriter $response, $service) {
+        $response->send_header(
+            'Content-Type',
+            'application/x-' . $service . '-advertisement'
+        );
+        $response->send_header(
+            'Cache-Control',
+            'no-cache'
+        );
+        $response->send_header(
+            'Git-Protocol',
+            'version=2'
+        );
     }
 
     /**
@@ -109,31 +125,30 @@ class WP_Git_Server {
      * @return string The response in Git protocol v2 format
      */
     public function handle_ls_refs_request($request_bytes, ResponseWriter $response) {
-        $response->send_header(
-            'Content-Type',
-            'application/x-git-upload-pack-advertisement'
-        );
-        $response->send_header(
-            'Cache-Control',
-            'no-cache'
-        );
-        $response->send_header(
-            'Git-Protocol',
-            'version=2'
-        );
-
         $parsed = $this->parse_message($request_bytes);
         if(!$parsed) {
             // return false;
         }
-        $prefix = $parsed['arguments']['ref-prefix'][0] ?? '';    
 
-        $refs = $this->repository->list_refs($prefix);
+        $this->respond_with_ls_refs($response, [
+            'ref-prefix' => $parsed['arguments']['ref-prefix'] ?? [''],
+            'capabilities' => 'multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/trunk filter object-format=sha1 agent=git/github-395dce4f6ecf',
+        ]);
+
+        // End the response with 0000
+        $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
+    }
+
+    private function respond_with_ls_refs($response, $options) {
+        $ref_prefixes = $options['ref-prefix'] ?? [''];
+        $capabilities_to_advertise = $options['capabilities'];
+
+        $refs = $this->repository->list_refs($ref_prefixes);
         $first_ref = array_key_first($refs);
         foreach ($refs as $ref_name => $ref_hash) {
             $line = $ref_hash . ' ' . $ref_name;
             if($ref_name === $first_ref) {
-                $line .= "\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/trunk filter object-format=sha1 agent=git/github-395dce4f6ecf";
+                $line .= "\0$capabilities_to_advertise";
             }
             // Format: <hash> <refname>\n
             $response->write(
@@ -142,9 +157,6 @@ class WP_Git_Server {
                 )
             );
         }
-
-        // End the response with 0000
-        $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
     }
 
     /**
@@ -347,8 +359,178 @@ class WP_Git_Server {
 
         $response->write(WP_Git_Pack_Processor::encode_packet_line("\x01" . $pack_data));
         $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
-        $response->end();
         return true;
+    }
+
+    /**
+     * Handle Git protocol v2 push command
+     * 
+     * @param string $request_bytes Raw request bytes
+     * @param ResponseWriter $response Response writer
+     * @return bool Success status
+     */
+    public function handle_push_request($request_bytes, ResponseWriter $response) {
+        /*
+        16:13:09.493439 http.c:637              <= Recv header:
+        16:13:09.493829 pkt-line.c:80           packet:     sideband< \2\0
+        16:13:09.493888 http.c:678              == Info: Connection #0 to host github.com left intact
+        16:13:09.493998 pkt-line.c:80           packet:     sideband< \1000eunpack ok
+        16:13:09.494062 pkt-line.c:80           packet:     sideband< \10017ok refs/heads/test
+        16:13:09.494104 pkt-line.c:80           packet:     sideband< \2Create a pull request for 'test' on GitHub by visiting:     https://github.com/adamziel/playground-docs-workflow/pull/new/test
+        remote:
+        16:13:09.494196 pkt-line.c:80           packet:          git< unpack ok
+        remote: Create a pull request for 'test' on GitHub by visiting:
+        remote:      https://github.com/adamziel/playground-docs-workflow/pull/new/test
+        remote:
+        16:13:09.494261 pkt-line.c:80           packet:     sideband< \10000
+        16:13:09.494257 pkt-line.c:80           packet:          git< ok refs/heads/test
+        16:13:09.494277 pkt-line.c:80           packet:     sideband< 0000
+        16:13:09.494328 pkt-line.c:80           packet:          git< 0000
+        16:13:09.494343 pkt-line.c:80           packet:          git> 0000
+        000016:13:09.494727 trace.c:411             performance: 0.799128000 s: git command: /usr/local/Cellar/git/2.37.3/libexec/git-core/git send-pack --stateless-rpc --helper-status --thin --progress https://github.com/adamziel/playground-docs-workflow.git/ --stdin
+        To https://github.com/adamziel/playground-docs-workflow.git
+        * [new branch]      test -> test
+        branch 'test' set up to track 'docs/test'.
+        16:13:09.523605 trace.c:411             performance: 1.993747000 s: git command: /usr/local/Cellar/git/2.37.3/libexec/git-core/git remote-https docs https://github.com/adamziel/playground-docs-workflow.git
+        16:13:09.526981 trace.c:411             performance: 2.015966000 s: git command: /usr/local/bin/git push -u docs test
+        */
+        $parsed = $this->parse_push_request($request_bytes);
+        if (!$parsed || empty($parsed['new_oid'])) {
+            return false;
+        }
+
+        $response->send_header('Content-Type', 'application/x-git-receive-pack-result');
+        $response->send_header('Cache-Control', 'no-cache');
+
+        $old_oid = $parsed['old_oid'];
+        $new_oid = $parsed['new_oid'];
+        $ref_name = $parsed['ref_name'];
+
+        // Validate ref name
+        if (!preg_match('|^refs/|', $ref_name)) {
+            $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                "error invalid ref name: $ref_name\n",
+                WP_Git_Pack_Processor::CHANNEL_ERROR
+            ));
+            $response->write("0000", WP_Git_Pack_Processor::CHANNEL_ERROR);
+            // @TODO: Throw / catch?
+            return false;
+        }
+
+        // Handle deletion
+        if ($new_oid === WP_Git_Repository::NULL_OID) {
+            if ($this->repository->delete_ref($ref_name)) {
+                $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                    "ok $ref_name\n",
+                    WP_Git_Pack_Processor::CHANNEL_PACK
+                ));
+            } else {
+                $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                    "error $ref_name delete failed\n",
+                    WP_Git_Pack_Processor::CHANNEL_ERROR
+                ));
+                $response->write("0000", WP_Git_Pack_Processor::CHANNEL_ERROR);
+            }
+            return false;
+        }
+
+        // Unpack objects if provided
+        if (isset($parsed['pack_data'])) {
+            $success = WP_Git_Pack_Processor::decode(
+                $parsed['pack_data'],
+                $this->repository
+            );
+            if($success) {
+                $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                    "000eunpack ok\n",
+                    WP_Git_Pack_Processor::CHANNEL_PACK
+                ));
+            } else {
+                $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                    "error unpack failed\n",
+                    WP_Git_Pack_Processor::CHANNEL_ERROR
+                ));
+                $response->write("0000", WP_Git_Pack_Processor::CHANNEL_ERROR);
+                // @TODO: Throw?
+                return false;
+            }
+        }
+
+        // Verify we have the object
+        if (!$this->repository->read_object($new_oid)) {
+            $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                "error missing object: $new_oid\n",
+                WP_Git_Pack_Processor::CHANNEL_ERROR
+            ));
+            $response->write("0000", WP_Git_Pack_Processor::CHANNEL_ERROR);
+            // @TODO: Throw?
+            return false;
+        }
+
+        // Update ref
+        if ($this->repository->set_ref_head($ref_name, $new_oid)) {
+            $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                "0017ok $ref_name\n",
+                WP_Git_Pack_Processor::CHANNEL_PACK
+            ));
+        } else {
+            $response->write(WP_Git_Pack_Processor::encode_packet_line(
+                "error $ref_name update failed\n",
+                WP_Git_Pack_Processor::CHANNEL_ERROR
+            ));
+            $response->write("0000", WP_Git_Pack_Processor::CHANNEL_ERROR);
+            // @TODO: Throw?
+            return false;
+        }
+
+        $response->write(WP_Git_Pack_Processor::encode_packet_line(
+            "0000",
+            WP_Git_Pack_Processor::CHANNEL_PACK
+        ));
+        $response->write(WP_Git_Pack_Processor::encode_packet_line(
+            "0000"
+        ));
+        return true;
+    }
+
+    /**
+     * Parse a push request according to Git protocol v2
+     * 
+     * @param string $request_bytes Raw request bytes
+     * @return array|false Parsed request data or false on error
+     */
+    private function parse_push_request($request_bytes) {
+        $parsed = [
+            'old_oid' => null,
+            'new_oid' => null,
+            'ref_name' => null,
+            'capabilities' => [],
+            'pack_data' => '',
+        ];
+
+        $offset = 0;
+        while (true) {
+            $line = WP_Git_Pack_Processor::decode_next_packet_line($request_bytes, $offset);
+            if ($line === false) {
+                break;
+            }
+
+            if ($line['type'] === '#packet') {
+                if (preg_match('/^(?:([0-9a-f]{40}) )?([0-9a-f]{40}) (.+?)\0(.+)$/', $line['payload'], $matches)) {
+                    $parsed['old_oid'] = $matches[1];
+                    $parsed['new_oid'] = $matches[2];
+                    $parsed['ref_name'] = $matches[3];
+                    $parsed['capabilities'] = explode(' ', trim($matches[4]));
+                } else {
+                    throw new Exception('Invalid push request');
+                }
+            } else if($line['type'] === '#flush') {
+                $parsed['pack_data'] = substr($request_bytes, $offset, strlen($request_bytes) - $offset);
+                break;
+            }
+        }
+
+        return $parsed;
     }
 
     private function parse_filter($filter) {
