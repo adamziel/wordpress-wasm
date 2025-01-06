@@ -123,7 +123,7 @@ class WP_Git_Repository {
     private $diff_engine;
 
     private const DELETE_PLACEHOLDER = 'DELETE_PLACEHOLDER';
-    private const NULL_OID = '0000000000000000000000000000000000000000';
+    public const NULL_OID = '0000000000000000000000000000000000000000';
 
     public function __construct(
         WP_Abstract_Filesystem $fs,
@@ -372,7 +372,7 @@ class WP_Git_Repository {
     public function read_by_path($path, $root_tree_oid=null) {
         if($root_tree_oid === null) {
             $head_oid = $this->get_ref_head('HEAD');
-            if(false === $this->read_object($head_oid)) {
+            if(!$head_oid || false === $this->read_object($head_oid)) {
                 return false;
             }
             $root_tree_oid = $this->get_parsed_commit()['tree'] ?? null;
@@ -433,7 +433,7 @@ class WP_Git_Repository {
         return $oids;
     }
 
-    public function find_objects_added_in($new_tree_oid, $old_tree_oid=null, $options=[]) {
+    public function find_objects_added_in($new_tree_oid, $old_tree_oid=WP_Git_Repository::NULL_OID, $options=[]) {
         $old_tree_index = $options['old_tree_index'] ?? $this;
         if($old_tree_index === null) {
             $old_tree_index = $this;
@@ -452,7 +452,7 @@ class WP_Git_Repository {
         }
 
         // Resolve the actual tree oid if $old_tree_oid is a commit
-        if($old_tree_oid) {
+        if(!$this->is_null_oid($old_tree_oid)) {
             if(false === $old_tree_index->read_object($old_tree_oid)) {
                 $this->last_error = 'Failed to read object: ' . $old_tree_oid;
                 return false;
@@ -475,6 +475,9 @@ class WP_Git_Repository {
             if($current_new_oid === $current_old_oid) {
                 continue;
             }
+            if($this->is_null_oid($current_new_oid)) {
+                continue;
+            }
             
             if(false === $this->read_object($current_new_oid)) {
                 $this->last_error = 'Failed to read object: ' . $current_new_oid;
@@ -492,7 +495,7 @@ class WP_Git_Repository {
             yield $this->get_oid();
             
             $old_tree = [];
-            if($current_old_oid) {
+            if(!$this->is_null_oid($current_old_oid)) {
                 if(false === $old_tree_index->read_object($current_old_oid)) {
                     $this->last_error = 'Failed to read object: ' . $current_old_oid;
                     return false;
@@ -504,6 +507,10 @@ class WP_Git_Repository {
                 $stack[] = [$object['sha1'], $old_tree[$name]['sha1'] ?? null];
             }
         }
+    }
+
+    private function is_null_oid($oid) {
+        return $oid === null || $oid === WP_Git_Repository::NULL_OID;
     }
 
     public function set_ref_head($ref, $oid) {

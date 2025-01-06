@@ -2,6 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 use WordPress\Filesystem\WP_In_Memory_Filesystem;
+use WordPress\AsyncHttp\ResponseWriter\BufferingResponseWriter;
 
 class WPGitServerTests extends TestCase {
 
@@ -254,5 +255,171 @@ RESPONSE
             ],
         ];
     }
+
+    public function test_handle_fetch_request_returns_packfile() {
+        // Create a more complex repository structure for testing
+        $readme_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+            "# Hello World"
+        );
+        $large_file_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_BLOB,
+            str_repeat('x', 2000) // 2KB file
+        );
+        
+        $tree_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_TREE,
+            WP_Git_Pack_Processor::encode_tree_bytes([
+                [
+                    'mode' => WP_Git_Pack_Processor::FILE_MODE_REGULAR_NON_EXECUTABLE,
+                    'name' => 'README.md',
+                    'sha1' => $readme_oid
+                ],
+                [
+                    'mode' => WP_Git_Pack_Processor::FILE_MODE_REGULAR_NON_EXECUTABLE,
+                    'name' => 'large.txt',
+                    'sha1' => $large_file_oid
+                ]
+            ])
+        );
+
+        $commit_oid = $this->repository->add_object(
+            WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT,
+            "tree $tree_oid\nparent 0000000000000000000000000000000000000000\nauthor Test <test@example.com> 1234567890 +0000\ncommitter Test <test@example.com> 1234567890 +0000\n\nInitial commit\n"
+        );
+
+        $test_cases = [
+            'basic fetch' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=fetch\n",
+                    "0000",
+                    "want $commit_oid\n",
+                    "done\n",
+                    "0000",
+                ]),
+                'expected_oids' => [
+                    $commit_oid,
+                    $tree_oid,
+                    $readme_oid,
+                    $large_file_oid,
+                ],
+            ],
+            'fetch with blob:none filter' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=fetch\n",
+                    "0000",
+                    "want $commit_oid\n",
+                    "filter blob:none\n",
+                    "done\n",
+                    "0000",
+                ]),
+                'expected_oids' => [
+                    $commit_oid,
+                    $tree_oid,
+                ],
+            ],
+            'fetch with blob size limit' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=fetch\n",
+                    "0000",
+                    "want $commit_oid\n",
+                    "filter blob:limit=1000\n",
+                    "done\n",
+                    "0000",
+                ]),
+                'expected_oids' => [
+                    $commit_oid,
+                    $tree_oid,
+                    $readme_oid,
+                ],
+            ],
+            'fetch with multiple wants' => [
+                'request' => WP_Git_Pack_Processor::encode_packet_lines([
+                    "command=fetch\n",
+                    "0000",
+                    "want $commit_oid\n",
+                    "want $tree_oid\n",
+                    "done\n",
+                    "0000",
+                ]),
+                // same objects, just different entry point
+                'expected_oids' => [
+                    $commit_oid,
+                    $tree_oid,
+                    $readme_oid,
+                    $large_file_oid,
+                ],
+            ]
+        ];
+
+        foreach ($test_cases as $name => $test) {
+            /** @var BufferingResponseWriter */
+            $response = $this->getMockBuilder(BufferingResponseWriter::class)
+                ->onlyMethods(['end'])
+                ->getMock();
+            $this->server->handle_fetch_request($test['request'], $response);
+            
+            // Verify response format
+            $response = $response->get_buffered_body();
+            $expected_response_start = WP_Git_Pack_Processor::encode_packet_lines([
+                "acknowledgments\n",
+                "NACK\n",
+                "ready\n",
+                "0001",
+                "packfile\n",
+            ]);
+            $actual_response_start = substr($response, 0, strlen($expected_response_start));
+            $this->assertEquals(
+                $expected_response_start,
+                $actual_response_start,
+                "$name: Response should start with packfile header"
+            );
+
+            $rest_of_response = substr($response, strlen($expected_response_start));
+            $pack_data = WP_Git_Client::accumulate_pack_data_from_multiplexed_chunks(
+                $rest_of_response
+            );
+            $pack = WP_Git_Pack_Processor::parse_pack_data($pack_data);
+
+            $this->assertCount(
+                count($test['expected_oids']),
+                $pack['objects'],
+                "$name: Pack should contain expected number of objects"
+            );
+            foreach($pack['objects'] as $object) {
+                $this->assertContains($object['oid'], $test['expected_oids']);
+            }
+        }
+    }
+
+    // public function test_handle_fetch_request_validates_filter() {
+    //     $this->expectException(Exception::class);
+    //     $this->expectExceptionMessage('Invalid filter: invalid:filter');
+
+    //     $request = WP_Git_Pack_Processor::encode_packet_lines([
+    //         "command=fetch\n",
+    //         "0000",
+    //         "want " . $this->main_branch_oid . "\n",
+    //         "filter invalid:filter\n",
+    //         "done\n",
+    //         "0000",
+    //     ]);
+
+    //     $this->server->handle_fetch_request($request);
+    // }
+
+    // public function test_handle_fetch_request_requires_want() {
+    //     $request = WP_Git_Pack_Processor::encode_packet_lines([
+    //         "command=fetch\n",
+    //         "0000",
+    //         "done\n",
+    //         "0000",
+    //     ]);
+
+    //     $this->assertFalse(
+    //         $this->server->handle_fetch_request($request),
+    //         "Fetch request without want should return false"
+    //     );
+    // }
 
 }

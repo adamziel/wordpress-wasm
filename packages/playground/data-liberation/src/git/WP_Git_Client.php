@@ -147,7 +147,7 @@ class WP_Git_Client {
             'Content-Type: application/x-git-upload-pack-request', 
         ]);
 
-        $pack_data = $this->accumulate_pack_data_from_multiplexed_chunks($response);
+        $pack_data = self::accumulate_pack_data_from_multiplexed_chunks($response);
         return WP_Git_Pack_Processor::decode($pack_data);
     }
     
@@ -208,7 +208,7 @@ class WP_Git_Client {
             'Accept: application/x-git-upload-pack-advertisement',
             'Content-Type: application/x-git-upload-pack-request', 
         ]);
-        $pack_data = $this->accumulate_pack_data_from_multiplexed_chunks($response);
+        $pack_data = self::accumulate_pack_data_from_multiplexed_chunks($response);
         WP_Git_Pack_Processor::decode($pack_data, $this->index);
         return true;
     }
@@ -256,9 +256,9 @@ class WP_Git_Client {
         return str_pad(dechex($length), 4, '0', STR_PAD_LEFT) . $data;
     }
 
-    private function accumulate_pack_data_from_multiplexed_chunks($raw_response) {
+    static public function accumulate_pack_data_from_multiplexed_chunks($raw_response) {
         $parsed_pack_data = [];
-        $parsed_chunks = $this->parse_multiplexed_pack_data($raw_response);
+        $parsed_chunks = self::parse_multiplexed_pack_data($raw_response);
         foreach($parsed_chunks as $chunk) {
             if($chunk['type'] !== 'side-band') {
                 continue;

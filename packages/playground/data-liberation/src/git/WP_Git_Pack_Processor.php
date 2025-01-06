@@ -155,16 +155,15 @@ class WP_Git_Pack_Processor {
     static public function encode_packet_lines(array $payloads): string {
         $lines = [];
         foreach($payloads as $payload) {
-            if($payload === '0000' || $payload === '0001' || $payload === '0002') {
-                $lines[] = $payload;
-            } else {
-                $lines[] = self::encode_packet_line($payload);
-            }
+            $lines[] = self::encode_packet_line($payload);
         }
         return implode('', $lines);
     }
 
     static public function encode_packet_line(string $payload): string {
+        if($payload === '0000' || $payload === '0001' || $payload === '0002') {
+            return $payload;
+        }
         $length = strlen($payload) + 4;
         return sprintf("%04x", $length) . $payload;
     }
@@ -179,55 +178,9 @@ class WP_Git_Pack_Processor {
         }
 
         $parsed_pack = self::parse_pack_data($pack_bytes);
-        $objects = $parsed_pack['objects'];
-
-        $by_oid = [];
-        $by_offset = [];
-        $resolved_objects = 0;
-        // Index entities and resolve deltas
-        // Run until all objects are resolved
-        while($resolved_objects < count($objects)) {
-            $resolved_in_this_iteration = 0;
-            for($i = 0; $i < count($objects); $i++) {
-                // Skip already processed objects
-                if(
-                    isset($by_offset[$objects[$i]['header_offset']]) &&
-                    isset($by_oid[$objects[$i]['oid']])
-                ) {
-                    continue;
-                }
-
-                if($objects[$i]['type'] === self::OBJECT_TYPE_OFS_DELTA) {
-                    $target_offset = $objects[$i]['header_offset'] - $objects[$i]['ofs'];
-                    if(!isset($by_offset[$target_offset])) {
-                        continue;
-                    }
-                    // TODO: Make sure the base object will never be another delta.
-                    $base = $objects[$by_offset[$target_offset]];
-                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
-                    $objects[$i]['type'] = $base['type'];
-                } else if($objects[$i]['type'] === self::OBJECT_TYPE_REF_DELTA) {
-                    if(!isset($by_oid[$objects[$i]['reference']])) {
-                        continue;
-                    }
-                    $base = $objects[$by_oid[$objects[$i]['reference']]];
-                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
-                    $objects[$i]['type'] = $base['type'];
-                }
-                $oid = sha1(self::wrap_git_object($objects[$i]['type'], $objects[$i]['content']));
-                $objects[$i]['oid'] = $oid;
-                $by_oid[$oid] = $i;
-                $by_offset[$objects[$i]['header_offset']] = $i;
-                ++$resolved_in_this_iteration;
-                ++$resolved_objects;
-            }
-            if($resolved_in_this_iteration === 0) {
-                throw new Exception('Could not resolve objects');
-            }
-        }
 
         // Resolve trees
-        foreach($objects as $object) {
+        foreach($parsed_pack['objects'] as $object) {
             $pack_index->add_object($object['type'], $object['content']);
         }
 
@@ -402,7 +355,7 @@ class WP_Git_Pack_Processor {
         return $result;
     }
 
-    static private function parse_pack_data($packData) {
+    static public function parse_pack_data($packData) {
         $offset = 0;
     
         // Basic sanity checks
@@ -434,6 +387,51 @@ class WP_Git_Pack_Processor {
             $object['header_offset'] = $header_offset;
             $object['content'] = self::inflate_object($packData, $offset, $object['uncompressed_length']);
             $objects[] = $object;
+        }
+
+        $by_oid = [];
+        $by_offset = [];
+        $resolved_objects = 0;
+        // Index entities and resolve deltas
+        // Run until all objects are resolved
+        while($resolved_objects < count($objects)) {
+            $resolved_in_this_iteration = 0;
+            for($i = 0; $i < count($objects); $i++) {
+                // Skip already processed objects
+                if(
+                    isset($by_offset[$objects[$i]['header_offset']]) &&
+                    isset($by_oid[$objects[$i]['oid']])
+                ) {
+                    continue;
+                }
+
+                if($objects[$i]['type'] === self::OBJECT_TYPE_OFS_DELTA) {
+                    $target_offset = $objects[$i]['header_offset'] - $objects[$i]['ofs'];
+                    if(!isset($by_offset[$target_offset])) {
+                        continue;
+                    }
+                    // TODO: Make sure the base object will never be another delta.
+                    $base = $objects[$by_offset[$target_offset]];
+                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
+                    $objects[$i]['type'] = $base['type'];
+                } else if($objects[$i]['type'] === self::OBJECT_TYPE_REF_DELTA) {
+                    if(!isset($by_oid[$objects[$i]['reference']])) {
+                        continue;
+                    }
+                    $base = $objects[$by_oid[$objects[$i]['reference']]];
+                    $objects[$i]['content'] = self::applyDelta($base['content'], $objects[$i]['content']);
+                    $objects[$i]['type'] = $base['type'];
+                }
+                $oid = sha1(self::wrap_git_object($objects[$i]['type'], $objects[$i]['content']));
+                $objects[$i]['oid'] = $oid;
+                $by_oid[$oid] = $i;
+                $by_offset[$objects[$i]['header_offset']] = $i;
+                ++$resolved_in_this_iteration;
+                ++$resolved_objects;
+            }
+            if($resolved_in_this_iteration === 0) {
+                throw new Exception('Could not resolve objects');
+            }
         }
         return [
             'objects' => $objects,

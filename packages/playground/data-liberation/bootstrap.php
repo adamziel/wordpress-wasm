@@ -10,6 +10,9 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Response.php
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/HttpError.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/ResponseWriter.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/StreamingResponseWriter.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/ResponseWriter/BufferingResponseWriter.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Local_Filesystem.php';
