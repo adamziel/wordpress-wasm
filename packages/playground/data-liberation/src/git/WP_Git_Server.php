@@ -370,30 +370,6 @@ class WP_Git_Server {
      * @return bool Success status
      */
     public function handle_push_request($request_bytes, ResponseWriter $response) {
-        /*
-        16:13:09.493439 http.c:637              <= Recv header:
-        16:13:09.493829 pkt-line.c:80           packet:     sideband< \2\0
-        16:13:09.493888 http.c:678              == Info: Connection #0 to host github.com left intact
-        16:13:09.493998 pkt-line.c:80           packet:     sideband< \1000eunpack ok
-        16:13:09.494062 pkt-line.c:80           packet:     sideband< \10017ok refs/heads/test
-        16:13:09.494104 pkt-line.c:80           packet:     sideband< \2Create a pull request for 'test' on GitHub by visiting:     https://github.com/adamziel/playground-docs-workflow/pull/new/test
-        remote:
-        16:13:09.494196 pkt-line.c:80           packet:          git< unpack ok
-        remote: Create a pull request for 'test' on GitHub by visiting:
-        remote:      https://github.com/adamziel/playground-docs-workflow/pull/new/test
-        remote:
-        16:13:09.494261 pkt-line.c:80           packet:     sideband< \10000
-        16:13:09.494257 pkt-line.c:80           packet:          git< ok refs/heads/test
-        16:13:09.494277 pkt-line.c:80           packet:     sideband< 0000
-        16:13:09.494328 pkt-line.c:80           packet:          git< 0000
-        16:13:09.494343 pkt-line.c:80           packet:          git> 0000
-        000016:13:09.494727 trace.c:411             performance: 0.799128000 s: git command: /usr/local/Cellar/git/2.37.3/libexec/git-core/git send-pack --stateless-rpc --helper-status --thin --progress https://github.com/adamziel/playground-docs-workflow.git/ --stdin
-        To https://github.com/adamziel/playground-docs-workflow.git
-        * [new branch]      test -> test
-        branch 'test' set up to track 'docs/test'.
-        16:13:09.523605 trace.c:411             performance: 1.993747000 s: git command: /usr/local/Cellar/git/2.37.3/libexec/git-core/git remote-https docs https://github.com/adamziel/playground-docs-workflow.git
-        16:13:09.526981 trace.c:411             performance: 2.015966000 s: git command: /usr/local/bin/git push -u docs test
-        */
         $parsed = $this->parse_push_request($request_bytes);
         if (!$parsed || empty($parsed['new_oid'])) {
             return false;
