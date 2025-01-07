@@ -266,7 +266,6 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		$entity      = $entity ?? $this->current();
 		$data        = $entity->get_data();
 		$entity_type = $entity->get_type();
-		print_r( $data );
 
 		// Do not need to be mapped, skip it.
 		if ( ! array_key_exists( $entity_type, self::ENTITY_TYPES ) ) {
@@ -322,13 +321,13 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				}
 				break;
 			case 'site_option':
-				// This support up to a hierachy depth of 1 million categories and posts.
+				// This supports up to a hierarchy depth of 1 million categories and posts.
 				$sort_order = 1000001;
 				// Site options have no parent.
 				$check_existing = false;
 				break;
 			case 'user':
-				// This support up to a hierachy depth of 1 million categories and posts.
+				// This supports up to a hierarchy depth of 1 million categories and posts.
 				$sort_order = 1000000;
 				// Users have no parent.
 				$check_existing = false;
