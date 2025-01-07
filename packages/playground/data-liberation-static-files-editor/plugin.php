@@ -57,6 +57,7 @@ class WP_Static_Files_Editor_Plugin {
             if(!is_dir(WP_STATIC_PAGES_DIR)) {
                 mkdir(WP_STATIC_PAGES_DIR, 0777, true);
             }
+            // $local_fs = new WP_Local_Filesystem(WP_STATIC_PAGES_DIR);
             $local_fs = new WP_Local_Filesystem(WP_STATIC_PAGES_DIR);
             $repo = new WP_Git_Repository($local_fs);
             $repo->add_remote('origin', GIT_REPO_URL);

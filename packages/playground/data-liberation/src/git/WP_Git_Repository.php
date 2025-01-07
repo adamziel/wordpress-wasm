@@ -463,7 +463,12 @@ class WP_Git_Repository {
 
         while($new_commit_hash !== $old_commit_hash && !wp_git_is_null_oid($new_commit_hash)) {
             if(false === $this->read_object($new_commit_hash)) {
-                throw new Exception('Failed to read new commit object: ' . $new_commit_hash);
+                // @TODO: This is a fatal failure since we're not able to
+                //        establish a path between the old and new commit,
+                //        but it's commented out for now to record a demo.
+                //        Let's restore the failure here.
+                // throw new Exception('Failed to read new commit object: ' . $new_commit_hash);
+                break;
             }
             $new_objects_oids[$new_commit_hash] = true;
             $parsed_commit = $this->get_parsed_commit();

@@ -160,6 +160,7 @@ class WP_Git_Client {
         $path = '/' . ltrim($path, '/');
         $remote_refs = $this->fetchRefs('refs/heads/' . $branch_name);
         $remote_head = $remote_refs['refs/heads/' . $branch_name];
+        // @TODO: Support "want" and "have" here
         $remote_index = $this->list_objects($remote_head);
 
         $remote_branch_ref = 'refs/heads/' . $branch_name;
@@ -179,7 +180,6 @@ class WP_Git_Client {
         $all_path_related_oids[] = $remote_head;
         $all_path_related_oids = array_flip($all_path_related_oids);
 
-        // @TODO: Support "want" and "have" here
         $new_oids = $remote_index->find_objects_added_in($remote_head, $local_ref ?: null, [
             'old_commit_repository' => $local_index,
         ]);
