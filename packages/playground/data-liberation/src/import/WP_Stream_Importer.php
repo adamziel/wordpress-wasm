@@ -309,15 +309,9 @@ class WP_Stream_Importer {
 					return true;
 				}
 
-				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
+				$this->next_stage = $this->options['topo_sorted'] ? self::STAGE_TOPOLOGICAL_SORT : self::STAGE_FRONTLOAD_ASSETS;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				if ( ! $this->options['topo_sorted'] ) {
-					// The entities are not topologically sorted, skip to next stage.
-					$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
-					return false;
-				}
-
 				if ( true === $this->topological_sort_next_entity() ) {
 					return true;
 				}
@@ -693,7 +687,7 @@ class WP_Stream_Importer {
 		}
 
 		if ( $this->options['topo_sorted'] ) {
-			$this->entity_iterator->emit_cursor = true;
+			$this->entity_iterator->set_emit_cursor( true );
 		}
 
 		if ( ! $this->entity_iterator->valid() ) {
@@ -765,7 +759,7 @@ class WP_Stream_Importer {
 		if ( false !== $entity_id ) {
 			$this->count_imported_entity( $entity->get_type() );
 
-			if ( isset( $this->options['topo_sorted'] ) ) {
+			if ( $this->options['topo_sorted'] ) {
 				// An entity has been imported, update the mapping for following ones.
 				$this->entity_iterator->update_mapped_id( $entity, $entity_id );
 			}

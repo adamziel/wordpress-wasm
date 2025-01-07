@@ -64,21 +64,14 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	public $emit_cursor = false;
 
 	/**
-	 * The current item being processed.
-	 */
-	// public $current_entity = 0;
-
-	/**
 	 * The entity types saved in the database.
 	 */
 	const ENTITY_TYPES = array(
 		'category'     => 1,
-		// 'comment'      => 2,
-		// 'comment_meta' => 3,
-		'post'         => 4,
-		// 'post_meta'    => 5,
-		'term'         => 6,
-		// 'term_meta'    => 7,
+		'post'         => 2,
+		'site_option'  => 3,
+		'user'         => 4,
+		'term'         => 5,
 	);
 
 	/**
@@ -86,14 +79,21 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	 */
 	const ENTITY_TYPES_ID = array(
 		'category'     => 'slug',
-		// 'comment'      => 'comment_id',
-		// 'comment_meta' => 'meta_key',
 		'post'         => 'post_id',
-		// 'post_meta'    => 'meta_key',
+		'site_option'  => 'option_name',
+		'user'         => 'user_login',
 		'term'         => 'term_id',
-		// 'term_meta'    => 'meta_key',
 	);
 
+	/**
+	 * Create the reader.
+	 *
+	 * @param WP_Byte_Reader $upstream The upstream reader.
+	 * @param mixed         $cursor The cursor.
+	 * @param array         $options The options.
+	 *
+	 * @return WP_WXR_Sorted_Reader The reader.
+	 */
 	public static function create( WP_Byte_Reader $upstream = null, $cursor = null, $options = array() ) {
 		global $wpdb;
 
@@ -103,37 +103,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		if ( array_key_exists( 'post_id', $options ) ) {
 			// Get the session ID from the post ID.
 			$reader->current_session = $options['post_id'];
-
-			// Get the index of the entity with the given cursor_id
-			/*$reader->current_entity = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					'SELECT id FROM %i WHERE cursor_id = %s AND session_id = %d LIMIT 1',
-					self::get_table_name(),
-					$current_session,
-					$reader->current_session
-				)
-			);*/
-		} else {
-			/*$active_session = WP_Import_Session::get_active();
-
-			if ( $active_session ) {
-				$this->set_session( $active_session->get_id() );
-			}*/
 		}
-
-		/*if ( array_key_exists( 'resume_at_entity', $options ) ) {
-			global $wpdb;
-
-			// Get the index of the entity with the given cursor_id
-			$reader->current_entity = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					'SELECT id FROM %i WHERE cursor_id = %s AND session_id = %d LIMIT 1',
-					self::get_table_name(),
-					$options['resume_at_entity'],
-					$reader->current_session
-				)
-			);
-		}*/
 
 		return $reader;
 	}
@@ -159,9 +129,11 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				$this->last_post_id    = $next_cursor['last_post_id'];
 				$this->last_comment_id = $next_cursor['last_comment_id'];
 				$this->last_term_id    = $next_cursor['last_term_id'];
+				$this->upstream->seek( $next_cursor['upstream'] );
 
 				// Reset the XML processor to the cursor.
 				$this->xml->reset_to( $next_cursor['xml'] );
+				echo "Reset to {$next_cursor['xml']}\n";
 			}
 		}
 
@@ -169,7 +141,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	}
 
 	/**
-	 * Get the name of the table.
+	 * Get the name of the SQL table.
 	 *
 	 * @return string The name of the table.
 	 */
@@ -181,8 +153,8 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	}
 
 	/**
-	 * Run during the register_activation_hook or similar. It creates the table
-	 * if it doesn't exist.
+	 * Run during the register_activation_hook or similar actions. It creates
+	 * the table if it doesn't exist.
 	 */
 	public static function create_or_update_db() {
 		global $wpdb;
@@ -198,9 +170,8 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		 * @param int $session_id The current session ID.
 		 * @param int $entity_type The type of the entity, comment, etc.
 		 * @param string $entity_id The ID of the entity before the import.
-		 * @param string $mapped_id The mapped ID of the entity after the import.
+		 * @param string $mapped_id The mapped ID of the entity after import.
 		 * @param string $parent_id The parent ID of the entity.
-		 * @param string $additional_id The additional ID of the entity. Used for comments and terms. Comments have a comment_parent, and the post.
 		 * @param string $cursor_id The cursor ID of the entity.
 		 * @param int $sort_order The sort order of the entity.
 		 */
@@ -212,7 +183,6 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				entity_id text NOT NULL,
 				mapped_id text DEFAULT NULL,
 				parent_id text DEFAULT NULL,
-				additional_id text DEFAULT NULL,
 				cursor_id text DEFAULT NULL,
 				sort_order int DEFAULT 1,
 				PRIMARY KEY  (id),
@@ -246,10 +216,20 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	}
 
 	/**
+	 * Set the emit cursor flag. If true, the reader will emit the cursor ID
+	 * for each entity.
+	 *
+	 * @param bool $emit_cursor The emit cursor flag.
+	 */
+	public function set_emit_cursor( $emit_cursor ) {
+		$this->emit_cursor = $emit_cursor;
+	}
+
+	/**
 	 * Reset the class.
 	 */
 	public function reset() {
-		$this->set_session( null );
+		$this->current_session = null;
 	}
 
 	/**
@@ -286,6 +266,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		$entity      = $entity ?? $this->current();
 		$data        = $entity->get_data();
 		$entity_type = $entity->get_type();
+		print_r( $data );
 
 		// Do not need to be mapped, skip it.
 		if ( ! array_key_exists( $entity_type, self::ENTITY_TYPES ) ) {
@@ -313,6 +294,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		// Get the ID of the entity.
 		$entity_id      = (string) $data[ self::ENTITY_TYPES_ID[ $entity_type ] ];
 		$parent_id_type = null;
+		$check_existing = true;
 
 		// Map the parent ID if the entity has one.
 		switch ( $entity_type ) {
@@ -323,21 +305,37 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				}
 
 				// Categories have at least a sort order of 2. Because they must
-				// be declated after the <item></item> array.
-				// In malformed WXR files, categories can potentially be declared
-				// after it.
+				// be declated before the <item></item> array. But in malformed WXR files,
+				// categories can potentially be declared after it.
 				$sort_order = 2;
 				break;
 			case 'post':
-				if ( array_key_exists( 'post_type', $data ) && ( 'post' === $data['post_type'] || 'page' === $data['post_type'] ) ) {
+				if (
+					array_key_exists( 'post_type', $data ) &&
+					( 'post' === $data['post_type'] || 'page' === $data['post_type'] )
+				) {
+					// If the post has a parent, we need to map it.
 					if ( array_key_exists( 'post_parent', $data ) && 0 !== (int) $data['post_parent'] ) {
 						$new_entity['parent_id'] = (string) $data['post_parent'];
 						$parent_id_type          = self::ENTITY_TYPES['post'];
 					}
 				}
 				break;
+			case 'site_option':
+				// This support up to a hierachy depth of 1 million categories and posts.
+				$sort_order = 1000001;
+				// Site options have no parent.
+				$check_existing = false;
+				break;
+			case 'user':
+				// This support up to a hierachy depth of 1 million categories and posts.
+				$sort_order = 1000000;
+				// Users have no parent.
+				$check_existing = false;
+				break;
 			case 'term':
 				if ( array_key_exists( 'parent', $data ) && ! empty( $data['parent'] ) ) {
+					// If the term has a parent, we need to map it.
 					$new_entity['parent_id'] = $data['parent'];
 					$parent_id_type          = self::ENTITY_TYPES['term'];
 				}
@@ -351,7 +349,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		$new_entity['sort_order'] = $sort_order;
 
 		// Get the existing entity, if any.
-		$existing_entity = $this->get_mapped_ids( $entity_id, self::ENTITY_TYPES[ $entity_type ] );
+		$existing_entity = $check_existing ? $this->get_mapped_ids( $entity_id, self::ENTITY_TYPES[ $entity_type ] ) : null;
 
 		if ( ! empty( $existing_entity ) ) {
 			// If the entity exists, we need to get its sort order.
@@ -373,11 +371,11 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 					'mapped_id'   => null,
 					'parent_id'   => null,
 					'cursor_id'   => null,
-					// The parent has at least a sort order of +1 than the child.
+					// The parent has at least a sort order of + 1 than the child.
 					'sort_order'  => $sort_order + 1,
 				);
 
-				// Let's add it to the table.
+				// Add it to the table.
 				$wpdb->insert( self::get_table_name(), $new_parent );
 			}
 		}
@@ -393,8 +391,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		}
 
 		// The entity exists, so we need to update the sort order if needed.
-
-		// These are arrays used in the SQL update. Do not update the entity by default.
+		// These are arrays used in the SQL update. We do not update the entity by default.
 		$update_entity = array();
 		$update_types  = array();
 
@@ -407,7 +404,10 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		// The entity exists, so we need to update the sort order. Check if it has a child.
 		$first_child = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT entity_id, mapped_id, sort_order FROM %i WHERE parent_id = %s AND entity_type = %d AND session_id = %d LIMIT 1',
+				'SELECT entity_id, mapped_id, sort_order
+				FROM %i
+				WHERE parent_id = %s AND entity_type = %d AND session_id = %d
+				LIMIT 1',
 				self::get_table_name(),
 				(string) $new_entity['parent_id'],
 				$parent_id_type,
@@ -418,17 +418,18 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 
 		// We found a child, so we need to update the sort order with a new sort order.
 		if ( $first_child && 1 === count( $first_child ) ) {
-			// The sort order is the sort order of the first child plus one.
+			// The sort order is the sort order of the first child found, plus one.
 			$new_sort_order = $first_child[0]['sort_order'] + 1;
 
 			// Update the sort order only if it's greater than the existing sort
-			// order. This optimizes the number of updates.
+			// order. This optimizes the number of SQL queries.
 			if ( $new_sort_order > $sort_order ) {
 				$update_entity['sort_order'] = $new_sort_order;
 				$update_types[]              = '%d';
 			}
 		}
 
+		// If there are updates to be made, do them.
 		if ( count( $update_entity ) ) {
 			$wpdb->update(
 				self::get_table_name(),
@@ -451,7 +452,9 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 
 	/**
 	 * A new entity has been imported, so we need to update the mapped ID to be
-	 * reused later in the WP_WXR_Sorted_Reader::get_entity() calls.
+	 * reused later in the WP_WXR_Sorted_Reader::get_entity() calls. New entities
+	 * imported need to refer to the existing parent entities and their newly
+	 * generated IDs.
 	 *
 	 * @param object $entity The entity to update.
 	 * @param string $new_id The new ID of the entity.
@@ -470,6 +473,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		$existing_entity = $this->get_mapped_ids( $entity_id, self::ENTITY_TYPES[ $entity_type ] );
 
 		if ( $existing_entity && is_null( $existing_entity['mapped_id'] ) ) {
+			// Update the mapped ID.
 			$wpdb->update(
 				self::get_table_name(),
 				array( 'mapped_id' => (string) $new_id ),
@@ -484,7 +488,8 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	}
 
 	/**
-	 * Get the next cursor ID.
+	 * Get the next cursor ID from the table. If the cursor ID is found, we
+	 * delete the row and return the cursor ID.
 	 *
 	 * @return string|null The next cursor.
 	 */
@@ -497,8 +502,11 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				// last cursor IDs. In SQL, if multiple rows have the same value
 				// in that column, the order of those rows is undefined unless
 				// you explicitly specify additional sorting criteria.
-				// 'SELECT cursor_id FROM %i WHERE session_id = %d ORDER BY sort_order DESC, id ASC LIMIT 1 OFFSET %d',
-				'SELECT id, cursor_id FROM %i WHERE session_id = %d ORDER BY sort_order DESC, id ASC LIMIT 1',
+				'SELECT id, cursor_id
+				FROM %i
+				WHERE session_id = %d
+				ORDER BY sort_order DESC, id ASC
+				LIMIT 1',
 				self::get_table_name(),
 				$this->current_session
 			),
@@ -506,10 +514,6 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		);
 
 		if ( $results && 1 === count( $results ) ) {
-			// Increment the current entity counter by the number of results
-			// $this->current_entity += count( $results );
-			// @TODO: Remove the cursor_id from the results.
-
 			// Delete the row we just retrieved.
 			$wpdb->delete(
 				self::get_table_name(),

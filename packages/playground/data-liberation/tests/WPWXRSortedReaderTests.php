@@ -37,7 +37,7 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Reader::get_table_name() )
 		);
 
-		$this->assertEquals( 46, (int) $count );
+		$this->assertEquals( 41, (int) $count );
 		$types = $this->small_import_counts();
 
 		foreach ( $types as $entity_type => $expected_count ) {
@@ -184,10 +184,12 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 
 		$this->assertEquals( $expected_ids, $imported_ids );
 
-		$categories = get_terms(array(
-			'taxonomy' => 'category',
-			'hide_empty' => false,
-		));
+		$categories = get_terms(
+			array(
+				'taxonomy'   => 'category',
+				'hide_empty' => false,
+			)
+		);
 
 		$this->assertEquals( $expected_ids['category'], $imported_ids['category'] );
 		// $this->assertEquals( 1, 2 );
@@ -198,17 +200,42 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 		$this->assertEquals( 44, $count );
 	}
 
+	public function test_unsorted_categories() {
+		$file_path = __DIR__ . '/wxr/unsorted-categories.xml';
+		$importer  = $this->import_wxr_file( $file_path );
+		$import_fn = function ( $data ) {
+			// print_r( $data );
+
+			return $data;
+		};
+
+		add_filter( 'wxr_importer_pre_process_term', $import_fn );
+
+		do {
+			while ( $importer->next_step() ) {
+				// noop
+			}
+		} while ( $importer->advance_to_next_stage() );
+
+		$categories = get_terms(
+			array(
+				'taxonomy'   => 'category',
+				'hide_empty' => false,
+			)
+		);
+
+		remove_filter( 'wxr_importer_pre_process_term', $import_fn );
+
+		$this->assertEquals( 1, 2 );
+	}
+
 	private function small_import_counts() {
 		$types = WP_WXR_Sorted_Reader::ENTITY_TYPES;
 
 		return array(
-			$types['category']     => 33,
-			$types['comment']      => 1,
-			$types['comment_meta'] => 0,
-			$types['post']         => 13,
-			$types['post_meta']    => 3,
-			$types['term']         => 0,
-			$types['term_meta']    => 0,
+			$types['category'] => 33,
+			$types['post']     => 13,
+			$types['term']     => 0,
 		);
 	}
 

@@ -710,7 +710,20 @@ class WP_XML_Processor {
 	}
 
 	public function reset_to( $cursor ) {
-		$this->parser_state = self::STATE_READY;
+		$this->parser_state           = self::STATE_READY;
+		$this->token_starts_at        = null;
+		$this->token_length           = null;
+		$this->tag_name_starts_at     = null;
+		$this->tag_name_length        = null;
+		$this->text_starts_at         = null;
+		$this->text_length            = null;
+		$this->is_closing_tag         = null;
+		$this->last_error             = null;
+		$this->attributes             = array();
+		$this->bookmarks              = array();
+		$this->lexical_updates        = array();
+		$this->parser_context         = self::IN_PROLOG_CONTEXT;
+		$this->stack_of_open_elements = array();
 
 		return $this->initialize_from_cursor( $cursor );
 	}

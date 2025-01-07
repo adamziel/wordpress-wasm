@@ -237,7 +237,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 	 *
 	 * @var WP_Byte_Reader
 	 */
-	private $upstream;
+	protected $upstream;
 
 	/**
 	 * Mapping of WXR tags representing site options to their WordPress options names.
