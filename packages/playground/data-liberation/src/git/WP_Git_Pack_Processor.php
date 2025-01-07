@@ -165,13 +165,22 @@ class WP_Git_Pack_Processor {
     }
 
     static public function encode_packet_line(string $payload, $channel=''): string {
-        $payload = $channel . $payload;
-        if($payload !== '0000' && $payload !== '0001' && $payload !== '0002') {
-            $length = sprintf("%04x", strlen($payload) + 4);
-        } else {
-            $length = '';
+        // @TODO: Stream instead of buffering
+        if($payload === '0000' || $payload === '0001' || $payload === '0002') {
+            $payload = $channel . $payload;
+            return $payload;
         }
-        return $length . $payload;
+
+        $chunk_size = 8000;
+        $offset = 0;
+        $lines = [];
+        while($offset < strlen($payload)) {
+            $chunk = $channel . substr($payload, $offset, $chunk_size);
+            $length = sprintf("%04x", strlen($chunk) + 4);
+            $lines[] = $length . $chunk;
+            $offset += $chunk_size;
+        }
+        return implode('', $lines);
     }
     
     /**

@@ -282,25 +282,28 @@ class WP_Git_Server {
 
                 $parsed_commit = $this->repository->get_parsed_commit();
                 if(!isset($parsed_commit['parent'])) {
+                    $common_parent_hash = WP_Git_Repository::NULL_OID;
                     break;
                 }
 
                 $commit_hash = $parsed_commit['parent'];
                 if(isset($have_oids[$commit_hash])) {
+                    $common_parent_hash = $commit_hash;
                     break;
                 }
             }
-            $common_parent_hash = $commit_hash;
 
             // For each wanted commit, find objects not present in any of the have commits
             $new_objects = $this->repository->find_objects_added_in(
                 $want_hash,
                 $common_parent_hash
             );
-            $objects_to_send = array_merge(
-                $objects_to_send,
-                iterator_to_array($new_objects)
-            );
+            if(false !== $new_objects) {
+                $objects_to_send = array_merge(
+                    $objects_to_send,
+                    $new_objects
+                );
+            }
             if($common_parent_hash !== WP_Git_Repository::NULL_OID) {
                 $acks[] = $common_parent_hash;
             }
@@ -358,7 +361,7 @@ class WP_Git_Server {
         // @TODO: Stream the pack data instead of buffering it
         $pack_data = WP_Git_Pack_Processor::encode($pack_objects);
 
-        $response->write(WP_Git_Pack_Processor::encode_packet_line("\x01" . $pack_data));
+        $response->write(WP_Git_Pack_Processor::encode_packet_line($pack_data, "\x01"));
         $response->write(WP_Git_Pack_Processor::encode_packet_line("0000"));
         return true;
     }

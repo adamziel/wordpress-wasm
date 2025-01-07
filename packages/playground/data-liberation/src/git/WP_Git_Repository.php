@@ -330,6 +330,7 @@ class WP_Git_Repository {
         if(null === $this->parsed_commit && $this->oid) {
             $commit_body = $this->read_entire_object_contents();
             $this->parsed_commit = WP_Git_Pack_Processor::parse_commit_body($commit_body);
+            $this->parsed_commit['oid'] = $this->oid;
             if(!$this->parsed_commit) {
                 $this->last_error = 'Failed to parse commit';
                 $this->parsed_commit = [];
@@ -433,84 +434,53 @@ class WP_Git_Repository {
         return $oids;
     }
 
-    public function find_objects_added_in($new_tree_oid, $old_tree_oid=WP_Git_Repository::NULL_OID, $options=[]) {
-        $old_tree_index = $options['old_tree_index'] ?? $this;
-        if($old_tree_index === null) {
-            $old_tree_index = $this;
+    public function find_objects_added_in($new_commit_hash, $old_commit_hash=WP_Git_Repository::NULL_OID, $options=[]) {
+        $new_commit = wp_git_get_parsed_commit($this, $new_commit_hash);
+        if(!$new_commit) {
+            throw new Exception('Failed to read new commit object: ' . $new_commit_hash);
+        }
+        // Resolve the actual tree oid if $old_commit_hash is a commit
+        $old_tree_hash = WP_Git_Repository::NULL_OID;
+        $old_objects_oids = [];
+        if(!wp_git_is_null_oid($old_commit_hash)) {
+            $old_commit_repository = $options['old_commit_repository'] ?? $this;
+            if(false === $old_commit_repository->read_object($old_commit_hash)) {
+                throw new Exception('Failed to read old commit object: ' . $old_commit_hash);
+            }
+            if($old_commit_repository->get_type() !== WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
+                throw new Exception('Object was not a commit in find_objects_added_in: ' . $old_commit_repository->get_type());
+            }
+            $old_tree_hash = $old_commit_repository->get_parsed_commit()['tree'];
+            $old_objects_oids = array_flip(
+                wp_git_get_all_descendant_oids_in_tree($old_commit_repository, $old_tree_hash)
+            );
+            $old_objects_oids[$old_commit_hash] = true;
         }
 
-        // Resolve the actual tree oid if $new_tree_oid is a commit
-        if(false === $this->read_object($new_tree_oid)) {
-            $this->last_error = 'Failed to read object: ' . $new_tree_oid;
-            return false;
-        }
-        if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
-            // yield the commit object itself
+        $new_objects_oids = [];
+        // Optimization – don't process the same tree more than once.
+        $processed_trees = [];
+
+        while($new_commit_hash !== $old_commit_hash && !wp_git_is_null_oid($new_commit_hash)) {
+            if(false === $this->read_object($new_commit_hash)) {
+                throw new Exception('Failed to read new commit object: ' . $new_commit_hash);
+            }
+            $new_objects_oids[$new_commit_hash] = true;
             $parsed_commit = $this->get_parsed_commit();
-            $new_tree_oid = $parsed_commit['tree'];
-            yield $this->oid;
-        }
-
-        // Resolve the actual tree oid if $old_tree_oid is a commit
-        if(!$this->is_null_oid($old_tree_oid)) {
-            if(false === $old_tree_index->read_object($old_tree_oid)) {
-                $this->last_error = 'Failed to read object: ' . $old_tree_oid;
-                return false;
-            }
-            if($old_tree_index->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_COMMIT) {
-                $old_tree_oid = $old_tree_index->get_parsed_commit()['tree'];
-            }
-        }
-
-        if($new_tree_oid === $old_tree_oid) {
-            return false;
-        }
-        
-        $stack = [[$new_tree_oid, $old_tree_oid]];
-        
-        while(!empty($stack)) {
-            list($current_new_oid, $current_old_oid) = array_pop($stack);
-
-            // Object is unchanged
-            if($current_new_oid === $current_old_oid) {
-                continue;
-            }
-            if($this->is_null_oid($current_new_oid)) {
-                continue;
-            }
-            
-            if(false === $this->read_object($current_new_oid)) {
-                $this->last_error = 'Failed to read object: ' . $current_new_oid;
-                return false;
-            }
-            if($this->get_type() === WP_Git_Pack_Processor::OBJECT_TYPE_BLOB) {
-                yield $this->get_oid();
-                continue;
-            } else if($this->get_type() !== WP_Git_Pack_Processor::OBJECT_TYPE_TREE) {
-                _doing_it_wrong(__METHOD__, 'Invalid object type in find_objects_added_in: ' . $this->get_type(), '1.0.0');
-                return false;
-            }
-
-            $new_tree = $this->get_parsed_tree();
-            yield $this->get_oid();
-            
-            $old_tree = [];
-            if(!$this->is_null_oid($current_old_oid)) {
-                if(false === $old_tree_index->read_object($current_old_oid)) {
-                    $this->last_error = 'Failed to read object: ' . $current_old_oid;
-                    return false;
+            $tree_oid = $parsed_commit['tree'];
+            $new_objects_oids[$tree_oid] = true;
+            if(!isset($processed_trees[$tree_oid])) {
+                $descendants = wp_git_get_all_descendant_oids_in_tree($this, $tree_oid);
+                foreach($descendants as $descendant) {
+                    $new_objects_oids[$descendant] = true;
                 }
-                $old_tree = $old_tree_index->get_parsed_tree();
             }
-
-            foreach($new_tree as $name => $object) {
-                $stack[] = [$object['sha1'], $old_tree[$name]['sha1'] ?? null];
-            }
+            $processed_trees[$tree_oid] = true;
+            $new_commit_hash = $parsed_commit['parent'] ?? WP_Git_Repository::NULL_OID;
         }
-    }
 
-    private function is_null_oid($oid) {
-        return $oid === null || $oid === WP_Git_Repository::NULL_OID;
+        $diff = array_diff_key($new_objects_oids, $old_objects_oids);
+        return array_keys($diff);
     }
 
     public function set_ref_head($ref, $oid) {
@@ -680,13 +650,13 @@ class WP_Git_Repository {
         $is_amend = isset($options['amend']) && $options['amend'];
 
         $this->read_object($this->get_ref_head('refs/heads/main'));
-        $old_tree_oid = $this->get_parsed_commit()['tree'];
+        $old_commit_hash = $this->get_parsed_commit()['tree'];
 
         // Process trees bottom-up recursively
         $root_tree_oid = $this->commit_tree('/', $changed_trees);
 
         if(
-            $root_tree_oid === $old_tree_oid &&
+            $root_tree_oid === $old_commit_hash &&
             !$is_amend
         ) {
             // Nothing has changed, skip creating a new empty commit.

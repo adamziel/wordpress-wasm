@@ -91,6 +91,7 @@ class WP_Git_Client {
         $pack_objects = [];
         foreach($delta as $oid) {
             // @TODO: just stream the saved object instead of re-reading and re-encoding it.
+            $this->index->read_object($oid);
             $body = '';
             do {
                 $body .= $this->index->get_body_chunk();
@@ -179,8 +180,8 @@ class WP_Git_Client {
         $all_path_related_oids = array_flip($all_path_related_oids);
 
         // @TODO: Support "want" and "have" here
-        $new_oids = $remote_index->find_objects_added_in($remote_head, $local_ref, [
-            'old_tree_index' => $local_index,
+        $new_oids = $remote_index->find_objects_added_in($remote_head, $local_ref ?: null, [
+            'old_commit_repository' => $local_index,
         ]);
         $objects_to_fetch = [];
         foreach($new_oids as $oid) {
