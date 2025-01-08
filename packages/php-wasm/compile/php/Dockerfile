@@ -1048,7 +1048,7 @@ RUN set -euxo pipefail; \
 		# This assumes the traffic is always forwarded to the same target.
 		# However, we want to support arbitrary targets, so we need to
 		# replace the hardcoded websocket target URL with a dynamic callback.
-		/root/replace.sh $'s/if\s*\(\s*["\']string["\']\s*===\s*typeof Module\[["\']websocket["\']\]\[["\']url["\']\]\s*\)/if("function"===typeof Module["websocket"]["url"]) {\nurl = Module["websocket"]["url"](...arguments);\n}else if ("string" === typeof Module["websocket"]["url"])/g' \
+		/root/replace.sh $'s/if\s*\(\s*SOCKFS\.websocketArgs\["url"\]\s*\)/if("function"===typeof SOCKFS.websocketArgs["url"]) {\nurl = SOCKFS.websocketArgs["url"](...arguments);\n}else if ("string" === typeof SOCKFS.websocketArgs["url"])/g' \
 			/root/output/php.js; \
 		# Enable custom WebSocket constructors to support socket options.
 		/root/replace.sh "s/ws\s*=\s*new WebSocketConstructor/if (Module['websocket']['decorator']) {WebSocketConstructor = Module['websocket']['decorator'](WebSocketConstructor);}ws = new WebSocketConstructor/g" /root/output/php.js && \
