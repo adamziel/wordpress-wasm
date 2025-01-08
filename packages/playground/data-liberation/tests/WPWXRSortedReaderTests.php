@@ -3,7 +3,7 @@
 require_once __DIR__ . '/PlaygroundTestCase.php';
 
 /**
- * Tests for the WP_WXR_Sorted_Reader class.
+ * Tests for the WP_WXR_Sorted_Entity_Reader class.
  */
 class WPWXRSortedReaderTests extends PlaygroundTestCase {
 
@@ -12,11 +12,11 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 
 		$this->delete_all_data();
 		wp_cache_flush();
-		WP_WXR_Sorted_Reader::create_or_update_db();
+		WP_WXR_Sorted_Entity_Reader::create_or_update_db();
 	}
 
 	protected function tearDown(): void {
-		WP_WXR_Sorted_Reader::delete_db();
+		WP_WXR_Sorted_Entity_Reader::delete_db();
 
 		parent::tearDown();
 	}
@@ -34,17 +34,17 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 		}
 
 		$count = $wpdb->get_var(
-			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Reader::get_table_name() )
+			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Entity_Reader::get_table_name() )
 		);
 
-		$this->assertEquals( 47, (int) $count );
+		$this->assertEquals( 65, (int) $count );
 		$types = $this->small_import_counts();
 
 		foreach ( $types as $entity_type => $expected_count ) {
 			$count = $wpdb->get_var(
 				$wpdb->prepare(
 					'SELECT COUNT(*) FROM %i WHERE entity_type = %d',
-					WP_WXR_Sorted_Reader::get_table_name(),
+					WP_WXR_Sorted_Entity_Reader::get_table_name(),
 					$entity_type
 				)
 			);
@@ -86,7 +86,7 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 		$this->assertEquals( $expected_pages, array_map( $map_id, $public_pages ) );
 
 		$count = $wpdb->get_var(
-			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Reader::get_table_name() )
+			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Entity_Reader::get_table_name() )
 		);
 
 		// All elements should be deleted.
@@ -234,11 +234,11 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 	}
 
 	private function small_import_counts() {
-		$types = WP_WXR_Sorted_Reader::ENTITY_TYPES;
+		$types = WP_WXR_Sorted_Entity_Reader::ENTITY_TYPES;
 
 		return array(
-			$types['category'] => 30,
-			$types['post']     => 11,
+			$types['category'] => 33,
+			$types['post']     => 13,
 			$types['term']     => 0,
 		);
 	}

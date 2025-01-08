@@ -3,18 +3,19 @@
 use WordPress\ByteReader\WP_Byte_Reader;
 
 /**
- * Data Liberation API: WP_WXR_Sorted_Reader class
+ * Data Liberation API: WP_WXR_Sorted_Entity_Reader class
  *
  * The topological sorted WXR reader class. This is an extension of the
- * WP_WXR_Reader class that emits entities sorted topologically so that the
- * parents are always emitted before the children.
+ * WP_WXR_Entity_Reader class that emits entities sorted topologically so that
+ * the parents are always emitted before the children.
  *
  * ## Implementation
  *
  * We create a custom table that contains the IDs and the new IDs created in the
  * target system sorted in the parent-child order.
  *
- * This class extends the WP_WXR_Reader class and overrides the read_next_entity
+ * This class extends the WP_WXR_Entity_Reader class and overrides the
+ * read_next_entity function to emit the entities in the correct order.
  *
  * List of entities      Sort order
  * entity 1              entity 1          3
@@ -40,7 +41,7 @@ use WordPress\ByteReader\WP_Byte_Reader;
  *
  * @since WP_VERSION
  */
-class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
+class WP_WXR_Sorted_Entity_Reader extends WP_WXR_Entity_Reader {
 
 	/**
 	 * The base name of the table used to store the IDs, the new IDs and the
@@ -92,10 +93,10 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	 * @param mixed         $cursor The cursor.
 	 * @param array         $options The options.
 	 *
-	 * @return WP_WXR_Sorted_Reader The reader.
+	 * @return WP_WXR_Sorted_Entity_Reader The reader.
 	 */
 	public static function create( WP_Byte_Reader $upstream = null, $cursor = null, $options = array() ) {
-		// Initialize WP_WXR_Reader.
+		// Initialize WP_WXR_Entity_Reader.
 		$reader = parent::create( $upstream, $cursor, $options );
 
 		if ( array_key_exists( 'post_id', $options ) ) {
@@ -450,7 +451,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 
 	/**
 	 * A new entity has been imported, so we need to update the mapped ID to be
-	 * reused later in the WP_WXR_Sorted_Reader::get_entity() calls. New entities
+	 * reused later in the WP_WXR_Sorted_Entity_Reader::get_entity() calls. New entities
 	 * imported need to refer to the existing parent entities and their newly
 	 * generated IDs.
 	 *

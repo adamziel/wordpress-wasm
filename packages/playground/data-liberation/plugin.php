@@ -76,8 +76,8 @@ add_action(
 
 function data_liberation_activate() {
 	// Create tables and option.
-	WP_WXR_Sorted_Reader::create_or_update_db();
-	update_option( 'data_liberation_db_version', WP_WXR_Sorted_Reader::DB_VERSION );
+	WP_WXR_Sorted_Entity_Reader::create_or_update_db();
+	update_option( 'data_liberation_db_version', WP_WXR_Sorted_Entity_Reader::DB_VERSION );
 }
 
 // Run when the plugin is activated.
@@ -85,7 +85,7 @@ register_activation_hook( __FILE__, 'data_liberation_activate' );
 
 function data_liberation_deactivate() {
 	// Flush away all data.
-	WP_WXR_Sorted_Reader::delete_db();
+	WP_WXR_Sorted_Entity_Reader::delete_db();
 
 	// Delete the option.
 	delete_option( 'data_liberation_db_version' );
@@ -97,10 +97,10 @@ function data_liberation_deactivate() {
 register_deactivation_hook( __FILE__, 'data_liberation_deactivate' );
 
 function data_liberation_load() {
-	if ( WP_WXR_Sorted_Reader::DB_VERSION !== (int) get_site_option( 'data_liberation_db_version' ) ) {
+	if ( WP_WXR_Sorted_Entity_Reader::DB_VERSION !== (int) get_site_option( 'data_liberation_db_version' ) ) {
 		// Update the database with dbDelta, if needed in the future.
-		WP_WXR_Sorted_Reader::create_or_update_db();
-		update_option( 'data_liberation_db_version', WP_WXR_Sorted_Reader::DB_VERSION );
+		WP_WXR_Sorted_Entity_Reader::create_or_update_db();
+		update_option( 'data_liberation_db_version', WP_WXR_Sorted_Entity_Reader::DB_VERSION );
 	}
 }
 

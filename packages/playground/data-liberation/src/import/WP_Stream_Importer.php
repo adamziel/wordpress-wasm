@@ -133,10 +133,10 @@ class WP_Stream_Importer {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_path, $options ) {
 				if ( isset( $options['topo_sorted'] ) && false === $options['topo_sorted'] ) {
-					return WP_WXR_Entity_Reader::create( new WP_File_Reader( $wxr_path ), $cursor );
+					return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
 				}
 
-				return WP_WXR_Sorted_Reader::create( new WP_File_Reader( $wxr_path ), $cursor, $options );
+				return WP_WXR_Sorted_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor, $options );
 			},
 			$options,
 			$cursor
@@ -150,7 +150,7 @@ class WP_Stream_Importer {
 					return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
 				}
 
-				return WP_WXR_Sorted_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor, $options );
+				return WP_WXR_Sorted_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor, $options );
 			},
 			$options,
 			$cursor
