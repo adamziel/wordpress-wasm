@@ -1021,6 +1021,9 @@ RUN set -euxo pipefail; \
 # Postprocess the build php.js module:
 COPY ./php/esm-prefix.js /root/esm-prefix.js
 COPY ./php/esm-suffix.js /root/esm-suffix.js
+COPY ./php/esm-php-exit-status.js /root/esm-php-exit-status.js
+RUN apt-get install -y nodejs npm
+COPY ./php/override-php-exit-status.js /root/override-php-exit-status.js
 RUN set -euxo pipefail; \
 	cp -rfv /build/output/* /root/output/; \
 	# Figure out the target file names and URLs
@@ -1099,6 +1102,8 @@ RUN set -euxo pipefail; \
 		cat /root/esm-prefix.js >> /root/output/php-module.js && \
 		cat /root/output/php.js >> /root/output/php-module.js && \
 		cat /root/esm-suffix.js >> /root/output/php-module.js && \
+		npm install estree-toolkit meriyah && \
+		node /root/override-php-exit-status.js /root/output/php-module.js && \
 		\
 		# Remove the old php.js file
 		rm /root/output/php.js && \
