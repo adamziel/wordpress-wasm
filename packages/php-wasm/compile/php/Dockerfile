@@ -763,6 +763,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "php_cli_server_recv_event_read_request",\
 "php_exec",\
 "php_execute_script",\
+"php_execute_script_ex",\
 "php_fsockopen_stream",\
 "php_getimagesize_from_any",\
 "php_mysqlnd_auth_response_read",\
