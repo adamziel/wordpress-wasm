@@ -10,6 +10,8 @@ require_once __DIR__ . '/../../z-data-liberation-markdown/src/bootstrap.php';
 use WordPress\Filesystem\WP_Local_Filesystem;
 use WordPress\AsyncHttp\ResponseWriter\StreamingResponseWriter;
 use WordPress\AsyncHttp\ResponseWriter\BufferingResponseWriter;
+use WordPress\Filesystem\WP_Filesystem_Visitor;
+use WordPress\Filesystem\WP_Filesystem_Chroot;
 
 $git_repo_path = __DIR__ . '/git-test-server-data';
 if(!is_dir($git_repo_path)) {
@@ -40,10 +42,10 @@ $request_bytes = file_get_contents('php://input');
 $response = new BufferingResponseWriter();
 
 $query_string = $_SERVER['REQUEST_URI'] ?? "";
-$path = substr($query_string, strlen($_SERVER['PHP_SELF']));
-if($path[0] === '?') {
-    $path = substr($path, 1);
-    $path = preg_replace('/&(amp;)?/', '?', $path, 1);
+$request_path = substr($query_string, strlen($_SERVER['PHP_SELF']));
+if($request_path[0] === '?') {
+    $request_path = substr($request_path, 1);
+    $request_path = preg_replace('/&(amp;)?/', '?', $request_path, 1);
 }
 
 // Before handling the request, commit all the pages to the git repo
@@ -52,19 +54,16 @@ $synced_post_types = [
     'post',
     'local_file',
 ];
-switch($path) {
+switch($request_path) {
     // ls refs – protocol discovery
     case '/info/refs?service=git-upload-pack':
     // ls refs or fetch – smart protocol
     case '/git-upload-pack':
-
-        // @TODO: Don't brute-force delete everything, only the
-        //        delta.
         // @TODO: Do streaming and amend the commit every few changes
         // @TODO: Use the streaming exporter instead of the ad-hoc loop below
         $diff = [
-            // Delete all the pages
             'updates' => [],
+            'deletes' => [],
         ];
         foreach($synced_post_types as $post_type) {
             $pages = get_posts([
@@ -72,7 +71,7 @@ switch($path) {
                 'post_status' => 'publish',
             ]);
             foreach($pages as $page) {
-                $file_path = $post_type . '/' . $page->post_name . '.html';
+                $file_path = wp_canonicalize_path($post_type . '/' . $page->post_name . '.html');
                 $metadata = [];
                 foreach(['post_date_gmt', 'post_title', 'menu_order'] as $key) {
                     $metadata[$key] = get_post_field($key, $page->ID);
@@ -85,6 +84,20 @@ switch($path) {
                 // @TODO: Run the Markdown or block markup exporter
                 $diff['updates'][$file_path] = $converter->get_result();
             }
+            $visitor = new WP_Filesystem_Visitor(
+                new WP_Filesystem_Chroot($git_fs, $post_type)
+            );
+            while($visitor->next()) {
+                $event = $visitor->get_event();
+                if($event->is_entering()) {
+                    foreach($event->files as $file_name) {
+                        $path = wp_canonicalize_path($post_type . '/' . $event->dir . '/' . $file_name);
+                        if(!isset($diff['updates'][$path])) {
+                            $diff['deletes'][] = $path;
+                        }
+                    }
+                }
+            }
         }
         if(!$repository->commit($diff)) {
             throw new Exception('Failed to commit changes');
@@ -92,12 +105,12 @@ switch($path) {
         break;
 }
 
-$server->handle_request($path, $request_bytes, $response);
+$server->handle_request($request_path, $request_bytes, $response);
 
 // @TODO: Support the use-case below in the streaming importer
 // @TODO: When a page is moved, don't delete the old page and create a new one but
 //        rather update the existing page.
-if($path === '/git-receive-pack') {
+if($request_path === '/git-receive-pack') {
     foreach($synced_post_types as $post_type) {
         $updated_ids = [];
         foreach($git_fs->ls($post_type) as $file_name) {
