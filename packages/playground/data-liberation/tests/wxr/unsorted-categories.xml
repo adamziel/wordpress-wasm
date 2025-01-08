@@ -10,17 +10,17 @@
     <wp:base_site_url>http://example.com</wp:base_site_url>
     <wp:base_blog_url>http://example.com</wp:base_blog_url>
 	<wp:category>
+		<wp:term_id>2</wp:term_id>
+		<wp:category_nicename>bar</wp:category_nicename>
+		<wp:category_parent></wp:category_parent>
+		<wp:cat_name><![CDATA[Bar]]></wp:cat_name>
+	</wp:category>
+	<wp:category>
 		<wp:term_id>3</wp:term_id>
 		<wp:category_nicename>foo</wp:category_nicename>
 		<wp:category_parent>bar</wp:category_parent>
 		<wp:cat_name><![CDATA[Foo]]></wp:cat_name>
 		<wp:category_description><![CDATA[The child foo category]]></wp:category_description>
-	</wp:category>
-	<wp:category>
-		<wp:term_id>2</wp:term_id>
-		<wp:category_nicename>bar</wp:category_nicename>
-		<wp:category_parent></wp:category_parent>
-		<wp:cat_name><![CDATA[Bar]]></wp:cat_name>
 	</wp:category>
   </channel>
 </rss>

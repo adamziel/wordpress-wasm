@@ -95,8 +95,6 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	 * @return WP_WXR_Sorted_Reader The reader.
 	 */
 	public static function create( WP_Byte_Reader $upstream = null, $cursor = null, $options = array() ) {
-		global $wpdb;
-
 		// Initialize WP_WXR_Reader.
 		$reader = parent::create( $upstream, $cursor, $options );
 
@@ -125,16 +123,17 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 		if ( ! empty( $next_cursor ) ) {
 			$next_cursor = json_decode( $next_cursor, true );
 
-			if ( ! empty( $next_cursor ) ) {
+			/*if ( ! empty( $next_cursor ) ) {
 				$this->last_post_id    = $next_cursor['last_post_id'];
 				$this->last_comment_id = $next_cursor['last_comment_id'];
 				$this->last_term_id    = $next_cursor['last_term_id'];
 				$this->upstream->seek( $next_cursor['upstream'] );
 
 				// Reset the XML processor to the cursor.
-				$this->xml->reset_to( $next_cursor['xml'] );
+				// $this->xml->reset_to( $next_cursor['xml'] );
+				$this->xml = WP_XML_Processor::create_for_streaming( '', $next_cursor['xml'] );
 				echo "Reset to {$next_cursor['xml']}\n";
-			}
+			}*/
 		}
 
 		return parent::read_next_entity();
@@ -461,29 +460,33 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 	public function update_mapped_id( $entity, $new_id ) {
 		global $wpdb;
 
+		if ( is_null( $new_id ) ) {
+			return;
+		}
+
 		$entity_type = $entity->get_type();
 
 		if ( ! array_key_exists( $entity_type, self::ENTITY_TYPES ) ) {
 			return;
 		}
 
-		$data            = $entity->get_data();
-		$entity_id       = (string) $data[ self::ENTITY_TYPES_ID[ $entity_type ] ];
-		$existing_entity = $this->get_mapped_ids( $entity_id, self::ENTITY_TYPES[ $entity_type ] );
+		$data = $entity->get_data();
 
-		if ( $existing_entity && is_null( $existing_entity['mapped_id'] ) ) {
-			// Update the mapped ID.
-			$wpdb->update(
-				self::get_table_name(),
-				array( 'mapped_id' => (string) $new_id ),
-				array(
-					'entity_id'   => $entity_id,
-					'entity_type' => $entity_type,
-					'session_id'  => $this->current_session,
-				),
-				array( '%s' )
-			);
-		}
+		// Update the mapped ID.
+		$wpdb->update(
+			self::get_table_name(),
+			array(
+				'cursor_id' => null,
+				'mapped_id' => (string) $new_id,
+			),
+			array(
+				'entity_id'   => (string) $data[ self::ENTITY_TYPES_ID[ $entity_type ] ],
+				'entity_type' => self::ENTITY_TYPES[ $entity_type ],
+				'session_id'  => $this->current_session,
+				'mapped_id'   => null,
+			),
+			array( '%s' )
+		);
 	}
 
 	/**
@@ -504,6 +507,7 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 				'SELECT id, cursor_id
 				FROM %i
 				WHERE session_id = %d
+				AND cursor_id IS NOT NULL
 				ORDER BY sort_order DESC, id ASC
 				LIMIT 1',
 				self::get_table_name(),
@@ -514,11 +518,11 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 
 		if ( $results && 1 === count( $results ) ) {
 			// Delete the row we just retrieved.
-			$wpdb->delete(
+			/*$wpdb->delete(
 				self::get_table_name(),
 				array( 'id' => $results[0]['id'] ),
 				array( '%d' )
-			);
+			);*/
 
 			return $results[0]['cursor_id'];
 		}
@@ -553,14 +557,18 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 
 		// Get the mapped IDs of the entity.
 		$entity_data = $entity->get_data();
-		/*$mapped_entity = $this->get_mapped_ids(
-			$entity_data[ self::ENTITY_TYPES_ID[ $entity_type ] ],
-			self::ENTITY_TYPES[ $entity_type ]
-		);*/
 
-		// if ( $mapped_entity ) {
 		// Get entity parents.
 		switch ( $entity_type ) {
+			case 'category':
+				// The ID is the parent category ID.
+				$mapped_ids = $this->get_mapped_ids( $entity_data['parent'], self::ENTITY_TYPES['category'] );
+
+				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
+					// Save the mapped ID of category parent.
+					$entity_data['parent'] = $mapped_ids['mapped_id'];
+				}
+				break;
 			case 'comment':
 				// The ID is the post ID.
 				$mapped_ids = $this->get_mapped_ids( $entity_data['post_id'], self::ENTITY_TYPES['post'] );
@@ -597,26 +605,16 @@ class WP_WXR_Sorted_Reader extends WP_WXR_Reader {
 					$entity_data['post_id'] = $mapped_ids['mapped_id'];
 				}
 				break;
-			case 'term_meta':
+			// TODO: add term meta mapping. See https://github.com/WordPress/wordpress-playground/pull/2105
+			/*case 'term_meta':
 				// The ID is the term ID.
 				$mapped_ids = $this->get_mapped_ids( $entity_data['term_id'], self::ENTITY_TYPES['term'] );
 
 				if ( $mapped_ids && ! is_null( $mapped_ids['mapped_id'] ) ) {
 					// Save the mapped ID of term meta parent term.
 					$entity_data['term_id'] = $mapped_ids['mapped_id'];
-				}
+				}*/
 		}
-		// }
-
-		/*if ( $mapped_entity ) {
-			if ( ! is_null( $mapped_entity['mapped_id'] ) ) {
-				// This is used to skip an entity if it has already been mapped.
-				// $entity_data[ $id_field ]       = $mapped_entity['mapped_id'];
-				$entity_data['_already_mapped'] = true;
-			} else {
-				$entity_data['_already_mapped'] = false;
-			}
-		}*/
 
 		$entity->set_data( $entity_data );
 

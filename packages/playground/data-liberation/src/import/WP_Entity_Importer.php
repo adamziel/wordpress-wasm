@@ -274,7 +274,6 @@ class WP_Entity_Importer {
 		}
 
 		$original_id = isset( $data['id'] ) ? (int) $data['id'] : 0;
-		$parent_id   = isset( $data['parent'] ) ? (int) $data['parent'] : 0;
 
 		$mapping_key = sha1( $data['taxonomy'] . ':' . $data['slug'] );
 		$existing    = $this->term_exists( $data );
@@ -458,14 +457,7 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
-
-		// Have we already processed this?
-		if ( isset( $element['_already_mapped'] ) ) {
-			$this->logger->debug( 'Skipping post, already processed' );
-			return;
-		}
-
+		$original_id      = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
 		$post_type        = $data['post_type'] ?? 'post';
 		$post_type_object = get_post_type_object( $post_type );
 

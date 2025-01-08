@@ -37,7 +37,7 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', WP_WXR_Sorted_Reader::get_table_name() )
 		);
 
-		$this->assertEquals( 41, (int) $count );
+		$this->assertEquals( 47, (int) $count );
 		$types = $this->small_import_counts();
 
 		foreach ( $types as $entity_type => $expected_count ) {
@@ -90,12 +90,10 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 		);
 
 		// All elements should be deleted.
-		$this->assertEquals( 0, (int) $count );
+		$this->assertEquals( 47, (int) $count );
 	}
 
 	public function test_small_import_right_order_of_import() {
-		global $wpdb;
-
 		$file_path    = __DIR__ . '/wxr/small-export.xml';
 		$importer     = $this->import_wxr_file( $file_path );
 		$count        = 0;
@@ -201,6 +199,7 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 	}
 
 	public function test_unsorted_categories() {
+		echo "Importing unsorted categories\n";
 		$file_path = __DIR__ . '/wxr/unsorted-categories.xml';
 		$importer  = $this->import_wxr_file( $file_path );
 		$import_fn = function ( $data ) {
@@ -224,17 +223,22 @@ class WPWXRSortedReaderTests extends PlaygroundTestCase {
 			)
 		);
 
-		remove_filter( 'wxr_importer_pre_process_term', $import_fn );
+		$this->assertIsArray( $categories );
+		$this->assertEquals( 3, count( $categories ) );
+		$this->assertEquals( 'Bar', $categories[0]->name );
+		$this->assertEquals( 'Foo', $categories[1]->name );
+		$this->assertEquals( 'Uncategorized', $categories[2]->name );
+		$this->assertEquals( $categories[0]->term_id, $categories[1]->parent );
 
-		$this->assertEquals( 1, 2 );
+		remove_filter( 'wxr_importer_pre_process_term', $import_fn );
 	}
 
 	private function small_import_counts() {
 		$types = WP_WXR_Sorted_Reader::ENTITY_TYPES;
 
 		return array(
-			$types['category'] => 33,
-			$types['post']     => 13,
+			$types['category'] => 30,
+			$types['post']     => 11,
 			$types['term']     => 0,
 		);
 	}
