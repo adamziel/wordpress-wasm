@@ -2,6 +2,8 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="bootstrap.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd" cacheDirectory=".phpunit.cache">
   <testsuites>
     <testsuite name="Application Test Suite">
+      <file>tests/WPHTMLEntityReaderTests.php</file>
+      <file>tests/WPHTMLToBlocksTests.php</file>
       <file>tests/WPWXRReaderTests.php</file>
       <file>tests/WPRewriteUrlsTests.php</file>
       <file>tests/WPHTMLToBlocksTests.php</file>

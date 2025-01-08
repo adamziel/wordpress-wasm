@@ -34,7 +34,7 @@ HTML;
                     'post_id' => 1,
                     'content' => $this->normalize_markup(<<<HTML
 <!-- wp:heading {"level":1} -->
-<h1>It is our pleasure to announce that WordPress 6.8 was released</h1>
+<h1>It is our pleasure to announce that WordPress 6.8 was released </h1>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
@@ -64,12 +64,7 @@ HTML)
     }
 
     private function normalize_markup( $markup ) {
-        $processor = new WP_HTML_Processor( $markup );
-        $serialized = $processor->serialize();
-        if(str_ends_with($serialized, "</body></html>")) {
-            $serialized = substr($serialized, 0, strlen("</body></html>"));
-        }
-        return $serialized;
+        return str_replace( "\n", '', WP_HTML_Processor::create_fragment( $markup )->serialize() );
     }
 
 }

@@ -170,6 +170,7 @@ export default defineConfig(({ command, mode }) => {
 		// See: https://vitejs.dev/guide/build.html#library-mode
 		build: {
 			target: 'esnext',
+			sourcemap: true,
 			rollupOptions: {
 				input: {
 					index: fileURLToPath(

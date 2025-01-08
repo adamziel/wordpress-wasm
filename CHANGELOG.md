@@ -4,114 +4,51 @@ All notable changes to this project are documented in this file by a CI job
 that runs on every NPM release. The file follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 format.
 
-## [v1.0.17] (2024-12-17) 
-
-### Tools
-
-
-#### Blueprints Builder
-
-- Use transparent CORS proxy in Blueprint Builder. ([#2089](https://github.com/WordPress/wordpress-playground/pull/2089))
-
-### PHP WebAssembly
-
-- Build `@php-wasm` packages as dual ESM + CJS. ([#2087](https://github.com/WordPress/wordpress-playground/pull/2087))
-
-### 
-
-- Add ESLint rule to avoid unintentional dependency on @wp-playgrounds/wordpress-builds. ([#2048](https://github.com/WordPress/wordpress-playground/pull/2048))
-
-### Contributors
-
-The following contributors merged PRs in this release:
-
-@adamziel @brandonpayton
-
-
-## [v1.0.16] (2024-12-16) 
-
-### Enhancements
-
-- Allow Authorization header pass-through with X-Cors-Proxy-Allowed-Request-Headers. ([#2007](https://github.com/WordPress/wordpress-playground/pull/2007))
-- [Cors Proxy] Support Transfer-Encoding: Chunked. ([#2077](https://github.com/WordPress/wordpress-playground/pull/2077))
-- [Website] Enable CORS proxy for all fetches. ([#2076](https://github.com/WordPress/wordpress-playground/pull/2076))
-
-### Tools
-
-
-#### Blueprints
-
-- [Blueprints] Preserve the first char of all filenames sourced from GitDirectoryReference. ([#2070](https://github.com/WordPress/wordpress-playground/pull/2070))
-
-#### Import/Export
-
-- [Blueprints] Support Data Liberation importer in the importWxr step. ([#2058](https://github.com/WordPress/wordpress-playground/pull/2058))
-
-### PHP WebAssembly
-
-
-#### Website
-
-- [Webiste] Switch the CORS Proxy URL to wordpress-playground-cors-proxy.net. ([#2074](https://github.com/WordPress/wordpress-playground/pull/2074))
+## [v1.0.20] (2025-01-06)
 
 ### Website
 
-- Bugfix: Delist data-liberation-core.phar from the preloaded offline mode assets. ([#2072](https://github.com/WordPress/wordpress-playground/pull/2072))
-- Don't show the error reporting modal on the initial load. ([#2068](https://github.com/WordPress/wordpress-playground/pull/2068))
-- Prevent the initial flash of "You have no Playgrounds" message. ([#2069](https://github.com/WordPress/wordpress-playground/pull/2069))
-- Remove old PR preview HTML files and add redirects to new preview modals. ([#2081](https://github.com/WordPress/wordpress-playground/pull/2081))
-
-### Internal
-
-- [Meta] Remove GitHub Board Automation workflow. ([#2073](https://github.com/WordPress/wordpress-playground/pull/2073))
-
-### Bug Fixes
-
-- Temporary: Skip more CI-only deployment test failures. ([#2071](https://github.com/WordPress/wordpress-playground/pull/2071))
-
-### Various
-
-- Ensure that Site Editor templates are associated with the correct taxonomy. ([#1997](https://github.com/WordPress/wordpress-playground/pull/1997))
-- PR Preview: Document and simplify targetParams. ([#2052](https://github.com/WordPress/wordpress-playground/pull/2052))
-- Revert "Remove old PR preview HTML files and add redirects to new preview modals". ([#2082](https://github.com/WordPress/wordpress-playground/pull/2082))
+-   Avoid login issue in deployment end-to-end tests. ([#2065](https://github.com/WordPress/wordpress-playground/pull/2065))
 
 ### Contributors
 
 The following contributors merged PRs in this release:
 
-@adamziel @ajotka @akirk @brandonpayton @maxschmeling
+@brandonpayton
 
+## [v1.0.19] (2024-12-30)
 
-## [v1.0.15] (2024-12-09) 
+## [v1.0.18] (2024-12-23)
 
 ### Enhancements
 
-- Shorten and simplify path to CORS proxy. ([#2063](https://github.com/WordPress/wordpress-playground/pull/2063))
-- Support users choosing how to handle URLs for sites that do not exist. ([#2059](https://github.com/WordPress/wordpress-playground/pull/2059))
+-   [Data Liberation] Add HTML to Blocks converter. ([#2095](https://github.com/WordPress/wordpress-playground/pull/2095))
+-   [Data Liberation] Add Markdown parsing libraries. ([#2092](https://github.com/WordPress/wordpress-playground/pull/2092))
+-   [Data Liberation] Build markdown importer as phar. ([#2094](https://github.com/WordPress/wordpress-playground/pull/2094))
+-   [Data Liberation] Move Markdown importer to a separate package. ([#2093](https://github.com/WordPress/wordpress-playground/pull/2093))
+
+### Blueprints
+
+-   Prevent WSOD when autologin is enabled and a plugin logs a notice. ([#2079](https://github.com/WordPress/wordpress-playground/pull/2079))
 
 ### Tools
-
 
 #### GitHub integration
 
-- Add zaerl to GitHub workflows actors. ([#2041](https://github.com/WordPress/wordpress-playground/pull/2041))
-
-### PHP WebAssembly
-
-- [Networking] Decrypt TLS 1.2 alert messages. ([#2060](https://github.com/WordPress/wordpress-playground/pull/2060))
+-   [Website] GitHub export modal: Correctly compute the root path when exporting the entire site. ([#2103](https://github.com/WordPress/wordpress-playground/pull/2103))
 
 ### Website
 
-- Fix CORS proxy deploy workflow. ([#2049](https://github.com/WordPress/wordpress-playground/pull/2049))
-- Nightly build bugfix – ship the actual nightly build, not the latest release. ([#2056](https://github.com/WordPress/wordpress-playground/pull/2056))
-- Remove duplicate "Saved Playgrounds" label. ([#2044](https://github.com/WordPress/wordpress-playground/pull/2044))
+-   Enable separate source maps for all package builds. ([#2088](https://github.com/WordPress/wordpress-playground/pull/2088))
+
+### Bug Fixes
+
+-   Fix README.md typos. ([#2091](https://github.com/WordPress/wordpress-playground/pull/2091))
 
 ### Various
 
-- Add deploy workflow for standalone CORS proxy. ([#2022](https://github.com/WordPress/wordpress-playground/pull/2022))
-- Restore CORS support to CORS proxy. ([#2023](https://github.com/WordPress/wordpress-playground/pull/2023))
-- [Data Liberation] "Fetch from a different URL" button for failed media downloads, Interactivity API support. ([#2040](https://github.com/WordPress/wordpress-playground/pull/2040))
-- [Data Liberation] Sync WP_HTML API with WordPress 6.7.1 (and add a new test). ([#2062](https://github.com/WordPress/wordpress-playground/pull/2062))
+-   Add small comment about lazy init of WXR reader. ([#2102](https://github.com/WordPress/wordpress-playground/pull/2102))
+-   [Blueprints] Prevent plugin activation error if plugin redirects during activation or produces an output. ([#2066](https://github.com/WordPress/wordpress-playground/pull/2066))
 
 ### Contributors
 
@@ -119,6 +56,114 @@ The following contributors merged PRs in this release:
 
 @adamziel @bgrgicak @brandonpayton @zaerl
 
+## [v1.0.17] (2024-12-17)
+
+### Tools
+
+#### Blueprints Builder
+
+-   Use transparent CORS proxy in Blueprint Builder. ([#2089](https://github.com/WordPress/wordpress-playground/pull/2089))
+
+### PHP WebAssembly
+
+-   Build `@php-wasm` packages as dual ESM + CJS. ([#2087](https://github.com/WordPress/wordpress-playground/pull/2087))
+
+###
+
+-   Add ESLint rule to avoid unintentional dependency on @wp-playgrounds/wordpress-builds. ([#2048](https://github.com/WordPress/wordpress-playground/pull/2048))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @brandonpayton
+
+## [v1.0.16] (2024-12-16)
+
+### Enhancements
+
+-   Allow Authorization header pass-through with X-Cors-Proxy-Allowed-Request-Headers. ([#2007](https://github.com/WordPress/wordpress-playground/pull/2007))
+-   [Cors Proxy] Support Transfer-Encoding: Chunked. ([#2077](https://github.com/WordPress/wordpress-playground/pull/2077))
+-   [Website] Enable CORS proxy for all fetches. ([#2076](https://github.com/WordPress/wordpress-playground/pull/2076))
+
+### Tools
+
+#### Blueprints
+
+-   [Blueprints] Preserve the first char of all filenames sourced from GitDirectoryReference. ([#2070](https://github.com/WordPress/wordpress-playground/pull/2070))
+
+#### Import/Export
+
+-   [Blueprints] Support Data Liberation importer in the importWxr step. ([#2058](https://github.com/WordPress/wordpress-playground/pull/2058))
+
+### PHP WebAssembly
+
+#### Website
+
+-   [Webiste] Switch the CORS Proxy URL to wordpress-playground-cors-proxy.net. ([#2074](https://github.com/WordPress/wordpress-playground/pull/2074))
+
+### Website
+
+-   Bugfix: Delist data-liberation-core.phar from the preloaded offline mode assets. ([#2072](https://github.com/WordPress/wordpress-playground/pull/2072))
+-   Don't show the error reporting modal on the initial load. ([#2068](https://github.com/WordPress/wordpress-playground/pull/2068))
+-   Prevent the initial flash of "You have no Playgrounds" message. ([#2069](https://github.com/WordPress/wordpress-playground/pull/2069))
+-   Remove old PR preview HTML files and add redirects to new preview modals. ([#2081](https://github.com/WordPress/wordpress-playground/pull/2081))
+
+### Internal
+
+-   [Meta] Remove GitHub Board Automation workflow. ([#2073](https://github.com/WordPress/wordpress-playground/pull/2073))
+
+### Bug Fixes
+
+-   Temporary: Skip more CI-only deployment test failures. ([#2071](https://github.com/WordPress/wordpress-playground/pull/2071))
+
+### Various
+
+-   Ensure that Site Editor templates are associated with the correct taxonomy. ([#1997](https://github.com/WordPress/wordpress-playground/pull/1997))
+-   PR Preview: Document and simplify targetParams. ([#2052](https://github.com/WordPress/wordpress-playground/pull/2052))
+-   Revert "Remove old PR preview HTML files and add redirects to new preview modals". ([#2082](https://github.com/WordPress/wordpress-playground/pull/2082))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @ajotka @akirk @brandonpayton @maxschmeling
+
+## [v1.0.15] (2024-12-09)
+
+### Enhancements
+
+-   Shorten and simplify path to CORS proxy. ([#2063](https://github.com/WordPress/wordpress-playground/pull/2063))
+-   Support users choosing how to handle URLs for sites that do not exist. ([#2059](https://github.com/WordPress/wordpress-playground/pull/2059))
+
+### Tools
+
+#### GitHub integration
+
+-   Add zaerl to GitHub workflows actors. ([#2041](https://github.com/WordPress/wordpress-playground/pull/2041))
+
+### PHP WebAssembly
+
+-   [Networking] Decrypt TLS 1.2 alert messages. ([#2060](https://github.com/WordPress/wordpress-playground/pull/2060))
+
+### Website
+
+-   Fix CORS proxy deploy workflow. ([#2049](https://github.com/WordPress/wordpress-playground/pull/2049))
+-   Nightly build bugfix – ship the actual nightly build, not the latest release. ([#2056](https://github.com/WordPress/wordpress-playground/pull/2056))
+-   Remove duplicate "Saved Playgrounds" label. ([#2044](https://github.com/WordPress/wordpress-playground/pull/2044))
+
+### Various
+
+-   Add deploy workflow for standalone CORS proxy. ([#2022](https://github.com/WordPress/wordpress-playground/pull/2022))
+-   Restore CORS support to CORS proxy. ([#2023](https://github.com/WordPress/wordpress-playground/pull/2023))
+-   [Data Liberation] "Fetch from a different URL" button for failed media downloads, Interactivity API support. ([#2040](https://github.com/WordPress/wordpress-playground/pull/2040))
+-   [Data Liberation] Sync WP_HTML API with WordPress 6.7.1 (and add a new test). ([#2062](https://github.com/WordPress/wordpress-playground/pull/2062))
+
+### Contributors
+
+The following contributors merged PRs in this release:
+
+@adamziel @bgrgicak @brandonpayton @zaerl
 
 ## [v1.0.14] (2024-12-02)
 

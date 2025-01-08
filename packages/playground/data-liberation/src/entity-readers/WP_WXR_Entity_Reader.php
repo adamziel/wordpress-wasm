@@ -904,4 +904,40 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		$this->text_buffer            = '';
 		$this->last_opener_attributes = array();
 	}
+
+	public function current(): object {
+		// Lazily initialize the iterator when it is first accessed.
+		// The alternative is eager initialization in the constructor.
+		if ( null === $this->entity_data && ! $this->is_finished() && ! $this->get_last_error() ) {
+			$this->next();
+		}
+		return $this->get_entity();
+	}
+
+	private $last_next_result = null;
+	public function next(): void {
+		// @TODO: Don't keep track of this. Just make sure the next_entity()
+		//        call will make the is_finished() true.
+		$this->last_next_result = $this->next_entity();
+	}
+
+	public function key(): string {
+		return $this->get_reentrancy_cursor();
+	}
+
+	public function valid(): bool {
+		return false !== $this->last_next_result && ! $this->is_finished() && ! $this->get_last_error();
+	}
+
+	public function rewind(): void {
+		// Haven't started yet.
+		if ( null === $this->last_next_result ) {
+			return;
+		}
+		_doing_it_wrong(
+			__METHOD__,
+			'WP_WXR_Reader does not support rewinding.',
+			null
+		);
+	}
 }

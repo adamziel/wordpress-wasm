@@ -38,6 +38,9 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 		$this->html = WP_HTML_Processor::create_fragment( $html );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function convert() {
 		if ( self::STATE_READY !== $this->state ) {
 			return false;
@@ -49,7 +52,7 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 					if ( $this->ignore_text ) {
 						break;
 					}
-					$this->append_rich_text( htmlspecialchars( $this->html->get_modifiable_text() ) );
+					$this->append_html( htmlspecialchars( $this->html->get_modifiable_text() ) );
 					break;
 				case '#tag':
 					$this->handle_tag();
@@ -61,211 +64,241 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 		return true;
 	}
 
-	public function get_meta_value( $key ) {
+	/**
+	 * @inheritDoc
+	 */
+	public function get_first_meta_value( $key ) {
 		if ( ! array_key_exists( $key, $this->metadata ) ) {
 			return null;
 		}
 		return $this->metadata[ $key ][0];
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function get_all_metadata() {
 		return $this->metadata;
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function get_block_markup() {
 		return $this->block_markup;
 	}
 
+	/**
+	 * Converts the currently matched HTML tag to block markup
+	 * or metadata.
+	 */
 	private function handle_tag() {
 		$html          = $this->html;
 		$tag           = $html->get_tag();
 		$tag_lowercase = strtolower( $tag );
 
-		$is_tag_opener = ! $html->is_tag_closer();
-		if ( ! $html->expects_closer() ) {
-			switch ( $tag ) {
-				case 'META':
-					$key   = $html->get_attribute( 'name' );
-					$value = $html->get_attribute( 'content' );
-					if ( ! array_key_exists( $key, $this->metadata ) ) {
-						$this->metadata[ $key ] = array();
+		$is_opener   = ! $html->is_tag_closer() && $html->expects_closer();
+		$is_closer   = $html->is_tag_closer();
+		$is_void_tag = ! $html->expects_closer();
+		$prefix      = (
+			$is_void_tag ? '' : (
+				$is_closer ? '-' : '+'
+			)
+		);
+		$event       = $prefix . $tag;
+		switch ( $event ) {
+			case 'META':
+				$key   = $html->get_attribute( 'name' );
+				$value = $html->get_attribute( 'content' );
+				if ( ! array_key_exists( $key, $this->metadata ) ) {
+					$this->metadata[ $key ] = array();
+				}
+				$this->metadata[ $key ][] = $value;
+				break;
+			case 'IMG':
+				$template = new \WP_HTML_Tag_Processor( '<img>' );
+				$template->next_tag();
+				foreach ( array( 'alt', 'title', 'src' ) as $attr ) {
+					if ( $html->get_attribute( $attr ) ) {
+						$template->set_attribute( $attr, $html->get_attribute( $attr ) );
 					}
-					$this->metadata[ $key ][] = $value;
-					break;
-				case 'IMG':
-					$template = new \WP_HTML_Tag_Processor( '<img>' );
-					$template->next_tag();
-					foreach ( array( 'alt', 'title', 'src' ) as $attr ) {
-						if ( $html->get_attribute( $attr ) ) {
-							$template->set_attribute( $attr, $html->get_attribute( $attr ) );
-						}
-					}
-					/**
-					 *
-					 */
-					$this->append_rich_text( $template->get_updated_html() );
-					break;
-				default:
-					// @TODO: What to do with other void tags, e.g. <input>?
-					//        Just insert an HTML block or what?
-					break;
-			}
-		} elseif ( $is_tag_opener ) {
-			switch ( $tag ) {
-				// Block elements
-				case 'SCRIPT':
-					$this->ignore_text = true;
-					break;
-				case 'UL':
-				case 'OL':
-					$this->push_block( 'list', array( 'ordered' => $tag === 'ol' ) );
-					$this->block_markup .= '<ul class="wp-block-list">';
-					break;
-				case 'LI':
-					$this->push_block( 'list-item' );
-					$this->block_markup .= '<' . $tag_lowercase . '>';
-					break;
-				case 'TABLE':
-					$this->push_block( 'table' );
-					$this->block_markup .= '<figure class="wp-block-table">';
-					$this->block_markup .= '<table class="has-fixed-layout">';
-					break;
-				case 'THEAD':
-				case 'TBODY':
-				case 'TFOOT':
-				case 'TR':
-				case 'TD':
-				case 'TH':
-					$this->block_markup .= '<' . $tag_lowercase . '>';
-					break;
-				case 'BLOCKQUOTE':
-					$this->push_block( 'quote' );
-					$this->block_markup .= '<' . $tag_lowercase . '>';
-					break;
-				case 'PRE':
+				}
+				$this->append_html( $template->get_updated_html() );
+				break;
+			case 'INPUT':
+				// Insert the input tag as HTML blocks.
+				$this->push_block( 'html' );
+				$template = new \WP_HTML_Tag_Processor( '<input>' );
+				$template->next_tag();
+				$attrs = $this->html->get_attribute_names_with_prefix( '' );
+				foreach ( $attrs as $attr ) {
+					$template->set_attribute( $attr, $this->html->get_attribute( $attr ) );
+				}
+				$this->append_html( htmlspecialchars( $template->get_updated_html() ) );
+				$this->pop_block();
+				break;
+			case 'HR':
+				$this->push_block( 'separator' );
+				$this->block_markup .= '<hr class="wp-block-separator">';
+				$this->pop_block();
+				break;
+
+			// Block elements
+			case '+SCRIPT':
+				$this->ignore_text = true;
+				break;
+			case '-SCRIPT':
+				$this->ignore_text = false;
+				break;
+
+			case '+UL':
+			case '+OL':
+				$this->push_block( 'list', array( 'ordered' => $tag === 'ol' ) );
+				$this->block_markup .= '<ul class="wp-block-list">';
+				break;
+			case '-UL':
+			case '-OL':
+				$this->block_markup .= '</ul>';
+				$this->pop_block();
+				break;
+
+			case '+LI':
+				$this->push_block( 'list-item' );
+				$this->block_markup .= '<' . $tag_lowercase . '>';
+				break;
+			case '-LI':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				$this->pop_block();
+				break;
+
+			case '+TABLE':
+				$this->push_block( 'table' );
+				$this->block_markup .= '<figure class="wp-block-table">';
+				$this->block_markup .= '<table class="has-fixed-layout">';
+				break;
+			case '-TABLE':
+				$this->block_markup .= '</table>';
+				$this->block_markup .= '</figure>';
+				$this->pop_block();
+				break;
+
+			case '+THEAD':
+			case '+TBODY':
+			case '+TFOOT':
+			case '+TR':
+			case '+TD':
+			case '+TH':
+				$this->block_markup .= '<' . $tag_lowercase . '>';
+				break;
+			case '-THEAD':
+			case '-TBODY':
+			case '-TFOOT':
+			case '-TR':
+			case '-TD':
+			case '-TH':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				break;
+
+			case '+BLOCKQUOTE':
+				$this->push_block( 'quote' );
+				$this->block_markup .= '<' . $tag_lowercase . '>';
+				break;
+			case '-BLOCKQUOTE':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				$this->pop_block();
+				break;
+
+			case '+PRE':
+				$this->push_block( 'code' );
+				$this->block_markup .= '<' . $tag_lowercase . '  class="wp-block-code">';
+				break;
+			case '-PRE':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				$this->pop_block();
+				break;
+
+			case '+CODE':
+				/*
+					* Guess whether this is:
+					* - An inline <code> element? Let's convert it into a formatting element.
+					* - A block <code> element? Let's convert it into a block.
+					*/
+				if ( $this->is_at_inline_code_element() ) {
+					$this->append_html( '<' . $tag_lowercase . '>' );
+				} else {
 					$this->push_block( 'code' );
 					$this->block_markup .= '<' . $tag_lowercase . '  class="wp-block-code">';
-					break;
-				case 'CODE':
-					// Guess whether this is:
-					// * An inline <code> element? Let's convert it into a formatting element.
-					// * A block <code> element? Let's convert it into a block.
-					if ( $this->is_at_inline_code_element() ) {
-						$this->append_rich_text( '<' . $tag_lowercase . '>' );
-					} else {
-						$this->push_block( 'code' );
-						$this->block_markup .= '<' . $tag_lowercase . '  class="wp-block-code">';
-					}
-					break;
-				case 'HR':
-					$this->push_block( 'separator' );
-					break;
-				case 'P':
-					$this->push_block( 'paragraph' );
-					$this->block_markup .= '<p>';
-					break;
-				case 'H1':
-				case 'H2':
-				case 'H3':
-				case 'H4':
-				case 'H5':
-				case 'H6':
-					$this->push_block(
-						'heading',
-						array(
-							'level' => (int) $tag[1] ? (int) $tag[1] : 1,
-						)
-					);
-					$this->block_markup .= '<h' . $tag[1] . '>';
-					break;
+				}
+				break;
+			case '-CODE':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				if ( ! $this->is_at_inline_code_element() ) {
+					$this->pop_block();
+				}
+				break;
 
-				// Inline elements
-				case 'A':
-					$template = new \WP_HTML_Tag_Processor( '<a>' );
-					$template->next_tag();
-					if ( $html->get_attribute( 'href' ) ) {
-						$template->set_attribute( 'href', $html->get_attribute( 'href' ) );
+			case '+P':
+				$this->push_block( 'paragraph' );
+				$this->block_markup .= '<p>';
+				break;
+			case '-P':
+				$this->block_markup .= '</p>';
+				$this->pop_block();
+				break;
+
+			case '+H1':
+			case '+H2':
+			case '+H3':
+			case '+H4':
+			case '+H5':
+			case '+H6':
+				$this->push_block(
+					'heading',
+					array(
+						'level' => (int) $tag[1] ? (int) $tag[1] : 1,
+					)
+				);
+				$this->block_markup .= '<h' . $tag[1] . '>';
+				break;
+			case '-H1':
+			case '-H2':
+			case '-H3':
+			case '-H4':
+			case '-H5':
+			case '-H6':
+				$this->block_markup .= '</' . $tag_lowercase . '>';
+				$this->pop_block();
+				break;
+
+			// Inline elements
+			case '+A':
+				$template = new \WP_HTML_Tag_Processor( '<a>' );
+				$template->next_tag();
+				if ( $html->get_attribute( 'href' ) ) {
+					$template->set_attribute( 'href', $html->get_attribute( 'href' ) );
+				}
+				$this->append_html( $template->get_updated_html() );
+				break;
+			case '-A':
+				$this->block_markup .= '</a>';
+				break;
+
+			// Formats – just pass through (minus the HTML attributes)
+			default:
+				if ( $this->should_preserve_tag_in_rich_text( $tag ) ) {
+					if ( $is_opener ) {
+						$this->append_html( '<' . $tag_lowercase . '>' );
+					} elseif ( $is_closer ) {
+						$this->append_html( '</' . $tag_lowercase . '>' );
 					}
-					/**
-					 *
+				} else {
+					/*
+					 * Ignore all the other tags. We've included all the meaningful
+					 * handlers in the switch statement above and there's not much
+					 * we can do with generic tags such as <div>, <span>, <section>, etc.
 					 */
-					$this->append_rich_text( $template->get_updated_html() );
-					break;
-
-				// Formats – just pass through (minus the HTML attributes)
-				default:
-					if ( $this->should_preserve_tag_in_rich_text( $tag ) ) {
-						$this->append_rich_text( '<' . $tag_lowercase . '>' );
-					} else {
-						// @TODO: What to do with other tags? Just insert an HTML block or what?
-					}
-					break;
-			}
-		} elseif ( $html->is_tag_closer() ) {
-			switch ( $tag ) {
-				case 'SCRIPT':
-					$this->ignore_text = false;
-					break;
-				// Maintain the same lists as in the tag opener code branch above,
-				// otherwise we won't pop the correct block.
-
-				// Block elements
-				// Post-process the collected table data.
-				case 'TABLE':
-					$this->block_markup .= '</table>';
-					$this->block_markup .= '</figure>';
-					$this->pop_block();
-					break;
-
-				case 'THEAD':
-				case 'TBODY':
-				case 'TFOOT':
-				case 'TR':
-				case 'TD':
-				case 'TH':
-					$this->block_markup .= '</' . $tag_lowercase . '>';
-					break;
-
-				case 'CODE':
-					$this->block_markup .= '</' . $tag_lowercase . '>';
-					if ( ! $this->is_at_inline_code_element() ) {
-						$this->pop_block();
-					}
-					break;
-
-				// Block elements
-				case 'UL':
-				case 'OL':
-					$this->block_markup .= '</ul>';
-					$this->pop_block();
-					break;
-
-				case 'LI':
-				case 'BLOCKQUOTE':
-				case 'PRE':
-				case 'HR':
-				case 'P':
-				case 'H1':
-				case 'H2':
-				case 'H3':
-				case 'H4':
-				case 'H5':
-				case 'H6':
-					$this->block_markup .= '</' . $tag_lowercase . '>';
-					$this->pop_block();
-					break;
-
-				case 'A':
-					$this->block_markup .= '</a>';
-					break;
-
-				// Formats
-				default:
-					if ( $this->should_preserve_tag_in_rich_text( $tag ) ) {
-						$this->block_markup .= '</' . $tag_lowercase . '>';
-					}
-					break;
-			}
+				}
+				break;
 		}
 	}
 
@@ -330,12 +363,12 @@ class WP_HTML_To_Blocks implements WP_Block_Markup_Converter {
 	 *
 	 * @param string $html The HTML snippet to append.
 	 */
-	private function append_rich_text( $html ) {
+	private function append_html( $html ) {
 		$html = trim( $html );
 		if ( empty( $html ) ) {
 			return;
 		}
-		// Make sure two subsequent append_text() calls don't merge the text.
+		// Make sure two subsequent append_html() calls don't merge the text.
 		$html .= ' ';
 		$this->ensure_open_block();
 		$this->block_markup .= $html;

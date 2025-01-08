@@ -43,7 +43,7 @@ HTML;
     }
 
     private function normalize_markup( $markup ) {
-        $processor = new WP_HTML_Processor( $markup );
+        $processor = WP_HTML_Processor::create_fragment( $markup );
         $serialized = $processor->serialize();
         $serialized = trim(
             str_replace(
@@ -89,11 +89,15 @@ HTML
             ],
             'Formatted text' => [
                 'html' => '<p><strong>Bold</strong> and <em>Italic</em></p>',
-                'expected' => "<!-- wp:paragraph --><p><strong> Bold </strong>and <em> Italic </em></p><!-- /wp:paragraph -->"
+                'expected' => "<!-- wp:paragraph --><p><strong> Bold </strong> and <em> Italic </em> </p><!-- /wp:paragraph -->"
             ],
             'A blockquote' => [
                 'html' => '<blockquote>A simple blockquote</blockquote>',
                 'expected' => "<!-- wp:quote --><blockquote>A simple blockquote </blockquote><!-- /wp:quote -->"
+            ],
+            'A an <input> tag' => [
+                'html' => '<input type="text" value="A simple input" />',
+                'expected' => "<!-- wp:html -->&lt;input type=&quot;text&quot; value=&quot;A simple input&quot;&gt; <!-- /wp:html -->"
             ],
             'A table' => [
                 'html' => <<<TABLE

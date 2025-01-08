@@ -29,6 +29,7 @@ export default defineConfig(function () {
 				fileName: 'index',
 				formats: ['es'],
 			},
+			sourcemap: true,
 			rollupOptions: {
 				// Don't bundle the PHP loaders in the final build. See
 				// the preserve-php-loaders-imports plugin above.
