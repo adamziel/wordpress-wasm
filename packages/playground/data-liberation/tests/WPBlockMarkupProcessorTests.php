@@ -42,6 +42,34 @@ class WPBlockMarkupProcessorTests extends TestCase {
 
 	/**
 	 *
+	 * @dataProvider provider_test_finds_self_closing_blocks
+	 */
+	public function test_finds_self_closing_blocks( $markup, $block_name, $block_attributes ) {
+		$p = new WP_Block_Markup_Processor( $markup );
+		$p->next_token();
+		$this->assertEquals( '#block-comment', $p->get_token_type(), 'Failed to identify the block comment' );
+		$this->assertEquals( $block_name, $p->get_block_name(), 'Failed to identify the block name' );
+		$this->assertEquals( $block_attributes, $p->get_block_attributes(), 'Failed to identify the block attributes' );
+		$this->assertTrue( $p->is_self_closing_block(), 'Failed to identify the self-closing block status' );
+	}
+
+	static public function provider_test_finds_self_closing_blocks() {
+		return [
+			'Self-closing block without attributes' => [ 
+				'<!-- wp:spacer /-->', 
+				'wp:spacer', 
+				[] 
+			],
+			'Self-closing block with attributes' => [ 
+				'<!-- wp:spacer {"height":"20px"} /-->', 
+				'wp:spacer', 
+				[ 'height' => '20px' ] 
+			],
+		];
+	}
+
+	/**
+	 *
 	 * @dataProvider provider_test_finds_block_closers
 	 */
 	public function test_find_block_closers( $markup, $block_name ) {
