@@ -209,9 +209,9 @@ if ( ! class_exists( 'WP_Error' ) ) {
 		public $data;
 
 		public function __construct( $code, $message, $data = array() ) {
-			$this->code = $code;
+			$this->code    = $code;
 			$this->message = $message;
-			$this->data = $data;
+			$this->data    = $data;
 		}
 	}
 }

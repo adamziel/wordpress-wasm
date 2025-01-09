@@ -24,19 +24,21 @@ class WP_Filesystem_To_Post_Tree {
 		$options
 	) {
 		if ( ! isset( $options['first_post_id'] ) ) {
-            $options['first_post_id'] = 2;
-            if(function_exists('get_posts')) {
-                $max_id = get_posts([
-                    'post_type' => 'any',
-                    'posts_per_page' => 1,
-                    'fields' => 'ids',
-                    'orderby' => 'ID',
-                    'order' => 'DESC',
-                ]);
-                if(!empty($max_id)) {
-                    $options['first_post_id'] = $max_id[0] + 1;
-                }
-            }
+			$options['first_post_id'] = 2;
+			if ( function_exists( 'get_posts' ) ) {
+				$max_id = get_posts(
+					array(
+						'post_type' => 'any',
+						'posts_per_page' => 1,
+						'fields' => 'ids',
+						'orderby' => 'ID',
+						'order' => 'DESC',
+					)
+				);
+				if ( ! empty( $max_id ) ) {
+					$options['first_post_id'] = $max_id[0] + 1;
+				}
+			}
 		}
 		if ( 1 === $options['first_post_id'] ) {
 			_doing_it_wrong( __FUNCTION__, 'First node ID must be greater than 1', '1.0.0' );
@@ -57,15 +59,15 @@ class WP_Filesystem_To_Post_Tree {
 		\WordPress\Filesystem\WP_Abstract_Filesystem $filesystem,
 		$options
 	) {
-		$this->fs = $filesystem;
+		$this->fs                 = $filesystem;
 		$this->file_visitor       = new WordPress\Filesystem\WP_Filesystem_Visitor( $filesystem );
 		$this->create_index_pages = $options['create_index_pages'] ?? true;
 		$this->next_post_id       = $options['first_post_id'];
 		$this->filter_pattern     = $options['filter_pattern'];
 		$this->index_file_pattern = $options['index_file_pattern'];
-        if(isset($options['root_parent_id'])) {
-            $this->parent_ids[-1] = $options['root_parent_id'];
-        }
+		if ( isset( $options['root_parent_id'] ) ) {
+			$this->parent_ids[-1] = $options['root_parent_id'];
+		}
 	}
 
 	public function get_current_node() {
@@ -191,20 +193,20 @@ class WP_Filesystem_To_Post_Tree {
 				foreach ( $event->files as $filename ) {
 					$abs_paths[] = wp_join_paths( $event->dir, $filename );
 				}
-				$this->pending_files = [];
-                foreach($abs_paths as $path) {
-                    // Add all the subdirectory into the pending files list – there's
-                    // a chance the directory wouldn't match the filter pattern, but
-                    // a descendant file might.
-                    if($this->fs->is_dir($path)) {
-                        $this->pending_files[] = $path;
-                    }
+				$this->pending_files = array();
+				foreach ( $abs_paths as $path ) {
+					// Add all the subdirectory into the pending files list – there's
+					// a chance the directory wouldn't match the filter pattern, but
+					// a descendant file might.
+					if ( $this->fs->is_dir( $path ) ) {
+						$this->pending_files[] = $path;
+					}
 
-                    // Only add the files that match the filter pattern.
-                    if ( $this->fs->is_file($path) && preg_match($this->filter_pattern, $path) ) {
-                        $this->pending_files[] = $path;
-                    }
-                }
+					// Only add the files that match the filter pattern.
+					if ( $this->fs->is_file( $path ) && preg_match( $this->filter_pattern, $path ) ) {
+						$this->pending_files[] = $path;
+					}
+				}
 				if ( ! count( $this->pending_files ) ) {
 					// Only consider directories with relevant files in them.
 					// Otherwise we'll create fake pages for media directories
@@ -252,5 +254,4 @@ class WP_Filesystem_To_Post_Tree {
 	protected function looks_like_directory_index( $path ) {
 		return preg_match( $this->index_file_pattern, basename( $path ) );
 	}
-
 }

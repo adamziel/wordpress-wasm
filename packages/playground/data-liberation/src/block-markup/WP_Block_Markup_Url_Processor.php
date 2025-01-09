@@ -18,9 +18,9 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	private $url_in_text_node_updated;
 	private $inspected_url_attribute_idx = - 1;
 
-    /**
-     * @return WP_Block_Markup_Url_Processor
-     */
+	/**
+	 * @return WP_Block_Markup_Url_Processor
+	 */
 	public static function create_from_html( $html, $base_url_string = null ) {
 		$processor                  = new static( $html );
 		$processor->base_url_string = $base_url_string;

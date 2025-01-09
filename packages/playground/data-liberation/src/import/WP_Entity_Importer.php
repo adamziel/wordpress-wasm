@@ -451,7 +451,7 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-        $meta = array();
+		$meta = array();
 
 		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
 		$parent_id   = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
@@ -550,12 +550,12 @@ class WP_Entity_Importer {
 
 			$postdata[ $key ] = $data[ $key ];
 		}
-        if(!isset($postdata['post_date'])) {
-            $postdata['post_date'] = date('Y-m-d H:i:s');
-        }
-        if(!isset($postdata['post_date_gmt'])) {
-            $postdata['post_date_gmt'] = date('Y-m-d H:i:s');
-        }
+		if ( ! isset( $postdata['post_date'] ) ) {
+			$postdata['post_date'] = date( 'Y-m-d H:i:s' );
+		}
+		if ( ! isset( $postdata['post_date_gmt'] ) ) {
+			$postdata['post_date_gmt'] = date( 'Y-m-d H:i:s' );
+		}
 
 		$postdata = apply_filters( 'wp_import_post_data_processed', $postdata, $data );
 
@@ -775,9 +775,9 @@ class WP_Entity_Importer {
 			return $post_id;
 		}
 
-        if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-            include( ABSPATH . 'wp-admin/includes/image.php' );
-        }
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+			include ABSPATH . 'wp-admin/includes/image.php';
+		}
 
 		$attachment_metadata = wp_generate_attachment_metadata( $post_id, $post['local_file_path'] );
 		wp_update_attachment_metadata( $post_id, $attachment_metadata );
@@ -862,7 +862,6 @@ class WP_Entity_Importer {
 
 			$value = $this->mapping['user'][ $value ];
 		}
-
 
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string

@@ -13,8 +13,8 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
 	public function __construct( $block_markup, $metadata, $post_id ) {
 		$this->block_markup = $block_markup;
-		$this->metadata = $metadata;
-		$this->post_id = $post_id;
+		$this->metadata     = $metadata;
+		$this->post_id      = $post_id;
 	}
 
 	public function next_entity() {

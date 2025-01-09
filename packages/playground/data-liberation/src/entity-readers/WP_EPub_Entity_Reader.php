@@ -93,13 +93,13 @@ class WP_EPub_Entity_Reader extends WP_Entity_Reader {
 				return false;
 			}
 
-			$html_file                 = array_shift( $this->remaining_html_files );
-			$html                      = $this->zip->get_contents( $html_file );
-            $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $html ) );
-            if ( false === $converter->convert() ) {
-                $this->last_error = $converter->get_last_error();
-                return false;
-            }
+			$html_file = array_shift( $this->remaining_html_files );
+			$html      = $this->zip->get_contents( $html_file );
+			$converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $html ) );
+			if ( false === $converter->convert() ) {
+				$this->last_error = $converter->get_last_error();
+				return false;
+			}
 
 			$this->current_html_reader = new WP_HTML_Entity_Reader(
 				$converter->get_block_markup(),

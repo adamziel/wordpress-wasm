@@ -8,7 +8,7 @@ class WP_Attachment_Downloader {
 	private $fps = array();
 	private $output_root;
 	private $output_paths = array();
-    private $source_from_filesystem;
+	private $source_from_filesystem;
 
 	private $current_event;
 	private $pending_events = array();
@@ -16,9 +16,9 @@ class WP_Attachment_Downloader {
 	private $progress = array();
 
 	public function __construct( $output_root, $options = array() ) {
-		$this->client      = new Client();
-		$this->output_root = $output_root;
-        $this->source_from_filesystem = $options['source_from_filesystem'] ?? null;
+		$this->client                 = new Client();
+		$this->output_root            = $output_root;
+		$this->source_from_filesystem = $options['source_from_filesystem'] ?? null;
 	}
 
 	public function get_progress() {
@@ -39,8 +39,8 @@ class WP_Attachment_Downloader {
 	}
 
 	public function enqueue_if_not_exists( $url, $output_relative_path ) {
-		$this->enqueued_url   = $url;
-		$output_path = wp_join_paths($this->output_root, $output_relative_path);
+		$this->enqueued_url = $url;
+		$output_path        = wp_join_paths( $this->output_root, $output_relative_path );
 		if ( file_exists( $output_path ) ) {
 			$this->pending_events[] = new WP_Attachment_Downloader_Event(
 				$this->enqueued_url,
@@ -69,10 +69,10 @@ class WP_Attachment_Downloader {
 
 		switch ( $protocol ) {
 			case 'file':
-                if(!$this->source_from_filesystem) {
-                    _doing_it_wrong( __METHOD__, 'Cannot process file:// URLs without a source filesystem instance. Use the source_from_filesystem option to pass in a filesystem instance to WP_Attachment_Downloader.', '1.0' );
-                    return false;
-                }
+				if ( ! $this->source_from_filesystem ) {
+					_doing_it_wrong( __METHOD__, 'Cannot process file:// URLs without a source filesystem instance. Use the source_from_filesystem option to pass in a filesystem instance to WP_Attachment_Downloader.', '1.0' );
+					return false;
+				}
 				$source_path = parse_url( $url, PHP_URL_PATH );
 				if ( false === $source_path ) {
 					return false;
@@ -80,21 +80,21 @@ class WP_Attachment_Downloader {
 
 				// Just copy the file over.
 				// @TODO: think through the chmod of the created file.
-                $success = $this->source_from_filesystem->open_read_stream($source_path);
-                if($success) {
-                    $fp = fopen($output_path, 'wb');
-                    // @TODO: Filesystem instance error handling.
-                    while($this->source_from_filesystem->next_file_chunk()) {
-                        $chunk = $this->source_from_filesystem->get_file_chunk();
-                        fwrite($fp, $chunk);
-                    }
-                    $this->source_from_filesystem->close_read_stream();
-                    fclose($fp);
-                    if($this->source_from_filesystem->get_last_error()) {
-                        $success = false;
-                    }
-                }
-				
+				$success = $this->source_from_filesystem->open_read_stream( $source_path );
+				if ( $success ) {
+					$fp = fopen( $output_path, 'wb' );
+					// @TODO: Filesystem instance error handling.
+					while ( $this->source_from_filesystem->next_file_chunk() ) {
+						$chunk = $this->source_from_filesystem->get_file_chunk();
+						fwrite( $fp, $chunk );
+					}
+					$this->source_from_filesystem->close_read_stream();
+					fclose( $fp );
+					if ( $this->source_from_filesystem->get_last_error() ) {
+						$success = false;
+					}
+				}
+
 				$this->pending_events[] = $success
 					? new WP_Attachment_Downloader_Event(
 						$this->enqueued_url,

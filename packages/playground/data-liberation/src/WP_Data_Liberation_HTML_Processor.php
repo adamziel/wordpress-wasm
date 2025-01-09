@@ -15,7 +15,7 @@ class WP_Data_Liberation_HTML_Processor extends WP_HTML_Processor {
 			return false;
 		}
 
-        $this->skip_to_closer();
+		$this->skip_to_closer();
 
 		if ( false === WP_HTML_Tag_Processor::set_bookmark( 'tag-end' ) ) {
 			WP_HTML_Tag_Processor::release_bookmark( 'tag-start' );
@@ -25,7 +25,7 @@ class WP_Data_Liberation_HTML_Processor extends WP_HTML_Processor {
 		$inner_html_start = $this->bookmarks['tag-start']->start + $this->bookmarks['tag-start']->length;
 		$inner_html_end   = $this->bookmarks['tag-end']->start - $inner_html_start;
 
-        WP_HTML_Tag_Processor::seek( 'tag-start' );
+		WP_HTML_Tag_Processor::seek( 'tag-start' );
 		WP_HTML_Tag_Processor::release_bookmark( 'tag-start' );
 		WP_HTML_Tag_Processor::release_bookmark( 'tag-end' );
 
@@ -49,6 +49,5 @@ class WP_Data_Liberation_HTML_Processor extends WP_HTML_Processor {
 		}
 
 		return false;
-    }
-
+	}
 }
