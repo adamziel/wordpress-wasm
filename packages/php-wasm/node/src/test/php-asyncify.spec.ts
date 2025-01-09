@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import {
 	PHP,
+	PHPRequestHandler,
 	SupportedPHPVersions,
 	setPhpIniEntries,
 } from '@php-wasm/universal';
@@ -10,6 +11,7 @@ import { phpVars } from '@php-wasm/util';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import InitialDockerfile from '../../../compile/php/Dockerfile?raw';
 import { loadNodeRuntime } from '../lib';
+import { RecommendedPHPVersion } from '@wp-playground/common';
 
 // Start a server to test network functions
 const server = http.createServer((req, res) => {
@@ -32,7 +34,7 @@ const js = phpVars({
 const phpVersions =
 	'PHP' in process.env ? [process.env['PHP']] : SupportedPHPVersions;
 
-describe.each(phpVersions)('PHP %s – asyncify', (phpVersion) => {
+describe.each(phpVersions)('PHP %s – asyncify', () => {
 	const topOfTheStack: Array<string> = [
 		// http:// stream handler
 		`file_get_contents(${js['httpUrl']});`,
@@ -58,8 +60,14 @@ describe.each(phpVersions)('PHP %s – asyncify', (phpVersion) => {
 	];
 
 	let php: PHP;
+	let requestHandler: PHPRequestHandler;
 	beforeEach(async () => {
-		php = new PHP(await loadNodeRuntime(phpVersion as any));
+		requestHandler = new PHPRequestHandler({
+			phpFactory: async () =>
+				new PHP(await loadNodeRuntime(RecommendedPHPVersion)),
+			documentRoot: '/',
+		});
+		php = await requestHandler.getPrimaryPhp();
 		await setPhpIniEntries(php, { allow_url_fopen: 1 });
 	});
 
@@ -219,6 +227,34 @@ describe.each(phpVersions)('PHP %s – asyncify', (phpVersion) => {
 					echo $number;
 				}
 			`));
+			test('Soap', async () => {
+				await php.writeFile(
+					'/soap-server.php',
+					`<?php
+					class TestSoapServer
+					{
+						public function getMessage()
+						{
+							return 'Hello, World!';
+						}
+					}
+					try {
+						$options = [
+							'uri' => ${requestHandler.absoluteUrl},
+						];
+						$server = new SoapServer(null, $options);
+						$server->setClass('TestSoapServer');
+						$server->handle();
+					} catch (SoapFault $e) {
+						echo "Server Error: " . $e->getMessage();
+					}`
+				);
+
+				assertNoCrash(`
+					$client = new SoapClient('${requestHandler.absoluteUrl}/soap-server.php');
+					echo json_encode($client->getMessage());
+				`);
+			});
 		});
 	});
 

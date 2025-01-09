@@ -66,6 +66,7 @@ ARG WITH_MYSQL
 ARG WITH_OPENSSL
 ARG WITH_ICONV
 ARG WITH_SOURCEMAPS
+ARG WITH_SOAP
 ARG WITH_WS_NETWORKING_PROXY
 
 # The platform to build for: web or node
@@ -144,11 +145,20 @@ RUN if [ "$WITH_CLI_SAPI" = "yes" ]; \
 		echo -n ' --disable-cli ' >> /root/.php-configure-flags; \
 	fi;
 
+# Add Soap if needed
+RUN	if [ "$WITH_SOAP" = "yes" ]; then \
+	echo -n ' --enable-soap ' >> /root/.php-configure-flags; \
+fi;
+
 # Add Libxml2 if needed
-RUN if [ "$WITH_LIBXML" = "yes" ]; \
+# Libxml is a dependency for Soap, so we need to enable it if Soap is enabled
+RUN if [ "$WITH_LIBXML" = "yes" ] || [ "$WITH_SOAP" = "yes" ]; \
 	then \
 		set -euxo pipefail;\
 		echo -n ' --enable-libxml --with-libxml --with-libxml-dir=/root/lib --enable-dom --enable-xml --enable-simplexml --enable-xmlreader --enable-xmlwriter' >> /root/.php-configure-flags && \
+		if [ "$WITH_SOAP" = "yes" ]; then \
+			echo -n ' --enable-soap ' >> /root/.php-configure-flags; \
+		fi; \
 		echo -n ' -I /root/lib -I /root/lib/include/libxml2 -lxml2' >> /root/.emcc-php-wasm-flags && \
 		echo -n ' /root/lib/lib/libxml2.a' >> /root/.emcc-php-wasm-sources && \
 		# Libxml check is wrong in PHP < 7.4.0.
@@ -519,7 +529,19 @@ RUN export ASYNCIFY_IMPORTS=$'["_dlopen_js",\n\
 "dynCall_viiiiiii",\
 "dynCall_viiiiiiii",'; \
 
-export ASYNCIFY_ONLY=$'"rc_dtor_func",\
+export ASYNCIFY_ONLY=$'"php_libxml_streams_IO_open_wrapper",\
+"php_libxml_input_buffer_create_filename",\
+"xmlParserInputBufferCreateFilename",\
+"xmlNewInputFromFile",\
+"xmlDefaultExternalEntityLoader",\
+"_php_libxml_pre_ext_ent_loader",\
+"xmlLoadExternalEntity",\
+"xmlCreateURLParserCtxt",\
+"soap_xmlParseFile",\
+"load_wsdl_ex",\
+"get_sdl",\
+"zim_SoapClient___construct",\
+"rc_dtor_func",\
 "zif_curl_exec",\
 "curl_easy_perform",\
 "Curl_wait_ms",\
@@ -940,7 +962,7 @@ RUN set -euxo pipefail; \
 	else \
 		export ASYNCIFY_FLAGS=" -s ASYNCIFY=1 -s ASYNCIFY_IGNORE_INDIRECT=1 -s EXPORTED_RUNTIME_METHODS=ccall,PROXYFS,wasmExports $(cat /root/.emcc-php-asyncify-flags)  "; \
 		echo '' > /root/php_wasm_asyncify.h; \
-	fi; \	
+	fi; \
 	export EXPORTED_FUNCTIONS=$'["_exit", \n\
 "UTF8ToString", \n\
 "stringToUTF8", \n\

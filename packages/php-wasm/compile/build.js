@@ -135,6 +135,7 @@ const platformDefaults = {
 		WITH_MBREGEX: 'yes',
 		WITH_OPENSSL: 'yes',
 		WITH_WS_NETWORKING_PROXY: 'yes',
+		WITH_SOAP: 'yes',
 	},
 	web: {},
 	node: {
@@ -208,6 +209,8 @@ await asyncSpawn(
 		getArg('WITH_SQLITE'),
 		'--build-arg',
 		getArg('WITH_SOURCEMAPS'),
+		'--build-arg',
+		getArg('WITH_SOAP'),
 		'--build-arg',
 		getArg('WITH_ICONV'),
 		'--build-arg',
