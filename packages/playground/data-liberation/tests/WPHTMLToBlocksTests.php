@@ -47,10 +47,9 @@ HTML;
         $serialized = $processor->serialize();
         $serialized = trim(
             str_replace(
-                [
-                    // Even more naively, remove all the newlines.
-                    "\n"
-                ],
+                // Naively remove all the newlines to prevent minor formatting differences
+                // from causing false negatives in $expected === $actual.
+                "\n",
                 '',
                 $serialized
             )

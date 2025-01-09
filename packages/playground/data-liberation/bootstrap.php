@@ -76,7 +76,6 @@ require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Filesystem_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Block_Markup_Entity_Reader.php';
-require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Filesystem_To_Post_Tree.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
@@ -92,6 +91,8 @@ require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/import/WP_Import_HTML_Processor.php';
 require_once __DIR__ . '/src/import/WP_Import_Utils.php';
+require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 
 require_once __DIR__ . '/src/git/WP_Git_Client.php';
 require_once __DIR__ . '/src/git/WP_Git_Pack_Processor.php';

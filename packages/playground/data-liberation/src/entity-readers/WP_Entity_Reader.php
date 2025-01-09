@@ -60,7 +60,9 @@ abstract class WP_Entity_Reader implements \Iterator {
 	// The iterator interface:
 
 	public function current(): object {
-		$this->ensure_current_entity();
+		if ( null === $this->get_entity() && ! $this->is_finished() && ! $this->get_last_error() ) {
+			$this->next();
+		}
 		return $this->get_entity();
 	}
 
@@ -76,7 +78,6 @@ abstract class WP_Entity_Reader implements \Iterator {
 	}
 
 	public function valid(): bool {
-		$this->ensure_current_entity();
 		return false !== $this->last_next_result && ! $this->is_finished() && ! $this->get_last_error();
 	}
 
@@ -90,11 +91,5 @@ abstract class WP_Entity_Reader implements \Iterator {
 			'WP_WXR_Entity_Reader does not support rewinding.',
 			null
 		);
-	}
-
-	private function ensure_current_entity() {
-		if ( null === $this->get_entity() && ! $this->is_finished() && ! $this->get_last_error() ) {
-			$this->next();
-		}
 	}
 }

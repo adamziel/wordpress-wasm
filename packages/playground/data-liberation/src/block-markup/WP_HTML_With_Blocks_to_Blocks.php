@@ -40,7 +40,7 @@ class WP_HTML_With_Blocks_to_Blocks implements WP_Block_Markup_Converter {
 		return true;
 	}
 
-	public function get_meta_value( $key ) {
+	public function get_first_meta_value( $key ) {
 		if ( ! array_key_exists( $key, $this->metadata ) ) {
 			return null;
 		}

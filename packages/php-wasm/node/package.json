@@ -1,6 +1,6 @@
 {
 	"name": "@php-wasm/node",
-	"version": "1.0.17",
+	"version": "1.0.20",
 	"description": "PHP.wasm for Node.js",
 	"repository": {
 		"type": "git",

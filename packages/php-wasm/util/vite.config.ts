@@ -40,6 +40,7 @@ export default defineConfig({
 			fileName: 'index',
 			formats: ['es', 'cjs'],
 		},
+		sourcemap: true,
 		rollupOptions: {
 			// External packages that should not be bundled into your library.
 			external: getExternalModules(),
