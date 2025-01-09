@@ -206,8 +206,9 @@ class WPGitServerTests extends TestCase {
             array($this->main_branch_oid, $this->dev_branch_oid),
             $expected_response
         );
-        $response = $this->server->handle_ls_refs_request($request);
-        $this->assertEquals($expected_response, $response);
+        $response = new BufferingResponseWriter();
+        $this->server->handle_ls_refs_request($request, $response);
+        $this->assertEquals($expected_response, $response->get_buffered_body());
     }
 
     public function provideRefRequests() {

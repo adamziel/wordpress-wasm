@@ -18,7 +18,7 @@
       <file>tests/WPHTMLEntityReaderTests.php</file>
       <file>tests/WPEPubEntityReaderTests.php</file>
       <file>tests/WPDirectoryTreeEntityReaderTests.php</file>
-      <file>tests/WPFilesystemToPostHierarchyTests.php</file>
+      <file>tests/WPFilesystemToPostTreeTests.php</file>
       <file>tests/WPURLInTextProcessorTests.php</file>
       <file>tests/WPBlockMarkupProcessorTests.php</file>
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
