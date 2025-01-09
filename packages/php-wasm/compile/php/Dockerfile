@@ -19,6 +19,11 @@ RUN git clone https://github.com/php/php-src.git php-src \
 # Work around memory leak due to PHP using Emscripten's incomplete mmap/munmap support
 COPY ./php-wasm-memory-storage /root/php-src/ext/wasm_memory_storage
 
+COPY ./php-wasm-mysqli-polyfill/ /root/builds/mysqli_polyfill
+RUN if [ "$WITH_MYSQL" != "yes" ]; then \
+	cp -r /root/builds/mysqli_polyfill /root/php-src/ext/mysqli_polyfill; \
+fi
+
 RUN cd php-src && ./buildconf --force
 
 # Bring in the libraries
@@ -270,6 +275,10 @@ RUN cd /root && \
 # Install Mysql support if needed
 RUN if [ "$WITH_MYSQL" = "yes" ]; then \
 		echo -n ' --enable-mysql --enable-pdo --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd ' >> /root/.php-configure-flags; \
+	else \
+		# If MySQL is not enabled, we need to enable the mysqli polyfill
+		# to avoid errors like "Call to undefined function mysqli_report()"
+		echo -n ' --enable-mysqli_polyfill ' >> /root/.php-configure-flags; \
 	fi
 
 # Build the patched PHP
@@ -375,8 +384,6 @@ COPY ./php/php_wasm.c /root/
 COPY ./php/dns_polyfill.c /root/
 COPY ./php/dns_polyfill.h /root/
 COPY ./php/proc_open* /root/
-COPY ./php/mysqli_polyfill.c /root/
-COPY ./php/mysqli_polyfill.h /root/
 
 RUN if [[ "${PHP_VERSION:0:1}" -le "7" && "${PHP_VERSION:2:1}" -le "3" ]]; then \
 		 cp /root/proc_open7.0.c /root/proc_open.c; \
@@ -1003,7 +1010,6 @@ RUN set -euxo pipefail; \
 		/root/proc_open.c \
 		/root/php_wasm.c \
 		/root/dns_polyfill.c \
-		$(if [ "$WITH_MYSQL" != "yes" ]; then echo "/root/mysqli_polyfill.c"; fi) \
 		$(cat /root/.emcc-php-wasm-sources) \
 	-s ENVIRONMENT=$EMSCRIPTEN_ENVIRONMENT \
 	-s FORCE_FILESYSTEM=1 \

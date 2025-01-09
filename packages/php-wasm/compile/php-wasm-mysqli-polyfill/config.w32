@@ -1,0 +1,5 @@
+ARG_ENABLE("mysqli_polyfill", "Enable mysqli_polyfill support", "no");
+
+if (PHP_MYSQLI_POLYFILL == "yes") {
+    EXTENSION("mysqli_polyfill", "mysqli_polyfill.c");
+}
