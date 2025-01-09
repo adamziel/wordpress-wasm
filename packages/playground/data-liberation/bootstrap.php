@@ -73,7 +73,6 @@ require_once __DIR__ . '/src/block-markup/WP_Block_HTML_Serializer.php';
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
-require_once __DIR__ . '/src/entity-readers/WP_Filesystem_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Block_Markup_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_Filesystem_To_Post_Tree.php';

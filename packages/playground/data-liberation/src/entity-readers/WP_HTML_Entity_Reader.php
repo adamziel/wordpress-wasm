@@ -10,6 +10,7 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	protected $entities;
 	protected $finished = false;
 	protected $post_id;
+	protected $last_error;
 
 	public function __construct( $block_markup, $metadata, $post_id ) {
 		$this->block_markup = $block_markup;
@@ -96,6 +97,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	 * @return string|null The last error, or null if there was no error.
 	 */
 	public function get_last_error(): ?string {
-		return null;
+		return $this->last_error;
 	}
 }
