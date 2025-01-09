@@ -375,6 +375,8 @@ COPY ./php/php_wasm.c /root/
 COPY ./php/dns_polyfill.c /root/
 COPY ./php/dns_polyfill.h /root/
 COPY ./php/proc_open* /root/
+COPY ./php/mysqli_polyfill.c /root/
+COPY ./php/mysqli_polyfill.h /root/
 
 RUN if [[ "${PHP_VERSION:0:1}" -le "7" && "${PHP_VERSION:2:1}" -le "3" ]]; then \
 		 cp /root/proc_open7.0.c /root/proc_open.c; \
@@ -940,7 +942,7 @@ RUN set -euxo pipefail; \
 	else \
 		export ASYNCIFY_FLAGS=" -s ASYNCIFY=1 -s ASYNCIFY_IGNORE_INDIRECT=1 -s EXPORTED_RUNTIME_METHODS=ccall,PROXYFS,wasmExports $(cat /root/.emcc-php-asyncify-flags)  "; \
 		echo '' > /root/php_wasm_asyncify.h; \
-	fi; \	
+	fi; \
 	export EXPORTED_FUNCTIONS=$'["_exit", \n\
 "UTF8ToString", \n\
 "stringToUTF8", \n\
@@ -1001,6 +1003,7 @@ RUN set -euxo pipefail; \
 		/root/proc_open.c \
 		/root/php_wasm.c \
 		/root/dns_polyfill.c \
+		$(if [ "$WITH_MYSQL" != "yes" ]; then echo "/root/mysqli_polyfill.c"; fi) \
 		$(cat /root/.emcc-php-wasm-sources) \
 	-s ENVIRONMENT=$EMSCRIPTEN_ENVIRONMENT \
 	-s FORCE_FILESYSTEM=1 \
