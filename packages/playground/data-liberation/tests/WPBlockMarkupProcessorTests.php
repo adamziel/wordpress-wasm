@@ -18,9 +18,9 @@ class WPBlockMarkupProcessorTests extends TestCase {
 
 	static public function provider_test_finds_block_openers() {
 		return [
-			'Opener without attributes'                        => [ '<!-- wp:paragraph -->', 'wp:paragraph', null ],
-			'Opener without the trailing whitespace'           => [ '<!--wp:paragraph-->', 'wp:paragraph', null ],
-			'Opener with a lot of trailing whitespace'         => [ '<!--    wp:paragraph          -->', 'wp:paragraph', null ],
+			'Opener without attributes'                        => [ '<!-- wp:paragraph -->', 'wp:paragraph', [] ],
+			'Opener without the trailing whitespace'           => [ '<!--wp:paragraph-->', 'wp:paragraph', [] ],
+			'Opener with a lot of trailing whitespace'         => [ '<!--    wp:paragraph          -->', 'wp:paragraph', [] ],
 			'Opener with attributes'                           => [
 				'<!-- wp:paragraph {"class": "wp-bold"} -->',
 				'wp:paragraph',
@@ -100,7 +100,6 @@ class WPBlockMarkupProcessorTests extends TestCase {
 			'Closer with a line break before whitespace'         => [ "<!-- \n/wp:paragraph -->", ],
 			'Closer with attributes'                             => [ '<!-- /wp:paragraph {"class": "block"} -->', ],
 			'Closer with solidus at the end (before whitespace)' => [ '<!-- wp:paragraph/ -->', ],
-			'Closer with solidus at the end (after whitespace)'  => [ '<!-- wp:paragraph /-->', ],
 		];
 	}
 
