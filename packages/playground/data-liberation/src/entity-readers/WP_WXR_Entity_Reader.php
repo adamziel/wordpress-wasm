@@ -1,6 +1,7 @@
 <?php
 
 use WordPress\ByteReader\WP_Byte_Reader;
+use WordPress\Error\WordPressException;
 
 /**
  * Data Liberation API: WP_WXR_Entity_Reader class
@@ -356,12 +357,7 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		if ( null !== $cursor ) {
 			$cursor = json_decode( $cursor, true );
 			if ( false === $cursor ) {
-				_doing_it_wrong(
-					__METHOD__,
-					'Invalid cursor provided for WP_WXR_Entity_Reader::create().',
-					null
-				);
-				return false;
+				throw new WordPressException('Invalid cursor provided for WP_WXR_Entity_Reader::create().');
 			}
 			$xml_cursor = $cursor['xml'];
 		}
@@ -934,10 +930,6 @@ class WP_WXR_Entity_Reader extends WP_Entity_Reader {
 		if ( null === $this->last_next_result ) {
 			return;
 		}
-		_doing_it_wrong(
-			__METHOD__,
-			'WP_WXR_Reader does not support rewinding.',
-			null
-		);
+		throw new WordPressException('WP_WXR_Reader does not support rewinding.');
 	}
 }

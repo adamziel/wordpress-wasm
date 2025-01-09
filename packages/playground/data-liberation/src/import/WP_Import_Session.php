@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Error\WordPressException;
+
 /**
  * Manages import session data in the WordPress database.
  *
@@ -48,32 +50,17 @@ class WP_Import_Session {
 		switch ( $args['data_source'] ) {
 			case 'wxr_file':
 				if ( empty( $args['file_name'] ) ) {
-					_doing_it_wrong(
-						__METHOD__,
-						'File name is required for WXR file imports',
-						'1.0.0'
-					);
-					return false;
+					throw new WordPressException( 'File name is required for WXR file imports' );
 				}
 				break;
 			case 'wxr_url':
 				if ( empty( $args['source_url'] ) ) {
-					_doing_it_wrong(
-						__METHOD__,
-						'Source URL is required for remote imports',
-						'1.0.0'
-					);
-					return false;
+					throw new WordPressException( 'Source URL is required for remote imports' );
 				}
 				break;
 			case 'markdown_zip':
 				if ( empty( $args['file_name'] ) ) {
-					_doing_it_wrong(
-						__METHOD__,
-						'File name is required for Markdown ZIP imports',
-						'1.0.0'
-					);
-					return false;
+					throw new WordPressException( 'File name is required for Markdown ZIP imports' );
 				}
 				break;
 		}
@@ -98,12 +85,7 @@ class WP_Import_Session {
 			true
 		);
 		if ( is_wp_error( $post_id ) ) {
-			_doing_it_wrong(
-				__METHOD__,
-				'Error creating an import session: ' . $post_id->get_error_message(),
-				'1.0.0'
-			);
-			return false;
+			throw new WordPressException( 'Error creating an import session: ' . $post_id->get_error_message() );
 		}
 
 		if ( ! empty( $args['attachment_id'] ) ) {
@@ -257,12 +239,7 @@ class WP_Import_Session {
 	public function bump_imported_entities_counts( $newly_imported_entities ) {
 		foreach ( $newly_imported_entities as $field => $count ) {
 			if ( ! in_array( $field, static::PROGRESS_ENTITIES, true ) ) {
-				_doing_it_wrong(
-					__METHOD__,
-					'Cannot bump imported entities count for unknown entity type: ' . $field,
-					'1.0.0'
-				);
-				continue;
+				throw new WordPressException( 'Cannot bump imported entities count for unknown entity type: ' . $field );
 			}
 
 			// Get current count from cache or database
@@ -464,12 +441,7 @@ class WP_Import_Session {
 	public function bump_total_number_of_entities( $newly_indexed_entities ) {
 		foreach ( $newly_indexed_entities as $field => $count ) {
 			if ( ! in_array( $field, static::PROGRESS_ENTITIES, true ) ) {
-				_doing_it_wrong(
-					__METHOD__,
-					'Cannot set total number of entities for unknown entity type: ' . $field,
-					'1.0.0'
-				);
-				continue;
+				throw new WordPressException( 'Cannot set total number of entities for unknown entity type: ' . $field );
 			}
 
 			// Get current total from cache or database
@@ -498,12 +470,7 @@ class WP_Import_Session {
 			$url         = $event->resource_id;
 			$placeholder = $this->get_frontloading_placeholder( $url );
 			if ( ! $placeholder ) {
-				_doing_it_wrong(
-					__METHOD__,
-					'Frontloading placeholder post not found for URL: ' . $url,
-					'1.0.0'
-				);
-				continue;
+				throw new WordPressException( 'Frontloading placeholder post not found for URL: ' . $url );
 			}
 
 			update_post_meta( $placeholder->ID, 'last_error', $event->error );

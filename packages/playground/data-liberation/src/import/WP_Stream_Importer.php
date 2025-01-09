@@ -1,10 +1,8 @@
 <?php
 
-use WordPress\AsyncHTTP\Client;
-use WordPress\AsyncHTTP\Request;
 use WordPress\ByteReader\WP_File_Reader;
 use WordPress\ByteReader\WP_Remote_File_Reader;
-use WordPress\Filesystem\WP_Byte_Reader;
+use WordPress\Error\WordPressException;
 
 /**
  * Idea:
@@ -157,7 +155,7 @@ class WP_Stream_Importer {
 		$options  = static::parse_options( $options );
 		$importer = new static( $entity_iterator_factory, $options );
 		if ( null !== $cursor && true !== $importer->initialize_from_cursor( $cursor ) ) {
-			return false;
+			throw new WordPressException( 'Cannot resume an importer from an invalid cursor.' );
 		}
 		return $importer;
 	}
@@ -165,8 +163,7 @@ class WP_Stream_Importer {
 	protected function initialize_from_cursor( $cursor ) {
 		$cursor = json_decode( $cursor, true );
 		if ( ! is_array( $cursor ) ) {
-			_doing_it_wrong( __METHOD__, 'Cannot resume an importer with a non-array cursor.', '1.0.0' );
-			return false;
+			throw new WordPressException( 'Cannot resume an importer with a non-array cursor.' );
 		}
 		$this->stage            = $cursor['stage'];
 		$this->next_stage       = $cursor['next_stage'];
@@ -555,7 +552,7 @@ class WP_Stream_Importer {
 		if ( ! $this->entity_iterator->valid() && ! $this->downloader->has_pending_requests() ) {
 			// This is an assertion to make double sure we're emptying the state queue.
 			if ( ! empty( $this->active_downloads ) ) {
-				_doing_it_wrong( __METHOD__, '$active_downloads queue was not empty at the end of the frontloading stage.', '1.0' );
+				throw new WordPressException( '$active_downloads queue was not empty at the end of the frontloading stage.', '1.0' );
 			}
 			$this->downloader          = null;
 			$this->active_downloads    = array();
@@ -740,8 +737,7 @@ class WP_Stream_Importer {
 		$download_url = $this->rewrite_attachment_url( $raw_url, $options['context_path'] ?? null );
 		$enqueued     = $this->downloader->enqueue_if_not_exists( $download_url, $output_filename );
 		if ( false === $enqueued ) {
-			_doing_it_wrong( __METHOD__, sprintf( 'Failed to enqueue attachment download: %s', $raw_url ), '1.0' );
-			return false;
+			throw new WordPressException( sprintf( 'Failed to enqueue attachment download: %s', $raw_url ), '1.0' );
 		}
 
 		$entity_cursor                                        = $this->entity_iterator->get_reentrancy_cursor();

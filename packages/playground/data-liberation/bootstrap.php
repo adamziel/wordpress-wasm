@@ -25,6 +25,8 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_F
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
 
+require_once __DIR__ . '/blueprints-library/src/WordPress/Error/ErrorDomain.php';
+
 if (
 	! class_exists( 'WP_HTML_Tag_Processor' ) &&
 	file_exists( __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php' )

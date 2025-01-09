@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Error\WordPressException;
+
 /**
  * Data Liberation: Directory tree entity reader.
  *
@@ -28,16 +30,16 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		$options
 	) {
 		if ( ! isset( $options['root_dir'] ) ) {
-			throw new \Exception( 'Missing required options: root_dir' );
+			throw new WordPressException( 'Missing required options: root_dir' );
 		}
 		if ( ! isset( $options['first_post_id'] ) ) {
-			throw new \Exception( 'Missing required options: first_post_id' );
+			throw new WordPressException( 'Missing required options: first_post_id' );
 		}
 		if ( ! isset( $options['allowed_extensions'] ) ) {
-			throw new \Exception( 'Missing required options: allowed_extensions' );
+			throw new WordPressException( 'Missing required options: allowed_extensions' );
 		}
 		if ( ! isset( $options['index_file_patterns'] ) ) {
-			throw new \Exception( 'Missing required options: index_file_patterns' );
+			throw new WordPressException( 'Missing required options: index_file_patterns' );
 		}
 		/**
 		 * @TODO: Use `sub_entity_reader_factory` instead of `markup_converter_factory`

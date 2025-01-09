@@ -1,5 +1,7 @@
 <?php
 
+use WordPress\Error\WordPressException;
+
 /**
  * The Entity Reader ingests content from a source and breaks it down into
  * individual "entities" that WordPress understands - posts, comments, metadata, etc.
@@ -34,17 +36,6 @@ abstract class WP_Entity_Reader implements \Iterator {
 	abstract public function is_finished(): bool;
 
 	/**
-	 * Gets any error that occurred during processing.
-	 *
-	 * Readers should use this to report issues like invalid source content
-	 * or parsing failures.
-	 *
-	 * @since WP_VERSION
-	 * @return string|null Error message if something went wrong, null otherwise
-	 */
-	abstract public function get_last_error(): ?string;
-
-	/**
 	 * Returns a cursor position that can be used to resume processing later.
 	 *
 	 * This allows for processing large imports in chunks without losing your place.
@@ -60,7 +51,7 @@ abstract class WP_Entity_Reader implements \Iterator {
 	// The iterator interface:
 
 	public function current(): object {
-		if ( null === $this->get_entity() && ! $this->is_finished() && ! $this->get_last_error() ) {
+		if ( null === $this->get_entity() && ! $this->is_finished() ) {
 			$this->next();
 		}
 		return $this->get_entity();
@@ -78,7 +69,7 @@ abstract class WP_Entity_Reader implements \Iterator {
 	}
 
 	public function valid(): bool {
-		return false !== $this->last_next_result && ! $this->is_finished() && ! $this->get_last_error();
+		return false !== $this->last_next_result && ! $this->is_finished();
 	}
 
 	public function rewind(): void {
@@ -86,10 +77,6 @@ abstract class WP_Entity_Reader implements \Iterator {
 		if ( null === $this->last_next_result ) {
 			return;
 		}
-		_doing_it_wrong(
-			__METHOD__,
-			'WP_WXR_Entity_Reader does not support rewinding.',
-			null
-		);
+        throw new WordPressException('WP_Entity_Reader does not support rewinding.');
 	}
 }

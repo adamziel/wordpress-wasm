@@ -129,12 +129,4 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 		return $this->finished;
 	}
 
-	/**
-	 * Returns the last error that occurred when processing the HTML.
-	 *
-	 * @return string|null The last error, or null if there was no error.
-	 */
-	public function get_last_error(): ?string {
-		return null;
-	}
 }
