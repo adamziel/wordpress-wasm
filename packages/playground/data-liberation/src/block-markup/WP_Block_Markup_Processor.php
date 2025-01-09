@@ -2,14 +2,14 @@
 
 /**
  * A processor class capable of reading and rewriting block markup.
- * 
+ *
  * This class provides functionality to parse, traverse and modify WordPress block markup.
  * It extends WP_HTML_Tag_Processor to add block-specific capabilities like:
  * - Parsing block comments into name and attributes
  * - Tracking block nesting depth
  * - Modifying block attributes
  * - Validating block structure
- * 
+ *
  * Contrary to WP_HTML_Tag_Processor, this class does not support streaming.
  * It assumes block markup blobs are small enough to fit into memory, otherwise
  * WordPress won't be able to render them anyway.
@@ -34,36 +34,36 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 
 	/**
 	 * Whether the current block's attributes have been modified and need to be serialized
-     * 
-     * @var bool
+	 *
+	 * @var bool
 	 */
 	private $block_attributes_updated;
 
 	/**
 	 * Whether the current block token is a closing tag (e.g. <!-- /wp:paragraph -->)
-     * 
-     * @var bool
+	 *
+	 * @var bool
 	 */
 	private $block_closer;
 
 	/**
 	 * Whether the current block is self-closing (e.g. <!-- wp:spacer /-->)
-     * 
-     * @var bool
+	 *
+	 * @var bool
 	 */
 	private $self_closing_flag;
 
 	/**
 	 * Stack tracking the names of currently open blocks for validation
-     * 
-     * @var array<string>
+	 *
+	 * @var array<string>
 	 */
 	private $stack_of_open_blocks = array();
 
 	/**
 	 * The most recent error encountered while parsing blocks
-     * 
-     * @var string|null
+	 *
+	 * @var string|null
 	 */
 	private $last_block_error;
 
@@ -103,8 +103,8 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 	}
 
 	/**
-     * Advances past the block closer of the currently matched block and returns
-     * the HTML content found between the block's opener and closer.
+	 * Advances past the block closer of the currently matched block and returns
+	 * the HTML content found between the block's opener and closer.
 	 *
 	 * @return string|false The inner HTML content of the block or false if not a block opener.
 	 */
@@ -152,17 +152,17 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 
 	/**
 	 * Gets the depth of the currently matched block on the block stack. It only
-     * considers the parent blocks and not HTML elements.
-     *
-     * For example, the paragraph block in the following markup has a depth of 1:
-     *
-     * <!-- wp:core/blockquote -->
-     *   <blockquote>
-     *     <!-- wp:core/paragraph -->
-     *       <p>Hello, there</p>
-     *     <!-- /wp:core/paragraph -->
-     *   </blockquote>
-     * <!-- /wp:core/blockquote -->
+	 * considers the parent blocks and not HTML elements.
+	 *
+	 * For example, the paragraph block in the following markup has a depth of 1:
+	 *
+	 * <!-- wp:core/blockquote -->
+	 *   <blockquote>
+	 *     <!-- wp:core/paragraph -->
+	 *       <p>Hello, there</p>
+	 *     <!-- /wp:core/paragraph -->
+	 *   </blockquote>
+	 * <!-- /wp:core/blockquote -->
 	 *
 	 * @return int The number of ancestor blocks
 	 */
@@ -240,7 +240,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 
 	/**
 	 * Checks if the currently matched token is a block closer,
-     * e.g. <!-- /wp:paragraph -->.
+	 * e.g. <!-- /wp:paragraph -->.
 	 *
 	 * @return bool True if at a block closer.
 	 */
@@ -250,7 +250,7 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 
 	/**
 	 * Checks if the currently matched token is a self-closing block,
-     * e.g. <!-- wp:spacer /-->.
+	 * e.g. <!-- wp:spacer /-->.
 	 *
 	 * @return bool True if at a self-closing block.
 	 */
@@ -268,134 +268,134 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 	 * @return bool Whether a token was parsed.
 	 */
 	public function next_token(): bool {
-        $this->get_updated_html();
+		$this->get_updated_html();
 
-        $this->block_name                = null;
-        $this->block_attributes          = null;
-        $this->block_attributes_iterator = null;
-        $this->block_closer              = false;
-        $this->self_closing_flag         = false;
-        $this->block_attributes_updated  = false;
+		$this->block_name                = null;
+		$this->block_attributes          = null;
+		$this->block_attributes_iterator = null;
+		$this->block_closer              = false;
+		$this->self_closing_flag         = false;
+		$this->block_attributes_updated  = false;
 
-        while ( true ) {
-            if ( parent::next_token() === false ) {
-                return false;
-            }
+		while ( true ) {
+			if ( parent::next_token() === false ) {
+				return false;
+			}
 
-            if (
-                $this->get_token_type() === '#tag' && (
-                    $this->get_tag() === 'HTML' ||
-                    $this->get_tag() === 'HEAD' ||
-                    $this->get_tag() === 'BODY'
-                )
-            ) {
-                continue;
-            }
+			if (
+				$this->get_token_type() === '#tag' && (
+					$this->get_tag() === 'HTML' ||
+					$this->get_tag() === 'HEAD' ||
+					$this->get_tag() === 'BODY'
+				)
+			) {
+				continue;
+			}
 
-            break;
-        }
+			break;
+		}
 
-        if ( parent::get_token_type() !== '#comment' ) {
-            return true;
-        }
+		if ( parent::get_token_type() !== '#comment' ) {
+			return true;
+		}
 
-        $text = parent::get_modifiable_text();
-        /**
-         * Try to parse as a block. The block parser won't cut it because
-         * while it can parse blocks, it has no semantics for rewriting the
-         * block markup. Let's do our best here:
-         */
-        $at = strspn( $text, ' \t\f\r\n' ); // Whitespace.
+		$text = parent::get_modifiable_text();
+		/**
+		 * Try to parse as a block. The block parser won't cut it because
+		 * while it can parse blocks, it has no semantics for rewriting the
+		 * block markup. Let's do our best here:
+		 */
+		$at = strspn( $text, ' \t\f\r\n' ); // Whitespace.
 
-        if ( $at >= strlen( $text ) ) {
-            // This is an empty comment. Not a block.
-            return true;
-        }
+		if ( $at >= strlen( $text ) ) {
+			// This is an empty comment. Not a block.
+			return true;
+		}
 
-        // Blocks closers start with the solidus character (`/`).
-        if ( '/' === $text[ $at ] ) {
-            $this->block_closer = true;
-            ++$at;
-        }
+		// Blocks closers start with the solidus character (`/`).
+		if ( '/' === $text[ $at ] ) {
+			$this->block_closer = true;
+			++$at;
+		}
 
-        // Blocks start with wp.
-        if ( ! (
-            $at + 3 < strlen( $text ) &&
-            $text[ $at ] === 'w' &&
-            $text[ $at + 1 ] === 'p' &&
-            $text[ $at + 2 ] === ':'
-        ) ) {
-            return true;
-        }
+		// Blocks start with wp.
+		if ( ! (
+			$at + 3 < strlen( $text ) &&
+			$text[ $at ] === 'w' &&
+			$text[ $at + 1 ] === 'p' &&
+			$text[ $at + 2 ] === ':'
+		) ) {
+			return true;
+		}
 
-        $name_starts_at = $at;
+		$name_starts_at = $at;
 
-        // Skip wp.
-        $at += 3;
+		// Skip wp.
+		$at += 3;
 
-        // Parse the actual block name after wp.
-        $name_length = strspn( $text, 'abcdefghijklmnopqrstuwxvyzABCDEFGHIJKLMNOPRQSTUWXVYZ0123456789_-', $at );
-        if ( $name_length === 0 ) {
-            // This wasn't a block after all, just a regular comment.
-            return true;
-        }
-        $name = substr( $text, $name_starts_at, $name_length + 3 );
-        $at  += $name_length;
+		// Parse the actual block name after wp.
+		$name_length = strspn( $text, 'abcdefghijklmnopqrstuwxvyzABCDEFGHIJKLMNOPRQSTUWXVYZ0123456789_-', $at );
+		if ( $name_length === 0 ) {
+			// This wasn't a block after all, just a regular comment.
+			return true;
+		}
+		$name = substr( $text, $name_starts_at, $name_length + 3 );
+		$at  += $name_length;
 
-        // Assume no attributes by default.
-        $attributes = array();
+		// Assume no attributes by default.
+		$attributes = array();
 
-        // Skip the whitespace that follows the block name.
-        $at += strspn( $text, ' \t\f\r\n', $at );
-        if ( $at < strlen( $text ) ) {
-            // It may be a self-closing block or a block with attributes.
+		// Skip the whitespace that follows the block name.
+		$at += strspn( $text, ' \t\f\r\n', $at );
+		if ( $at < strlen( $text ) ) {
+			// It may be a self-closing block or a block with attributes.
 
-            // However, block closers can be neither – let's short-circuit.
-            if ( $this->block_closer ) {
-                return true;
-            }
+			// However, block closers can be neither – let's short-circuit.
+			if ( $this->block_closer ) {
+				return true;
+			}
 
-            // The rest of the comment can only consist of block attributes
-            // and an optional solidus character.
-            $rest = ltrim( substr( $text, $at ) );
-            $at   = strlen( $text );
+			// The rest of the comment can only consist of block attributes
+			// and an optional solidus character.
+			$rest = ltrim( substr( $text, $at ) );
+			$at   = strlen( $text );
 
-            // Inspect our potential JSON for the self-closing solidus (`/`) character.
-            $json_maybe = $rest;
-            if ( substr( $json_maybe, -1 ) === '/' ) {
-                // Self-closing block (<!-- wp:image /-->)
-                $this->self_closing_flag = true;
-                $json_maybe              = substr( $json_maybe, 0, -1 );
-            }
+			// Inspect our potential JSON for the self-closing solidus (`/`) character.
+			$json_maybe = $rest;
+			if ( substr( $json_maybe, -1 ) === '/' ) {
+				// Self-closing block (<!-- wp:image /-->)
+				$this->self_closing_flag = true;
+				$json_maybe              = substr( $json_maybe, 0, -1 );
+			}
 
-            // Let's try to parse attributes as JSON.
-            if ( strlen( $json_maybe ) > 0 ) {
-                $attributes = json_decode( $json_maybe, true );
-                if ( null === $attributes || ! is_array( $attributes ) ) {
-                    // This comment looked like a block comment, but the attributes didn't
-                    // parse as a JSON array. This means it wasn't a block after all.
-                    return true;
-                }
-            }
-        }
+			// Let's try to parse attributes as JSON.
+			if ( strlen( $json_maybe ) > 0 ) {
+				$attributes = json_decode( $json_maybe, true );
+				if ( null === $attributes || ! is_array( $attributes ) ) {
+					// This comment looked like a block comment, but the attributes didn't
+					// parse as a JSON array. This means it wasn't a block after all.
+					return true;
+				}
+			}
+		}
 
-        // We have a block name and a valid attributes array. We may not find a block
-        // closer, but let's assume is a block and process it as such.
-        // @TODO: Confirm that WordPress block parser would have parsed this as a block.
-        $this->block_name       = $name;
-        $this->block_attributes = $attributes;
+		// We have a block name and a valid attributes array. We may not find a block
+		// closer, but let's assume is a block and process it as such.
+		// @TODO: Confirm that WordPress block parser would have parsed this as a block.
+		$this->block_name       = $name;
+		$this->block_attributes = $attributes;
 
-        if ( $this->block_closer ) {
-            $popped = array_pop( $this->stack_of_open_blocks );
-            if ( $popped !== $name ) {
-                $this->last_block_error = sprintf( 'Block closer %s does not match the last opened block %s.', $name, $popped );
-                return false;
-            }
-        } elseif ( ! $this->self_closing_flag ) {
-            array_push( $this->stack_of_open_blocks, $name );
-        }
+		if ( $this->block_closer ) {
+			$popped = array_pop( $this->stack_of_open_blocks );
+			if ( $popped !== $name ) {
+				$this->last_block_error = sprintf( 'Block closer %s does not match the last opened block %s.', $name, $popped );
+				return false;
+			}
+		} elseif ( ! $this->self_closing_flag ) {
+			array_push( $this->stack_of_open_blocks, $name );
+		}
 
-        return true;
+		return true;
 	}
 
 	/**
@@ -509,11 +509,11 @@ class WP_Block_Markup_Processor extends WP_HTML_Tag_Processor {
 		}
 
 		$this->block_attributes_iterator
-            ->getSubIterator($this->block_attributes_iterator->getDepth())
-            ->offsetSet(
-                $this->get_block_attribute_key(),
-                $new_value
-            );
+			->getSubIterator( $this->block_attributes_iterator->getDepth() )
+			->offsetSet(
+				$this->get_block_attribute_key(),
+				$new_value
+			);
 		$this->block_attributes_updated = true;
 
 		return true;
