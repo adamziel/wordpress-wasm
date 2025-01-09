@@ -42,12 +42,9 @@ HTML;
                     'post_id' => 1,
                     'content' => $this->normalize_markup(<<<HTML
 <!-- wp:heading {"level":1} -->
-<h1>It is our pleasure to announce that WordPress 6.8 was released</h1>
-<!-- /wp:heading -->
-
+<h1>It is our pleasure to announce that WordPress 6.8 was released</h1><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p>Last week, WordPress 6.8 was released. </p>
-<!-- /wp:paragraph -->
+<p>Last week, WordPress 6.8 was released.</p><!-- /wp:paragraph -->
 HTML)
                 ]
             ],
@@ -55,16 +52,16 @@ HTML)
                 'type' => 'post_meta',
                 'data' => [
                     'post_id' => 1,
-                    'meta_key' => 'custom_post_meta',
-                    'meta_value' => 'custom_post_meta_value',
+                    'key' => 'custom_post_meta',
+                    'value' => 'custom_post_meta_value',
                 ]
             ],
             [
                 'type' => 'post_meta',
                 'data' => [
                     'post_id' => 1,
-                    'meta_key' => 'color_palette',
-                    'meta_value' => 'use_that_pretty_one',
+                    'key' => 'color_palette',
+                    'value' => 'use_that_pretty_one',
                 ]
             ],
         ];

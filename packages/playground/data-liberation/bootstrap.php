@@ -35,6 +35,18 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.ph
 require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
 
 if (
+	! class_exists( 'WP_HTML_Block_Parser' ) &&
+	file_exists( __DIR__ . '/src/wordpress-core-block-parser/class-wp-block-parser.php' )
+) {
+	require_once __DIR__ . '/src/wordpress-core-block-parser/class-wp-block-parser-frame.php';
+	require_once __DIR__ . '/src/wordpress-core-block-parser/class-wp-block-parser-block.php';
+	require_once __DIR__ . '/src/wordpress-core-block-parser/class-wp-block-parser.php';
+    function parse_blocks( $content ) {
+        $parser = new WP_Block_Parser();
+        return $parser->parse( $content );
+    }
+}
+if (
 	! class_exists( 'WP_HTML_Tag_Processor' ) &&
 	file_exists( __DIR__ . '/src/wordpress-core-html-api/class-wp-html-token.php' )
 ) {
