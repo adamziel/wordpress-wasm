@@ -52,12 +52,19 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
-require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Converter.php';
+require_once __DIR__ . '/src/Data_Liberation_Exception.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Blocks_With_Metadata.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Data_Format_Consumer.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Markup_Processor_Consumer.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Annotated_Block_Markup_Consumer.php';
+
+require_once __DIR__ . '/src/data-format-producers/WP_Data_Format_Producer.php';
+require_once __DIR__ . '/src/data-format-producers/WP_Annotated_Block_Markup_Producer.php';
+
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL.php';
-require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
 
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';

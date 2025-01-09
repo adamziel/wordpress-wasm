@@ -2,7 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 
-class WPHTMLToBlocksTests extends TestCase {
+class WPMarkupProcessorConsumerTests extends TestCase {
 
     public function test_metadata_extraction() {
         $html = <<<HTML
@@ -16,9 +16,9 @@ class WPHTMLToBlocksTests extends TestCase {
 <h1>WordPress 6.8 was released</h1>
 <p>Last week, WordPress 6.8 was released. This release includes a new default theme, a new block editor experience, and a new block library. It also includes a new block editor experience, and a new block library.</p>
 HTML;
-        $converter = new WP_HTML_To_Blocks( new WP_HTML_Processor( $html ) );
-        $converter->convert( $html );
-        $metadata = $converter->get_all_metadata();
+        $consumer = new WP_Markup_Processor_Consumer( new WP_HTML_Processor( $html ) );
+        $blocks_with_meta = $consumer->consume();
+        $metadata = $blocks_with_meta->get_all_metadata();
         $expected_metadata = [
             'post_title' => ['WordPress 6.8 was released'],
             'post_date' => ['2024-12-16'],
@@ -35,11 +35,10 @@ HTML;
      * @dataProvider provider_test_conversion
      */
     public function test_html_to_blocks_conversion( $html, $expected ) {
-        $converter = new WP_HTML_To_Blocks( new WP_HTML_Processor( $html ) );
-        $converter->convert( $html );
-        $blocks = $converter->get_block_markup();
+        $consumer = new WP_Markup_Processor_Consumer( new WP_HTML_Processor( $html ) );
+        $blocks_with_meta = $consumer->consume();
 
-        $this->assertEquals( $this->normalize_markup($expected), $this->normalize_markup($blocks) );
+        $this->assertEquals( $this->normalize_markup($expected), $this->normalize_markup($blocks_with_meta->get_block_markup()) );
     }
 
     private function normalize_markup( $markup ) {
@@ -131,9 +130,9 @@ HTML
 
     public function test_html_to_blocks_excerpt() {
         $input = file_get_contents( __DIR__ . '/fixtures/html-to-blocks/excerpt.input.html' );
-        $converter = new WP_HTML_To_Blocks( new WP_HTML_Processor( $input ) );
-        $converter->convert( $input );
-        $blocks = $converter->get_block_markup();
+        $consumer = new WP_Markup_Processor_Consumer( WP_HTML_Processor::create_fragment( $input ) );
+        $blocks_with_meta = $consumer->consume();
+        $blocks = $blocks_with_meta->get_block_markup();
 
         $output_file = __DIR__ . '/fixtures/html-to-blocks/excerpt.output.html';
         if (getenv('UPDATE_FIXTURES')) {
@@ -154,9 +153,9 @@ HTML
     </body>
 </html>
 XML;
-        $converter = new WP_HTML_To_Blocks( WP_XML_Processor::create_from_string( $input ) );
-        $converter->convert( $input );
-        $blocks = $converter->get_block_markup();
+        $consumer = new WP_Markup_Processor_Consumer( WP_XML_Processor::create_from_string( $input ) );
+        $blocks_with_meta = $consumer->consume();
+        $blocks = $blocks_with_meta->get_block_markup();
         $expected = <<<HTML
 <!-- wp:heading {"level":1} --><h1>Hello, world! </h1><!-- /wp:heading --><!-- wp:paragraph --><p>And some content </p><!-- /wp:paragraph -->
 HTML;

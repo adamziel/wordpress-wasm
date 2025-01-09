@@ -21,11 +21,7 @@ use League\CommonMark\Extension\Table\TableCell;
 use League\CommonMark\Extension\Table\TableRow;
 use League\CommonMark\Extension\Table\TableSection;
 
-class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
-	const STATE_READY    = 'STATE_READY';
-	const STATE_COMPLETE = 'STATE_COMPLETE';
-
-	private $state = self::STATE_READY;
+class WP_Markdown_Consumer implements WP_Data_Format_Consumer {
 	private $root_block;
 	private $block_stack   = array();
 	private $current_block = null;
@@ -33,34 +29,18 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 	private $frontmatter = array();
 	private $markdown;
 	private $parsed_blocks = array();
-	private $block_markup  = '';
+    private $parsed;
 
 	public function __construct( $markdown ) {
 		$this->markdown = $markdown;
 	}
 
-	public function convert() {
-		if ( self::STATE_READY !== $this->state ) {
-			return false;
-		}
-		$this->convert_markdown_to_blocks();
-		$this->block_markup = WP_Import_Utils::convert_blocks_to_markup( $this->parsed_blocks );
-		return true;
-	}
-
-	public function get_all_metadata() {
-		return $this->frontmatter;
-	}
-
-	public function get_first_meta_value( $key ) {
-		if ( ! array_key_exists( $key, $this->frontmatter ) ) {
-			return null;
-		}
-		return $this->frontmatter[ $key ][0];
-	}
-
-	public function get_block_markup() {
-		return $this->block_markup;
+	public function consume() {
+        if( ! $this->parsed ) {
+            $this->convert_markdown_to_blocks();
+            $this->parsed = new WP_Blocks_With_Metadata( WP_Import_Utils::convert_blocks_to_markup( $this->parsed_blocks ), $this->frontmatter );
+        }
+        return $this->parsed;
 	}
 
 	private function convert_markdown_to_blocks() {
@@ -82,7 +62,7 @@ class WP_Markdown_To_Blocks implements WP_Block_Markup_Converter {
 		$document          = $parser->parse( $this->markdown );
 		$this->frontmatter = array();
 		foreach ( $document->data as $key => $value ) {
-			// Use an array as a value to comply with the WP_Block_Markup_Converter interface.
+			// Use an array as a value to comply with the WP_Data_Format_Consumer interface.
 			$this->frontmatter[ $key ] = array( $value );
 		}
 
