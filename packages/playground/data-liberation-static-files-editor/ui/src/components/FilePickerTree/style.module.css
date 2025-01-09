@@ -1,0 +1,134 @@
+.file-picker-tree {
+	width: 100%;
+	border-collapse: collapse;
+
+	tr:nth-child(even) {
+		background-color: #f7f7f7;
+	}
+
+	&:active {
+		color: var(--wp-admin-theme-color);
+	}
+
+	/* &:focus {
+		outline: 2px solid var(--wp-admin-theme-color);
+	} */
+
+	td {
+		position: relative;
+	}
+	.more-actions {
+		position: absolute;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0;
+		max-height: 100%;
+	}
+
+	tr:hover .more-actions {
+		opacity: 1;
+	}
+
+	tr:has(.selected) .more-actions {
+		opacity: 1;
+		button {
+			color: #ffffff !important;
+		}
+	}
+}
+
+.file-node-button {
+	display: inline-flex;
+	text-decoration: none;
+	font-family: inherit;
+	font-weight: normal;
+	font-size: 13px;
+	margin: 0;
+	border: 0;
+	cursor: pointer;
+	-webkit-appearance: none;
+	background: none;
+	transition: box-shadow 0.1s linear;
+	height: 40px;
+
+	align-items: center;
+	box-sizing: border-box;
+	padding: 6px 40px 6px 12px;
+	border-radius: 2px;
+
+	width: 100%;
+	white-space: nowrap;
+	color: var(--wp-components-color-foreground, #1e1e1e);
+	background: transparent;
+	padding: 6px;
+
+	font-family: -apple-system, 'system-ui', 'Segoe UI', Roboto, Oxygen-Sans,
+		Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+	font-size: 13px;
+	font-weight: 400;
+
+	/* &:focus, */
+	&.selected {
+		background-color: var(--wp-admin-theme-color);
+		color: #ffffff;
+		outline: 0 !important;
+		box-shadow: none !important;
+	}
+
+	&.selected:active,
+	&.selected:hover {
+		color: #ffffff !important;
+	}
+}
+
+.file-node-image {
+	flex-shrink: 0;
+	width: 40px !important;
+	height: 40px !important;
+	object-fit: cover !important;
+	margin-left: auto;
+	margin-right: 28px;
+}
+
+.file-name {
+	margin-left: 10px;
+	/* @TODO: Make this dynamic */
+	max-width: 210px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.path-picker-control {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 2px;
+	display: flex;
+	align-items: center;
+	width: 230px;
+	gap: 8px;
+	cursor: pointer;
+}
+
+.selected-path {
+	width: 250px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.error-container,
+.loading-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 24px;
+}
+
+.loading-container :global(.components-spinner) {
+	width: 40px;
+	height: 40px;
+}

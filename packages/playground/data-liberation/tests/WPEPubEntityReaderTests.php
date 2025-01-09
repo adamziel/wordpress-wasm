@@ -23,7 +23,6 @@ class WPEPubEntityReaderTests extends TestCase {
         $this->assertGreaterThan( 100, strlen($entities[0]['data']['content']) );
         $this->assertGreaterThan( 1000, strlen($entities[1]['data']['content']) );
         $this->assertGreaterThan( 1000, strlen($entities[2]['data']['content']) );
-        echo $entities[2]['data']['content'];
     }
 
     public function epub_byte_reader_data_provider() {

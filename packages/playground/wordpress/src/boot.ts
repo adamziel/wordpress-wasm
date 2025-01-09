@@ -166,7 +166,7 @@ export async function bootWordPress(options: BootOptions) {
 			php,
 			cwd: requestHandler.documentRoot,
 			recreateRuntime: options.createPhpRuntime,
-			maxRequests: 400,
+			maxRequests: 40,
 		});
 
 		return php;

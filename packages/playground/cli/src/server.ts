@@ -10,59 +10,46 @@ export interface ServerOptions {
 }
 
 export async function startServer(options: ServerOptions) {
-	const app = express();
+	Bun.serve({
+		port: options.port,
+		async fetch(req: Request, res: Response) {
+			const phpResponse = await options.handleRequest({
+				url: req.url,
+				headers: parseHeaders(req),
+				method: req.method as any,
+				body: await bufferRequestBody(req),
+			});
 
-	const server = await new Promise<
-		Server<typeof IncomingMessage, typeof ServerResponse>
-	>((resolve, reject) => {
-		const server = app.listen(options.port, () => {
-			const address = server.address();
-			if (address === null || typeof address === 'string') {
-				reject(new Error('Server address is not available'));
-			} else {
-				resolve(server);
-			}
-		});
+			return new Response(phpResponse.bytes, {
+				status: phpResponse.httpStatusCode,
+				headers: phpResponse.headers,
+			});
+		},
 	});
-
-	app.use('/', async (req, res) => {
-		const phpResponse = await options.handleRequest({
-			url: req.url,
-			headers: parseHeaders(req),
-			method: req.method as any,
-			body: await bufferRequestBody(req),
-		});
-
-		res.statusCode = phpResponse.httpStatusCode;
-		for (const key in phpResponse.headers) {
-			res.setHeader(key, phpResponse.headers[key]);
-		}
-		res.end(phpResponse.bytes);
+	await new Promise((resolve) => {
+		setTimeout(() => {
+			resolve(true);
+		}, 1000);
 	});
-
-	const address = server.address();
-	const port = (address! as AddressInfo).port;
-	await options.onBind(port);
+	await options.onBind(options.port);
 }
 
 const bufferRequestBody = async (req: Request): Promise<Uint8Array> =>
-	await new Promise((resolve) => {
-		const body: Uint8Array[] = [];
-		req.on('data', (chunk) => {
-			body.push(chunk);
-		});
-		req.on('end', () => {
-			resolve(Buffer.concat(body));
-		});
-	});
+	new Uint8Array(await req.arrayBuffer());
+// await new Promise((resolve) => {
+// 	const body: Uint8Array[] = [];
+// 	req.on('data', (chunk) => {
+// 		body.push(chunk);
+// 	});
+// 	req.on('end', () => {
+// 		resolve(Buffer.concat(body));
+// 	});
+// });
 
 const parseHeaders = (req: Request): Record<string, string> => {
 	const requestHeaders: Record<string, string> = {};
-	if (req.rawHeaders && req.rawHeaders.length) {
-		for (let i = 0; i < req.rawHeaders.length; i += 2) {
-			requestHeaders[req.rawHeaders[i].toLowerCase()] =
-				req.rawHeaders[i + 1];
-		}
+	for (const [key, value] of req.headers.entries()) {
+		requestHeaders[key.toLowerCase()] = value;
 	}
 	return requestHeaders;
 };

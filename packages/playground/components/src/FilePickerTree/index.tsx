@@ -5,8 +5,9 @@ import {
 	__experimentalTreeGridCell as TreeGridCell,
 	Button,
 	Spinner,
+	DropdownMenu,
 } from '@wordpress/components';
-import { Icon, chevronRight, chevronDown } from '@wordpress/icons';
+import { Icon, chevronRight, chevronDown, more } from '@wordpress/icons';
 import '@wordpress/components/build-style/style.css';
 import css from './style.module.css';
 import classNames from 'classnames';
@@ -28,7 +29,7 @@ export type FilePickerControlProps = {
 
 type ExpandedNodePaths = Record<string, boolean>;
 
-const FilePickerTree: React.FC<FilePickerControlProps> = ({
+export const FilePickerTree: React.FC<FilePickerControlProps> = ({
 	isLoading = false,
 	error = undefined,
 	files,
@@ -155,10 +156,17 @@ const FilePickerTree: React.FC<FilePickerControlProps> = ({
 		);
 	}
 
+	const sortedFiles = [...files].sort((a, b) => {
+		if (a.type === b.type) {
+			return a.name.localeCompare(b.name);
+		}
+		return a.type === 'folder' ? -1 : 1;
+	});
+
 	return (
 		<div onKeyDown={handleKeyDown} ref={thisContainerRef}>
 			<TreeGrid className={css['filePickerTree']}>
-				{files.map((file, index) => (
+				{sortedFiles.map((file, index) => (
 					<NodeRow
 						key={file.name}
 						node={file}
@@ -245,6 +253,16 @@ const NodeRow: React.FC<{
 			}
 		}
 	};
+
+	const sortedChildren = node.children
+		? [...node.children].sort((a, b) => {
+				if (a.type === b.type) {
+					return a.name.localeCompare(b.name);
+				}
+				return a.type === 'folder' ? -1 : 1;
+		  })
+		: [];
+
 	return (
 		<>
 			<TreeGridRow
@@ -274,19 +292,35 @@ const NodeRow: React.FC<{
 								isOpen={node.type === 'folder' && isExpanded}
 								level={level}
 							/>
+							{/* @TODO: Source the path from the server to reduce code duplication and
+                                       also account for varying site path, no permalinks etc. */}
+							{isImage && (
+								<img
+									style={{ maxWidth: 32, maxHeight: 32 }}
+									src={`/wp-json/static-files-editor/v1/download-file?path=${path}`}
+								/>
+							)}
 						</Button>
+					)}
+				</TreeGridCell>
+				<TreeGridCell className={css['fileNodeActions']}>
+					{() => (
+						<DropdownMenu
+							icon={more}
+							label="More actions"
+							controls={[]}
+						/>
 					)}
 				</TreeGridCell>
 			</TreeGridRow>
 			{isExpanded &&
-				node.children &&
-				node.children.map((child, index) => (
+				sortedChildren.map((child, index) => (
 					<NodeRow
 						key={child.name}
 						node={child}
 						level={level + 1}
 						position={index + 1}
-						setSize={node.children!.length}
+						setSize={sortedChildren.length}
 						expandedNodePaths={expandedNodePaths}
 						expandNode={expandNode}
 						selectedNode={selectedNode}
@@ -321,8 +355,12 @@ const FileName: React.FC<{
 			)}
 			<Icon width={16} icon={node.type === 'folder' ? folder : file} />
 			<span className={css['fileName']}>{node.name}</span>
+			{node.post_type === 'attachment' && (
+				<img
+					className={css['fileSize']}
+					src={`https://placehold.co/16x16`}
+				/>
+			)}
 		</>
 	);
 };
-
-export default FilePickerTree;

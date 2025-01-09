@@ -418,10 +418,12 @@ class WP_Stream_Importer {
 							}
 						}
 						// @TODO: Consider using sha1 hashes to prevent huge URLs from blowing up the memory.
-						$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
+						if ( isset( $data['attachment_url'] ) ) {
+							$this->indexed_assets_urls[ $data['attachment_url'] ] = true;
+						}
 					} elseif ( isset( $data['post_content'] ) ) {
 						$post = $data;
-						$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
+						$p    = WP_Block_Markup_Url_Processor::create_from_html( $post['post_content'], $this->source_site_url );
 						while ( $p->next_url() ) {
 							if ( ! $this->url_processor_matched_asset_url( $p ) ) {
 								continue;
@@ -522,7 +524,10 @@ class WP_Stream_Importer {
 			if ( null === $this->next_stage ) {
 				$this->entity_iterator->set_entities_iterator( $this->create_entity_iterator() );
 			}
-			$this->downloader = new WP_Attachment_Downloader( $this->options['uploads_path'] );
+			$this->downloader = new WP_Attachment_Downloader(
+				$this->options['uploads_path'],
+				$this->options['attachment_downloader_options'] ?? array(),
+			);
 		}
 
 		// Clear the frontloading events from the previous pass.
@@ -585,10 +590,15 @@ class WP_Stream_Importer {
 				break;
 			case 'post':
 				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
-					$this->enqueue_attachment_download( $data['attachment_url'] );
+					if ( isset( $data['attachment_url'] ) ) {
+						$this->enqueue_attachment_download( $data['attachment_url'] );
+					} else {
+						// @TODO: Emit warning / error event
+						_doing_it_wrong( __METHOD__, 'No attachment URL or file path found in the post entity.', '1.0' );
+					}
 				} elseif ( isset( $data['post_content'] ) ) {
 					$post = $data;
-					$p    = new WP_Block_Markup_Url_Processor( $post['post_content'], $this->source_site_url );
+					$p    = WP_Block_Markup_Url_Processor::create_from_html( $post['post_content'], $this->source_site_url );
 					while ( $p->next_url() ) {
 						if ( ! $this->url_processor_matched_asset_url( $p ) ) {
 							continue;
@@ -596,7 +606,7 @@ class WP_Stream_Importer {
 						$this->enqueue_attachment_download(
 							$p->get_raw_url(),
 							array(
-								'context_path' => $post['source_path'] ?? $post['slug'] ?? null,
+								'context_path' => $post['local_file_path'] ?? $post['slug'] ?? null,
 							)
 						);
 					}
@@ -644,52 +654,66 @@ class WP_Stream_Importer {
 		switch ( $entity->get_type() ) {
 			case 'post':
 				$data = $entity->get_data();
-				foreach ( array( 'guid', 'post_content', 'post_excerpt' ) as $key ) {
-					if ( ! isset( $data[ $key ] ) ) {
-						continue;
+				if ( isset( $data['post_type'] ) && $data['post_type'] === 'attachment' ) {
+					if ( ! isset( $data['attachment_url'] ) ) {
+						// @TODO: Emit warning / error event
+						_doing_it_wrong( __METHOD__, 'No attachment URL or file path found in the post entity.', '1.0' );
+						break;
 					}
-					$p = new WP_Block_Markup_Url_Processor( $data[ $key ], $this->source_site_url );
-					while ( $p->next_url() ) {
-						// Relative URLs are okay at this stage.
-						if ( ! $p->get_raw_url() ) {
+					$asset_filename = $this->new_asset_filename(
+						$data['attachment_url'],
+						$data['local_file_path'] ?? $data['slug'] ?? null
+					);
+					unset( $data['attachment_url'] );
+					$data['local_file_path'] = $this->options['uploads_path'] . '/' . $asset_filename;
+				} else {
+					foreach ( array( 'guid', 'post_content', 'post_excerpt' ) as $key ) {
+						if ( ! isset( $data[ $key ] ) ) {
 							continue;
 						}
+						$p = WP_Block_Markup_Url_Processor::create_from_html( $data[ $key ], $this->source_site_url );
+						while ( $p->next_url() ) {
+							// Relative URLs are okay at this stage.
+							if ( ! $p->get_raw_url() ) {
+								continue;
+							}
 
-						/**
-						 * Any URL that has a corresponding frontloaded file is an asset URL.
-						 */
-						$asset_filename = $this->new_asset_filename(
-							$p->get_raw_url(),
-							$data['source_path'] ?? $data['slug'] ?? null
-						);
-						if ( file_exists( $this->options['uploads_path'] . '/' . $asset_filename ) ) {
-							$p->set_raw_url(
-								$this->options['uploads_url'] . '/' . $asset_filename
-							);
 							/**
-							 * @TODO: How would we know a specific image block refers to a specific
-							 *        attachment? We need to cross-correlate that to rewrite the URL.
-							 *        The image block could have query parameters, too, but presumably the
-							 *        path would be the same at least? What if the same file is referred
-							 *        to by two different URLs? e.g. assets.site.com and site.com/assets/ ?
-							 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
-							 *        strategy? And the API consumer would make the decision?
+							 * Any URL that has a corresponding frontloaded file is an asset URL.
 							 */
-							continue;
-						}
+							$asset_filename = $this->new_asset_filename(
+								$p->get_raw_url(),
+								$data['local_file_path'] ?? $data['slug'] ?? null
+							);
+							if ( file_exists( $this->options['uploads_path'] . '/' . $asset_filename ) ) {
+								$p->set_raw_url(
+									$this->options['uploads_url'] . '/' . $asset_filename
+								);
+								/**
+								 * @TODO: How would we know a specific image block refers to a specific
+								 *        attachment? We need to cross-correlate that to rewrite the URL.
+								 *        The image block could have query parameters, too, but presumably the
+								 *        path would be the same at least? What if the same file is referred
+								 *        to by two different URLs? e.g. assets.site.com and site.com/assets/ ?
+								 *        A few ideas: GUID, block attributes, fuzzy matching. Maybe a configurable
+								 *        strategy? And the API consumer would make the decision?
+								 */
+								continue;
+							}
 
-						// Absolute URLs are required at this stage.
-						if ( ! $p->get_parsed_url() ) {
-							continue;
-						}
+							// Absolute URLs are required at this stage.
+							if ( ! $p->get_parsed_url() ) {
+								continue;
+							}
 
-						$target_base_url = $this->get_url_mapping_target( $p->get_parsed_url() );
-						if ( false !== $target_base_url ) {
-							$p->replace_base_url( $target_base_url );
-							continue;
+							$target_base_url = $this->get_url_mapping_target( $p->get_parsed_url() );
+							if ( false !== $target_base_url ) {
+								$p->replace_base_url( $target_base_url );
+								continue;
+							}
 						}
+						$data[ $key ] = $p->get_updated_html();
 					}
-					$data[ $key ] = $p->get_updated_html();
 				}
 				$entity->set_data( $data );
 				break;

@@ -77,7 +77,6 @@ class WP_Entity_Importer {
 	 *     @var bool $prefill_existing_comments Should we prefill `comment_exists` calls? (True prefills and uses more memory, false checks once per imported comment and takes longer. Default is true.)
 	 *     @var bool $prefill_existing_terms Should we prefill `term_exists` calls? (True prefills and uses more memory, false checks once per imported term and takes longer. Default is true.)
 	 *     @var bool $update_attachment_guids Should attachment GUIDs be updated to the new URL? (True updates the GUID, which keeps compatibility with v1, false doesn't update, and allows deduplication and reimporting. Default is false.)
-	 *     @var bool $fetch_attachments Fetch attachments from the remote server. (True fetches and creates attachment posts, false skips attachments. Default is false.)
 	 *     @var int $default_author User ID to use if author is missing or invalid. (Default is null, which leaves posts unassigned.)
 	 * }
 	 */
@@ -104,7 +103,6 @@ class WP_Entity_Importer {
 				'prefill_existing_comments' => true,
 				'prefill_existing_terms'    => true,
 				'update_attachment_guids'   => false,
-				'fetch_attachments'         => false,
 				'default_author'            => null,
 			)
 		);
@@ -453,6 +451,8 @@ class WP_Entity_Importer {
 			return false;
 		}
 
+		$meta = array();
+
 		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
 		$parent_id   = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
 
@@ -464,7 +464,6 @@ class WP_Entity_Importer {
 
 		$post_type        = $data['post_type'] ?? 'post';
 		$post_type_object = get_post_type_object( $post_type );
-
 		// Is this type even valid?
 		if ( ! $post_type_object ) {
 			$this->logger->warning(
@@ -542,6 +541,7 @@ class WP_Entity_Importer {
 			'menu_order'     => true,
 			'post_type'      => true,
 			'post_password'  => true,
+			'local_file_path'           => true,
 		);
 		foreach ( $data as $key => $value ) {
 			if ( ! isset( $allowed[ $key ] ) ) {
@@ -550,31 +550,17 @@ class WP_Entity_Importer {
 
 			$postdata[ $key ] = $data[ $key ];
 		}
+		if ( ! isset( $postdata['post_date'] ) ) {
+			$postdata['post_date'] = date( 'Y-m-d H:i:s' );
+		}
+		if ( ! isset( $postdata['post_date_gmt'] ) ) {
+			$postdata['post_date_gmt'] = date( 'Y-m-d H:i:s' );
+		}
 
 		$postdata = apply_filters( 'wp_import_post_data_processed', $postdata, $data );
 
 		if ( isset( $postdata['post_type'] ) && 'attachment' === $postdata['post_type'] ) {
-			// @TODO: Do not download any attachments here. We're just inserting the data
-			//        at this point. All the downloads have already been processed by now.
-			if ( ! $this->options['fetch_attachments'] ) {
-				$this->logger->notice(
-					sprintf(
-						/* translators: %s: post title */
-						__( 'Skipping attachment "%s", fetching attachments disabled' ),
-						$data['post_title']
-					)
-				);
-				/**
-				 * Post processing skipped.
-				 *
-				 * @param array $data Raw data imported for the post.
-				 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
-				 */
-				do_action( 'wxr_importer_process_skipped_post', $data );
-				return false;
-			}
-			$remote_url = ! empty( $data['attachment_url'] ) ? $data['attachment_url'] : $data['guid'];
-			$post_id    = $this->process_attachment( $postdata, $meta, $remote_url );
+			$post_id = $this->process_attachment( $postdata, $meta );
 		} else {
 			$post_id = wp_insert_post( $postdata, true );
 			do_action( 'wp_import_insert_post', $post_id, $original_id, $postdata, $data );
@@ -757,7 +743,11 @@ class WP_Entity_Importer {
 	 * @param string $url URL to fetch attachment from
 	 * @return int|WP_Error Post ID on success, WP_Error otherwise
 	 */
-	protected function process_attachment( $post, $meta, $remote_url ) {
+	protected function process_attachment( $post, $meta ) {
+		if ( ! isset( $post['local_file_path'] ) || ! file_exists( $post['local_file_path'] ) ) {
+			return new WP_Error( 'attachment_processing_error', __( 'File does not exist', 'wordpress-importer' ) );
+		}
+
 		// try to use _wp_attached file for upload folder placement to ensure the same location as the export site
 		// e.g. location is 2003/05/image.jpg but the attachment post_date is 2010/09, see media_handle_upload()
 		$post['upload_date'] = $post['post_date'];
@@ -772,46 +762,25 @@ class WP_Entity_Importer {
 			break;
 		}
 
-		// if the URL is absolute, but does not contain address, then upload it assuming base_site_url
-		if ( preg_match( '|^/[\w\W]+$|', $remote_url ) ) {
-			$remote_url = rtrim( $this->base_url, '/' ) . $remote_url;
-		}
-
-		$upload = $this->fetch_remote_file( $remote_url, $post );
-		if ( is_wp_error( $upload ) ) {
-			return $upload;
-		}
-
-		$info = wp_check_filetype( $upload['file'] );
+		$info = wp_check_filetype( $post['local_file_path'] );
 		if ( ! $info ) {
 			return new WP_Error( 'attachment_processing_error', __( 'Invalid file type', 'wordpress-importer' ) );
 		}
 
 		$post['post_mime_type'] = $info['type'];
 
-		// WP really likes using the GUID for display. Allow updating it.
-		// See https://core.trac.wordpress.org/ticket/33386
-		if ( $this->options['update_attachment_guids'] ) {
-			$post['guid'] = $upload['url'];
-		}
-
 		// as per wp-admin/includes/upload.php
-		$post_id = wp_insert_attachment( $post, $upload['file'] );
+		$post_id = wp_insert_attachment( $post, $post['local_file_path'] );
 		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
 		}
 
-		$attachment_metadata = wp_generate_attachment_metadata( $post_id, $upload['file'] );
-		wp_update_attachment_metadata( $post_id, $attachment_metadata );
-
-		// Map this image URL later if we need to
-		$this->url_remap[ $remote_url ] = $upload['url'];
-
-		// If we have a HTTPS URL, ensure the HTTP URL gets replaced too
-		if ( substr( $remote_url, 0, 8 ) === 'https://' ) {
-			$insecure_url                     = 'http' . substr( $remote_url, 5 );
-			$this->url_remap[ $insecure_url ] = $upload['url'];
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+			include ABSPATH . 'wp-admin/includes/image.php';
 		}
+
+		$attachment_metadata = wp_generate_attachment_metadata( $post_id, $post['local_file_path'] );
+		wp_update_attachment_metadata( $post_id, $attachment_metadata );
 
 		return $post_id;
 	}
@@ -865,7 +834,7 @@ class WP_Entity_Importer {
 	 * @return int|WP_Error Number of meta items imported on success, error otherwise.
 	 */
 	public function import_post_meta( $meta_item, $post_id ) {
-		if ( empty( $meta ) ) {
+		if ( empty( $meta_item ) ) {
 			return true;
 		}
 
@@ -880,7 +849,7 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id, $post );
+		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id );
 		$value = false;
 
 		if ( '_edit_last' === $key ) {
@@ -900,7 +869,7 @@ class WP_Entity_Importer {
 				$value = maybe_unserialize( $meta_item['value'] );
 			}
 
-			add_post_meta( $post_id, $key, $value );
+			update_post_meta( $post_id, $key, $value );
 			do_action( 'import_post_meta', $post_id, $key, $value );
 
 			// if the post has a featured image, take note of this in case of remap

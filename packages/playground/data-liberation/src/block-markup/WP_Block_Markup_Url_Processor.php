@@ -18,10 +18,14 @@ class WP_Block_Markup_Url_Processor extends WP_Block_Markup_Processor {
 	private $url_in_text_node_updated;
 	private $inspected_url_attribute_idx = - 1;
 
-	public function __construct( $html, $base_url_string = null ) {
-		parent::__construct( $html );
-		$this->base_url_string = $base_url_string;
-		$this->base_url_object = $base_url_string ? WP_URL::parse( $base_url_string ) : null;
+	/**
+	 * @return WP_Block_Markup_Url_Processor
+	 */
+	public static function create_from_html( $html, $base_url_string = null ) {
+		$processor                  = new static( $html );
+		$processor->base_url_string = $base_url_string;
+		$processor->base_url_object = $base_url_string ? WP_URL::parse( $base_url_string ) : null;
+		return $processor;
 	}
 
 	public function get_updated_html(): string {

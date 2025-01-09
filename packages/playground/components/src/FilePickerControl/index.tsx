@@ -3,7 +3,7 @@ import { Button, Modal } from '@wordpress/components';
 import { PathPreview } from './PathPreview';
 import css from './style.module.css';
 import type { FileNode } from '../FilePickerTree';
-import FilePickerTree from '../FilePickerTree';
+import { FilePickerTree } from '../FilePickerTree';
 
 export function FilePickerControl({
 	value = '',

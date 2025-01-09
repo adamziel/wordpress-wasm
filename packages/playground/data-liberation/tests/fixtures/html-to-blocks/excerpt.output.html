@@ -1,0 +1,2885 @@
+<!-- wp:paragraph -->
+<p><a href="https://whatwg.org/"> <img alt="WHATWG" src="https://resources.whatwg.org/logo.svg"> </a></p><!-- /wp:paragraph --><!-- wp:heading {"level":1} -->
+<h1>HTML </h1><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>Living Standard — Last Updated 12 December 2024 </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p><a href="/"> <strong> One-Page Version </strong><code> html.spec.whatwg.org </code></a><a href="/multipage/"> <strong> Multipage Version </strong><code> /multipage </code></a><a href="/dev/"> <strong> Version for Web Devs </strong><code> /dev </code></a><a href="/print.pdf"> <strong> PDF Version </strong><code> /print.pdf </code></a><a href="https://github.com/whatwg/html/wiki/Translations"> <strong> Translations </strong><code> 日本語 • 简体中文 </code></a><a href="https://github.com/whatwg/html/blob/main/FAQ.md"> <strong> FAQ </strong><code> on GitHub </code></a><a href="https://whatwg.org/chat"> <strong> Chat </strong><code> on Matrix </code></a><a href="https://github.com/whatwg/html"> <strong> Contribute on GitHub </strong><code> whatwg/html repository </code></a><a href="https://github.com/whatwg/html/commits"> <strong> Commits </strong><code> on GitHub </code></a><a href="/commit-snapshots/aa1c505e5ec7ea0a9684bfe9e8fca1782437f895/"> <strong> Snapshot </strong><code> as of this commit </code></a><a href="https://twitter.com/htmlstandard"> <strong> Twitter Updates </strong><code> @htmlstandard </code></a><a href="https://github.com/whatwg/html/issues"> <strong> Open Issues </strong><code> filed on GitHub </code></a><a href="https://whatwg.org/newbug"> <strong> Open an Issue </strong><code> whatwg.org/newbug </code></a><a href="https://github.com/web-platform-tests/wpt/tree/master/html"> <strong> Tests </strong><code> web-platform-tests html/ </code></a><a href="https://github.com/web-platform-tests/wpt/labels/html"> <strong> Issues for Tests </strong><code> ongoing work </code></a></p><!-- /wp:paragraph --><!-- wp:heading {"level":2} -->
+<h2>Table of contents </h2><!-- /wp:heading -->
+<!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#toc-introduction"> 1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-infrastructure"> 2 Common infrastructure </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-dom"> 3 Semantics, structure, and APIs of HTML documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-semantics"> 4 The elements of HTML </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-microdata"> 5 Microdata </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-editing"> 6 User interaction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-browsers"> 7 Loading web pages </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-webappapis"> 8 Web application APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-comms"> 9 Communication </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-workers"> 10 Web workers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-worklets"> 11 Worklets </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-webstorage"> 12 Web storage </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-syntax"> 13 The HTML syntax </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-the-xhtml-syntax"> 14 The XML syntax </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-rendering"> 15 Rendering </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-obsolete"> 16 Obsolete features </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-iana"> 17 IANA considerations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-index"> Index </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-references"> References </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-acknowledgments"> Acknowledgments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#toc-ipr"> Intellectual property rights </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+<!-- wp:heading {"level":2} -->
+<h2>Full table of contents </h2><!-- /wp:heading -->
+<!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction"> 1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#abstract"> 1.1 Where does this specification fit? </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#is-this-html5?"> 1.2 Is this HTML5? </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#background"> 1.3 Background </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#audience"> 1.4 Audience </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scope"> 1.5 Scope </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#history-2"> 1.6 History </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#design-notes"> 1.7 Design notes </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#serialisability-of-script-execution"> 1.7.1 Serializability of script execution </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#compliance-with-other-specifications"> 1.7.2 Compliance with other specifications </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#extensibility"> 1.7.3 Extensibility </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#html-vs-xhtml"> 1.8 HTML vs XML syntax </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structure-of-this-specification"> 1.9 Structure of this specification </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#how-to-read-this-specification"> 1.9.1 How to read this specification </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#typographic-conventions"> 1.9.2 Typographic conventions </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-quick-introduction-to-html"> 1.10 A quick introduction to HTML </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#writing-secure-applications-with-html"> 1.10.1 Writing secure applications with HTML </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-pitfalls-to-avoid-when-using-the-scripting-apis"> 1.10.2 Common pitfalls to avoid when using the scripting APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#how-to-catch-mistakes-when-writing-html:-validators-and-conformance-checkers"> 1.10.3 How to catch mistakes when writing HTML: validators and conformance checkers </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#conformance-requirements-for-authors"> 1.11 Conformance requirements for authors </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#presentational-markup"> 1.11.1 Presentational markup </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#syntax-errors"> 1.11.2 Syntax errors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#restrictions-on-content-models-and-on-attribute-values"> 1.11.3 Restrictions on content models and on attribute values </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#suggested-reading"> 1.12 Suggested reading </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#infrastructure"> 2 Common infrastructure </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#terminology"> 2.1 Terminology </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#parallelism"> 2.1.1 Parallelism </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#resources"> 2.1.2 Resources </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#xml"> 2.1.3 XML compatibility </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dom-trees"> 2.1.4 DOM trees </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scripting-2"> 2.1.5 Scripting </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#plugins"> 2.1.6 Plugins </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#encoding-terminology"> 2.1.7 Character encodings </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#conformance-classes"> 2.1.8 Conformance classes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dependencies"> 2.1.9 Dependencies </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#extensibility-2"> 2.1.10 Extensibility </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interactions-with-xpath-and-xslt"> 2.1.11 Interactions with XPath and XSLT </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#policy-controlled-features"> 2.2 Policy-controlled features </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-microsyntaxes"> 2.3 Common microsyntaxes </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#common-parser-idioms"> 2.3.1 Common parser idioms </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#boolean-attributes"> 2.3.2 Boolean attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#keywords-and-enumerated-attributes"> 2.3.3 Keywords and enumerated attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#numbers"> 2.3.4 Numbers </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#signed-integers"> 2.3.4.1 Signed integers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#non-negative-integers"> 2.3.4.2 Non-negative integers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#floating-point-numbers"> 2.3.4.3 Floating-point numbers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#percentages-and-dimensions"> 2.3.4.4 Percentages and lengths </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nonzero-percentages-and-lengths"> 2.3.4.5 Nonzero percentages and lengths </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#lists-of-floating-point-numbers"> 2.3.4.6 Lists of floating-point numbers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#lists-of-dimensions"> 2.3.4.7 Lists of dimensions </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dates-and-times"> 2.3.5 Dates and times </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#months"> 2.3.5.1 Months </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dates"> 2.3.5.2 Dates </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#yearless-dates"> 2.3.5.3 Yearless dates </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#times"> 2.3.5.4 Times </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#local-dates-and-times"> 2.3.5.5 Local dates and times </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#time-zones"> 2.3.5.6 Time zones </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#global-dates-and-times"> 2.3.5.7 Global dates and times </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#weeks"> 2.3.5.8 Weeks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#durations"> 2.3.5.9 Durations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#vaguer-moments-in-time"> 2.3.5.10 Vaguer moments in time </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#colours"> 2.3.6 Legacy colors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#space-separated-tokens"> 2.3.7 Space-separated tokens </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comma-separated-tokens"> 2.3.8 Comma-separated tokens </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#syntax-references"> 2.3.9 References </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mq"> 2.3.10 Media queries </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unique-values"> 2.3.11 Unique internal values </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#urls"> 2.4 URLs </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#terminology-2"> 2.4.1 Terminology </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#resolving-urls"> 2.4.2 Parsing URLs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dynamic-changes-to-base-urls"> 2.4.3 Dynamic changes to base URLs </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fetching-resources"> 2.5 Fetching resources </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#terminology-3"> 2.5.1 Terminology </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#content-type-sniffing"> 2.5.2 Determining the type of a resource </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#extracting-character-encodings-from-meta-elements"> 2.5.3 Extracting character encodings from <code> meta </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cors-settings-attributes"> 2.5.4 CORS settings attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#referrer-policy-attributes"> 2.5.5 Referrer policy attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nonce-attributes"> 2.5.6 Nonce attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#lazy-loading-attributes"> 2.5.7 Lazy loading attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#blocking-attributes"> 2.5.8 Blocking attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fetch-priority-attributes"> 2.5.9 Fetch priority attributes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-dom-interfaces"> 2.6 Common DOM interfaces </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#reflecting-content-attributes-in-idl-attributes"> 2.6.1 Reflecting content attributes in IDL attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-reflect-in-specifications"> 2.6.2 Using reflect in specifications </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#collections"> 2.6.3 Collections </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-htmlallcollection-interface"> 2.6.3.1 The <code> HTMLAllCollection </code>interface </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#HTMLAllCollection-call"> 2.6.3.1.1 [[Call]] ( <var> thisArgument </var>, <var> argumentsList </var>) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-htmlformcontrolscollection-interface"> 2.6.3.2 The <code> HTMLFormControlsCollection </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-htmloptionscollection-interface"> 2.6.3.3 The <code> HTMLOptionsCollection </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-domstringlist-interface"> 2.6.4 The <code> DOMStringList </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#safe-passing-of-structured-data"> 2.7 Safe passing of structured data </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#serializable-objects"> 2.7.1 Serializable objects </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#transferable-objects"> 2.7.2 Transferable objects </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structuredserializeinternal"> 2.7.3 StructuredSerializeInternal ( <var> value </var>, <var> forStorage </var>[ , <var> memory </var>] ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structuredserialize"> 2.7.4 StructuredSerialize ( <var> value </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structuredserializeforstorage"> 2.7.5 StructuredSerializeForStorage ( <var> value </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structureddeserialize"> 2.7.6 StructuredDeserialize ( <var> serialized </var>, <var> targetRealm </var>[ , <var> memory </var>] ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structuredserializewithtransfer"> 2.7.7 StructuredSerializeWithTransfer ( <var> value </var>, <var> transferList </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structureddeserializewithtransfer"> 2.7.8 StructuredDeserializeWithTransfer ( <var> serializeWithTransferResult </var>, <var> targetRealm </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#performing-structured-clones-from-other-specifications"> 2.7.9 Performing serialization and
+   transferring from other specifications </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#structured-cloning"> 2.7.10 Structured cloning API </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dom"> 3 Semantics, structure, and APIs of HTML documents </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#documents"> 3.1 Documents </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-document-object"> 3.1.1 The <code> Document </code>object </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-documentorshadowroot-interface"> 3.1.2 The <code> DocumentOrShadowRoot </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#resource-metadata-management"> 3.1.3 Resource metadata management </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#reporting-document-loading-status"> 3.1.4 Reporting document loading status </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#render-blocking-mechanism"> 3.1.5 Render-blocking mechanism </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dom-tree-accessors"> 3.1.6 DOM tree accessors </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#elements"> 3.2 Elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#semantics-2"> 3.2.1 Semantics </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#elements-in-the-dom"> 3.2.2 Elements in the DOM </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#html-element-constructors"> 3.2.3 HTML element constructors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#element-definitions"> 3.2.4 Element definitions </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#attributes"> 3.2.4.1 Attributes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#content-models"> 3.2.5 Content models </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-nothing-content-model"> 3.2.5.1 The &quot;nothing&quot; content model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#kinds-of-content"> 3.2.5.2 Kinds of content </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#metadata-content"> 3.2.5.2.1 Metadata content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#flow-content"> 3.2.5.2.2 Flow content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sectioning-content"> 3.2.5.2.3 Sectioning content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#heading-content"> 3.2.5.2.4 Heading content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#phrasing-content"> 3.2.5.2.5 Phrasing content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#embedded-content-2"> 3.2.5.2.6 Embedded content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interactive-content"> 3.2.5.2.7 Interactive content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#palpable-content"> 3.2.5.2.8 Palpable content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-supporting-elements"> 3.2.5.2.9 Script-supporting elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#transparent-content-models"> 3.2.5.3 Transparent content models </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#paragraphs"> 3.2.5.4 Paragraphs </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#global-attributes"> 3.2.6 Global attributes </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-title-attribute"> 3.2.6.1 The <code> title </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-lang-and-xml:lang-attributes"> 3.2.6.2 The <code> lang </code>and <code> xml:lang </code>attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-translate-attribute"> 3.2.6.3 The <code> translate </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dir-attribute"> 3.2.6.4 The <code> dir </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-style-attribute"> 3.2.6.5 The <code> style </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#embedding-custom-non-visible-data-with-the-data-*-attributes"> 3.2.6.6 Embedding custom non-visible data with the <code> data-* </code>attributes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-innertext-idl-attribute"> 3.2.7 The <code> innerText </code>and <code> outerText </code>properties </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#requirements-relating-to-the-bidirectional-algorithm"> 3.2.8 Requirements relating to the bidirectional algorithm </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#authoring-conformance-criteria-for-bidirectional-algorithm-formatting-characters"> 3.2.8.1 Authoring conformance criteria for bidirectional-algorithm formatting characters </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-agent-conformance-criteria"> 3.2.8.2 User agent conformance criteria </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#wai-aria"> 3.2.9 Requirements related to ARIA and to platform accessibility APIs </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#semantics"> 4 The elements of HTML </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-root-element"> 4.1 The document element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-html-element"> 4.1.1 The <code> html </code>element </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#document-metadata"> 4.2 Document metadata </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-head-element"> 4.2.1 The <code> head </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-title-element"> 4.2.2 The <code> title </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-base-element"> 4.2.3 The <code> base </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-link-element"> 4.2.4 The <code> link </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#processing-the-media-attribute"> 4.2.4.1 Processing the <code> media </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#processing-the-type-attribute"> 4.2.4.2 Processing the <code> type </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fetching-and-processing-a-resource-from-a-link-element"> 4.2.4.3 Fetching and processing a resource
+   from a <code> link </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#processing-link-headers"> 4.2.4.4 Processing ` <code> Link </code>` headers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#early-hints"> 4.2.4.5 Early hints </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#providing-users-with-a-means-to-follow-hyperlinks-created-using-the-link-element"> 4.2.4.6 Providing users with a means to follow hyperlinks created using the <code> link </code>element </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-meta-element"> 4.2.5 The <code> meta </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#standard-metadata-names"> 4.2.5.1 Standard metadata names </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#other-metadata-names"> 4.2.5.2 Other metadata names </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#pragma-directives"> 4.2.5.3 Pragma directives </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#charset"> 4.2.5.4 Specifying the document&#039;s character encoding </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-style-element"> 4.2.6 The <code> style </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interactions-of-styling-and-scripting"> 4.2.7 Interactions of styling and scripting </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sections"> 4.3 Sections </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-body-element"> 4.3.1 The <code> body </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-article-element"> 4.3.2 The <code> article </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-section-element"> 4.3.3 The <code> section </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-nav-element"> 4.3.4 The <code> nav </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-aside-element"> 4.3.5 The <code> aside </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-h1,-h2,-h3,-h4,-h5,-and-h6-elements"> 4.3.6 The <code> h1 </code>, <code> h2 </code>, <code> h3 </code>, <code> h4 </code>, <code> h5 </code>, and <code> h6 </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-hgroup-element"> 4.3.7 The <code> hgroup </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-header-element"> 4.3.8 The <code> header </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-footer-element"> 4.3.9 The <code> footer </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-address-element"> 4.3.10 The <code> address </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#headings-and-outlines-2"> 4.3.11 Headings and outlines </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#sample-outlines"> 4.3.11.1 Sample outlines </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#exposing-outlines-to-users"> 4.3.11.2 Exposing outlines to users </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#usage-summary-2"> 4.3.12 Usage summary </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#article-or-section"> 4.3.12.1 Article or section? </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#grouping-content"> 4.4 Grouping content </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-p-element"> 4.4.1 The <code> p </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-hr-element"> 4.4.2 The <code> hr </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-pre-element"> 4.4.3 The <code> pre </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-blockquote-element"> 4.4.4 The <code> blockquote </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-ol-element"> 4.4.5 The <code> ol </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-ul-element"> 4.4.6 The <code> ul </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-menu-element"> 4.4.7 The <code> menu </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-li-element"> 4.4.8 The <code> li </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dl-element"> 4.4.9 The <code> dl </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dt-element"> 4.4.10 The <code> dt </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dd-element"> 4.4.11 The <code> dd </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-figure-element"> 4.4.12 The <code> figure </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-figcaption-element"> 4.4.13 The <code> figcaption </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-main-element"> 4.4.14 The <code> main </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-search-element"> 4.4.15 The <code> search </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-div-element"> 4.4.16 The <code> div </code>element </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-level-semantics"> 4.5 Text-level semantics </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-a-element"> 4.5.1 The <code> a </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-em-element"> 4.5.2 The <code> em </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-strong-element"> 4.5.3 The <code> strong </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-small-element"> 4.5.4 The <code> small </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-s-element"> 4.5.5 The <code> s </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-cite-element"> 4.5.6 The <code> cite </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-q-element"> 4.5.7 The <code> q </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dfn-element"> 4.5.8 The <code> dfn </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-abbr-element"> 4.5.9 The <code> abbr </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-ruby-element"> 4.5.10 The <code> ruby </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-rt-element"> 4.5.11 The <code> rt </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-rp-element"> 4.5.12 The <code> rp </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-data-element"> 4.5.13 The <code> data </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-time-element"> 4.5.14 The <code> time </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-code-element"> 4.5.15 The <code> code </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-var-element"> 4.5.16 The <code> var </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-samp-element"> 4.5.17 The <code> samp </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-kbd-element"> 4.5.18 The <code> kbd </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-sub-and-sup-elements"> 4.5.19 The <code> sub </code>and <code> sup </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-i-element"> 4.5.20 The <code> i </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-b-element"> 4.5.21 The <code> b </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-u-element"> 4.5.22 The <code> u </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-mark-element"> 4.5.23 The <code> mark </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-bdi-element"> 4.5.24 The <code> bdi </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-bdo-element"> 4.5.25 The <code> bdo </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-span-element"> 4.5.26 The <code> span </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-br-element"> 4.5.27 The <code> br </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-wbr-element"> 4.5.28 The <code> wbr </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#usage-summary"> 4.5.29 Usage summary </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#links"> 4.6 Links </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-2"> 4.6.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#links-created-by-a-and-area-elements"> 4.6.2 Links created by <code> a </code>and <code> area </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#api-for-a-and-area-elements"> 4.6.3 API for <code> a </code>and <code> area </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#following-hyperlinks"> 4.6.4 Following hyperlinks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#downloading-resources"> 4.6.5 Downloading resources </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hyperlink-auditing"> 4.6.6 Hyperlink auditing </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-ping-headers"> 4.6.6.1 The ` <code> Ping-From </code>` and ` <code> Ping-To </code>` headers </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#linkTypes"> 4.6.7 Link types </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#rel-alternate"> 4.6.7.1 Link type &quot; <code> alternate </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-author"> 4.6.7.2 Link type &quot; <code> author </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-bookmark"> 4.6.7.3 Link type &quot; <code> bookmark </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-canonical"> 4.6.7.4 Link type &quot; <code> canonical </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-dns-prefetch"> 4.6.7.5 Link type &quot; <code> dns-prefetch </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-expect"> 4.6.7.6 Link type &quot; <code> expect </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-external"> 4.6.7.7 Link type &quot; <code> external </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-help"> 4.6.7.8 Link type &quot; <code> help </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rel-icon"> 4.6.7.9 Link type &quot; <code> icon </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-license"> 4.6.7.10 Link type &quot; <code> license </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-manifest"> 4.6.7.11 Link type &quot; <code> manifest </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-modulepreload"> 4.6.7.12 Link type &quot; <code> modulepreload </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-nofollow"> 4.6.7.13 Link type &quot; <code> nofollow </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-noopener"> 4.6.7.14 Link type &quot; <code> noopener </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-noreferrer"> 4.6.7.15 Link type &quot; <code> noreferrer </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-opener"> 4.6.7.16 Link type &quot; <code> opener </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-pingback"> 4.6.7.17 Link type &quot; <code> pingback </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-preconnect"> 4.6.7.18 Link type &quot; <code> preconnect </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-prefetch"> 4.6.7.19 Link type &quot; <code> prefetch </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-preload"> 4.6.7.20 Link type &quot; <code> preload </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-privacy-policy"> 4.6.7.21 Link type &quot; <code> privacy-policy </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-search"> 4.6.7.22 Link type &quot; <code> search </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-stylesheet"> 4.6.7.23 Link type &quot; <code> stylesheet </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-tag"> 4.6.7.24 Link type &quot; <code> tag </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-terms-of-service"> 4.6.7.25 Link Type &quot; <code> terms-of-service </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sequential-link-types"> 4.6.7.26 Sequential link types </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#link-type-next"> 4.6.7.26.1 Link type &quot; <code> next </code>&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#link-type-prev"> 4.6.7.26.2 Link type &quot; <code> prev </code>&quot; </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#other-link-types"> 4.6.7.27 Other link types </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#edits"> 4.7 Edits </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-ins-element"> 4.7.1 The <code> ins </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-del-element"> 4.7.2 The <code> del </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-common-to-ins-and-del-elements"> 4.7.3 Attributes common to <code> ins </code>and <code> del </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#edits-and-paragraphs"> 4.7.4 Edits and paragraphs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#edits-and-lists"> 4.7.5 Edits and lists </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#edits-and-tables"> 4.7.6 Edits and tables </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#embedded-content"> 4.8 Embedded content </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-picture-element"> 4.8.1 The <code> picture </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-source-element"> 4.8.2 The <code> source </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-img-element"> 4.8.3 The <code> img </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#images"> 4.8.4 Images </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-3"> 4.8.4.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#adaptive-images"> 4.8.4.1.1 Adaptive images </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-common-to-source-and-img-elements"> 4.8.4.2 Attributes common to <code> source </code>, <code> img </code>, and <code> link </code>elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#srcset-attributes"> 4.8.4.2.1 Srcset attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sizes-attributes"> 4.8.4.2.2 Sizes attributes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#images-processing-model"> 4.8.4.3 Processing model </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#when-to-obtain-images"> 4.8.4.3.1 When to obtain images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#reacting-to-dom-mutations"> 4.8.4.3.2 Reacting to DOM mutations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-list-of-available-images"> 4.8.4.3.3 The list of available images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#decoding-images"> 4.8.4.3.4 Decoding images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#updating-the-image-data"> 4.8.4.3.5 Updating the image data </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#preparing-an-image-for-presentation"> 4.8.4.3.6 Preparing an image for presentation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#selecting-an-image-source"> 4.8.4.3.7 Selecting an image source </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#creating-a-source-set-from-attributes"> 4.8.4.3.8 Creating a source set from attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#updating-the-source-set"> 4.8.4.3.9 Updating the source set </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-a-srcset-attribute"> 4.8.4.3.10 Parsing a srcset attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-a-sizes-attribute"> 4.8.4.3.11 Parsing a sizes attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#normalizing-the-source-densities"> 4.8.4.3.12 Normalizing the source densities </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#reacting-to-environment-changes"> 4.8.4.3.13 Reacting to environment changes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#alt"> 4.8.4.4 Requirements for providing text to act as an alternative for images </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#general-guidelines"> 4.8.4.4.1 General guidelines </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-link-or-button-containing-nothing-but-the-image"> 4.8.4.4.2 A link or button containing nothing but the image </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-phrase-or-paragraph-with-an-alternative-graphical-representation:-charts,-diagrams,-graphs,-maps,-illustrations"> 4.8.4.4.3 A phrase or paragraph with an alternative graphical representation: charts, diagrams, graphs, maps, illustrations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-short-phrase-or-label-with-an-alternative-graphical-representation:-icons,-logos"> 4.8.4.4.4 A short phrase or label with an alternative graphical representation: icons, logos </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-that-has-been-rendered-to-a-graphic-for-typographical-effect"> 4.8.4.4.5 Text that has been rendered to a graphic for typographical effect </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-graphical-representation-of-some-of-the-surrounding-text"> 4.8.4.4.6 A graphical representation of some of the surrounding text </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ancillary-images"> 4.8.4.4.7 Ancillary images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-purely-decorative-image-that-doesn&#039;t-add-any-information"> 4.8.4.4.8 A purely decorative image that doesn&#039;t add any information </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-group-of-images-that-form-a-single-larger-picture-with-no-links"> 4.8.4.4.9 A group of images that form a single larger picture with no links </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-group-of-images-that-form-a-single-larger-picture-with-links"> 4.8.4.4.10 A group of images that form a single larger picture with links </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#a-key-part-of-the-content"> 4.8.4.4.11 A key part of the content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#an-image-not-intended-for-the-user"> 4.8.4.4.12 An image not intended for the user </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#an-image-in-an-e-mail-or-private-document-intended-for-a-specific-person-who-is-known-to-be-able-to-view-images"> 4.8.4.4.13 An image in an email or private document intended for a specific person who is known to be able to view images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#guidance-for-markup-generators"> 4.8.4.4.14 Guidance for markup generators </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#guidance-for-conformance-checkers"> 4.8.4.4.15 Guidance for conformance checkers </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-iframe-element"> 4.8.5 The <code> iframe </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-embed-element"> 4.8.6 The <code> embed </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-object-element"> 4.8.7 The <code> object </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-video-element"> 4.8.8 The <code> video </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-audio-element"> 4.8.9 The <code> audio </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-track-element"> 4.8.10 The <code> track </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#media-elements"> 4.8.11 Media elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#error-codes"> 4.8.11.1 Error codes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-of-the-media-resource"> 4.8.11.2 Location of the media resource </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mime-types"> 4.8.11.3 MIME types </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#network-states"> 4.8.11.4 Network states </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#loading-the-media-resource"> 4.8.11.5 Loading the media resource </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#offsets-into-the-media-resource"> 4.8.11.6 Offsets into the media resource </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ready-states"> 4.8.11.7 Ready states </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#playing-the-media-resource"> 4.8.11.8 Playing the media resource </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#seeking"> 4.8.11.9 Seeking </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#media-resources-with-multiple-media-tracks"> 4.8.11.10 Media resources with multiple media tracks </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#audiotracklist-and-videotracklist-objects"> 4.8.11.10.1 <code> AudioTrackList </code>and <code> VideoTrackList </code>objects </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#selecting-specific-audio-and-video-tracks-declaratively"> 4.8.11.10.2 Selecting specific audio and video tracks declaratively </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#timed-text-tracks"> 4.8.11.11 Timed text tracks </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#text-track-model"> 4.8.11.11.1 Text track model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sourcing-in-band-text-tracks"> 4.8.11.11.2 Sourcing in-band text tracks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sourcing-out-of-band-text-tracks"> 4.8.11.11.3 Sourcing out-of-band text tracks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#guidelines-for-exposing-cues-in-various-formats-as-text-track-cues"> 4.8.11.11.4 Guidelines for exposing cues in various formats as text track cues </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-track-api"> 4.8.11.11.5 Text track API </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cue-events"> 4.8.11.11.6 Event handlers for objects of the text track APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#best-practices-for-metadata-text-tracks"> 4.8.11.11.7 Best practices for metadata text tracks </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#identifying-a-track-kind-through-a-url"> 4.8.11.12 Identifying a track kind through a URL </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-interface"> 4.8.11.13 User interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#time-ranges"> 4.8.11.14 Time ranges </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-trackevent-interface"> 4.8.11.15 The <code> TrackEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mediaevents"> 4.8.11.16 Events summary </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-and-privacy-considerations"> 4.8.11.17 Security and privacy considerations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#best-practices-for-authors-using-media-elements"> 4.8.11.18 Best practices for authors using media elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#best-practices-for-implementers-of-media-elements"> 4.8.11.19 Best practices for implementers of media elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-map-element"> 4.8.12 The <code> map </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-area-element"> 4.8.13 The <code> area </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-maps"> 4.8.14 Image maps </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#authoring"> 4.8.14.1 Authoring </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-map-processing-model"> 4.8.14.2 Processing model </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mathml"> 4.8.15 MathML </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#svg-0"> 4.8.16 SVG </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dimension-attributes"> 4.8.17 Dimension attributes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tables"> 4.9 Tabular data </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-table-element"> 4.9.1 The <code> table </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#table-descriptions-techniques"> 4.9.1.1 Techniques for describing tables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#table-layout-techniques"> 4.9.1.2 Techniques for table design </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-caption-element"> 4.9.2 The <code> caption </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-colgroup-element"> 4.9.3 The <code> colgroup </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-col-element"> 4.9.4 The <code> col </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-tbody-element"> 4.9.5 The <code> tbody </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-thead-element"> 4.9.6 The <code> thead </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-tfoot-element"> 4.9.7 The <code> tfoot </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-tr-element"> 4.9.8 The <code> tr </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-td-element"> 4.9.9 The <code> td </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-th-element"> 4.9.10 The <code> th </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-common-to-td-and-th-elements"> 4.9.11 Attributes common to <code> td </code>and <code> th </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#table-processing-model"> 4.9.12 Processing model </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#forming-a-table"> 4.9.12.1 Forming a table </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#header-and-data-cell-semantics"> 4.9.12.2 Forming relationships between data cells and header cells </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#table-examples"> 4.9.13 Examples </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#forms"> 4.10 Forms </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-4"> 4.10.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#writing-a-form&#039;s-user-interface"> 4.10.1.1 Writing a form&#039;s user interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#implementing-the-server-side-processing-for-a-form"> 4.10.1.2 Implementing the server-side processing for a form </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#configuring-a-form-to-communicate-with-a-server"> 4.10.1.3 Configuring a form to communicate with a server </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#client-side-form-validation"> 4.10.1.4 Client-side form validation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#enabling-client-side-automatic-filling-of-form-controls"> 4.10.1.5 Enabling client-side automatic filling of form controls </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#improving-the-user-experience-on-mobile-devices"> 4.10.1.6 Improving the user experience on mobile devices </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-difference-between-the-field-type,-the-autofill-field-name,-and-the-input-modality"> 4.10.1.7 The difference between the field type, the autofill field name, and the input modality </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#input-author-notes"> 4.10.1.8 Date, time, and number formats </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#categories"> 4.10.2 Categories </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-form-element"> 4.10.3 The <code> form </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-label-element"> 4.10.4 The <code> label </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element"> 4.10.5 The <code> input </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#states-of-the-type-attribute"> 4.10.5.1 States of the <code> type </code>attribute </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#hidden-state-(type=hidden)"> 4.10.5.1.1 Hidden state ( <code> type=hidden </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-(type=text)-state-and-search-state-(type=search)"> 4.10.5.1.2 Text ( <code> type=text </code>) state and Search state ( <code> type=search </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#telephone-state-(type=tel)"> 4.10.5.1.3 Telephone state ( <code> type=tel </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#url-state-(type=url)"> 4.10.5.1.4 URL state ( <code> type=url </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#email-state-(type=email)"> 4.10.5.1.5 Email state ( <code> type=email </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#password-state-(type=password)"> 4.10.5.1.6 Password state ( <code> type=password </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#date-state-(type=date)"> 4.10.5.1.7 Date state ( <code> type=date </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#month-state-(type=month)"> 4.10.5.1.8 Month state ( <code> type=month </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#week-state-(type=week)"> 4.10.5.1.9 Week state ( <code> type=week </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#time-state-(type=time)"> 4.10.5.1.10 Time state ( <code> type=time </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#local-date-and-time-state-(type=datetime-local)"> 4.10.5.1.11 Local Date and Time state ( <code> type=datetime-local </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#number-state-(type=number)"> 4.10.5.1.12 Number state ( <code> type=number </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#range-state-(type=range)"> 4.10.5.1.13 Range state ( <code> type=range </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#color-state-(type=color)"> 4.10.5.1.14 Color state ( <code> type=color </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#checkbox-state-(type=checkbox)"> 4.10.5.1.15 Checkbox state ( <code> type=checkbox </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#radio-button-state-(type=radio)"> 4.10.5.1.16 Radio Button state ( <code> type=radio </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#file-upload-state-(type=file)"> 4.10.5.1.17 File Upload state ( <code> type=file </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#submit-button-state-(type=submit)"> 4.10.5.1.18 Submit Button state ( <code> type=submit </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-button-state-(type=image)"> 4.10.5.1.19 Image Button state ( <code> type=image </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#reset-button-state-(type=reset)"> 4.10.5.1.20 Reset Button state ( <code> type=reset </code>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#button-state-(type=button)"> 4.10.5.1.21 Button state ( <code> type=button </code>) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#input-impl-notes"> 4.10.5.2 Implementation notes regarding localization of form controls </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-input-element-attributes"> 4.10.5.3 Common <code> input </code>element attributes </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-maxlength-and-minlength-attributes"> 4.10.5.3.1 The <code> maxlength </code>and <code> minlength </code>attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-size-attribute"> 4.10.5.3.2 The <code> size </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-readonly-attribute"> 4.10.5.3.3 The <code> readonly </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-required-attribute"> 4.10.5.3.4 The <code> required </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-multiple-attribute"> 4.10.5.3.5 The <code> multiple </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-pattern-attribute"> 4.10.5.3.6 The <code> pattern </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-min-and-max-attributes"> 4.10.5.3.7 The <code> min </code>and <code> max </code>attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-step-attribute"> 4.10.5.3.8 The <code> step </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-list-attribute"> 4.10.5.3.9 The <code> list </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-placeholder-attribute"> 4.10.5.3.10 The <code> placeholder </code>attribute </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-input-element-apis"> 4.10.5.4 Common <code> input </code>element APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-input-element-events"> 4.10.5.5 Common event behaviors </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-button-element"> 4.10.6 The <code> button </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-select-element"> 4.10.7 The <code> select </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-datalist-element"> 4.10.8 The <code> datalist </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-optgroup-element"> 4.10.9 The <code> optgroup </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-option-element"> 4.10.10 The <code> option </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-textarea-element"> 4.10.11 The <code> textarea </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-output-element"> 4.10.12 The <code> output </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-progress-element"> 4.10.13 The <code> progress </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-meter-element"> 4.10.14 The <code> meter </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-fieldset-element"> 4.10.15 The <code> fieldset </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-legend-element"> 4.10.16 The <code> legend </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-control-infrastructure"> 4.10.17 Form control infrastructure </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#a-form-control&#039;s-value"> 4.10.17.1 A form control&#039;s value </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mutability"> 4.10.17.2 Mutability </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#association-of-controls-and-forms"> 4.10.17.3 Association of controls and forms </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-common-to-form-controls"> 4.10.18 Attributes common to form controls </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#naming-form-controls:-the-name-attribute"> 4.10.18.1 Naming form controls: the <code> name </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#submitting-element-directionality:-the-dirname-attribute"> 4.10.18.2 Submitting element directionality: the <code> dirname </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#limiting-user-input-length:-the-maxlength-attribute"> 4.10.18.3 Limiting user input length: the <code> maxlength </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#setting-minimum-input-length-requirements:-the-minlength-attribute"> 4.10.18.4 Setting minimum input length requirements: the <code> minlength </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#enabling-and-disabling-form-controls:-the-disabled-attribute"> 4.10.18.5 Enabling and disabling form controls: the <code> disabled </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-submission-attributes"> 4.10.18.6 Form submission attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#autofill"> 4.10.18.7 Autofill </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#autofilling-form-controls:-the-autocomplete-attribute"> 4.10.18.7.1 Autofilling form controls: the <code> autocomplete </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#autofill-processing-model"> 4.10.18.7.2 Processing model </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#textFieldSelection"> 4.10.19 APIs for the text control selections </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#constraints"> 4.10.20 Constraints </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#definitions"> 4.10.20.1 Definitions </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#constraint-validation"> 4.10.20.2 Constraint validation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-constraint-validation-api"> 4.10.20.3 The constraint validation API </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-forms"> 4.10.20.4 Security </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-submission-2"> 4.10.21 Form submission </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-5"> 4.10.21.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#implicit-submission"> 4.10.21.2 Implicit submission </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-submission-algorithm"> 4.10.21.3 Form submission algorithm </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#constructing-form-data-set"> 4.10.21.4 Constructing the entry list </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#selecting-a-form-submission-encoding"> 4.10.21.5 Selecting a form submission encoding </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#converting-an-entry-list-to-a-list-of-name-value-pairs"> 4.10.21.6 Converting an entry list to a list of name-value pairs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#url-encoded-form-data"> 4.10.21.7 URL-encoded form data </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#multipart-form-data"> 4.10.21.8 Multipart form data </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#plain-text-form-data"> 4.10.21.9 Plain text form data </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-submitevent-interface"> 4.10.21.10 The <code> SubmitEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-formdataevent-interface"> 4.10.21.11 The <code> FormDataEvent </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#resetting-a-form"> 4.10.22 Resetting a form </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interactive-elements"> 4.11 Interactive elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-details-element"> 4.11.1 The <code> details </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-summary-element"> 4.11.2 The <code> summary </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#commands"> 4.11.3 Commands </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#facets-2"> 4.11.3.1 Facets </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-a-element-to-define-a-command"> 4.11.3.2 Using the <code> a </code>element to define a command </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-button-element-to-define-a-command"> 4.11.3.3 Using the <code> button </code>element to define a command </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-input-element-to-define-a-command"> 4.11.3.4 Using the <code> input </code>element to define a command </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-option-element-to-define-a-command"> 4.11.3.5 Using the <code> option </code>element to define a command </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-accesskey-attribute-on-a-legend-element-to-define-a-command"> 4.11.3.6 Using the <code> accesskey </code>attribute
+   on a <code> legend </code>element to define a command </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#using-the-accesskey-attribute-to-define-a-command-on-other-elements"> 4.11.3.7 Using the <code> accesskey </code>attribute to define a command on other elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dialog-element"> 4.11.4 The <code> dialog </code>element </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scripting-3"> 4.12 Scripting </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-script-element"> 4.12.1 The <code> script </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#script-processing-model"> 4.12.1.1 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scriptingLanguages"> 4.12.1.2 Scripting languages </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#restrictions-for-contents-of-script-elements"> 4.12.1.3 Restrictions for contents of <code> script </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#inline-documentation-for-external-scripts"> 4.12.1.4 Inline documentation for external scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scriptTagXSLT"> 4.12.1.5 Interaction of <code> script </code>elements and XSLT </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-noscript-element"> 4.12.2 The <code> noscript </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-template-element"> 4.12.3 The <code> template </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#template-XSLT-XPath"> 4.12.3.1 Interaction of <code> template </code>elements with XSLT and XPath </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-slot-element"> 4.12.4 The <code> slot </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-canvas-element"> 4.12.5 The <code> canvas </code>element </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#2dcontext"> 4.12.5.1 The 2D rendering context </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#implementation-notes"> 4.12.5.1.1 Implementation notes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-canvas-state"> 4.12.5.1.2 The canvas state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#line-styles"> 4.12.5.1.3 Line styles </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-styles"> 4.12.5.1.4 Text styles </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#building-paths"> 4.12.5.1.5 Building paths </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#path2d-objects"> 4.12.5.1.6 <code> Path2D </code>objects </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#transformations"> 4.12.5.1.7 Transformations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-sources-for-2d-rendering-contexts"> 4.12.5.1.8 Image sources for 2D rendering contexts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fill-and-stroke-styles"> 4.12.5.1.9 Fill and stroke styles </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-rectangles-to-the-bitmap"> 4.12.5.1.10 Drawing rectangles to the bitmap </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-text-to-the-bitmap"> 4.12.5.1.11 Drawing text to the bitmap </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-paths-to-the-canvas"> 4.12.5.1.12 Drawing paths to the canvas </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-focus-rings-and-scrolling-paths-into-view"> 4.12.5.1.13 Drawing focus rings </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-images"> 4.12.5.1.14 Drawing images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#pixel-manipulation"> 4.12.5.1.15 Pixel manipulation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#compositing"> 4.12.5.1.16 Compositing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-smoothing"> 4.12.5.1.17 Image smoothing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shadows"> 4.12.5.1.18 Shadows </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#filters"> 4.12.5.1.19 Filters </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#working-with-externally-defined-svg-filters"> 4.12.5.1.20 Working with externally-defined SVG filters </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drawing-model"> 4.12.5.1.21 Drawing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#best-practices"> 4.12.5.1.22 Best practices </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#examples"> 4.12.5.1.23 Examples </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-imagebitmap-rendering-context"> 4.12.5.2 The <code> ImageBitmap </code>rendering context </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-6"> 4.12.5.2.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-imagebitmaprenderingcontext-interface"> 4.12.5.2.2 The <code> ImageBitmapRenderingContext </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-offscreencanvas-interface"> 4.12.5.3 The <code> OffscreenCanvas </code>interface </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-offscreen-2d-rendering-context"> 4.12.5.3.1 The offscreen 2D rendering context </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#colour-spaces-and-colour-correction"> 4.12.5.4 Color spaces and color space
+   conversion </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#serialising-bitmaps-to-a-file"> 4.12.5.5 Serializing bitmaps to a file </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-with-canvas-elements"> 4.12.5.6 Security with <code> canvas </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#premultiplied-alpha-and-the-2d-rendering-context"> 4.12.5.7 Premultiplied alpha and the 2D rendering context </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements"> 4.13 Custom elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#custom-elements-intro"> 4.13.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#custom-elements-autonomous-example"> 4.13.1.1 Creating an autonomous custom element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-face-example"> 4.13.1.2 Creating a form-associated custom element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-accessibility-example"> 4.13.1.3 Creating a custom element with default accessible roles, states, and properties </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-customized-builtin-example"> 4.13.1.4 Creating a customized built-in element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-autonomous-drawbacks"> 4.13.1.5 Drawbacks of autonomous custom elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-upgrades-examples"> 4.13.1.6 Upgrading elements after their creation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#exposing-custom-element-states"> 4.13.1.7 Exposing custom element states </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-element-conformance"> 4.13.2 Requirements for custom element constructors and
+   reactions </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-core-concepts"> 4.13.3 Core concepts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-elements-api"> 4.13.4 The <code> CustomElementRegistry </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#upgrades"> 4.13.5 Upgrades </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-element-reactions"> 4.13.6 Custom element reactions </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#element-internals"> 4.13.7 Element internals </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-elementinternals-interface"> 4.13.7.1 The <code> ElementInternals </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shadow-root-access"> 4.13.7.2 Shadow root access </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-associated-custom-elements"> 4.13.7.3 Form-associated custom elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#accessibility-semantics"> 4.13.7.4 Accessibility semantics </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-state-pseudo-class"> 4.13.7.5 Custom state pseudo-class </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#common-idioms"> 4.14 Common idioms without dedicated elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#rel-up"> 4.14.1 Breadcrumb navigation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tag-clouds"> 4.14.2 Tag clouds </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#conversations"> 4.14.3 Conversations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#footnotes"> 4.14.4 Footnotes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#disabled-elements"> 4.15 Disabled elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#selectors"> 4.16 Matching HTML elements using selectors and CSS </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#case-sensitivity-of-the-css-&#039;attr()&#039;-function"> 4.16.1 Case-sensitivity of the CSS &#039;attr()&#039; function </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#case-sensitivity-of-selectors"> 4.16.2 Case-sensitivity of selectors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#pseudo-classes"> 4.16.3 Pseudo-classes </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#microdata"> 5 Microdata </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-7"> 5.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#overview"> 5.1.1 Overview </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-basic-syntax"> 5.1.2 The basic syntax </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#typed-items"> 5.1.3 Typed items </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#global-identifiers-for-items"> 5.1.4 Global identifiers for items </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#selecting-names-when-defining-vocabularies"> 5.1.5 Selecting names when defining vocabularies </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#encoding-microdata"> 5.2 Encoding microdata </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-microdata-model"> 5.2.1 The microdata model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#items"> 5.2.2 Items </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#names:-the-itemprop-attribute"> 5.2.3 Names: the <code> itemprop </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#values"> 5.2.4 Values </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#associating-names-with-items"> 5.2.5 Associating names with items </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#microdata-and-other-namespaces"> 5.2.6 Microdata and other namespaces </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mdvocabs"> 5.3 Sample microdata vocabularies </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#vcard"> 5.3.1 vCard </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#conversion-to-vcard"> 5.3.1.1 Conversion to vCard </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#examples-2"> 5.3.1.2 Examples </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#vevent"> 5.3.2 vEvent </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#conversion-to-icalendar"> 5.3.2.1 Conversion to iCalendar </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#examples-3"> 5.3.2.2 Examples </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#licensing-works"> 5.3.3 Licensing works </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#examples-4"> 5.3.3.1 Examples </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#converting-html-to-other-formats"> 5.4 Converting HTML to other formats </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#json"> 5.4.1 JSON </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#editing"> 6 User interaction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-hidden-attribute"> 6.1 The <code> hidden </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#page-visibility"> 6.2 Page visibility </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-visibilitystateentry-interface"> 6.2.1 The <code> VisibilityStateEntry </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#inert-subtrees"> 6.3 Inert subtrees </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#modal-dialogs-and-inert-subtrees"> 6.3.1 Modal dialogs and inert subtrees </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-inert-attribute"> 6.3.2 The <code> inert </code>attribute </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tracking-user-activation"> 6.4 Tracking user activation </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#user-activation-data-model"> 6.4.1 Data model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-activation-processing-model"> 6.4.2 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-activation-gated-apis"> 6.4.3 APIs gated by user activation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-useractivation-interface"> 6.4.4 The <code> UserActivation </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-activation-user-agent-automation"> 6.4.5 User agent automation </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#activation"> 6.5 Activation behavior of elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-toggleevent-interface"> 6.5.1 The <code> ToggleEvent </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#focus"> 6.6 Focus </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-8"> 6.6.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#data-model"> 6.6.2 Data model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-tabindex-attribute"> 6.6.3 The <code> tabindex </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#focus-processing-model"> 6.6.4 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sequential-focus-navigation"> 6.6.5 Sequential focus navigation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#focus-management-apis"> 6.6.6 Focus management APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-autofocus-attribute"> 6.6.7 The <code> autofocus </code>attribute </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#assigning-keyboard-shortcuts"> 6.7 Assigning keyboard shortcuts </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-9"> 6.7.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-accesskey-attribute"> 6.7.2 The <code> accesskey </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#keyboard-shortcuts-processing-model"> 6.7.3 Processing
+   model </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#editing-2"> 6.8 Editing </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#contenteditable"> 6.8.1 Making document regions editable: The <code> contenteditable </code>content attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#making-entire-documents-editable:-the-designmode-idl-attribute"> 6.8.2 Making entire documents
+   editable: the <code> designMode </code>getter and setter </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#best-practices-for-in-page-editors"> 6.8.3 Best practices for in-page editors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#editing-apis"> 6.8.4 Editing APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#spelling-and-grammar-checking"> 6.8.5 Spelling and grammar checking </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#writing-suggestions"> 6.8.6 Writing suggestions </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#autocapitalization"> 6.8.7 Autocapitalization </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#autocorrection"> 6.8.8 Autocorrection </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#input-modalities:-the-inputmode-attribute"> 6.8.9 Input modalities: the <code> inputmode </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#input-modalities:-the-enterkeyhint-attribute"> 6.8.10 Input modalities: the <code> enterkeyhint </code>attribute </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#find-in-page"> 6.9 Find-in-page </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-10"> 6.9.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interaction-with-details-and-hidden=until-found"> 6.9.2 Interaction with <code> details </code>and <code> hidden=until-found </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interaction-with-selection"> 6.9.3 Interaction with selection </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#close-requests-and-close-watchers"> 6.10 Close requests and close watchers </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#close-requests"> 6.10.1 Close requests </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#close-watcher-infrastructure"> 6.10.2 Close watcher infrastructure </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-closewatcher-interface"> 6.10.3 The <code> CloseWatcher </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dnd"> 6.11 Drag and drop </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#event-drag"> 6.11.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-drag-data-store"> 6.11.2 The drag data store </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-datatransfer-interface"> 6.11.3 The <code> DataTransfer </code>interface </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-datatransferitemlist-interface"> 6.11.3.1 The <code> DataTransferItemList </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-datatransferitem-interface"> 6.11.3.2 The <code> DataTransferItem </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-dragevent-interface"> 6.11.4 The <code> DragEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#drag-and-drop-processing-model"> 6.11.5 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dndevents"> 6.11.6 Events summary </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-draggable-attribute"> 6.11.7 The <code> draggable </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-risks-in-the-drag-and-drop-model"> 6.11.8 Security risks in the drag-and-drop model </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-popover-attribute"> 6.12 The <code> popover </code>attribute </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-popover-target-attributes"> 6.12.1 The popover target attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#popover-light-dismiss"> 6.12.2 Popover light dismiss </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#browsers"> 7 Loading web pages </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#loading-web-pages-supporting-concepts"> 7.1 Supporting concepts </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#origin"> 7.1.1 Origins </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#sites"> 7.1.1.1 Sites </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#relaxing-the-same-origin-restriction"> 7.1.1.2 Relaxing the same-origin restriction </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#origin-keyed-agent-clusters"> 7.1.2 Origin-keyed agent clusters </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cross-origin-opener-policies"> 7.1.3 Cross-origin opener policies </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-coop-headers"> 7.1.3.1 The headers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#browsing-context-group-switches-due-to-cross-origin-opener-policy"> 7.1.3.2 Browsing context group
+   switches due to opener policy </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#coop-reporting"> 7.1.3.3 Reporting </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#coep"> 7.1.4 Cross-origin embedder policies </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-coep-headers"> 7.1.4.1 The headers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#embedder-policy-checks"> 7.1.4.2 Embedder policy checks </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sandboxing"> 7.1.5 Sandboxing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#policy-containers"> 7.1.6 Policy containers </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nav-traversal-apis"> 7.2 APIs related to navigation and
+   session history </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#cross-origin-objects"> 7.2.1 Security infrastructure for <code> Window </code>, <code> WindowProxy </code>, and <code> Location </code>objects </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#integration-with-idl"> 7.2.1.1 Integration with IDL </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-internal-slot:-crossoriginpropertydescriptormap"> 7.2.1.2 Shared internal slot: [[CrossOriginPropertyDescriptorMap]] </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-abstract-operations"> 7.2.1.3 Shared abstract operations </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#crossoriginproperties-(-o-)"> 7.2.1.3.1 CrossOriginProperties ( <var> O </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#crossoriginpropertyfallback-(-p-)"> 7.2.1.3.2 CrossOriginPropertyFallback ( <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#isplatformobjectsameorigin-(-o-)"> 7.2.1.3.3 IsPlatformObjectSameOrigin ( <var> O </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#crossorigingetownpropertyhelper-(-o,-p-)"> 7.2.1.3.4 CrossOriginGetOwnPropertyHelper ( <var> O </var>, <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#crossoriginget-(-o,-p,-receiver-)"> 7.2.1.3.5 CrossOriginGet ( <var> O </var>, <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#crossoriginset-(-o,-p,-v,-receiver-)"> 7.2.1.3.6 CrossOriginSet ( <var> O </var>, <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#crossoriginownpropertykeys-(-o-)"> 7.2.1.3.7 CrossOriginOwnPropertyKeys ( <var> O </var>) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-window-object"> 7.2.2 The <code> Window </code>object </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#apis-for-creating-and-navigating-browsing-contexts-by-name"> 7.2.2.1 Opening and closing windows </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#accessing-other-browsing-contexts"> 7.2.2.2 Indexed access on the <code> Window </code>object </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#named-access-on-the-window-object"> 7.2.2.3 Named access on the <code> Window </code>object </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigating-nested-browsing-contexts-in-the-dom"> 7.2.2.4 Accessing related windows </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#browser-interface-elements"> 7.2.2.5 Historical browser interface element APIs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-settings-for-window-objects"> 7.2.2.6 Script settings for <code> Window </code>objects </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-windowproxy-exotic-object"> 7.2.3 The <code> WindowProxy </code>exotic object </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#windowproxy-getprototypeof"> 7.2.3.1 [[GetPrototypeOf]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-setprototypeof"> 7.2.3.2 [[SetPrototypeOf]] ( <var> V </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-isextensible"> 7.2.3.3 [[IsExtensible]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-preventextensions"> 7.2.3.4 [[PreventExtensions]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-getownproperty"> 7.2.3.5 [[GetOwnProperty]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-defineownproperty"> 7.2.3.6 [[DefineOwnProperty]] ( <var> P </var>, <var> Desc </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-get"> 7.2.3.7 [[Get]] ( <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-set"> 7.2.3.8 [[Set]] ( <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-delete"> 7.2.3.9 [[Delete]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windowproxy-ownpropertykeys"> 7.2.3.10 [[OwnPropertyKeys]] ( ) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-location-interface"> 7.2.4 The <code> Location </code>interface </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#location-getprototypeof"> 7.2.4.1 [[GetPrototypeOf]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-setprototypeof"> 7.2.4.2 [[SetPrototypeOf]] ( <var> V </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-isextensible"> 7.2.4.3 [[IsExtensible]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-preventextensions"> 7.2.4.4 [[PreventExtensions]] ( ) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-getownproperty"> 7.2.4.5 [[GetOwnProperty]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-defineownproperty"> 7.2.4.6 [[DefineOwnProperty]] ( <var> P </var>, <var> Desc </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-get"> 7.2.4.7 [[Get]] ( <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-set"> 7.2.4.8 [[Set]] ( <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-delete"> 7.2.4.9 [[Delete]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#location-ownpropertykeys"> 7.2.4.10 [[OwnPropertyKeys]] ( ) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-history-interface"> 7.2.5 The <code> History </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-api"> 7.2.6 The navigation API </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#navigation-api-intro"> 7.2.6.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-interface"> 7.2.6.2 The <code> Navigation </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-api-core"> 7.2.6.3 Core infrastructure </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-api-entry-updates"> 7.2.6.4 Initializing and updating the entry list </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-navigationhistoryentry-interface"> 7.2.6.5 The <code> NavigationHistoryEntry </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-history-entry-list"> 7.2.6.6 The history entry list </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-api-initiating-navigations"> 7.2.6.7 Initiating navigations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ongoing-navigation-tracking"> 7.2.6.8 Ongoing navigation tracking </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-activation-interface"> 7.2.6.9 The <code> NavigationActivation </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-navigate-event"> 7.2.6.10 The <code> navigate </code>event </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-navigateevent-interface"> 7.2.6.10.1 The <code> NavigateEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-navigationdestination-interface"> 7.2.6.10.2 The <code> NavigationDestination </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigate-event-firing"> 7.2.6.10.3 Firing the event </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigate-event-scroll-focus"> 7.2.6.10.4 Scroll and focus behavior </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nav-traversal-event-interfaces"> 7.2.7 Event interfaces </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-navigationcurrententrychangeevent-interface"> 7.2.7.1 The <code> NavigationCurrentEntryChangeEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-popstateevent-interface"> 7.2.7.2 The <code> PopStateEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-hashchangeevent-interface"> 7.2.7.3 The <code> HashChangeEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-pageswapevent-interface"> 7.2.7.4 The <code> PageSwapEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-pagerevealevent-interface"> 7.2.7.5 The <code> PageRevealEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-pagetransitionevent-interface"> 7.2.7.6 The <code> PageTransitionEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-beforeunloadevent-interface"> 7.2.7.7 The <code> BeforeUnloadEvent </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-notrestoredreasons-interface"> 7.2.8 The <code> NotRestoredReasons </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#infrastructure-for-sequences-of-documents"> 7.3 Infrastructure for sequences of documents </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#navigables"> 7.3.1 Navigables </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#traversable-navigables"> 7.3.1.1 Traversable navigables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#top-level-traversables"> 7.3.1.2 Top-level traversables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#child-navigables"> 7.3.1.3 Child navigables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#jake-diagrams"> 7.3.1.4 Jake diagrams </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#related-navigable-collections"> 7.3.1.5 Related navigable collections </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#garbage-collection-and-browsing-contexts"> 7.3.1.6 Navigable destruction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigable-target-names"> 7.3.1.7 Navigable target names </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windows"> 7.3.2 Browsing contexts </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#creating-browsing-contexts"> 7.3.2.1 Creating browsing contexts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nested-browsing-contexts"> 7.3.2.2 Related browsing contexts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#groupings-of-browsing-contexts"> 7.3.2.3 Groupings of browsing contexts </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fully-active-documents"> 7.3.3 Fully active documents </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigation-and-session-history"> 7.4 Navigation and session
+   history </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#session-history-infrastructure"> 7.4.1 Session history </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#session-history-entries"> 7.4.1.1 Session history entries </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#document-state"> 7.4.1.2 Document state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#centralized-modifications-of-session-history"> 7.4.1.3 Centralized modifications of session history </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#low-level-operations-on-session-history"> 7.4.1.4 Low-level operations on session history </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigating-across-documents"> 7.4.2 Navigation </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#navigation-supporting-concepts"> 7.4.2.1 Supporting concepts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#beginning-navigation"> 7.4.2.2 Beginning navigation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ending-navigation"> 7.4.2.3 Ending navigation </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-usual-cross-document-navigation-case"> 7.4.2.3.1 The usual cross-document navigation case </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-javascript:-url-special-case"> 7.4.2.3.2 The <code> javascript: </code>URL special case </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scroll-to-fragid"> 7.4.2.3.3 Fragment navigations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#non-fetch-schemes-and-external-software"> 7.4.2.3.4 Non-fetch schemes and external software </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#preventing-navigation"> 7.4.2.4 Preventing navigation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#aborting-navigation"> 7.4.2.5 Aborting navigation </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#reloading-and-traversing"> 7.4.3 Reloading and traversing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigate-non-frag-sync"> 7.4.4 Non-fragment synchronous &quot;navigations&quot; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#populating-a-session-history-entry"> 7.4.5 Populating a session history entry </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#applying-the-history-step"> 7.4.6 Applying the history step </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#updating-the-traversable"> 7.4.6.1 Updating the traversable </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#updating-the-document"> 7.4.6.2 Updating the document </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#revealing-the-document"> 7.4.6.3 Revealing the document </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scrolling-to-a-fragment"> 7.4.6.4 Scrolling to a fragment </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#persisted-user-state-restoration"> 7.4.6.5 Persisted history entry state </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#document-lifecycle"> 7.5 Document lifecycle </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#shared-document-creation-infrastructure"> 7.5.1 Shared document creation infrastructure </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-html"> 7.5.2 Loading HTML documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-xml"> 7.5.3 Loading XML documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-text"> 7.5.4 Loading text documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-multipart-x-mixed-replace"> 7.5.5 Loading <code> multipart/x-mixed-replace </code>documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-media"> 7.5.6 Loading media documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#read-ua-inline"> 7.5.7 Loading a document for inline content that doesn&#039;t have a
+   DOM </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#loading-documents"> 7.5.8 Finishing the loading process </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unloading-documents"> 7.5.9 Unloading documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#destroying-documents"> 7.5.10 Destroying documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#aborting-a-document-load"> 7.5.11 Aborting a document load </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-x-frame-options-header"> 7.6 The ` <code> X-Frame-Options </code>` header </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-refresh-header"> 7.7 The ` <code> Refresh </code>` header </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#nav-traversal-ui"> 7.8 Browser user interface
+   considerations </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#webappapis"> 8 Web application APIs </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#scripting"> 8.1 Scripting </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-11"> 8.1.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#agents-and-agent-clusters"> 8.1.2 Agents and agent clusters </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#integration-with-the-javascript-agent-formalism"> 8.1.2.1 Integration with the JavaScript agent formalism </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#integration-with-the-javascript-agent-cluster-formalism"> 8.1.2.2 Integration with the JavaScript agent cluster formalism </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#realms-and-their-counterparts"> 8.1.3 Realms and their counterparts </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#environments"> 8.1.3.1 Environments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#environment-settings-objects"> 8.1.3.2 Environment settings objects </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#realms-settings-objects-global-objects"> 8.1.3.3 Realms, settings objects, and global objects </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#entry"> 8.1.3.3.1 Entry </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#incumbent"> 8.1.3.3.2 Incumbent </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#current"> 8.1.3.3.3 Current </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#relevant"> 8.1.3.3.4 Relevant </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#enabling-and-disabling-scripting"> 8.1.3.4 Enabling and disabling scripting </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#secure-contexts"> 8.1.3.5 Secure contexts </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scripting-processing-model"> 8.1.4 Script processing
+   model </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#script-structs"> 8.1.4.1 Scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#fetching-scripts"> 8.1.4.2 Fetching scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#creating-scripts"> 8.1.4.3 Creating scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#calling-scripts"> 8.1.4.4 Calling scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#killing-scripts"> 8.1.4.5 Killing scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#runtime-script-errors"> 8.1.4.6 Runtime script errors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unhandled-promise-rejections"> 8.1.4.7 Unhandled promise rejections </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#import-map-parse-results"> 8.1.4.8 Import map parse results </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#module-specifier-resolution"> 8.1.5 Module specifier resolution </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-resolution-algorithm"> 8.1.5.1 The resolution algorithm </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#import-maps"> 8.1.5.2 Import maps </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#import-map-processing-model"> 8.1.5.3 Import map processing model </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#javascript-specification-host-hooks"> 8.1.6 JavaScript specification host hooks </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-hostensurecanaddprivateelement-implementation"> 8.1.6.1 HostEnsureCanAddPrivateElement( <var> O </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostensurecancompilestrings(realm,-parameterstrings,-bodystring,-codestring,-compilationtype,-parameterargs,-bodyarg)"> 8.1.6.2 HostEnsureCanCompileStrings( <var> realm </var>, <var> parameterStrings </var>, <var> bodyString </var>, <var> codeString </var>, <var> compilationType </var>, <var> parameterArgs </var>, <var> bodyArg </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostgetcodeforeval(argument)"> 8.1.6.3 HostGetCodeForEval( <var> argument </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-hostpromiserejectiontracker-implementation"> 8.1.6.4 HostPromiseRejectionTracker( <var> promise </var>, <var> operation </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostsystemutcepochnanoseconds"> 8.1.6.5 HostSystemUTCEpochNanoseconds( <var> global </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#integration-with-javascript-jobs"> 8.1.6.6 Job-related host hooks </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#hostcalljobcallback"> 8.1.6.6.1 HostCallJobCallback( <var> callback </var>, <var> V </var>, <var> argumentsList </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostenqueuefinalizationregistrycleanupjob"> 8.1.6.6.2 HostEnqueueFinalizationRegistryCleanupJob( <var> finalizationRegistry </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostenqueuegenericjob"> 8.1.6.6.3 HostEnqueueGenericJob( <var> job </var>, <var> realm </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostenqueuepromisejob"> 8.1.6.6.4 HostEnqueuePromiseJob( <var> job </var>, <var> realm </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostenqueuetimeoutjob"> 8.1.6.6.5 HostEnqueueTimeoutJob( <var> job </var>, <var> realm </var>, <var> milliseconds </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostmakejobcallback"> 8.1.6.6.6 HostMakeJobCallback( <var> callable </var>) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#integration-with-the-javascript-module-system"> 8.1.6.7 Module-related host hooks </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#hostgetimportmetaproperties"> 8.1.6.7.1 HostGetImportMetaProperties( <var> moduleRecord </var>) </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostgetsupportedimportattributes"> 8.1.6.7.2 HostGetSupportedImportAttributes() </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hostloadimportedmodule"> 8.1.6.7.3 HostLoadImportedModule( <var> referrer </var>, <var> moduleRequest </var>, <var> loadState </var>, <var> payload </var>) </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-loops"> 8.1.7 Event loops </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#definitions-3"> 8.1.7.1 Definitions </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#queuing-tasks"> 8.1.7.2 Queuing tasks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-loop-processing-model"> 8.1.7.3 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#generic-task-sources"> 8.1.7.4 Generic task sources </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-loop-for-spec-authors"> 8.1.7.5 Dealing with the event loop from other specifications </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#events"> 8.1.8 Events </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#event-handler-attributes"> 8.1.8.1 Event handlers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-handlers-on-elements,-document-objects,-and-window-objects"> 8.1.8.2 Event handlers on elements, <code> Document </code>objects, and <code> Window </code>objects </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#idl-definitions"> 8.1.8.2.1 IDL definitions </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-firing"> 8.1.8.3 Event firing </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#windoworworkerglobalscope-mixin"> 8.2 The <code> WindowOrWorkerGlobalScope </code>mixin </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#atob"> 8.3 Base64 utility methods </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dynamic-markup-insertion"> 8.4 Dynamic markup insertion </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#opening-the-input-stream"> 8.4.1 Opening the input stream </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#closing-the-input-stream"> 8.4.2 Closing the input stream </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#document.write()"> 8.4.3 <code> document.write() </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#document.writeln()"> 8.4.4 <code> document.writeln() </code></a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dom-parsing-and-serialization"> 8.5 DOM parsing and serialization APIs </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-domparser-interface"> 8.5.1 The <code> DOMParser </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unsafe-html-parsing-methods"> 8.5.2 Unsafe HTML parsing methods </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#html-serialization-methods"> 8.5.3 HTML serialization methods </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-innerhtml-property"> 8.5.4 The <code> innerHTML </code>property </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-outerhtml-property"> 8.5.5 The <code> outerHTML </code>property </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-insertadjacenthtml()-method"> 8.5.6 The <code> insertAdjacentHTML() </code>method </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-createcontextualfragment()-method"> 8.5.7 The <code> createContextualFragment() </code>method </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#timers"> 8.6 Timers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#microtask-queuing"> 8.7 Microtask queuing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-prompts"> 8.8 User prompts </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#simple-dialogs"> 8.8.1 Simple dialogs </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#printing"> 8.8.2 Printing </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#system-state-and-capabilities"> 8.9 System state and capabilities </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-navigator-object"> 8.9.1 The <code> Navigator </code>object </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#client-identification"> 8.9.1.1 Client identification </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#language-preferences"> 8.9.1.2 Language preferences </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigator.online"> 8.9.1.3 Browser state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#custom-handlers"> 8.9.1.4 Custom scheme handlers: the <code> registerProtocolHandler() </code>method </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#security-and-privacy"> 8.9.1.4.1 Security and privacy </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-agent-automation"> 8.9.1.4.2 User agent automation </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cookies"> 8.9.1.5 Cookies </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#pdf-viewing-support"> 8.9.1.6 PDF viewing support </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#images-2"> 8.10 Images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#animation-frames"> 8.11 Animation frames </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comms"> 9 Communication </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-messageevent-interface"> 9.1 The <code> MessageEvent </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#server-sent-events"> 9.2 Server-sent events </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#server-sent-events-intro"> 9.2.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-eventsource-interface"> 9.2.2 The <code> EventSource </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sse-processing-model"> 9.2.3 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-last-event-id-header"> 9.2.4 The ` <code> Last-Event-ID </code>` header </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-an-event-stream"> 9.2.5 Parsing an event stream </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#event-stream-interpretation"> 9.2.6 Interpreting an event stream </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#authoring-notes"> 9.2.7 Authoring notes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#eventsource-push"> 9.2.8 Connectionless push and other features </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#garbage-collection"> 9.2.9 Garbage collection </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#implementation-advice"> 9.2.10 Implementation advice </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#web-messaging"> 9.3 Cross-document messaging </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-12"> 9.3.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-postmsg"> 9.3.2 Security </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#authors"> 9.3.2.1 Authors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#user-agents"> 9.3.2.2 User agents </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#posting-messages"> 9.3.3 Posting messages </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#channel-messaging"> 9.4 Channel messaging </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-13"> 9.4.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#examples-5"> 9.4.1.1 Examples </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ports-as-the-basis-of-an-object-capability-model-on-the-web"> 9.4.1.2 Ports as the basis of an object-capability model on the web </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ports-as-the-basis-of-abstracting-out-service-implementations"> 9.4.1.3 Ports as the basis of abstracting out service implementations </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#message-channels"> 9.4.2 Message channels </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-messageeventtarget-mixin"> 9.4.3 The <code> MessageEventTarget </code>mixin </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#message-ports"> 9.4.4 Message ports </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ports-and-garbage-collection"> 9.4.5 Ports and garbage collection </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#broadcasting-to-other-browsing-contexts"> 9.5 Broadcasting to other browsing contexts </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#workers"> 10 Web workers </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-14"> 10.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#scope-2"> 10.1.1 Scope </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#examples-6"> 10.1.2 Examples </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#a-background-number-crunching-worker"> 10.1.2.1 A background number-crunching worker </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#module-worker-example"> 10.1.2.2 Using a JavaScript module as a worker </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-workers-introduction"> 10.1.2.3 Shared workers introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-state-using-a-shared-worker"> 10.1.2.4 Shared state using a shared worker </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#delegation"> 10.1.2.5 Delegation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#providing-libraries"> 10.1.2.6 Providing libraries </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tutorials"> 10.1.3 Tutorials </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#creating-a-dedicated-worker"> 10.1.3.1 Creating a dedicated worker </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#communicating-with-a-dedicated-worker"> 10.1.3.2 Communicating with a dedicated worker </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-workers"> 10.1.3.3 Shared workers </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#infrastructure-2"> 10.2 Infrastructure </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-global-scope"> 10.2.1 The global scope </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-workerglobalscope-common-interface"> 10.2.1.1 The <code> WorkerGlobalScope </code>common interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dedicated-workers-and-the-dedicatedworkerglobalscope-interface"> 10.2.1.2 Dedicated workers and the <code> DedicatedWorkerGlobalScope </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-workers-and-the-sharedworkerglobalscope-interface"> 10.2.1.3 Shared workers and the <code> SharedWorkerGlobalScope </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worker-event-loop"> 10.2.2 The event loop </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-worker&#039;s-lifetime"> 10.2.3 The worker&#039;s lifetime </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worker-processing-model"> 10.2.4 Processing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#runtime-script-errors-2"> 10.2.5 Runtime script errors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#creating-workers"> 10.2.6 Creating workers </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-abstractworker-mixin"> 10.2.6.1 The <code> AbstractWorker </code>mixin </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-settings-for-workers"> 10.2.6.2 Script settings for workers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#dedicated-workers-and-the-worker-interface"> 10.2.6.3 Dedicated workers and the <code> Worker </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#shared-workers-and-the-sharedworker-interface"> 10.2.6.4 Shared workers and the <code> SharedWorker </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#navigator.hardwareconcurrency"> 10.2.7 Concurrent hardware capabilities </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#apis-available-to-workers"> 10.3 APIs available to workers </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#importing-scripts-and-libraries"> 10.3.1 Importing scripts and libraries </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-workernavigator-object"> 10.3.2 The <code> WorkerNavigator </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worker-locations"> 10.3.3 The <code> WorkerLocation </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets"> 11 Worklets </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#worklets-intro"> 11.1 Introduction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#worklets-motivations"> 11.1.1 Motivations </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-idempotent"> 11.1.2 Code idempotence </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-speculative"> 11.1.3 Speculative evaluation </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-examples"> 11.2 Examples </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#worklets-examples-loading"> 11.2.1 Loading scripts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-example-registering"> 11.2.2 Registering a class and invoking its methods </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-infrastructure"> 11.3 Infrastructure </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#worklets-global"> 11.3.1 The global scope </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#worklet-agents-and-event-loops"> 11.3.1.1 Agents and event loops </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-creation-termination"> 11.3.1.2 Creation and termination </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-settings-for-worklets"> 11.3.1.3 Script settings for worklets </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-worklet"> 11.3.2 The <code> Worklet </code>class </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#worklets-lifetime"> 11.3.3 The worklet&#039;s lifetime </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#webstorage"> 12 Web storage </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-15"> 12.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#storage"> 12.2 The API </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-storage-interface"> 12.2.1 The <code> Storage </code>interface </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-sessionstorage-attribute"> 12.2.2 The <code> sessionStorage </code>getter </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-localstorage-attribute"> 12.2.3 The <code> localStorage </code>getter </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-storageevent-interface"> 12.2.4 The <code> StorageEvent </code>interface </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#privacy"> 12.3 Privacy </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#user-tracking"> 12.3.1 User tracking </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sensitivity-of-data"> 12.3.2 Sensitivity of data </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#security-storage"> 12.4 Security </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#dns-spoofing-attacks"> 12.4.1 DNS spoofing attacks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cross-directory-attacks"> 12.4.2 Cross-directory attacks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#implementation-risks"> 12.4.3 Implementation risks </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#syntax"> 13 The HTML syntax </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#writing"> 13.1 Writing HTML documents </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-doctype"> 13.1.1 The DOCTYPE </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#elements-2"> 13.1.2 Elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#start-tags"> 13.1.2.1 Start tags </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#end-tags"> 13.1.2.2 End tags </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-2"> 13.1.2.3 Attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#optional-tags"> 13.1.2.4 Optional tags </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#element-restrictions"> 13.1.2.5 Restrictions on content models </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cdata-rcdata-restrictions"> 13.1.2.6 Restrictions on the contents of raw text and escapable raw text elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-2"> 13.1.3 Text </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#newlines"> 13.1.3.1 Newlines </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#character-references"> 13.1.4 Character references </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cdata-sections"> 13.1.5 CDATA sections </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comments"> 13.1.6 Comments </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing"> 13.2 Parsing HTML documents </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#overview-of-the-parsing-model"> 13.2.1 Overview of the parsing model </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parse-errors"> 13.2.2 Parse errors </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-byte-stream"> 13.2.3 The input byte stream </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#parsing-with-a-known-character-encoding"> 13.2.3.1 Parsing with a known character encoding </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#determining-the-character-encoding"> 13.2.3.2 Determining the character encoding </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#character-encodings"> 13.2.3.3 Character encodings </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#changing-the-encoding-while-parsing"> 13.2.3.4 Changing the encoding while parsing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#preprocessing-the-input-stream"> 13.2.3.5 Preprocessing the input stream </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parse-state"> 13.2.4 Parse state </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-insertion-mode"> 13.2.4.1 The insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-stack-of-open-elements"> 13.2.4.2 The stack of open elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-list-of-active-formatting-elements"> 13.2.4.3 The list of active formatting elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-element-pointers"> 13.2.4.4 The element pointers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#other-parsing-state-flags"> 13.2.4.5 Other parsing state flags </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tokenization"> 13.2.5 Tokenization </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#data-state"> 13.2.5.1 Data state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rcdata-state"> 13.2.5.2 RCDATA state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rawtext-state"> 13.2.5.3 RAWTEXT state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-state"> 13.2.5.4 Script data state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#plaintext-state"> 13.2.5.5 PLAINTEXT state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tag-open-state"> 13.2.5.6 Tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#end-tag-open-state"> 13.2.5.7 End tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tag-name-state"> 13.2.5.8 Tag name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rcdata-less-than-sign-state"> 13.2.5.9 RCDATA less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rcdata-end-tag-open-state"> 13.2.5.10 RCDATA end tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rcdata-end-tag-name-state"> 13.2.5.11 RCDATA end tag name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rawtext-less-than-sign-state"> 13.2.5.12 RAWTEXT less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rawtext-end-tag-open-state"> 13.2.5.13 RAWTEXT end tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rawtext-end-tag-name-state"> 13.2.5.14 RAWTEXT end tag name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-less-than-sign-state"> 13.2.5.15 Script data less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-end-tag-open-state"> 13.2.5.16 Script data end tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-end-tag-name-state"> 13.2.5.17 Script data end tag name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escape-start-state"> 13.2.5.18 Script data escape start state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escape-start-dash-state"> 13.2.5.19 Script data escape start dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-state"> 13.2.5.20 Script data escaped state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-dash-state"> 13.2.5.21 Script data escaped dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-dash-dash-state"> 13.2.5.22 Script data escaped dash dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-less-than-sign-state"> 13.2.5.23 Script data escaped less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-end-tag-open-state"> 13.2.5.24 Script data escaped end tag open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-escaped-end-tag-name-state"> 13.2.5.25 Script data escaped end tag name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escape-start-state"> 13.2.5.26 Script data double escape start state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escaped-state"> 13.2.5.27 Script data double escaped state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escaped-dash-state"> 13.2.5.28 Script data double escaped dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escaped-dash-dash-state"> 13.2.5.29 Script data double escaped dash dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escaped-less-than-sign-state"> 13.2.5.30 Script data double escaped less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#script-data-double-escape-end-state"> 13.2.5.31 Script data double escape end state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#before-attribute-name-state"> 13.2.5.32 Before attribute name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attribute-name-state"> 13.2.5.33 Attribute name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-attribute-name-state"> 13.2.5.34 After attribute name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#before-attribute-value-state"> 13.2.5.35 Before attribute value state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attribute-value-(double-quoted)-state"> 13.2.5.36 Attribute value (double-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attribute-value-(single-quoted)-state"> 13.2.5.37 Attribute value (single-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attribute-value-(unquoted)-state"> 13.2.5.38 Attribute value (unquoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-attribute-value-(quoted)-state"> 13.2.5.39 After attribute value (quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#self-closing-start-tag-state"> 13.2.5.40 Self-closing start tag state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#bogus-comment-state"> 13.2.5.41 Bogus comment state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#markup-declaration-open-state"> 13.2.5.42 Markup declaration open state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-start-state"> 13.2.5.43 Comment start state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-start-dash-state"> 13.2.5.44 Comment start dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-state"> 13.2.5.45 Comment state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-less-than-sign-state"> 13.2.5.46 Comment less-than sign state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-less-than-sign-bang-state"> 13.2.5.47 Comment less-than sign bang state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-less-than-sign-bang-dash-state"> 13.2.5.48 Comment less-than sign bang dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-less-than-sign-bang-dash-dash-state"> 13.2.5.49 Comment less-than sign bang dash dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-end-dash-state"> 13.2.5.50 Comment end dash state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-end-state"> 13.2.5.51 Comment end state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#comment-end-bang-state"> 13.2.5.52 Comment end bang state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-state"> 13.2.5.53 DOCTYPE state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#before-doctype-name-state"> 13.2.5.54 Before DOCTYPE name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-name-state"> 13.2.5.55 DOCTYPE name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-doctype-name-state"> 13.2.5.56 After DOCTYPE name state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-doctype-public-keyword-state"> 13.2.5.57 After DOCTYPE public keyword state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#before-doctype-public-identifier-state"> 13.2.5.58 Before DOCTYPE public identifier state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-public-identifier-(double-quoted)-state"> 13.2.5.59 DOCTYPE public identifier (double-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-public-identifier-(single-quoted)-state"> 13.2.5.60 DOCTYPE public identifier (single-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-doctype-public-identifier-state"> 13.2.5.61 After DOCTYPE public identifier state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#between-doctype-public-and-system-identifiers-state"> 13.2.5.62 Between DOCTYPE public and system identifiers state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-doctype-system-keyword-state"> 13.2.5.63 After DOCTYPE system keyword state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#before-doctype-system-identifier-state"> 13.2.5.64 Before DOCTYPE system identifier state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-system-identifier-(double-quoted)-state"> 13.2.5.65 DOCTYPE system identifier (double-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#doctype-system-identifier-(single-quoted)-state"> 13.2.5.66 DOCTYPE system identifier (single-quoted) state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#after-doctype-system-identifier-state"> 13.2.5.67 After DOCTYPE system identifier state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#bogus-doctype-state"> 13.2.5.68 Bogus DOCTYPE state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cdata-section-state"> 13.2.5.69 CDATA section state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cdata-section-bracket-state"> 13.2.5.70 CDATA section bracket state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#cdata-section-end-state"> 13.2.5.71 CDATA section end state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#character-reference-state"> 13.2.5.72 Character reference state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#named-character-reference-state"> 13.2.5.73 Named character reference state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ambiguous-ampersand-state"> 13.2.5.74 Ambiguous ampersand state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#numeric-character-reference-state"> 13.2.5.75 Numeric character reference state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hexadecimal-character-reference-start-state"> 13.2.5.76 Hexadecimal character reference start state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#decimal-character-reference-start-state"> 13.2.5.77 Decimal character reference start state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#hexadecimal-character-reference-state"> 13.2.5.78 Hexadecimal character reference state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#decimal-character-reference-state"> 13.2.5.79 Decimal character reference state </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#numeric-character-reference-end-state"> 13.2.5.80 Numeric character reference end state </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tree-construction"> 13.2.6 Tree construction </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#creating-and-inserting-nodes"> 13.2.6.1 Creating and inserting nodes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-elements-that-contain-only-text"> 13.2.6.2 Parsing elements that contain only text </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#closing-elements-that-have-implied-end-tags"> 13.2.6.3 Closing elements that have implied end tags </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inhtml"> 13.2.6.4 The rules for parsing tokens in HTML content </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-initial-insertion-mode"> 13.2.6.4.1 The &quot;initial&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-before-html-insertion-mode"> 13.2.6.4.2 The &quot;before html&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-before-head-insertion-mode"> 13.2.6.4.3 The &quot;before head&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inhead"> 13.2.6.4.4 The &quot;in head&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inheadnoscript"> 13.2.6.4.5 The &quot;in head noscript&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-after-head-insertion-mode"> 13.2.6.4.6 The &quot;after head&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inbody"> 13.2.6.4.7 The &quot;in body&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-incdata"> 13.2.6.4.8 The &quot;text&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intable"> 13.2.6.4.9 The &quot;in table&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intabletext"> 13.2.6.4.10 The &quot;in table text&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-incaption"> 13.2.6.4.11 The &quot;in caption&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-incolgroup"> 13.2.6.4.12 The &quot;in column group&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intbody"> 13.2.6.4.13 The &quot;in table body&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intr"> 13.2.6.4.14 The &quot;in row&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intd"> 13.2.6.4.15 The &quot;in cell&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inselect"> 13.2.6.4.16 The &quot;in select&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inselectintable"> 13.2.6.4.17 The &quot;in select in table&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-intemplate"> 13.2.6.4.18 The &quot;in template&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-afterbody"> 13.2.6.4.19 The &quot;after body&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inframeset"> 13.2.6.4.20 The &quot;in frameset&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-afterframeset"> 13.2.6.4.21 The &quot;after frameset&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-after-after-body-insertion-mode"> 13.2.6.4.22 The &quot;after after body&quot; insertion mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-after-after-frameset-insertion-mode"> 13.2.6.4.23 The &quot;after after frameset&quot; insertion mode </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-main-inforeign"> 13.2.6.5 The rules for parsing tokens in foreign content </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-end"> 13.2.7 The end </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#speculative-html-parsing"> 13.2.8 Speculative HTML parsing </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#coercing-an-html-dom-into-an-infoset"> 13.2.9 Coercing an HTML DOM into an infoset </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#an-introduction-to-error-handling-and-strange-cases-in-the-parser"> 13.2.10 An introduction to error handling and strange cases in the parser </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#misnested-tags:-b-i-/b-/i"> 13.2.10.1 Misnested tags: &lt;b&gt;&lt;i&gt;&lt;/b&gt;&lt;/i&gt; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#misnested-tags:-b-p-/b-/p"> 13.2.10.2 Misnested tags: &lt;b&gt;&lt;p&gt;&lt;/b&gt;&lt;/p&gt; </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unexpected-markup-in-tables"> 13.2.10.3 Unexpected markup in tables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#scripts-that-modify-the-page-as-it-is-being-parsed"> 13.2.10.4 Scripts that modify the page as it is being parsed </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-execution-of-scripts-that-are-moving-across-multiple-documents"> 13.2.10.5 The execution of scripts that are moving across multiple documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unclosed-formatting-elements"> 13.2.10.6 Unclosed formatting elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#serialising-html-fragments"> 13.3 Serializing HTML fragments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-html-fragments"> 13.4 Parsing HTML fragments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#named-character-references"> 13.5 Named character references </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-xhtml-syntax"> 14 The XML syntax </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#writing-xhtml-documents"> 14.1 Writing documents in the XML syntax </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-xhtml-documents"> 14.2 Parsing XML documents </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#serialising-xhtml-fragments"> 14.3 Serializing XML fragments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#parsing-xhtml-fragments"> 14.4 Parsing XML fragments </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#rendering"> 15 Rendering </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#introduction-16"> 15.1 Introduction </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-css-user-agent-style-sheet-and-presentational-hints"> 15.2 The CSS user agent style sheet and presentational hints </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#non-replaced-elements"> 15.3 Non-replaced elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#hidden-elements"> 15.3.1 Hidden elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-page"> 15.3.2 The page </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#flow-content-3"> 15.3.3 Flow content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#phrasing-content-3"> 15.3.4 Phrasing content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#bidi-rendering"> 15.3.5 Bidirectional text </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#sections-and-headings"> 15.3.6 Sections and headings </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#lists"> 15.3.7 Lists </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#tables-2"> 15.3.8 Tables </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#margin-collapsing-quirks"> 15.3.9 Margin collapsing quirks </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#form-controls"> 15.3.10 Form controls </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-hr-element-2"> 15.3.11 The <code> hr </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-fieldset-and-legend-elements"> 15.3.12 The <code> fieldset </code>and <code> legend </code>elements </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#replaced-elements"> 15.4 Replaced elements </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#embedded-content-rendering-rules"> 15.4.1 Embedded content </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#images-3"> 15.4.2 Images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-for-embedded-content-and-images"> 15.4.3 Attributes for embedded content and images </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#image-maps-2"> 15.4.4 Image maps </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#widgets"> 15.5 Widgets </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#native-appearance-2"> 15.5.1 Native appearance </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#writing-mode"> 15.5.2 Writing mode </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#button-layout"> 15.5.3 Button layout </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-button-element-2"> 15.5.4 The <code> button </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-details-and-summary-elements"> 15.5.5 The <code> details </code>and <code> summary </code>elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-text-entry-widget"> 15.5.6 The <code> input </code>element as a text entry widget </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-domain-specific-widgets"> 15.5.7 The <code> input </code>element as domain-specific widgets </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-range-control"> 15.5.8 The <code> input </code>element as a range control </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-colour-well"> 15.5.9 The <code> input </code>element as a color
+   well </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-checkbox-and-radio-button-widgets"> 15.5.10 The <code> input </code>element as a checkbox and radio button widgets </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-file-upload-control"> 15.5.11 The <code> input </code>element as a file upload control </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-input-element-as-a-button"> 15.5.12 The <code> input </code>element as a button </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-marquee-element-2"> 15.5.13 The <code> marquee </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-meter-element-2"> 15.5.14 The <code> meter </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-progress-element-2"> 15.5.15 The <code> progress </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-select-element-2"> 15.5.16 The <code> select </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-textarea-element-2"> 15.5.17 The <code> textarea </code>element </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#frames-and-framesets"> 15.6 Frames and framesets </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#interactive-media"> 15.7 Interactive media </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#links,-forms,-and-navigation"> 15.7.1 Links, forms, and navigation </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#the-title-attribute-2"> 15.7.2 The <code> title </code>attribute </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#editing-hosts"> 15.7.3 Editing hosts </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text-rendered-in-native-user-interfaces"> 15.7.4 Text rendered in native user interfaces </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#print-media"> 15.8 Print media </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#unstyled-xml-documents"> 15.9 Unstyled XML documents </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#obsolete"> 16 Obsolete features </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#obsolete-but-conforming-features"> 16.1 Obsolete but conforming features </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#warnings-for-obsolete-but-conforming-features"> 16.1.1 Warnings for obsolete but conforming features </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#non-conforming-features"> 16.2 Non-conforming features </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#requirements-for-implementations"> 16.3 Requirements for implementations </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#the-marquee-element"> 16.3.1 The <code> marquee </code>element </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#frames"> 16.3.2 Frames </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#other-elements,-attributes-and-apis"> 16.3.3 Other elements, attributes and APIs </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#iana"> 17 IANA considerations </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#text/html"> 17.1 <code> text/html </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#multipart/x-mixed-replace"> 17.2 <code> multipart/x-mixed-replace </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#application/xhtml+xml"> 17.3 <code> application/xhtml+xml </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text/ping"> 17.4 <code> text/ping </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#application/microdata+json"> 17.5 <code> application/microdata+json </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#text/event-stream"> 17.6 <code> text/event-stream </code></a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#web+-scheme-prefix"> 17.7 <code> web+ </code>scheme prefix </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#index"> Index </a><!-- wp:list {"ordered":false} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="#elements-3"> Elements </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#element-content-categories"> Element content categories </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#attributes-3"> Attributes </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#element-interfaces"> Element interfaces </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#all-interfaces"> All interfaces </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#events-2"> Events </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#http-headers"> HTTP headers </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#mime-types-2"> MIME types </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+</li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#references"> References </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#acknowledgments"> Acknowledgments </a></li><!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li><a href="#ipr"> Intellectual property rights </a></li><!-- /wp:list-item -->
+</ul><!-- /wp:list -->
+<!-- wp:heading {"level":2} -->
+<h2>1 Introduction <a href="#introduction"> </a></h2><!-- /wp:heading -->
+<!-- wp:heading {"level":3} -->
+<h3>1.1 Where does this specification fit? <a href="#abstract"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>This specification defines a big part of the web platform, in lots of detail. Its place in the
+   web platform specification stack relative to other specifications can be best summed up as
+   follows: </p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":3} -->
+<h3>1.2 Is this HTML5? <a href="#is-this-html5?"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>In short: Yes. </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>In more length: the term &quot;HTML5&quot; is widely used as a buzzword to refer to modern web
+   technologies, many of which (though by no means all) are developed at the WHATWG. This document is
+   one such; others are available from <a href="https://spec.whatwg.org/"> the WHATWG Standards
+   overview </a>. </p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":3} -->
+<h3>1.3 Background <a href="#background"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>HTML is the World Wide Web&#039;s core markup language. Originally, HTML was primarily designed as a
+   language for semantically describing scientific documents. Its general design, however, has
+   enabled it to be adapted, over the subsequent years, to describe a number of other types of
+   documents and even applications. </p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":3} -->
+<h3>1.4 Audience <a href="#audience"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>This specification is intended for authors of documents and scripts that use the features
+   defined in this specification, implementers of tools that operate on pages that
+   use the features defined in this specification, and individuals wishing to establish the
+   correctness of documents or implementations with respect to the requirements of this
+   specification. </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>This document is probably not suited to readers who do not already have at least a passing
+   familiarity with web technologies, as in places it sacrifices clarity for precision, and brevity
+   for completeness. More approachable tutorials and authoring guides can provide a gentler
+   introduction to the topic. </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>In particular, familiarity with the basics of DOM is necessary for a complete understanding of
+   some of the more technical parts of this specification. An understanding of Web IDL, HTTP, XML,
+   Unicode, character encodings, JavaScript, and CSS will also be helpful in places but is not
+   essential. </p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":3} -->
+<h3>1.5 Scope <a href="#scope"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>This specification is limited to providing a semantic-level markup language and associated
+   semantic-level scripting APIs for authoring accessible pages on the web ranging from static
+   documents to dynamic applications. </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>The scope of this specification does not include providing mechanisms for media-specific
+   customization of presentation (although default rendering rules for web browsers are included at
+   the end of this specification, and several mechanisms for hooking into CSS are provided as part of
+   the language). </p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>The scope of this specification is not to describe an entire operating system. In particular,
+   hardware configuration software, image manipulation tools, and applications that users would be
+   expected to use with high-end workstations on a daily basis are out of scope. In terms of
+   applications, this specification is targeted specifically at applications that would be expected
+   to be used by users on an occasional basis, or regularly but from disparate locations, with low
+   CPU requirements. Examples of such applications include online purchasing systems, searching
+   systems, games (especially multiplayer online games), public telephone books or address books,
+   communications software (email clients, instant messaging clients, discussion software), document
+   editing software, etc. </p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":3} -->
+<h3>1.6 History <a href="#history-2"> </a></h3><!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>For its first five years (1990-1995), HTML went through a number of revisions and experienced a </p><!-- /wp:paragraph -->

@@ -42,7 +42,7 @@ export function rotatePHPRuntime({
 	async function rotateRuntime() {
 		const release = await php.semaphore.acquire();
 		try {
-			php.hotSwapPHPRuntime(await recreateRuntime(), cwd);
+			await php.hotSwapPHPRuntime(await recreateRuntime(), cwd);
 
 			// A new runtime has handled zero requests.
 			runtimeRequestCount = 0;
