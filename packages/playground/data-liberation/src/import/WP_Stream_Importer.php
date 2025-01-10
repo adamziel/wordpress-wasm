@@ -132,7 +132,9 @@ class WP_Stream_Importer {
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
+				return new WP_Entity_Reader_Iterator(
+                    WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor )
+                );
 			},
 			$options,
 			$cursor
@@ -142,7 +144,9 @@ class WP_Stream_Importer {
 	public static function create_for_wxr_url( $wxr_url, $options = array(), $cursor = null ) {
 		return static::create(
 			function ( $cursor = null ) use ( $wxr_url ) {
-				return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+				return new WP_Entity_Reader_Iterator(
+                    WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor )
+                );
 			},
 			$options,
 			$cursor
@@ -240,11 +244,11 @@ class WP_Stream_Importer {
 
 	protected static function parse_options( $options ) {
 		if ( ! isset( $options['new_site_url'] ) ) {
-			$options['new_site_url'] = get_site_url();
+			// $options['new_site_url'] = get_site_url();
 		}
 
 		if ( ! isset( $options['uploads_path'] ) ) {
-			$options['uploads_path'] = wp_get_upload_dir()['basedir'];
+			// $options['uploads_path'] = wp_get_upload_dir()['basedir'];
 		}
 		// Remove the trailing slash to make concatenation easier later.
 		$options['uploads_path'] = rtrim( $options['uploads_path'], '/' );
@@ -435,7 +439,7 @@ class WP_Stream_Importer {
 
 			$this->entity_iterator->next();
 		}
-		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
+		$this->resume_at_entity = $this->entity_iterator->get_entity_reader()->get_reentrancy_cursor();
 		return true;
 	}
 
@@ -570,7 +574,7 @@ class WP_Stream_Importer {
 		 * and enqueue them for download.
 		 */
 		$entity                            = $this->entity_iterator->current();
-		$cursor                            = $this->entity_iterator->get_reentrancy_cursor();
+		$cursor                            = $this->entity_iterator->get_entity_reader()->get_reentrancy_cursor();
 		$this->active_downloads[ $cursor ] = array();
 
 		$data = $entity->get_data();
@@ -715,7 +719,7 @@ class WP_Stream_Importer {
 		/**
 		 * @TODO: Update the progress information.
 		 */
-		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
+		$this->resume_at_entity = $this->entity_iterator->get_entity_reader()->get_reentrancy_cursor();
 		$this->entity_iterator->next();
 		return true;
 	}
@@ -744,7 +748,7 @@ class WP_Stream_Importer {
 			return false;
 		}
 
-		$entity_cursor                                        = $this->entity_iterator->get_reentrancy_cursor();
+		$entity_cursor                                        = $this->entity_iterator->get_entity_reader()->get_reentrancy_cursor();
 		$this->active_downloads[ $entity_cursor ][ $raw_url ] = true;
 		return true;
 	}

@@ -8,16 +8,16 @@
  *
  * @TODO: Explore supporting a cursor to allow resuming from where we left off.
  */
-class WP_Directory_Tree_Entity_Reader implements \Iterator {
+class WP_Directory_Tree_Entity_Reader extends WP_Entity_Reader {
 	private $file_visitor;
 	private $filesystem;
 	private $entity;
 
+	private $is_finished = false;
 	private $pending_directory_index;
 	private $pending_files = array();
 	private $parent_ids    = array();
 	private $next_post_id;
-	private $is_finished          = false;
 	private $entities_read_so_far = 0;
 	private $allowed_extensions   = array();
 	private $index_file_patterns  = array();
@@ -152,6 +152,14 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		}
 		$this->is_finished = true;
 		return false;
+	}
+
+    public function is_finished(): bool {
+        return $this->is_finished;
+    }
+
+	public function get_last_error(): ?string {
+		return null;
 	}
 
 	public function get_entity(): ?\WP_Imported_Entity {
@@ -308,35 +316,4 @@ class WP_Directory_Tree_Entity_Reader implements \Iterator {
 		return in_array( $extension, $this->allowed_extensions, true );
 	}
 
-	/**
-	 * @TODO: Either implement this method, or introduce a concept of
-	 *        reentrant and non-reentrant entity readers.
-	 */
-	public function get_reentrancy_cursor() {
-		return '';
-	}
-
-	public function current(): mixed {
-		if ( null === $this->entity && ! $this->is_finished ) {
-			$this->next();
-		}
-		return $this->get_entity();
-	}
-
-	public function next(): void {
-		$this->next_entity();
-	}
-
-	public function key(): int {
-		return $this->entities_read_so_far - 1;
-	}
-
-	public function valid(): bool {
-		return ! $this->is_finished;
-	}
-
-	public function rewind(): void {
-		// @TODO: Either implement this method, or formalize the fact that
-		//        entity readers are not rewindable.
-	}
 }
