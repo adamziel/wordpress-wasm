@@ -15,7 +15,7 @@ import {
 	logErrorEvent,
 	logTrackingEvent,
 } from '../../tracking';
-import { Blueprint } from '@wp-playground/blueprints';
+import { Blueprint, isStepDefinition } from '@wp-playground/blueprints';
 import { logger } from '@php-wasm/logger';
 import { setupPostMessageRelay } from '@php-wasm/web';
 import { startPlaygroundWeb } from '@wp-playground/client';
@@ -106,6 +106,15 @@ export function bootSiteClient(
 			blueprint = site.metadata.originalBlueprint;
 		}
 
+		if (blueprint.steps) {
+			for (const step of blueprint.steps) {
+				if (!isStepDefinition(step)) {
+					continue;
+				}
+				logBlueprintStepEvent(step);
+			}
+		}
+
 		let playground: PlaygroundClient;
 		try {
 			playground = await startPlaygroundWeb({
@@ -117,9 +126,6 @@ export function bootSiteClient(
 				// Blueprint fails.
 				onClientConnected: (playground) => {
 					(window as any)['playground'] = playground;
-				},
-				onBlueprintStepCompleted: (result, step) => {
-					logBlueprintStepEvent(step);
 				},
 				mounts: mountDescriptor
 					? [
