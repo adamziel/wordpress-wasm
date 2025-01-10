@@ -4,7 +4,16 @@ import { test, expect } from '../playground-fixtures.ts';
 import { startVersionSwitchingServer as startServer } from '../version-switching-server.ts';
 
 const port = 7999;
-const url = `http://localhost:${port}`;
+const url = new URL(`http://localhost:${port}`);
+// Disable login because an old WP build used in this test
+// blocks auto-login. This is because it has an admin user
+// with an expired email verification window. If we do not
+// disable auto-login, the old Playground build encounters
+// a boot error.
+url.searchParams.set('login', 'no');
+// Specify the theme so we can assert against expected default content.
+// This theme is also what the reference screenshots are based on.
+url.searchParams.set('theme', 'twentytwentyfour');
 
 const maxDiffPixels = 4000;
 
@@ -45,24 +54,26 @@ for (const cachingEnabled of [true, false]) {
 	 * The PR for fixing this issue is here:
 	 * https://github.com/WordPress/wordpress-playground/pull/2065
 	 */
-	test.skip(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
+	test(`When a new website version is deployed, it should be loaded upon a regular page refresh (with HTTP caching ${
 		cachingEnabled ? 'enabled' : 'disabled'
 	})`, async ({ website, page, wordpress }) => {
 		server!.setHttpCacheEnabled(cachingEnabled);
 
-		await page.goto(url);
+		await page.goto(url.href);
 		await website.waitForNestedIframes();
 		await expect(page).toHaveScreenshot('website-old.png', {
 			maxDiffPixels,
 		});
 
 		server!.switchToNewVersion();
-		await page.goto(url);
+		await page.goto(url.href);
 		await website.waitForNestedIframes();
 		await expect(
 			website.page.getByLabel('Open Site Manager')
 		).toBeVisible();
-		await expect(wordpress.locator('body')).toContainText('Edit site');
+		await expect(wordpress.locator('body')).toContainText(
+			'My WordPress Website'
+		);
 	});
 }
 
@@ -79,7 +90,9 @@ test.skip(
 		server!.setHttpCacheEnabled(true);
 		server!.switchToMidVersion();
 
-		await page.goto(`${url}/?wp=6.5`);
+		const urlWithWordPress65 = new URL(url);
+		urlWithWordPress65.searchParams.set('wp', '6.5');
+		await page.goto(urlWithWordPress65.href);
 		await website.waitForNestedIframes();
 
 		// Switching to the new app version does not trigger a page reload,
@@ -136,12 +149,16 @@ test('offline mode – the app should load even when the server goes offline', a
 	await website.waitForNestedIframes();
 
 	await expect(website.page.getByLabel('Open Site Manager')).toBeVisible();
-	expect(wordpress.locator('body')).toContainText('Edit site');
+	await expect(wordpress.locator('body')).toContainText(
+		'My WordPress Website'
+	);
 
 	server!.kill();
 	await page.reload();
 	await website.waitForNestedIframes();
 
 	await expect(website.page.getByLabel('Open Site Manager')).toBeVisible();
-	expect(wordpress.locator('body')).toContainText('Edit site');
+	await expect(wordpress.locator('body')).toContainText(
+		'My WordPress Website'
+	);
 });
