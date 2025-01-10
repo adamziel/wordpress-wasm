@@ -1,4 +1,4 @@
-import { useAppSelector, useAppDispatch } from '../../../lib/state/redux/store';
+import { useAppSelector } from '../../../lib/state/redux/store';
 import {
 	DropdownMenu,
 	DropdownMenuItem,
