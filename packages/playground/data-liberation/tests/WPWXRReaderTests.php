@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 use WordPress\ByteReader\WP_File_Reader;
 
 class WPWXRReaderTests extends TestCase {
-    
+
     /**
      * @dataProvider preexisting_wxr_files_provider
      */
@@ -44,7 +44,7 @@ class WPWXRReaderTests extends TestCase {
         $this->assertEquals($expected_entitys, $found_entities);
     }
 
-    public function preexisting_wxr_files_provider() {
+    public static function preexisting_wxr_files_provider() {
         return [
             [__DIR__ . '/wxr/a11y-unit-test-data.xml', 1043],
             [__DIR__ . '/wxr/crazy-cdata-escaped.xml', 5],
@@ -54,7 +54,7 @@ class WPWXRReaderTests extends TestCase {
             [__DIR__ . '/wxr/slashes.xml', 9],
             [__DIR__ . '/wxr/small-export.xml', 68],
             [__DIR__ . '/wxr/test-serialized-postmeta-no-cdata.xml', 5],
-            [__DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml', 7],
+            [__DIR__ . '/wxr/test-serialized-postmeta-with-cdata.xml', 11],
             [__DIR__ . '/wxr/test-utw-post-meta-import.xml', 5],
             [__DIR__ . '/wxr/theme-unit-test-data.xml', 1146],
             [__DIR__ . '/wxr/valid-wxr-1.0.xml', 32],
@@ -116,7 +116,7 @@ class WPWXRReaderTests extends TestCase {
             ],
             $importer->get_entity()->get_data()
         );
-        
+
         $this->assertTrue( $importer->next_entity() );
         $this->assertEquals(
             [

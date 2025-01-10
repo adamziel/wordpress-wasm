@@ -131,8 +131,12 @@ class WP_Stream_Importer {
 
 	public static function create_for_wxr_file( $wxr_path, $options = array(), $cursor = null ) {
 		return static::create(
-			function ( $cursor = null ) use ( $wxr_path ) {
-				return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
+			function ( $cursor = null ) use ( $wxr_path, $options ) {
+				if ( isset( $options['topo_sorted'] ) && false === $options['topo_sorted'] ) {
+					return WP_WXR_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor );
+				}
+
+				return WP_WXR_Sorted_Entity_Reader::create( WP_File_Reader::create( $wxr_path ), $cursor, $options );
 			},
 			$options,
 			$cursor
@@ -141,8 +145,12 @@ class WP_Stream_Importer {
 
 	public static function create_for_wxr_url( $wxr_url, $options = array(), $cursor = null ) {
 		return static::create(
-			function ( $cursor = null ) use ( $wxr_url ) {
-				return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+			function ( $cursor = null ) use ( $wxr_url, $options ) {
+				if ( isset( $options['topo_sorted'] ) && false === $options['topo_sorted'] ) {
+					return WP_WXR_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor );
+				}
+
+				return WP_WXR_Sorted_Entity_Reader::create( new WP_Remote_File_Reader( $wxr_url ), $cursor, $options );
 			},
 			$options,
 			$cursor
@@ -255,6 +263,10 @@ class WP_Stream_Importer {
 		// Remove the trailing slash to make concatenation easier later.
 		$options['uploads_url'] = rtrim( $options['uploads_url'], '/' );
 
+		if ( ! isset( $options['topo_sorted'] ) ) {
+			$options['topo_sorted'] = true;
+		}
+
 		return $options;
 	}
 
@@ -282,6 +294,11 @@ class WP_Stream_Importer {
 	 */
 	protected $importer;
 
+	/**
+	 * Calculate next steps in the import process.
+	 *
+	 * @return bool
+	 */
 	public function next_step() {
 		switch ( $this->stage ) {
 			case self::STAGE_INITIAL:
@@ -291,10 +308,14 @@ class WP_Stream_Importer {
 				if ( true === $this->index_next_entities() ) {
 					return true;
 				}
-				$this->next_stage = self::STAGE_TOPOLOGICAL_SORT;
+
+				$this->next_stage = $this->options['topo_sorted'] ? self::STAGE_TOPOLOGICAL_SORT : self::STAGE_FRONTLOAD_ASSETS;
 				return false;
 			case self::STAGE_TOPOLOGICAL_SORT:
-				// @TODO: Topologically sort the entities.
+				if ( true === $this->topological_sort_next_entity() ) {
+					return true;
+				}
+
 				$this->next_stage = self::STAGE_FRONTLOAD_ASSETS;
 				return false;
 			case self::STAGE_FRONTLOAD_ASSETS:
@@ -310,6 +331,8 @@ class WP_Stream_Importer {
 				$this->next_stage = self::STAGE_FINISHED;
 				return false;
 			case self::STAGE_FINISHED:
+				// Flush away the topological sorter session.
+				// $this->topological_sorter->delete_session();
 				return false;
 		}
 	}
@@ -507,6 +530,39 @@ class WP_Stream_Importer {
 	}
 
 	/**
+	 * Sort the entities topologically. This is a stage made to heat up the
+	 * sorter internal database with all the entities before we start importing.
+	 *
+	 * @param int $count The number of entities to process in one go.
+	 */
+	private function topological_sort_next_entity( $count = 1000 ) {
+		if ( null !== $this->next_stage ) {
+			return false;
+		}
+
+		if ( null === $this->entity_iterator ) {
+			$this->entity_iterator = $this->create_entity_iterator();
+		}
+
+		if ( ! $this->entity_iterator->valid() ) {
+			$this->entity_iterator  = null;
+			$this->resume_at_entity = null;
+			return false;
+		}
+
+		for ( $i = 0; $i < $count; ++$i ) {
+			// Add the entity to the topological sorter.
+			if ( ! $this->entity_iterator->add_next_entity() ) {
+				break;
+			}
+		}
+
+		$this->resume_at_entity = $this->entity_iterator->get_reentrancy_cursor();
+
+		return true;
+	}
+
+	/**
 	 * Downloads all the assets referenced in the imported entities.
 	 *
 	 * This method is idempotent, re-entrant, and should be called
@@ -630,6 +686,10 @@ class WP_Stream_Importer {
 			$this->importer        = new WP_Entity_Importer();
 		}
 
+		if ( $this->options['topo_sorted'] ) {
+			$this->entity_iterator->set_emit_cursor( true );
+		}
+
 		if ( ! $this->entity_iterator->valid() ) {
 			// We're done.
 			$this->stage           = self::STAGE_FINISHED;
@@ -695,15 +755,20 @@ class WP_Stream_Importer {
 				break;
 		}
 
-		$post_id = $this->importer->import_entity( $entity );
-		if ( false !== $post_id ) {
+		$entity_id = $this->importer->import_entity( $entity );
+		if ( false !== $entity_id ) {
 			$this->count_imported_entity( $entity->get_type() );
+
+			if ( $this->options['topo_sorted'] ) {
+				// An entity has been imported, update the mapping for following ones.
+				$this->entity_iterator->update_mapped_id( $entity, $entity_id );
+			}
 		} else {
 			// @TODO: Store error.
 		}
 		foreach ( $attachments as $filepath ) {
 			// @TODO: Monitor failures.
-			$attachment_id = $this->importer->import_attachment( $filepath, $post_id );
+			$attachment_id = $this->importer->import_attachment( $filepath, $entity_id );
 			if ( false !== $attachment_id ) {
 				// @TODO: How to count attachments?
 				$this->count_imported_entity( 'post' );

@@ -74,6 +74,39 @@ add_action(
 	}
 );
 
+function data_liberation_activate() {
+	// Create tables and option.
+	WP_WXR_Sorted_Entity_Reader::create_or_update_db();
+	update_option( 'data_liberation_db_version', WP_WXR_Sorted_Entity_Reader::DB_VERSION );
+}
+
+// Run when the plugin is activated.
+register_activation_hook( __FILE__, 'data_liberation_activate' );
+
+function data_liberation_deactivate() {
+	// Flush away all data.
+	WP_WXR_Sorted_Entity_Reader::delete_db();
+
+	// Delete the option.
+	delete_option( 'data_liberation_db_version' );
+
+	// @TODO: Cancel any active import sessions and cleanup other data.
+}
+
+// Run when the plugin is deactivated.
+register_deactivation_hook( __FILE__, 'data_liberation_deactivate' );
+
+function data_liberation_load() {
+	if ( WP_WXR_Sorted_Entity_Reader::DB_VERSION !== (int) get_site_option( 'data_liberation_db_version' ) ) {
+		// Update the database with dbDelta, if needed in the future.
+		WP_WXR_Sorted_Entity_Reader::create_or_update_db();
+		update_option( 'data_liberation_db_version', WP_WXR_Sorted_Entity_Reader::DB_VERSION );
+	}
+}
+
+// Run when the plugin is loaded.
+add_action( 'plugins_loaded', 'data_liberation_load' );
+
 // Register admin menu
 add_action(
 	'admin_menu',
@@ -439,7 +472,7 @@ function data_liberation_create_importer( $import ) {
 			}
 			$importer = WP_Stream_Importer::create_for_wxr_file(
 				$wxr_path,
-				array(),
+				$import,
 				$import['cursor'] ?? null
 			);
 			break;
@@ -447,7 +480,7 @@ function data_liberation_create_importer( $import ) {
 		case 'wxr_url':
 			$importer = WP_Stream_Importer::create_for_wxr_url(
 				$import['wxr_url'],
-				array(),
+				$import,
 				$import['cursor'] ?? null
 			);
 			break;

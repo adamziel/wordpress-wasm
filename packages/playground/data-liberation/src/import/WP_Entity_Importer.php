@@ -257,6 +257,8 @@ class WP_Entity_Importer {
 		 * @param array $userdata Raw data imported for the user.
 		 */
 		do_action( 'wxr_importer_processed_user', $user_id, $userdata );
+
+		return $user_id;
 	}
 
 	public function import_term( $data ) {
@@ -272,7 +274,6 @@ class WP_Entity_Importer {
 		}
 
 		$original_id = isset( $data['id'] ) ? (int) $data['id'] : 0;
-		$parent_id   = isset( $data['parent'] ) ? (int) $data['parent'] : 0;
 
 		$mapping_key = sha1( $data['taxonomy'] . ':' . $data['slug'] );
 		$existing    = $this->term_exists( $data );
@@ -297,8 +298,10 @@ class WP_Entity_Importer {
 
 		$termdata = array();
 		$allowed  = array(
-			'slug' => true,
 			'description' => true,
+			'name'        => true,
+			'slug'        => true,
+			'parent'      => true,
 		);
 
 		// Map the parent comment, or mark it as one we need to fix
@@ -380,8 +383,9 @@ class WP_Entity_Importer {
 		 * @param array $data Raw data imported for the term.
 		 */
 		do_action( 'wxr_importer_processed_term', $term_id, $data );
-	}
 
+		return $term_id;
+	}
 
 	/**
 	 * Prefill existing post data.
@@ -453,15 +457,7 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$original_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
-		$parent_id   = isset( $data['post_parent'] ) ? (int) $data['post_parent'] : 0;
-
-		// Have we already processed this?
-		if ( isset( $this->mapping['post'][ $original_id ] ) ) {
-			$this->logger->debug( 'Skipping post, already processed' );
-			return;
-		}
-
+		$original_id      = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
 		$post_type        = $data['post_type'] ?? 'post';
 		$post_type_object = get_post_type_object( $post_type );
 
@@ -865,7 +861,7 @@ class WP_Entity_Importer {
 	 * @return int|WP_Error Number of meta items imported on success, error otherwise.
 	 */
 	public function import_post_meta( $meta_item, $post_id ) {
-		if ( empty( $meta ) ) {
+		if ( empty( $meta_item ) ) {
 			return true;
 		}
 
@@ -880,12 +876,12 @@ class WP_Entity_Importer {
 			return false;
 		}
 
-		$key   = apply_filters( 'import_post_meta_key', $meta_item['key'], $post_id, $post );
+		$key   = apply_filters( 'import_post_meta_key', $meta_item['meta_key'], $post_id );
 		$value = false;
 
 		if ( '_edit_last' === $key ) {
-			$value = intval( $meta_item['value'] );
-			if ( ! isset( $this->mapping['user'][ $value ] ) ) {
+			$value = intval( $value );
+			if ( ! isset( $this->mapping['user'][ $meta_item['meta_value'] ] ) ) {
 				// Skip!
 				_doing_it_wrong( __METHOD__, 'User ID not found in mapping', '4.7' );
 				return false;
@@ -894,13 +890,15 @@ class WP_Entity_Importer {
 			$value = $this->mapping['user'][ $value ];
 		}
 
+		$post_meta_id = false;
+
 		if ( $key ) {
 			// export gets meta straight from the DB so could have a serialized string
 			if ( ! $value ) {
-				$value = maybe_unserialize( $meta_item['value'] );
+				$value = maybe_unserialize( $meta_item['meta_value'] );
 			}
 
-			add_post_meta( $post_id, $key, $value );
+			$post_meta_id = add_post_meta( $post_id, wp_slash( $key ), wp_slash_strings_only( $value ) );
 			do_action( 'import_post_meta', $post_id, $key, $value );
 
 			// if the post has a featured image, take note of this in case of remap
@@ -909,7 +907,9 @@ class WP_Entity_Importer {
 			}
 		}
 
-		return true;
+		do_action( 'wxr_importer_processed_post_meta', $post_id, $meta_item );
+
+		return $post_meta_id;
 	}
 
 	/**
@@ -931,6 +931,7 @@ class WP_Entity_Importer {
 
 		// Sort by ID to avoid excessive remapping later
 		usort( $comments, array( $this, 'sort_comments_by_id' ) );
+		$parent_id = isset( $comment['comment_parent'] ) ? (int) $comment['comment_parent'] : null;
 
 		/**
 		 * Pre-process comment data
@@ -938,7 +939,7 @@ class WP_Entity_Importer {
 		 * @param array $comment Comment data. (Return empty to skip.)
 		 * @param int $post_id Post the comment is attached to.
 		 */
-		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id );
+		$comment = apply_filters( 'wxr_importer_pre_process_comment', $comment, $post_id, $parent_id );
 		if ( empty( $comment ) ) {
 			return false;
 		}
@@ -1001,7 +1002,10 @@ class WP_Entity_Importer {
 		}
 
 		// Run standard core filters
-		$comment['comment_post_ID'] = $post_id;
+		if ( ! isset( $comment['comment_post_ID'] ) ) {
+			$comment['comment_post_ID'] = $post_id;
+		}
+
 		// @TODO: How to handle missing fields? Use sensible defaults? What defaults?
 		if ( ! isset( $comment['comment_author_IP'] ) ) {
 			$comment['comment_author_IP'] = '';
@@ -1038,17 +1042,32 @@ class WP_Entity_Importer {
 		/**
 		 * Post processing completed.
 		 *
-		 * @param int $post_id New post ID.
+		 * @param int $comment_id New comment ID.
 		 * @param array $comment Raw data imported for the comment.
-		 * @param array $meta Raw meta data, already processed by {@see process_post_meta}.
 		 * @param array $post_id Parent post ID.
 		 */
 		do_action( 'wxr_importer_processed_comment', $comment_id, $comment, $post_id );
+
+		return $comment_id;
 	}
 
 	public function import_comment_meta( $meta_item, $comment_id ) {
-		$value = maybe_unserialize( $meta_item['value'] );
-		add_comment_meta( $comment_id, wp_slash( $meta_item['key'] ), wp_slash( $value ) );
+		$meta_item = apply_filters( 'wxr_importer_pre_process_comment_meta', $meta_item, $comment_id );
+		if ( empty( $meta_item ) ) {
+			return false;
+		}
+
+		if ( ! isset( $meta_item['comment_id'] ) ) {
+			$meta_item['comment_id'] = $comment_id;
+		}
+
+		// @TODO: Check if wp_slash is correct and not wp_slash_strings_only
+		$value           = maybe_unserialize( $meta_item['meta_value'] );
+		$comment_meta_id = add_comment_meta( $meta_item['comment_id'], wp_slash( $meta_item['meta_key'] ), wp_slash( $value ) );
+
+		do_action( 'wxr_importer_processed_comment_meta', $comment_meta_id, $meta_item, $meta_item['comment_id'] );
+
+		return $comment_meta_id;
 	}
 
 	/**
