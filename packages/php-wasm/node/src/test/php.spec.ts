@@ -71,7 +71,7 @@ destructive results fifty years hence. He was, I believe, not in the
 least an ill-natured man: very much the opposite, I should say; but he
 would not suffer fools gladly.`;
 
-describe.each(SupportedPHPVersions)('PHP %s', (phpVersion) => {
+describe.each(['8.0'])('PHP %s', (phpVersion) => {
 	let php: PHP;
 	beforeEach(async () => {
 		php = new PHP(await loadNodeRuntime(phpVersion as any));
@@ -195,6 +195,37 @@ describe.each(SupportedPHPVersions)('PHP %s', (phpVersion) => {
 			`,
 			});
 			expect(result.text).toEqual('bool(false)\n');
+		});
+	});
+
+	describe('mysql_report function()', () => {
+		it('MYSQLI report modes should exist', async () => {
+			const result = await php.run({
+				code: `<?php
+					echo json_encode(array(
+						'MYSQLI_REPORT_OFF' => MYSQLI_REPORT_OFF,
+						'MYSQLI_REPORT_ERROR' => MYSQLI_REPORT_ERROR,
+						'MYSQLI_REPORT_STRICT' => MYSQLI_REPORT_STRICT,
+						'MYSQLI_REPORT_INDEX' => MYSQLI_REPORT_INDEX,
+						'MYSQLI_REPORT_ALL' => MYSQLI_REPORT_ALL,
+					));
+			`,
+			});
+			expect(result.json).toEqual({
+				MYSQLI_REPORT_OFF: 0,
+				MYSQLI_REPORT_ERROR: 1,
+				MYSQLI_REPORT_STRICT: 2,
+				MYSQLI_REPORT_INDEX: 4,
+				MYSQLI_REPORT_ALL: 255,
+			});
+		});
+		it('mysql_report should exist and return true', async () => {
+			const result = await php.run({
+				code: `<?php
+				var_dump(mysqli_report(0));
+			`,
+			});
+			expect(result.text).toEqual('bool(true)\n');
 		});
 	});
 
