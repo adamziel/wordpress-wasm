@@ -7,7 +7,6 @@ import {
 	// @ts-ignore
 } from '@wordpress/components/build/dropdown-menu-v2/index.js';
 import css from './style.module.css';
-import { persistTemporarySite } from '../../../lib/state/redux/persist-temporary-site';
 import { selectClientInfoBySiteSlug } from '../../../lib/state/redux/slice-clients';
 import { useLocalFsAvailability } from '../../../lib/hooks/use-local-fs-availability';
 import { isOpfsAvailable } from '../../../lib/state/opfs/opfs-site-storage';
@@ -24,8 +23,10 @@ export function SitePersistButton({
 	children: React.ReactNode;
 	storage?: Extract<SiteStorageType, 'opfs' | 'local-fs'> | null;
 }) {
-	const [isSiteStorageTypeSelected, setIsSiteStorageTypeSelected] =
-		useState<Extract<SiteStorageType, 'opfs' | 'local-fs'> | null>(null);
+	const [selectedStorageType, setSelectedStorageType] = useState<Extract<
+		SiteStorageType,
+		'opfs' | 'local-fs'
+	> | null>(null);
 	const clientInfo = useAppSelector((state) =>
 		selectClientInfoBySiteSlug(state, siteSlug)
 	);
@@ -34,14 +35,14 @@ export function SitePersistButton({
 	const persistSiteClick = (
 		storageType: Extract<SiteStorageType, 'opfs' | 'local-fs'>
 	) => {
-		setIsSiteStorageTypeSelected(storageType);
+		setSelectedStorageType(storageType);
 	};
 
-	if (isSiteStorageTypeSelected) {
+	if (selectedStorageType) {
 		return (
 			<SaveSiteModal
-				storageType={isSiteStorageTypeSelected}
-				onClose={() => setIsSiteStorageTypeSelected(null)}
+				storageType={selectedStorageType}
+				onClose={() => setSelectedStorageType(null)}
 			/>
 		);
 	}
