@@ -46,6 +46,26 @@ export const logErrorEvent = (source: string) => {
 };
 
 /**
+ * Log plugin install events
+ * @param slug The plugin slug
+ */
+export const logPluginInstallEvent = (slug: string) => {
+	logTrackingEvent('installPlugin', {
+		plugin: slug,
+	});
+};
+
+/**
+ * Log theme install events
+ * @param slug The theme slug
+ */
+export const logThemeInstallEvent = (slug: string) => {
+	logTrackingEvent('installTheme', {
+		theme: slug,
+	});
+};
+
+/**
  * Log Blueprint events
  * @param blueprint The Blueprint
  */
@@ -67,16 +87,12 @@ export const logBlueprintEvents = (blueprint: Blueprint) => {
 				step.step === 'installPlugin' &&
 				(step as any).pluginData.slug
 			) {
-				logTrackingEvent('installPlugin', {
-					plugin: (step as any).pluginData.slug,
-				});
+				logPluginInstallEvent((step as any).pluginData.slug);
 			} else if (
 				step.step === 'installTheme' &&
 				(step as any).themeData.slug
 			) {
-				logTrackingEvent('installTheme', {
-					theme: (step as any).themeData.slug,
-				});
+				logThemeInstallEvent((step as any).themeData.slug);
 			}
 		}
 	}
@@ -91,9 +107,7 @@ export const logBlueprintEvents = (blueprint: Blueprint) => {
 				continue;
 			}
 			logTrackingEvent('step', { step: 'installPlugin' });
-			logTrackingEvent('installPlugin', {
-				plugin,
-			});
+			logPluginInstallEvent(plugin);
 		}
 	}
 };
