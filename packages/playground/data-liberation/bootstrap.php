@@ -72,7 +72,6 @@ require_once __DIR__ . '/src/entity-readers/WP_Blocks_With_Metadata_Entity_Reade
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
-require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
