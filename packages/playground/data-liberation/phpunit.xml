@@ -8,7 +8,7 @@
       <file>tests/WPMarkupProcessorConsumerTests.php</file>
       <file>tests/WPHTMLEntityReaderTests.php</file>
       <file>tests/WPURLInTextProcessorTests.php</file>
-      <file>tests/WPFilesystemToPostTreeTests.php</file>
+      <file>tests/WPFilesystemEntityReaderTests.php</file>
       <file>tests/WPBlockMarkupProcessorTests.php</file>
       <file>tests/WPBlockMarkupUrlProcessorTests.php</file>
       <file>tests/URLParserWHATWGComplianceTests.php</file>

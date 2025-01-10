@@ -71,7 +71,7 @@ class WP_Import_Utils {
 	}
 
 	public static function remove_first_h1_block_from_block_markup( $html ) {
-		$p = WP_Import_HTML_Processor::create_fragment( $html );
+		$p = WP_Data_Liberation_HTML_Processor::create_fragment( $html );
 		if ( false === $p->next_tag() ) {
 			return false;
 		}
