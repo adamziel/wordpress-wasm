@@ -8,18 +8,20 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 		return WP_Markdown_Importer::create(
 			function ( $cursor = null ) use ( $markdown_directory ) {
 				// @TODO: Handle $cursor
-				return new WP_Directory_Tree_Entity_Reader(
-					new WP_Filesystem(),
-					array(
-						'root_dir' => $markdown_directory,
-						'first_post_id' => 1,
-						'allowed_extensions' => array( 'md' ),
-						'index_file_patterns' => array( '#^index\.md$#' ),
-						'markup_converter_factory' => function ( $content ) {
-							return new WP_Markdown_To_Blocks( $content );
-						},
-					)
-				);
+				return new WP_Entity_Reader_Iterator(
+                    new WP_Directory_Tree_Entity_Reader(
+                        new WP_Filesystem(),
+                        array(
+                            'root_dir' => $markdown_directory,
+                            'first_post_id' => 1,
+                            'allowed_extensions' => array( 'md' ),
+                            'index_file_patterns' => array( '#^index\.md$#' ),
+                            'markup_converter_factory' => function ( $content ) {
+                                return new WP_Markdown_To_Blocks( $content );
+                            },
+                        )
+                    )
+                );
 			},
 			$options,
 			$cursor
