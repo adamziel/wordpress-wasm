@@ -12,6 +12,8 @@ import { selectClientInfoBySiteSlug } from '../../../lib/state/redux/slice-clien
 import { useLocalFsAvailability } from '../../../lib/hooks/use-local-fs-availability';
 import { isOpfsAvailable } from '../../../lib/state/opfs/opfs-site-storage';
 import { SiteStorageType } from '../../../lib/site-metadata';
+import { useState } from 'react';
+import { SaveSiteModal } from '../../save-site-modal';
 
 export function SitePersistButton({
 	siteSlug,
@@ -22,32 +24,40 @@ export function SitePersistButton({
 	children: React.ReactNode;
 	storage?: Extract<SiteStorageType, 'opfs' | 'local-fs'> | null;
 }) {
+	const [isSiteStorageTypeSelected, setIsSiteStorageTypeSelected] =
+		useState<Extract<SiteStorageType, 'opfs' | 'local-fs'> | null>(null);
 	const clientInfo = useAppSelector((state) =>
 		selectClientInfoBySiteSlug(state, siteSlug)
 	);
 	const localFsAvailability = useLocalFsAvailability(clientInfo?.client);
-	const dispatch = useAppDispatch();
+
+	const persistSiteClick = (
+		storageType: Extract<SiteStorageType, 'opfs' | 'local-fs'>
+	) => {
+		setIsSiteStorageTypeSelected(storageType);
+	};
+
+	if (isSiteStorageTypeSelected) {
+		return (
+			<SaveSiteModal
+				storageType={isSiteStorageTypeSelected}
+				onClose={() => setIsSiteStorageTypeSelected(null)}
+			/>
+		);
+	}
 
 	if (!clientInfo?.opfsSync || clientInfo.opfsSync?.status === 'error') {
 		let button = null;
 		if (storage) {
 			button = (
-				<div
-					onClick={() =>
-						dispatch(persistTemporarySite(siteSlug, storage))
-					}
-				>
-					{children}
-				</div>
+				<div onClick={() => persistSiteClick(storage)}>{children}</div>
 			);
 		} else {
 			button = (
 				<DropdownMenu trigger={children}>
 					<DropdownMenuItem
 						disabled={!isOpfsAvailable}
-						onClick={() =>
-							dispatch(persistTemporarySite(siteSlug, 'opfs'))
-						}
+						onClick={() => persistSiteClick('opfs')}
 					>
 						<DropdownMenuItemLabel>
 							Save in this browser
@@ -62,9 +72,7 @@ export function SitePersistButton({
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						disabled={localFsAvailability !== 'available'}
-						onClick={() =>
-							dispatch(persistTemporarySite(siteSlug, 'local-fs'))
-						}
+						onClick={() => persistSiteClick('local-fs')}
 					>
 						<DropdownMenuItemLabel>
 							Save in a local directory
