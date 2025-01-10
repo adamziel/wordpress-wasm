@@ -97,14 +97,31 @@ $relay_http_code_and_initial_headers_if_not_already_sent = function () use ($ch,
 };
 
 function send_response_chunk($data) {
-    global $is_chunked_response;
-    if ($is_chunked_response) {
+    if (should_send_as_chunked_response()) {
+        // We need to manually chunk the response when running in the PHP
+        // built-in server. It won't handle that for us.
         echo sprintf("%s\r\n%s\r\n", dechex(strlen($data)), $data);
     } else {
+        // When running behing an Apache or Nginx or another webserver,
+        // it will handle the chunking for us. Manually sending the chunk
+        // header, \r\n separator, body, and \r\n trailer isn't just
+        // unnecessary, but it would actually include those bytes in the
+        // response body.
         echo $data;
     }
     @ob_flush();
     @flush();
+}
+
+/**
+ * We need to manually chunk the response when running the PHP
+ * dev server AND the transfer-encoding header is set to chunked.
+ * 
+ * Apache, Nginx, etc. will handle the chunking for us.
+ */
+function should_send_as_chunked_response() {
+    global $is_chunked_response;
+    return $is_chunked_response && php_sapi_name() === 'cli-server';
 }
 
 // Pin the hostname resolution to an IP we've resolved earlier
@@ -255,7 +272,9 @@ if (!curl_exec($ch)) {
 // Close cURL session
 curl_close($ch);
 
-// Only send chunked transfer encoding footer if we're using chunked encoding
-if ($is_chunked_response) {
+// Only send chunked transfer encoding footer if we're using chunked encoding.
+// We need to manually send the footer when running in the PHP built-in server
+// because, unlike apache or nginx, it won't handle that for us.
+if (should_send_as_chunked_response()) {
     echo "0\r\n\r\n";
 }

@@ -110,19 +110,37 @@ libxml2/jspi/dist/root/lib/lib/libxml2.a: base-image libz_jspi
 	docker cp $$(docker create playground-php-wasm:libxml2):/root/lib/lib ./libxml2/jspi/dist/root/lib
 	docker cp $$(docker create playground-php-wasm:libxml2):/root/lib/include ./libxml2/jspi/dist/root/lib
 
-libopenssl_asyncify: libopenssl/asyncify/dist/root/lib/lib/libssl.a
-libopenssl/asyncify/dist/root/lib/lib/libssl.a: base-image libz_asyncify
-	mkdir -p ./libopenssl/asyncify/dist/root/lib
-	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl .
-	docker cp $$(docker create playground-php-wasm:libopenssl):/root/install/lib ./libopenssl/asyncify/dist/root/lib
-	docker cp $$(docker create playground-php-wasm:libopenssl):/root/install/include ./libopenssl/asyncify/dist/root/lib
+libopenssl_asyncify: libopenssl/asyncify/dist/1.1.0h/root/lib/lib/libssl.a libopenssl/asyncify/dist/1.1.1/root/lib/lib/libssl.a
 
-libopenssl_jspi: libopenssl/jspi/dist/root/lib/lib/libssl.a
-libopenssl/jspi/dist/root/lib/lib/libssl.a: base-image libz_jspi
+libopenssl/asyncify/dist/1.1.0h/root/lib/lib/libssl.a: base-image libz_asyncify
+	mkdir -p ./libopenssl/asyncify/dist/root/lib
+	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl-1.1.0h . --build-arg OPENSSL_VERSION=1.1.0h
+	mkdir -p ./libopenssl/asyncify/dist/1.1.0h/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.0h):/root/install/lib ./libopenssl/asyncify/dist/1.1.0h/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.0h):/root/install/include ./libopenssl/asyncify/dist/1.1.0h/root/lib
+
+libopenssl/asyncify/dist/1.1.1/root/lib/lib/libssl.a: base-image libz_asyncify
+	mkdir -p ./libopenssl/asyncify/dist/root/lib
+	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl-1.1.1 . --build-arg OPENSSL_VERSION=1.1.1t
+	mkdir -p ./libopenssl/asyncify/dist/1.1.1/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.1):/root/install/lib ./libopenssl/asyncify/dist/1.1.1/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.1):/root/install/include ./libopenssl/asyncify/dist/1.1.1/root/lib
+
+libopenssl_jspi: libopenssl/jspi/dist/1.1.0h/root/lib/lib/libssl.a libopenssl/jspi/dist/1.1.1/root/lib/lib/libssl.a
+
+libopenssl/jspi/dist/1.1.0h/root/lib/lib/libssl.a: base-image libz_jspi
 	mkdir -p ./libopenssl/jspi/dist/root/lib
-	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl . --build-arg JSPI=1
-	docker cp $$(docker create playground-php-wasm:libopenssl):/root/install/lib ./libopenssl/jspi/dist/root/lib
-	docker cp $$(docker create playground-php-wasm:libopenssl):/root/install/include ./libopenssl/jspi/dist/root/lib
+	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl-1.1.0h . --build-arg JSPI=1 --build-arg OPENSSL_VERSION=1.1.0h
+	mkdir -p ./libopenssl/jspi/dist/1.1.0h/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.0h):/root/install/lib ./libopenssl/jspi/dist/1.1.0h/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.0h):/root/install/include ./libopenssl/jspi/dist/1.1.0h/root/lib
+
+libopenssl/jspi/dist/1.1.1/root/lib/lib/libssl.a: base-image libz_jspi
+	mkdir -p ./libopenssl/jspi/dist/root/lib
+	docker build -f ./libopenssl/Dockerfile -t playground-php-wasm:libopenssl-1.1.1 . --build-arg JSPI=1 --build-arg OPENSSL_VERSION=1.1.1t
+	mkdir -p ./libopenssl/jspi/dist/1.1.1/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.1):/root/install/lib ./libopenssl/jspi/dist/1.1.1/root/lib
+	docker cp $$(docker create playground-php-wasm:libopenssl-1.1.1):/root/install/include ./libopenssl/jspi/dist/1.1.1/root/lib
 
 libsqlite3_asyncify: libsqlite3/asyncify/dist/root/lib/lib/libsqlite3.a
 libsqlite3/asyncify/dist/root/lib/lib/libsqlite3.a: base-image libz_asyncify

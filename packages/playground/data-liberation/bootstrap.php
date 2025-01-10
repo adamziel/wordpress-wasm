@@ -11,11 +11,19 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/HttpError.ph
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
 
-require_once __DIR__ . '/src/byte-readers/WP_Byte_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_GZ_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Reader.php';
-require_once __DIR__ . '/src/byte-readers/WP_Remote_File_Ranged_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
+
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Byte_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_GZ_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Reader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Remote_File_Ranged_Reader.php';
+
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/ZipStreamReader.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Zip/WP_Zip_Filesystem.php';
 
 if (
 	! class_exists( 'WP_HTML_Tag_Processor' ) &&
@@ -44,21 +52,32 @@ if (
 	require_once __DIR__ . '/src/wordpress-core-html-api/html5-named-character-references.php';
 }
 
-require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Converter.php';
+require_once __DIR__ . '/src/Data_Liberation_Exception.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Blocks_With_Metadata.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Data_Format_Consumer.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Markup_Processor_Consumer.php';
+require_once __DIR__ . '/src/data-format-consumers/WP_Annotated_Block_Markup_Consumer.php';
+
+require_once __DIR__ . '/src/data-format-producers/WP_Data_Format_Producer.php';
+require_once __DIR__ . '/src/data-format-producers/WP_Annotated_Block_Markup_Producer.php';
+
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_Block_Markup_Url_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
-require_once __DIR__ . '/src/block-markup/WP_HTML_To_Blocks.php';
 require_once __DIR__ . '/src/block-markup/WP_URL.php';
+
+require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Blocks_With_Metadata_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Directory_Tree_Entity_Reader.php';
 
 require_once __DIR__ . '/src/xml-api/WP_XML_Decoder.php';
 require_once __DIR__ . '/src/xml-api/WP_XML_Processor.php';
-require_once __DIR__ . '/src/wxr/WP_WXR_Reader.php';
 require_once __DIR__ . '/src/import/WP_Import_Utils.php';
 require_once __DIR__ . '/src/import/WP_Block_Object.php';
 require_once __DIR__ . '/src/import/WP_Entity_Importer.php';
-require_once __DIR__ . '/src/import/WP_File_Visitor.php';
-require_once __DIR__ . '/src/import/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/src/import/WP_Imported_Entity.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader.php';
 require_once __DIR__ . '/src/import/WP_Attachment_Downloader_Event.php';

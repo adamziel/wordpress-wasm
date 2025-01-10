@@ -510,6 +510,7 @@ class WP_Import_Session {
 
 			$attempts     = get_post_meta( $placeholder->ID, 'attempts', true );
 			$new_attempts = $attempts;
+			$new_status   = $placeholder->post_status;
 			switch ( $event->type ) {
 				case WP_Attachment_Downloader_Event::SUCCESS:
 					$new_status   = self::FRONTLOAD_STATUS_SUCCEEDED;

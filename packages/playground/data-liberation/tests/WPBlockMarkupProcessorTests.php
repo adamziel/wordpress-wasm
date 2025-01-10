@@ -18,9 +18,9 @@ class WPBlockMarkupProcessorTests extends TestCase {
 
 	static public function provider_test_finds_block_openers() {
 		return [
-			'Opener without attributes'                        => [ '<!-- wp:paragraph -->', 'wp:paragraph', null ],
-			'Opener without the trailing whitespace'           => [ '<!--wp:paragraph-->', 'wp:paragraph', null ],
-			'Opener with a lot of trailing whitespace'         => [ '<!--    wp:paragraph          -->', 'wp:paragraph', null ],
+			'Opener without attributes'                        => [ '<!-- wp:paragraph -->', 'wp:paragraph', [] ],
+			'Opener without the trailing whitespace'           => [ '<!--wp:paragraph-->', 'wp:paragraph', [] ],
+			'Opener with a lot of trailing whitespace'         => [ '<!--    wp:paragraph          -->', 'wp:paragraph', [] ],
 			'Opener with attributes'                           => [
 				'<!-- wp:paragraph {"class": "wp-bold"} -->',
 				'wp:paragraph',
@@ -36,6 +36,34 @@ class WPBlockMarkupProcessorTests extends TestCase {
 				'<!-- wp:code { "meta": { "language": "php", "highlightedLines": [14, 22] }, "class": "dark" } -->',
 				'wp:code',
 				[ 'meta' => [ 'language' => 'php', 'highlightedLines' => [ 14, 22 ] ], 'class' => 'dark' ],
+			],
+		];
+	}
+
+	/**
+	 *
+	 * @dataProvider provider_test_finds_self_closing_blocks
+	 */
+	public function test_finds_self_closing_blocks( $markup, $block_name, $block_attributes ) {
+		$p = new WP_Block_Markup_Processor( $markup );
+		$p->next_token();
+		$this->assertEquals( '#block-comment', $p->get_token_type(), 'Failed to identify the block comment' );
+		$this->assertEquals( $block_name, $p->get_block_name(), 'Failed to identify the block name' );
+		$this->assertEquals( $block_attributes, $p->get_block_attributes(), 'Failed to identify the block attributes' );
+		$this->assertTrue( $p->is_self_closing_block(), 'Failed to identify the self-closing block status' );
+	}
+
+	static public function provider_test_finds_self_closing_blocks() {
+		return [
+			'Self-closing block without attributes' => [ 
+				'<!-- wp:spacer /-->', 
+				'wp:spacer', 
+				[] 
+			],
+			'Self-closing block with attributes' => [ 
+				'<!-- wp:spacer {"height":"20px"} /-->', 
+				'wp:spacer', 
+				[ 'height' => '20px' ] 
 			],
 		];
 	}
@@ -100,7 +128,6 @@ class WPBlockMarkupProcessorTests extends TestCase {
 			'Closer with a line break before whitespace'         => [ "<!-- \n/wp:paragraph -->", ],
 			'Closer with attributes'                             => [ '<!-- /wp:paragraph {"class": "block"} -->', ],
 			'Closer with solidus at the end (before whitespace)' => [ '<!-- wp:paragraph/ -->', ],
-			'Closer with solidus at the end (after whitespace)'  => [ '<!-- wp:paragraph /-->', ],
 		];
 	}
 

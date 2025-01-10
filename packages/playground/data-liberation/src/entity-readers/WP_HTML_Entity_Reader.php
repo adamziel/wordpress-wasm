@@ -1,54 +1,23 @@
 <?php
 
 /**
- * Converts a single HTML file into a stream of WordPress posts and post meta.
+ * Converts a single HTML file into a stream of WordPress entities.
  */
 class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
-	/**
-	 * The HTML document to convert.
-	 *
-	 * @var string
-	 */
-	protected $html;
-
-	/**
-	 * The emitted entities.
-	 *
-	 * @var array
-	 */
+	protected $block_markup;
+	protected $metadata;
 	protected $entities;
-
-	/**
-	 * Whether the reader has finished.
-	 *
-	 * @var bool
-	 */
 	protected $finished = false;
-
-	/**
-	 * The ID of the post to import.
-	 *
-	 * @var int
-	 */
 	protected $post_id;
+	protected $last_error;
 
-	/**
-	 * Constructs the reader.
-	 *
-	 * @param string $html The HTML document to convert.
-	 * @param int $post_id The ID to use as `post_id` of the emitted post entity.
-	 */
-	public function __construct( $html, $post_id ) {
-		$this->html    = $html;
-		$this->post_id = $post_id;
+	public function __construct( WP_Blocks_With_Metadata $blocks_with_meta, $post_id ) {
+		$this->block_markup = $blocks_with_meta->get_block_markup();
+		$this->metadata     = $blocks_with_meta->get_all_metadata();
+		$this->post_id      = $post_id;
 	}
 
-	/**
-	 * Advances to the next entity.
-	 *
-	 * @return bool Whether the next entity was found.
-	 */
 	public function next_entity() {
 		// If we're finished, we're finished.
 		if ( $this->finished ) {
@@ -57,24 +26,17 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 
 		// If we've already read some entities, skip to the next one.
 		if ( null !== $this->entities ) {
-			if ( count( $this->entities ) <= 1 ) {
+			array_shift( $this->entities );
+			if ( count( $this->entities ) === 0 ) {
 				$this->finished = true;
 				return false;
 			}
-			array_shift( $this->entities );
 			return true;
 		}
 
-		// We did not read any entities yet. Let's convert the HTML document into entities.
-		$converter = new WP_HTML_To_Blocks( $this->html );
-		if ( false === $converter->convert() ) {
-			return false;
-		}
-
-		$all_metadata   = $converter->get_all_metadata();
 		$post_fields    = array();
 		$other_metadata = array();
-		foreach ( $all_metadata as $key => $values ) {
+		foreach ( $this->metadata as $key => $values ) {
 			if ( in_array( $key, WP_Imported_Entity::POST_FIELDS, true ) ) {
 				$post_fields[ $key ] = $values[0];
 			} else {
@@ -82,26 +44,26 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 			}
 		}
 
-		// Emit the post entity.
+		// Yield the post entity.
 		$this->entities[] = new WP_Imported_Entity(
 			'post',
 			array_merge(
 				$post_fields,
 				array(
 					'post_id' => $this->post_id,
-					'content' => $converter->get_block_markup(),
+					'content' => $this->block_markup,
 				)
 			)
 		);
 
-		// Emit all the metadata that don't belong to the post entity.
+		// Yield all the metadata that don't belong to the post entity.
 		foreach ( $other_metadata as $key => $value ) {
 			$this->entities[] = new WP_Imported_Entity(
 				'post_meta',
 				array(
 					'post_id' => $this->post_id,
-					'meta_key' => $key,
-					'meta_value' => $value,
+					'key' => $key,
+					'value' => $value,
 				)
 			);
 		}
@@ -135,6 +97,6 @@ class WP_HTML_Entity_Reader extends WP_Entity_Reader {
 	 * @return string|null The last error, or null if there was no error.
 	 */
 	public function get_last_error(): ?string {
-		return null;
+		return $this->last_error;
 	}
 }

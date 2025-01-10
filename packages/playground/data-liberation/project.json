@@ -43,7 +43,7 @@
 			"options": {
 				"cwd": "packages/playground/data-liberation",
 				"commands": [
-					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src ./*.php"
+					"./vendor/bin/phpcbf --standard=./phpcs.xml ./src ./*.php "
 				],
 				"parallel": false
 			}

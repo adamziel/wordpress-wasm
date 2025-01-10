@@ -16,7 +16,7 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 						'allowed_extensions' => array( 'md' ),
 						'index_file_patterns' => array( '#^index\.md$#' ),
 						'markup_converter_factory' => function ( $content ) {
-							return new WP_Markdown_To_Blocks( $content );
+							return new WP_Markdown_Consumer( $content );
 						},
 					)
 				);

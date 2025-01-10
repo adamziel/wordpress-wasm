@@ -13,7 +13,11 @@ class WPHTMLEntityReaderTests extends TestCase {
 <h1>It is our pleasure to announce that WordPress 6.8 was released</h1>
 <p>Last week, WordPress 6.8 was released.</p>
 HTML;
-        $reader = new WP_HTML_Entity_Reader( $html, 1 );
+        $html_processor = WP_HTML_Processor::create_fragment( $html );
+		$producer = new WP_Markup_Processor_Consumer( $html_processor );
+		$blocks_with_meta = $producer->consume();
+
+        $reader = new WP_HTML_Entity_Reader($blocks_with_meta, 1);
         $entities = [];
         while ( $reader->next_entity() ) {
             $data = $reader->get_entity()->get_data();
@@ -34,12 +38,10 @@ HTML;
                     'post_id' => 1,
                     'content' => $this->normalize_markup(<<<HTML
 <!-- wp:heading {"level":1} -->
-<h1>It is our pleasure to announce that WordPress 6.8 was released </h1>
-<!-- /wp:heading -->
-
+<h1>It is our pleasure to announce that WordPress 6.8 was released </h1><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p>Last week, WordPress 6.8 was released. </p>
-<!-- /wp:paragraph -->
+<p>Last week, WordPress 6.8 was released. </p><!-- /wp:paragraph -->
+
 HTML)
                 ]
             ],
@@ -47,16 +49,16 @@ HTML)
                 'type' => 'post_meta',
                 'data' => [
                     'post_id' => 1,
-                    'meta_key' => 'custom_post_meta',
-                    'meta_value' => 'custom_post_meta_value',
+                    'key' => 'custom_post_meta',
+                    'value' => 'custom_post_meta_value',
                 ]
             ],
             [
                 'type' => 'post_meta',
                 'data' => [
                     'post_id' => 1,
-                    'meta_key' => 'color_palette',
-                    'meta_value' => 'use_that_pretty_one',
+                    'key' => 'color_palette',
+                    'value' => 'use_that_pretty_one',
                 ]
             ],
         ];
@@ -64,7 +66,9 @@ HTML)
     }
 
     private function normalize_markup( $markup ) {
-        return str_replace( "\n", '', WP_HTML_Processor::create_fragment( $markup )->serialize() );
+        $processor = WP_HTML_Processor::create_fragment( $markup );
+        $serialized = $processor->serialize();
+        return $serialized;
     }
 
 }

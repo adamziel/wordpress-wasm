@@ -47,11 +47,9 @@ export async function encodeAsMultipart(
 }
 
 function fileToUint8Array(file: File): Promise<Uint8Array> {
-	return new Promise((resolve) => {
-		const reader = new FileReader();
-		reader.onload = () => {
-			resolve(new Uint8Array(reader.result as ArrayBuffer));
-		};
-		reader.readAsArrayBuffer(file);
-	});
+	/**
+	 * @mbuella: Use File.arrayBuffer() to get a Uint8Array from a file, avoiding FileReader
+	 * which is browser-specific. This method is supported in major browsers and NodeJS/Deno runtimes.
+	 */
+	return file.arrayBuffer().then((fileBuffer) => new Uint8Array(fileBuffer));
 }

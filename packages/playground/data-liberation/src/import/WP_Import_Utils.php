@@ -57,4 +57,57 @@ class WP_Import_Utils {
 
 		return $block_markup;
 	}
+
+	public static function slug_to_title( $filename ) {
+		$name = pathinfo( $filename, PATHINFO_FILENAME );
+		$name = preg_replace( '/^\d+/', '', $name );
+		$name = str_replace(
+			array( '-', '_' ),
+			' ',
+			$name
+		);
+		$name = ucwords( $name );
+		return $name;
+	}
+
+	public static function remove_first_h1_block_from_block_markup( $html ) {
+		$p = WP_Import_HTML_Processor::create_fragment( $html );
+		if ( false === $p->next_tag() ) {
+			return false;
+		}
+		if ( $p->get_tag() !== 'H1' ) {
+			return false;
+		}
+		$depth = $p->get_current_depth();
+		$title = '';
+		do {
+			if ( false === $p->next_token() ) {
+				break;
+			}
+			if ( $p->get_token_type() === '#text' ) {
+				$title .= $p->get_modifiable_text() . ' ';
+			}
+		} while ( $p->get_current_depth() > $depth );
+
+		if ( ! $title ) {
+			return false;
+		}
+
+		// Move past the closing comment
+		$p->next_token();
+		if ( $p->get_token_type() === '#text' ) {
+			$p->next_token();
+		}
+		if ( $p->get_token_type() !== '#comment' ) {
+			return false;
+		}
+
+		return array(
+			'h1_content' => trim( $title ),
+			'remaining_html' => substr(
+				$html,
+				$p->get_string_index_after_current_token()
+			),
+		);
+	}
 }

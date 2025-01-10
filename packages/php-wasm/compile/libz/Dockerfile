@@ -2,7 +2,9 @@ FROM playground-php-wasm:base
 
 ARG JSPI
 
-COPY ./libz/zlib-src /root/zlib
+RUN wget https://www.zlib.net/fossils/zlib-1.2.13.tar.gz && \
+    tar xf zlib-1.2.13.tar.gz && \
+    mv zlib-1.2.13 /root/zlib
 RUN chmod a+x /root/zlib/configure
 RUN source /root/emsdk/emsdk_env.sh && \
     cd /root/zlib && \

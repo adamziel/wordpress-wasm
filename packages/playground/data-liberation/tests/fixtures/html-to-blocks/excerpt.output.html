@@ -4,9 +4,7 @@
 <!-- wp:paragraph -->
 <p>Living Standard — Last Updated 12 December 2024 </p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
-<p><a href="/"> <strong> One-Page Version </strong> <code> html.spec.whatwg.org </code></a><a href="/multipage/"> <strong> Multipage Version </strong> <code> /multipage </code></a><a href="/dev/"> <strong> Version for Web Devs </strong> <code> /dev </code></a><a href="/print.pdf"> <strong> PDF Version </strong> <code> /print.pdf </code></a><a href="https://github.com/whatwg/html/wiki/Translations"> <strong> Translations </strong> <code> 日本語 • 简体中文 </code></a><a href="https://github.com/whatwg/html/blob/main/FAQ.md"> <strong> FAQ </strong> <code> on GitHub </code></a><a href="https://whatwg.org/chat"> <strong> Chat </strong> <code> on Matrix </code></a><a href="https://github.com/whatwg/html"> <strong> Contribute on GitHub </strong> <code> whatwg/html repository </code></a><a href="https://github.com/whatwg/html/commits"> <strong> Commits </strong> <code> on GitHub </code></a><a href="/commit-snapshots/aa1c505e5ec7ea0a9684bfe9e8fca1782437f895/"> <strong> Snapshot </strong> <code> as of this commit </code></a><a href="https://twitter.com/htmlstandard"> <strong> Twitter Updates </strong> <code> @htmlstandard </code></a><a href="https://github.com/whatwg/html/issues"> <strong> Open Issues </strong> <code> filed on GitHub </code></a><a href="https://whatwg.org/newbug"> <strong> Open an Issue </strong> <code> whatwg.org/newbug </code></a><a href="https://github.com/web-platform-tests/wpt/tree/master/html"> <strong> Tests </strong> <code> web-platform-tests html/ </code></a><a href="https://github.com/web-platform-tests/wpt/labels/html"> <strong> Issues for Tests </strong> <code> ongoing work </code></a></p><!-- /wp:paragraph --><!-- wp:separator -->
-<hr class="wp-block-separator"><!-- /wp:separator -->
-<!-- wp:heading {"level":2} -->
+<p><a href="/"> <strong> One-Page Version </strong><code> html.spec.whatwg.org </code></a><a href="/multipage/"> <strong> Multipage Version </strong><code> /multipage </code></a><a href="/dev/"> <strong> Version for Web Devs </strong><code> /dev </code></a><a href="/print.pdf"> <strong> PDF Version </strong><code> /print.pdf </code></a><a href="https://github.com/whatwg/html/wiki/Translations"> <strong> Translations </strong><code> 日本語 • 简体中文 </code></a><a href="https://github.com/whatwg/html/blob/main/FAQ.md"> <strong> FAQ </strong><code> on GitHub </code></a><a href="https://whatwg.org/chat"> <strong> Chat </strong><code> on Matrix </code></a><a href="https://github.com/whatwg/html"> <strong> Contribute on GitHub </strong><code> whatwg/html repository </code></a><a href="https://github.com/whatwg/html/commits"> <strong> Commits </strong><code> on GitHub </code></a><a href="/commit-snapshots/aa1c505e5ec7ea0a9684bfe9e8fca1782437f895/"> <strong> Snapshot </strong><code> as of this commit </code></a><a href="https://twitter.com/htmlstandard"> <strong> Twitter Updates </strong><code> @htmlstandard </code></a><a href="https://github.com/whatwg/html/issues"> <strong> Open Issues </strong><code> filed on GitHub </code></a><a href="https://whatwg.org/newbug"> <strong> Open an Issue </strong><code> whatwg.org/newbug </code></a><a href="https://github.com/web-platform-tests/wpt/tree/master/html"> <strong> Tests </strong><code> web-platform-tests html/ </code></a><a href="https://github.com/web-platform-tests/wpt/labels/html"> <strong> Issues for Tests </strong><code> ongoing work </code></a></p><!-- /wp:paragraph --><!-- wp:heading {"level":2} -->
 <h2>Table of contents </h2><!-- /wp:heading -->
 <!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
@@ -250,7 +248,7 @@
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><a href="#the-htmlallcollection-interface"> 2.6.3.1 The <code> HTMLAllCollection </code>interface </a><!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="#HTMLAllCollection-call"> 2.6.3.1.1 [[Call]] ( <var> thisArgument </var> , <var> argumentsList </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#HTMLAllCollection-call"> 2.6.3.1.1 [[Call]] ( <var> thisArgument </var>, <var> argumentsList </var>) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
 </li><!-- /wp:list-item -->
 <!-- wp:list-item -->
@@ -270,17 +268,17 @@
 <!-- wp:list-item -->
 <li><a href="#transferable-objects"> 2.7.2 Transferable objects </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structuredserializeinternal"> 2.7.3 StructuredSerializeInternal ( <var> value </var> , <var> forStorage </var> [ , <var> memory </var> ] ) </a></li><!-- /wp:list-item -->
+<li><a href="#structuredserializeinternal"> 2.7.3 StructuredSerializeInternal ( <var> value </var>, <var> forStorage </var>[ , <var> memory </var>] ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structuredserialize"> 2.7.4 StructuredSerialize ( <var> value </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#structuredserialize"> 2.7.4 StructuredSerialize ( <var> value </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structuredserializeforstorage"> 2.7.5 StructuredSerializeForStorage ( <var> value </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#structuredserializeforstorage"> 2.7.5 StructuredSerializeForStorage ( <var> value </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structureddeserialize"> 2.7.6 StructuredDeserialize ( <var> serialized </var> , <var> targetRealm </var> [ , <var> memory </var> ] ) </a></li><!-- /wp:list-item -->
+<li><a href="#structureddeserialize"> 2.7.6 StructuredDeserialize ( <var> serialized </var>, <var> targetRealm </var>[ , <var> memory </var>] ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structuredserializewithtransfer"> 2.7.7 StructuredSerializeWithTransfer ( <var> value </var> , <var> transferList </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#structuredserializewithtransfer"> 2.7.7 StructuredSerializeWithTransfer ( <var> value </var>, <var> transferList </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#structureddeserializewithtransfer"> 2.7.8 StructuredDeserializeWithTransfer ( <var> serializeWithTransferResult </var> , <var> targetRealm </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#structureddeserializewithtransfer"> 2.7.8 StructuredDeserializeWithTransfer ( <var> serializeWithTransferResult </var>, <var> targetRealm </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#performing-structured-clones-from-other-specifications"> 2.7.9 Performing serialization and
    transferring from other specifications </a></li><!-- /wp:list-item -->
@@ -1581,19 +1579,19 @@
 <!-- wp:list-item -->
 <li><a href="#shared-abstract-operations"> 7.2.1.3 Shared abstract operations </a><!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="#crossoriginproperties-(-o-)"> 7.2.1.3.1 CrossOriginProperties ( <var> O </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossoriginproperties-(-o-)"> 7.2.1.3.1 CrossOriginProperties ( <var> O </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#crossoriginpropertyfallback-(-p-)"> 7.2.1.3.2 CrossOriginPropertyFallback ( <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossoriginpropertyfallback-(-p-)"> 7.2.1.3.2 CrossOriginPropertyFallback ( <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#isplatformobjectsameorigin-(-o-)"> 7.2.1.3.3 IsPlatformObjectSameOrigin ( <var> O </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#isplatformobjectsameorigin-(-o-)"> 7.2.1.3.3 IsPlatformObjectSameOrigin ( <var> O </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#crossorigingetownpropertyhelper-(-o,-p-)"> 7.2.1.3.4 CrossOriginGetOwnPropertyHelper ( <var> O </var> , <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossorigingetownpropertyhelper-(-o,-p-)"> 7.2.1.3.4 CrossOriginGetOwnPropertyHelper ( <var> O </var>, <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#crossoriginget-(-o,-p,-receiver-)"> 7.2.1.3.5 CrossOriginGet ( <var> O </var> , <var> P </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossoriginget-(-o,-p,-receiver-)"> 7.2.1.3.5 CrossOriginGet ( <var> O </var>, <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#crossoriginset-(-o,-p,-v,-receiver-)"> 7.2.1.3.6 CrossOriginSet ( <var> O </var> , <var> P </var> , <var> V </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossoriginset-(-o,-p,-v,-receiver-)"> 7.2.1.3.6 CrossOriginSet ( <var> O </var>, <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#crossoriginownpropertykeys-(-o-)"> 7.2.1.3.7 CrossOriginOwnPropertyKeys ( <var> O </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#crossoriginownpropertykeys-(-o-)"> 7.2.1.3.7 CrossOriginOwnPropertyKeys ( <var> O </var>) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
 </li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
@@ -1619,21 +1617,21 @@
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><a href="#windowproxy-getprototypeof"> 7.2.3.1 [[GetPrototypeOf]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-setprototypeof"> 7.2.3.2 [[SetPrototypeOf]] ( <var> V </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-setprototypeof"> 7.2.3.2 [[SetPrototypeOf]] ( <var> V </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#windowproxy-isextensible"> 7.2.3.3 [[IsExtensible]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#windowproxy-preventextensions"> 7.2.3.4 [[PreventExtensions]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-getownproperty"> 7.2.3.5 [[GetOwnProperty]] ( <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-getownproperty"> 7.2.3.5 [[GetOwnProperty]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-defineownproperty"> 7.2.3.6 [[DefineOwnProperty]] ( <var> P </var> , <var> Desc </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-defineownproperty"> 7.2.3.6 [[DefineOwnProperty]] ( <var> P </var>, <var> Desc </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-get"> 7.2.3.7 [[Get]] ( <var> P </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-get"> 7.2.3.7 [[Get]] ( <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-set"> 7.2.3.8 [[Set]] ( <var> P </var> , <var> V </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-set"> 7.2.3.8 [[Set]] ( <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#windowproxy-delete"> 7.2.3.9 [[Delete]] ( <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#windowproxy-delete"> 7.2.3.9 [[Delete]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#windowproxy-ownpropertykeys"> 7.2.3.10 [[OwnPropertyKeys]] ( ) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
@@ -1643,21 +1641,21 @@
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><a href="#location-getprototypeof"> 7.2.4.1 [[GetPrototypeOf]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-setprototypeof"> 7.2.4.2 [[SetPrototypeOf]] ( <var> V </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-setprototypeof"> 7.2.4.2 [[SetPrototypeOf]] ( <var> V </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#location-isextensible"> 7.2.4.3 [[IsExtensible]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#location-preventextensions"> 7.2.4.4 [[PreventExtensions]] ( ) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-getownproperty"> 7.2.4.5 [[GetOwnProperty]] ( <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-getownproperty"> 7.2.4.5 [[GetOwnProperty]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-defineownproperty"> 7.2.4.6 [[DefineOwnProperty]] ( <var> P </var> , <var> Desc </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-defineownproperty"> 7.2.4.6 [[DefineOwnProperty]] ( <var> P </var>, <var> Desc </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-get"> 7.2.4.7 [[Get]] ( <var> P </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-get"> 7.2.4.7 [[Get]] ( <var> P </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-set"> 7.2.4.8 [[Set]] ( <var> P </var> , <var> V </var> , <var> Receiver </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-set"> 7.2.4.8 [[Set]] ( <var> P </var>, <var> V </var>, <var> Receiver </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#location-delete"> 7.2.4.9 [[Delete]] ( <var> P </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#location-delete"> 7.2.4.9 [[Delete]] ( <var> P </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#location-ownpropertykeys"> 7.2.4.10 [[OwnPropertyKeys]] ( ) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
@@ -1923,39 +1921,39 @@
 <!-- wp:list-item -->
 <li><a href="#javascript-specification-host-hooks"> 8.1.6 JavaScript specification host hooks </a><!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="#the-hostensurecanaddprivateelement-implementation"> 8.1.6.1 HostEnsureCanAddPrivateElement( <var> O </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#the-hostensurecanaddprivateelement-implementation"> 8.1.6.1 HostEnsureCanAddPrivateElement( <var> O </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostensurecancompilestrings(realm,-parameterstrings,-bodystring,-codestring,-compilationtype,-parameterargs,-bodyarg)"> 8.1.6.2 HostEnsureCanCompileStrings( <var> realm </var> , <var> parameterStrings </var> , <var> bodyString </var> , <var> codeString </var> , <var> compilationType </var> , <var> parameterArgs </var> , <var> bodyArg </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostensurecancompilestrings(realm,-parameterstrings,-bodystring,-codestring,-compilationtype,-parameterargs,-bodyarg)"> 8.1.6.2 HostEnsureCanCompileStrings( <var> realm </var>, <var> parameterStrings </var>, <var> bodyString </var>, <var> codeString </var>, <var> compilationType </var>, <var> parameterArgs </var>, <var> bodyArg </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostgetcodeforeval(argument)"> 8.1.6.3 HostGetCodeForEval( <var> argument </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostgetcodeforeval(argument)"> 8.1.6.3 HostGetCodeForEval( <var> argument </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#the-hostpromiserejectiontracker-implementation"> 8.1.6.4 HostPromiseRejectionTracker( <var> promise </var> , <var> operation </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#the-hostpromiserejectiontracker-implementation"> 8.1.6.4 HostPromiseRejectionTracker( <var> promise </var>, <var> operation </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostsystemutcepochnanoseconds"> 8.1.6.5 HostSystemUTCEpochNanoseconds( <var> global </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostsystemutcepochnanoseconds"> 8.1.6.5 HostSystemUTCEpochNanoseconds( <var> global </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#integration-with-javascript-jobs"> 8.1.6.6 Job-related host hooks </a><!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="#hostcalljobcallback"> 8.1.6.6.1 HostCallJobCallback( <var> callback </var> , <var> V </var> , <var> argumentsList </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostcalljobcallback"> 8.1.6.6.1 HostCallJobCallback( <var> callback </var>, <var> V </var>, <var> argumentsList </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostenqueuefinalizationregistrycleanupjob"> 8.1.6.6.2 HostEnqueueFinalizationRegistryCleanupJob( <var> finalizationRegistry </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostenqueuefinalizationregistrycleanupjob"> 8.1.6.6.2 HostEnqueueFinalizationRegistryCleanupJob( <var> finalizationRegistry </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostenqueuegenericjob"> 8.1.6.6.3 HostEnqueueGenericJob( <var> job </var> , <var> realm </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostenqueuegenericjob"> 8.1.6.6.3 HostEnqueueGenericJob( <var> job </var>, <var> realm </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostenqueuepromisejob"> 8.1.6.6.4 HostEnqueuePromiseJob( <var> job </var> , <var> realm </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostenqueuepromisejob"> 8.1.6.6.4 HostEnqueuePromiseJob( <var> job </var>, <var> realm </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostenqueuetimeoutjob"> 8.1.6.6.5 HostEnqueueTimeoutJob( <var> job </var> , <var> realm </var> , <var> milliseconds </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostenqueuetimeoutjob"> 8.1.6.6.5 HostEnqueueTimeoutJob( <var> job </var>, <var> realm </var>, <var> milliseconds </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostmakejobcallback"> 8.1.6.6.6 HostMakeJobCallback( <var> callable </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostmakejobcallback"> 8.1.6.6.6 HostMakeJobCallback( <var> callable </var>) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
 </li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#integration-with-the-javascript-module-system"> 8.1.6.7 Module-related host hooks </a><!-- wp:list {"ordered":false} -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="#hostgetimportmetaproperties"> 8.1.6.7.1 HostGetImportMetaProperties( <var> moduleRecord </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostgetimportmetaproperties"> 8.1.6.7.1 HostGetImportMetaProperties( <var> moduleRecord </var>) </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
 <li><a href="#hostgetsupportedimportattributes"> 8.1.6.7.2 HostGetSupportedImportAttributes() </a></li><!-- /wp:list-item -->
 <!-- wp:list-item -->
-<li><a href="#hostloadimportedmodule"> 8.1.6.7.3 HostLoadImportedModule( <var> referrer </var> , <var> moduleRequest </var> , <var> loadState </var> , <var> payload </var> ) </a></li><!-- /wp:list-item -->
+<li><a href="#hostloadimportedmodule"> 8.1.6.7.3 HostLoadImportedModule( <var> referrer </var>, <var> moduleRequest </var>, <var> loadState </var>, <var> payload </var>) </a></li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
 </li><!-- /wp:list-item -->
 </ul><!-- /wp:list -->
@@ -2819,7 +2817,7 @@
 <!-- wp:heading {"level":3} -->
 <h3>1.2 Is this HTML5? <a href="#is-this-html5?"> </a></h3><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p><i> This section is non-normative. </i> </p><!-- /wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>In short: Yes. </p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
@@ -2830,7 +2828,7 @@
 <!-- wp:heading {"level":3} -->
 <h3>1.3 Background <a href="#background"> </a></h3><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p><i> This section is non-normative. </i> </p><!-- /wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>HTML is the World Wide Web&#039;s core markup language. Originally, HTML was primarily designed as a
    language for semantically describing scientific documents. Its general design, however, has
@@ -2839,7 +2837,7 @@
 <!-- wp:heading {"level":3} -->
 <h3>1.4 Audience <a href="#audience"> </a></h3><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p><i> This section is non-normative. </i> </p><!-- /wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>This specification is intended for authors of documents and scripts that use the features
    defined in this specification, implementers of tools that operate on pages that
@@ -2859,7 +2857,7 @@
 <!-- wp:heading {"level":3} -->
 <h3>1.5 Scope <a href="#scope"> </a></h3><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p><i> This section is non-normative. </i> </p><!-- /wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>This specification is limited to providing a semantic-level markup language and associated
    semantic-level scripting APIs for authoring accessible pages on the web ranging from static
@@ -2882,6 +2880,6 @@
 <!-- wp:heading {"level":3} -->
 <h3>1.6 History <a href="#history-2"> </a></h3><!-- /wp:heading -->
 <!-- wp:paragraph -->
-<p><i> This section is non-normative. </i> </p><!-- /wp:paragraph -->
+<p><i> This section is non-normative. </i></p><!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>For its first five years (1990-1995), HTML went through a number of revisions and experienced a </p><!-- /wp:paragraph -->

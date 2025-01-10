@@ -1,0 +1,14 @@
+diff --git a/php-src/Zend/zend_alloc.c b/php-src/Zend/zend_alloc.c
+index bf2116fc91..bec65453d8 100644
+--- a/php-src/Zend/zend_alloc.c
++++ b/php-src/Zend/zend_alloc.c
+@@ -809,7 +809,7 @@
+ #if ZEND_MM_STORAGE
+ 	if (UNEXPECTED(heap->storage)) {
+ 		void *ptr = heap->storage->handlers.chunk_alloc(heap->storage, size, alignment);
+-		ZEND_ASSERT(((uintptr_t)((char*)ptr + (alignment-1)) & (alignment-1)) == (uintptr_t)ptr);
++		ZEND_ASSERT(((uintptr_t)((char*)ptr + ~(alignment-1)) & (alignment-1)) == (uintptr_t)ptr);
+ 		return ptr;
+ 	}
+ #endif
+ 
