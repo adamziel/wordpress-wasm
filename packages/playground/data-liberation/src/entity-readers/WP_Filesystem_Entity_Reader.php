@@ -1,6 +1,6 @@
 <?php
 
-use \WordPress\Filesystem\WP_Abstract_Filesystem;
+use WordPress\Filesystem\WP_Abstract_Filesystem;
 
 /**
  * Recursively reads files from a filesystem and converts them into WordPress post entities.
@@ -71,15 +71,15 @@ class WP_Filesystem_Entity_Reader {
 	/**
 	 * A filename to emit as the next directory index. If null, there's no matching
 	 * directory index file and a placeholder file will be created. If false,
-     * we're not emitting directory indexes at all.
+	 * we're not emitting directory indexes at all.
 	 *
 	 * @var string|false|null
 	 */
 	private $pending_directory_index;
 
 	/**
-     * A stack of post IDs emitted at each directory depth up to the currently processed
-     * directory.
+	 * A stack of post IDs emitted at each directory depth up to the currently processed
+	 * directory.
 	 *
 	 * @var array
 	 */
@@ -94,7 +94,7 @@ class WP_Filesystem_Entity_Reader {
 
 	/**
 	 * Flag to determine if an index page should be created when no index file is found
-     * in a directory.
+	 * in a directory.
 	 *
 	 * @var bool
 	 */
@@ -128,9 +128,9 @@ class WP_Filesystem_Entity_Reader {
 	 */
 	private $is_finished = false;
 
-    /**
-     * The post type to emit.
-     */
+	/**
+	 * The post type to emit.
+	 */
 	private $post_type;
 
 	/**
@@ -145,12 +145,12 @@ class WP_Filesystem_Entity_Reader {
 	 *
 	 * @param WP_Abstract_Filesystem $filesystem The filesystem to traverse.
 	 * @param array $options Configuration options. {
-     *  $first_post_id => int The ID of the first post to emit.
-     *  $filter_pattern => string A pattern to filter files by.
-     *  $index_file_pattern => string A pattern to identify index files.
-     *  $root_parent_id => int|null The ID of the root parent post.
-     *  $create_index_pages => bool Whether to create index pages when no index file is found.
-     * }
+	 *  $first_post_id => int The ID of the first post to emit.
+	 *  $filter_pattern => string A pattern to filter files by.
+	 *  $index_file_pattern => string A pattern to identify index files.
+	 *  $root_parent_id => int|null The ID of the root parent post.
+	 *  $create_index_pages => bool Whether to create index pages when no index file is found.
+	 * }
 	 * @return WP_Filesystem_To_Post_Tree|false The created instance or false on failure.
 	 */
 	public static function create(
@@ -203,29 +203,29 @@ class WP_Filesystem_Entity_Reader {
 		}
 	}
 
-    /**
-     * Get the current entity.
-     *
-     * @return WP_Imported_Entity|null The current entity or null if none.
-     */
+	/**
+	 * Get the current entity.
+	 *
+	 * @return WP_Imported_Entity|null The current entity or null if none.
+	 */
 	public function get_entity() {
 		return $this->current_entity;
 	}
 
-    /**
-     * Check if the reader has finished reading the filesystem.
-     *
-     * @return bool Whether the reader has finished.
-     */
+	/**
+	 * Check if the reader has finished reading the filesystem.
+	 *
+	 * @return bool Whether the reader has finished.
+	 */
 	public function is_finished(): bool {
 		return $this->finished;
 	}
 
-    /**
-     * Read the next WordPress post or metadata entity from the filesystem.
-     *
-     * @return bool Whether an entity was read.
-     */
+	/**
+	 * Read the next WordPress post or metadata entity from the filesystem.
+	 *
+	 * @return bool Whether an entity was read.
+	 */
 	public function next_entity(): bool {
 		if ( $this->is_finished ) {
 			return false;
@@ -242,16 +242,16 @@ class WP_Filesystem_Entity_Reader {
 				return false;
 			}
 
-			$post_tree_node           = $this->get_current_filesystem_node();
-            $metadata = [
-                'post_id'           => $post_tree_node['post_id'],
-                'post_parent'       => $post_tree_node['parent_id'],
-                'post_title'        => $post_tree_node['post_title'] ?? null,
-                'post_status'       => 'publish',
-                'post_type'         => $this->post_type,
-                'guid'              => $post_tree_node['local_file_path'],
-                'local_file_path'   => $post_tree_node['local_file_path'],
-            ];
+			$post_tree_node = $this->get_current_filesystem_node();
+			$metadata       = array(
+				'post_id'           => $post_tree_node['post_id'],
+				'post_parent'       => $post_tree_node['parent_id'],
+				'post_title'        => $post_tree_node['post_title'] ?? null,
+				'post_status'       => 'publish',
+				'post_type'         => $this->post_type,
+				'guid'              => $post_tree_node['local_file_path'],
+				'local_file_path'   => $post_tree_node['local_file_path'],
+			);
 			if ( $post_tree_node['type'] === 'file' ) {
 				$extension = pathinfo( $post_tree_node['local_file_path'], PATHINFO_EXTENSION );
 				switch ( $extension ) {
@@ -275,33 +275,33 @@ class WP_Filesystem_Entity_Reader {
 								$filetype = $filetype['type'];
 							}
 						}
-                        $metadata['post_mime_type'] = $filetype;
-                        $metadata['post_status'] = 'inherit';
-                        $metadata['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['local_file_path'] ) );
-                        // The importer will use the same Filesystem instance to
-                        // source the attachment.
-                        $metadata['attachment_url'] = 'file://' . $post_tree_node['local_file_path'];
-                        break;
+						$metadata['post_mime_type'] = $filetype;
+						$metadata['post_status']    = 'inherit';
+						$metadata['post_title']     = WP_Import_Utils::slug_to_title( basename( $post_tree_node['local_file_path'] ) );
+						// The importer will use the same Filesystem instance to
+						// source the attachment.
+						$metadata['attachment_url'] = 'file://' . $post_tree_node['local_file_path'];
+						break;
 				}
 
 				$result = $converter->consume();
-			} else if ( $post_tree_node['type'] === 'file_placeholder' ) {
-                $result = new WP_Blocks_With_Metadata(
-                    '',
-                    array()
-                );
-                $metadata['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['local_file_path'] ) );
+			} elseif ( $post_tree_node['type'] === 'file_placeholder' ) {
+				$result                 = new WP_Blocks_With_Metadata(
+					'',
+					array()
+				);
+				$metadata['post_title'] = WP_Import_Utils::slug_to_title( basename( $post_tree_node['local_file_path'] ) );
 			}
 
 			$reader = new WP_Blocks_With_Metadata_Entity_Reader(
-                $result,
+				$result,
 				$post_tree_node['post_id']
 			);
 			while ( $reader->next_entity() ) {
 				$entity = $reader->get_entity();
 				$data   = $entity->get_data();
 				if ( $entity->get_type() === 'post' ) {
-                    $data = array_merge( $metadata, $data );
+					$data = array_merge( $metadata, $data );
 					if ( ! $data['post_title'] ) {
 						$data['post_title'] = WP_Import_Utils::slug_to_title( basename( $metadata['local_file_path'] ) );
 					}
@@ -514,7 +514,7 @@ class WP_Filesystem_Entity_Reader {
 		return $post_id;
 	}
 
-    /**
+	/**
 	 * Chooses an index file from the list of pending files.
 	 *
 	 * @param array $files List of files to choose from.
@@ -548,7 +548,7 @@ class WP_Filesystem_Entity_Reader {
 	 * @param string $path The path to search for.
 	 * @return array|null The found node or null if not found.
 	 */
-	private function find_node($path) {
+	private function find_node( $path ) {
 		// existing code...
 	}
 }

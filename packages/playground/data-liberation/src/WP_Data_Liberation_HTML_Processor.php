@@ -58,5 +58,4 @@ class WP_Data_Liberation_HTML_Processor extends WP_HTML_Processor {
 		$this->release_bookmark( $name );
 		return $bookmark->start + $bookmark->length;
 	}
-
 }
