@@ -67,7 +67,7 @@ require_once __DIR__ . '/src/block-markup/WP_URL_In_Text_Processor.php';
 require_once __DIR__ . '/src/block-markup/WP_URL.php';
 
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
-require_once __DIR__ . '/src/entity-readers/WP_Block_Markup_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Blocks_With_Metadata_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_EPub_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_WXR_Entity_Reader.php';
