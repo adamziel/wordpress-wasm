@@ -8,7 +8,11 @@
 		},
 		{
 			"files": ["*.ts", "*.tsx"],
-			"rules": {}
+			"rules": {
+				// The remote package uses wordpress-builds in a way that does
+				// not create a runtime dependency to an unpublished package.
+				"playground-dev/avoid-wordpress-builds-dependency": 0
+			}
 		},
 		{
 			"files": ["*.js", "*.jsx"],

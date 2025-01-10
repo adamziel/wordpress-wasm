@@ -24,6 +24,8 @@
 		"src/**/*.jsx",
 		"src/**/*.ts",
 		"src/**/*.tsx",
+		"builder/**/*.ts",
+		"builder/**/*.tsx",
 		"demos/github.ts",
 		"demos/time-traveling.tsx",
 		"demos/peer.ts",

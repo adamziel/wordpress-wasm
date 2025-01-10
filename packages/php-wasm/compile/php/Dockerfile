@@ -50,6 +50,17 @@ else \
 	cp -r /root/builds-libzip/asyncify/dist/1.2.0/root/lib /libs/libzip/1.2.0; \
 	cp -r /root/builds-libzip/asyncify/dist/1.9.2/root/lib /libs/libzip/1.9.2; \
 fi
+
+COPY ./libopenssl/ /root/builds-libopenssl/
+RUN mkdir -p /libs/libopenssl
+RUN if [ "$WITH_JSPI" = "yes" ]; then \
+	cp -r /root/builds-libopenssl/jspi/dist/1.1.0h/root/lib /libs/libopenssl/1.1.0h; \
+	cp -r /root/builds-libopenssl/jspi/dist/1.1.1/root/lib /libs/libopenssl/1.1.1; \
+else \
+	cp -r /root/builds-libopenssl/asyncify/dist/1.1.0h/root/lib /libs/libopenssl/1.1.0h; \
+	cp -r /root/builds-libopenssl/asyncify/dist/1.1.1/root/lib /libs/libopenssl/1.1.1; \
+fi
+
 # Build PHP
 
 # The PHP extensions to build:
@@ -187,6 +198,11 @@ RUN if [ "$WITH_GD" = "yes" ]; \
 # Add openssl if needed
 RUN if [ "$WITH_OPENSSL" = "yes" ]; \
 	then \
+		if [[ "${PHP_VERSION:0:1}" -lt "8" || ("${PHP_VERSION:0:1}" -eq "8" && "${PHP_VERSION:2:1}" -lt "4") ]]; then \
+			cp -r /libs/libopenssl/1.1.0h/* /root/lib; \
+		else \
+			cp -r /libs/libopenssl/1.1.1/* /root/lib; \
+		fi; \
 		echo -n ' --with-openssl --with-openssl-dir=/root/lib ' >> /root/.php-configure-flags; \
 		echo -n ' -lssl -lcrypto ' >> /root/.emcc-php-wasm-flags; \
 	fi;
@@ -263,7 +279,10 @@ RUN cd /root && \
 	git apply --no-index /root/php${PHP_VERSION:0:3}*.patch -v && \
 	( [[ "${PHP_VERSION:0:3}" == '8.3' ]] && \
 		git apply --no-index /root/php-chunk-alloc-zend-assert-8.3.patch -v || \
-		git apply --no-index /root/php-chunk-alloc-zend-assert.patch -v \
+		( [[ "${PHP_VERSION:0:3}" == '8.4' ]] && \
+			git apply --no-index /root/php-chunk-alloc-zend-assert-8.4.patch -v || \
+			git apply --no-index /root/php-chunk-alloc-zend-assert.patch -v \
+		) \
 	) && \
 	touch php-src/patched
 
@@ -519,7 +538,11 @@ RUN export ASYNCIFY_IMPORTS=$'["_dlopen_js",\n\
 "dynCall_viiiiiii",\
 "dynCall_viiiiiiii",'; \
 
-export ASYNCIFY_ONLY=$'"rc_dtor_func",\
+export ASYNCIFY_ONLY=$'"zif_phar_fopen",\
+"zif_phar_file_get_contents",\
+"zend_execute_script",\
+"php_execute_script_ex",\
+"rc_dtor_func",\
 "zif_curl_exec",\
 "curl_easy_perform",\
 "Curl_wait_ms",\
@@ -744,6 +767,7 @@ export ASYNCIFY_ONLY=$'"rc_dtor_func",\
 "php_cli_server_recv_event_read_request",\
 "php_exec",\
 "php_execute_script",\
+"php_execute_script_ex",\
 "php_fsockopen_stream",\
 "php_getimagesize_from_any",\
 "php_mysqlnd_auth_response_read",\

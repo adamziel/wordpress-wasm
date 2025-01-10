@@ -6,6 +6,8 @@ import { join } from 'path';
 
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { viteTsConfigPaths } from '../../vite-extensions/vite-ts-config-paths';
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import { getExternalModules } from '../../vite-extensions/vite-external-modules';
 
 export default defineConfig({
 	cacheDir: '../../../node_modules/.vite/php-wasm-web-service-worker',
@@ -21,6 +23,20 @@ export default defineConfig({
 			root: '../../../',
 		}),
 	],
+
+	build: {
+		lib: {
+			// Could also be a dictionary or array of multiple entry points.
+			entry: 'src/index.ts',
+			name: 'php-wasm-web-service-worker',
+			fileName: 'index',
+			formats: ['es', 'cjs'],
+		},
+		rollupOptions: {
+			// External packages that should not be bundled into your library.
+			external: getExternalModules(),
+		},
+	},
 
 	test: {
 		globals: true,

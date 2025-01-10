@@ -1,6 +1,6 @@
 {
 	"name": "@php-wasm/web-service-worker",
-	"version": "1.0.15",
+	"version": "1.0.20",
 	"description": "PHP.wasm – service worker utils",
 	"repository": {
 		"type": "git",
@@ -19,10 +19,18 @@
 		"access": "public",
 		"directory": "../../../dist/packages/php-wasm/web-service-worker"
 	},
-	"license": "GPL-2.0-or-later",
+	"exports": {
+		".": {
+			"import": "./index.js",
+			"require": "./index.cjs"
+		},
+		"./package.json": "./package.json",
+		"./README.md": "./README.md"
+	},
 	"type": "module",
-	"main": "src/index.js",
-	"types": "src/index.d.ts",
+	"main": "./index.cjs",
+	"module": "./index.js",
+	"license": "GPL-2.0-or-later",
 	"gitHead": "2f8d8f3cea548fbd75111e8659a92f601cddc593",
 	"engines": {
 		"node": ">=18.18.0",

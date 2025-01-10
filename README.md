@@ -12,9 +12,9 @@ WordPress Playground exists to make WordPress instantly accessible for users, le
 
 Playground aims to facilitate:
 
-– Learning WordPress Through Exploration
-– Learning WordPress Development Through Writing Code
-– Instant access to WordPress ecosystem
+-   Learning WordPress Through Exploration
+-   Learning WordPress Development Through Writing Code
+-   Instant access to WordPress ecosystem
 
 Learn more about the [vision](https://github.com/WordPress/wordpress-playground/issues/472) and the [roadmap](https://github.com/WordPress/wordpress-playground/issues/525).
 

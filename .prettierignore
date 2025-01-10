@@ -8,6 +8,7 @@
 /packages/playground/wordpress-builds/build/build-assets
 /packages/playground/wordpress-builds/src/wordpress
 /packages/playground/wordpress-builds/public/
+/packages/playground/data-liberation/tests/fixtures
 /packages/php-wasm/node/src/test/__test*
 __pycache__
 *.timestamp-1678999213403.mjs

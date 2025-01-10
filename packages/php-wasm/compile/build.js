@@ -116,6 +116,12 @@ const argParser = yargs(process.argv.slice(2))
 			description: 'The output directory',
 			required: true,
 		},
+		WITH_OPENSSL_VERSION: {
+			type: 'string',
+			choices: ['1.1.0h', '1.1.1'],
+			description: 'OpenSSL version to use',
+			default: '1.1.0h',
+		},
 	});
 
 const args = argParser.argv;
@@ -184,6 +190,8 @@ await asyncSpawn(
 		args.DEBUG ? '--progress=plain' : '--progress=auto',
 		'--build-arg',
 		getArg('PHP_VERSION'),
+		'--build-arg',
+		`OPENSSL_VERSION=${args.WITH_OPENSSL_VERSION || '1.1.0h'}`,
 		'--build-arg',
 		getArg('WITH_FILEINFO'),
 		'--build-arg',

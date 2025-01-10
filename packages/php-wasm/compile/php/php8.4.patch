@@ -1,0 +1,38 @@
+diff --git a/php-src/ext/standard/file.c b/php-src/ext/standard/file.c
+--- a/php-src/ext/standard/file.c
++++ b/php-src/ext/standard/file.c
+@@ -1497,20 +1497,34 @@ PHPAPI zend_result php_copy_file_ctx(const char *src, const char *dest, int src_flags, php_stream_context *ctx)
+ {
+ 	php_stream *srcstream = NULL, *deststream = NULL;
+ 	zend_result ret = FAILURE;
+ 	php_stream_statbuf src_s, dest_s;
+ 	int src_stat_flags = (src_flags & STREAM_DISABLE_OPEN_BASEDIR) ? PHP_STREAM_URL_STAT_IGNORE_OPEN_BASEDIR : 0;
+ 
+ 	switch (php_stream_stat_path_ex(src, src_stat_flags, &src_s, ctx)) {
+ 		case -1:
+ 			/* non-statable stream */
+ 			goto safe_to_copy;
+ 			break;
+ 		case 0:
++			// Fix for https://github.com/WordPress/wordpress-playground/issues/54:
++			// Problem: Calling copy() on an empty source file crashes the JavaScript
++			//          runtime.
++			// Solution: Avoid copying empty files. Just create create an empty
++			//           destination file and return.
++			if (src_s.sb.st_size == 0) {
++				zend_string *opened_path = zend_string_init("", strlen(""), 0);
++				php_stream *stream = php_stream_open_wrapper(dest, "w", REPORT_ERRORS, &opened_path);
++				if (stream) {
++					php_stream_close(stream);
++					return SUCCESS;
++				}
++				return FAILURE;
++			}
+ 			break;
+ 		default: /* failed to stat file, does not exist? */
+ 			return ret;
+ 	}
+ 	if (S_ISDIR(src_s.sb.st_mode)) {
+ 		php_error_docref(NULL, E_WARNING, "The first argument to copy() function cannot be a directory");
+ 		return FAILURE;
+ 	}

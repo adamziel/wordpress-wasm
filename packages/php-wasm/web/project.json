@@ -57,6 +57,7 @@
 			"executor": "nx:run-commands",
 			"options": {
 				"commands": [
+					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.4 --output-dir=packages/php-wasm/web/public/php/jspi --WITH_JSPI=yes",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.3 --output-dir=packages/php-wasm/web/public/php/jspi --WITH_JSPI=yes",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.2 --output-dir=packages/php-wasm/web/public/php/jspi --WITH_JSPI=yes",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.1 --output-dir=packages/php-wasm/web/public/php/jspi --WITH_JSPI=yes",
@@ -83,6 +84,7 @@
 			"executor": "nx:run-commands",
 			"options": {
 				"commands": [
+					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.4 --output-dir=packages/php-wasm/web/public/php/asyncify",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.3 --output-dir=packages/php-wasm/web/public/php/asyncify",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.2 --output-dir=packages/php-wasm/web/public/php/asyncify",
 					"node packages/php-wasm/compile/build.js --PLATFORM=web --PHP_VERSION=8.1 --output-dir=packages/php-wasm/web/public/php/asyncify",

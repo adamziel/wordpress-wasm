@@ -1,4 +1,5 @@
 export const SupportedPHPVersions = [
+	'8.4',
 	'8.3',
 	'8.2',
 	'8.1',

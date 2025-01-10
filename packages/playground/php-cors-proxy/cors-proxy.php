@@ -19,7 +19,7 @@ if (should_respond_with_cors_headers($server_host, $origin)) {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type, git-protocol');
+    header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type, git-protocol, wp_blog, wp_install');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header("Allow: GET, POST, OPTIONS");
@@ -80,9 +80,10 @@ define(
 
 $ch = curl_init($targetUrl);
 
-$relay_http_code_and_initial_headers_if_not_already_sent = function () use ($ch) {
-    static $http_code_sent = false;
+$is_chunked_response = false;
+$http_code_sent = false;
 
+$relay_http_code_and_initial_headers_if_not_already_sent = function () use ($ch, &$http_code_sent) {
     if (!$http_code_sent) {
         // Set the response code from the target server
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -94,6 +95,34 @@ $relay_http_code_and_initial_headers_if_not_already_sent = function () use ($ch)
         $http_code_sent = true;
     }
 };
+
+function send_response_chunk($data) {
+    if (should_send_as_chunked_response()) {
+        // We need to manually chunk the response when running in the PHP
+        // built-in server. It won't handle that for us.
+        echo sprintf("%s\r\n%s\r\n", dechex(strlen($data)), $data);
+    } else {
+        // When running behing an Apache or Nginx or another webserver,
+        // it will handle the chunking for us. Manually sending the chunk
+        // header, \r\n separator, body, and \r\n trailer isn't just
+        // unnecessary, but it would actually include those bytes in the
+        // response body.
+        echo $data;
+    }
+    @ob_flush();
+    @flush();
+}
+
+/**
+ * We need to manually chunk the response when running the PHP
+ * dev server AND the transfer-encoding header is set to chunked.
+ * 
+ * Apache, Nginx, etc. will handle the chunking for us.
+ */
+function should_send_as_chunked_response() {
+    global $is_chunked_response;
+    return $is_chunked_response && php_sapi_name() === 'cli-server';
+}
 
 // Pin the hostname resolution to an IP we've resolved earlier
 curl_setopt($ch, CURLOPT_RESOLVE, [
@@ -143,7 +172,6 @@ curl_setopt(
 // Set options to stream data
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-$httpcode_sent = false;
 curl_setopt(
     $ch,
     CURLOPT_HEADERFUNCTION,
@@ -152,12 +180,18 @@ curl_setopt(
         $header
     ) use (
         $targetUrl,
-        $relay_http_code_and_initial_headers_if_not_already_sent
+        $relay_http_code_and_initial_headers_if_not_already_sent,
+        &$is_chunked_response
     ) {
-        $relay_http_code_and_initial_headers_if_not_already_sent();
+        @$relay_http_code_and_initial_headers_if_not_already_sent();
 
         $len = strlen($header);
         $colonPos = strpos($header, ':');
+        
+        if ($colonPos === false) {
+            return $len;
+        }
+        
         $name = strtolower(substr($header, 0, $colonPos));
         $value = trim(substr($header, $colonPos + 1));
 
@@ -165,10 +199,18 @@ curl_setopt(
             $content_length = intval($value);
             if ($content_length >= MAX_RESPONSE_SIZE) {
                 http_response_code(413);
-                echo "Response Too Large";
+                send_response_chunk("Response Too Large");
                 exit;
             }
+            return $len;
         }
+
+        if ($name === 'transfer-encoding' && stripos($value, 'chunked') !== false) {
+            $is_chunked_response = true;
+            header($header, false);
+            return $len;
+        }
+
         if (stripos($header, 'Location:') === 0) {
             // Adjust the redirection URL to go back to the proxy script
             $locationUrl = trim(substr($header, 9));
@@ -184,12 +226,12 @@ curl_setopt(
             // so let's not allow the HTTP line to explicitly pass through.
             // PHP already provides the HTTP version in the response code anyway.
             stripos($header, 'HTTP/') !== 0 &&
-            stripos($header, 'Set-Cookie:') !== 0 &&
-            stripos($header, 'Authorization:') !== 0 &&
             // The proxy server does not support relaying auth challenges.
             // Specifically, we want to avoid browsers prompting for basic auth
             // credentials which they will send to the proxy server for the
             // remainder of the session.
+            stripos($header, 'Set-Cookie:') !== 0 &&
+            stripos($header, 'Authorization:') !== 0 &&
             stripos($header, 'WWW-Authenticate:') !== 0 &&
             stripos($header, 'Cache-Control:') !== 0 &&
             // The browser won't accept multiple values for these headers.
@@ -204,10 +246,8 @@ curl_setopt(
     }
 );
 
-curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) {
-    echo $data;
-    @ob_flush();
-    @flush();
+curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) use (&$is_chunked_response) {
+    send_response_chunk($data, $is_chunked_response);
     return strlen($data);
 });
 
@@ -225,9 +265,16 @@ if ($requestMethod !== 'GET' && $requestMethod !== 'HEAD' && $requestMethod !== 
 // Execute cURL session
 if (!curl_exec($ch)) {
     http_response_code(502);
-    echo "Bad Gateway – curl_exec error: " . curl_error($ch);
+    send_response_chunk("Bad Gateway – curl_exec error: " . curl_error($ch));
 } else {
     @$relay_http_code_and_initial_headers_if_not_already_sent();
 }
 // Close cURL session
 curl_close($ch);
+
+// Only send chunked transfer encoding footer if we're using chunked encoding.
+// We need to manually send the footer when running in the PHP built-in server
+// because, unlike apache or nginx, it won't handle that for us.
+if (should_send_as_chunked_response()) {
+    echo "0\r\n\r\n";
+}
