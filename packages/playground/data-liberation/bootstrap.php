@@ -12,9 +12,10 @@ require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Connection.p
 require_once __DIR__ . '/blueprints-library/src/WordPress/AsyncHttp/Client.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Abstract_Filesystem.php';
-require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Local_Filesystem.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_File_Visitor_Event.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/WP_Filesystem_Visitor.php';
+require_once __DIR__ . '/blueprints-library/src/WordPress/Filesystem/functions.php';
 
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_Byte_Reader.php';
 require_once __DIR__ . '/blueprints-library/src/WordPress/ByteReader/WP_File_Reader.php';
@@ -87,6 +88,8 @@ require_once __DIR__ . '/src/import/WP_Entity_Iterator_Chain.php';
 require_once __DIR__ . '/src/import/WP_Retry_Frontloading_Iterator.php';
 require_once __DIR__ . '/src/entity-readers/WP_Entity_Reader.php';
 require_once __DIR__ . '/src/entity-readers/WP_HTML_Entity_Reader.php';
+require_once __DIR__ . '/src/entity-readers/WP_Filesystem_To_Post_Tree.php';
+require_once __DIR__ . '/src/entity-readers/WP_Filesystem_Entity_Reader.php';
 
 require_once __DIR__ . '/src/utf8_decoder.php';
 

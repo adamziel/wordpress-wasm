@@ -1,6 +1,6 @@
 <?php
 
-use WordPress\Filesystem\WP_Filesystem;
+use WordPress\Filesystem\WP_Local_Filesystem;
 
 class WP_Markdown_Importer extends WP_Stream_Importer {
 
@@ -9,13 +9,13 @@ class WP_Markdown_Importer extends WP_Stream_Importer {
 			function ( $cursor = null ) use ( $markdown_directory ) {
 				// @TODO: Handle $cursor
 				return new WP_Directory_Tree_Entity_Reader(
-					new WP_Filesystem(),
+					new WP_Local_Filesystem(),
 					array(
 						'root_dir' => $markdown_directory,
 						'first_post_id' => 1,
 						'allowed_extensions' => array( 'md' ),
 						'index_file_patterns' => array( '#^index\.md$#' ),
-						'markup_converter_factory' => function ( $content ) {
+						'data_consumer_factory' => function ( $content ) {
 							return new WP_Markdown_Consumer( $content );
 						},
 					)
